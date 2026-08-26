@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<title>Einfache Seite</title>
+<style>
+  body {
+    font-family: Arial, sans-serif;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 100vh;
+    margin: 0;
+    background: #f0f0f0;
+  }
+  button {
+    padding: 10px 20px;
+    font-size: 16px;
+    cursor: pointer;
+  }
+</style>
+</head>
+<body>
+  <h1 id="title">Hallo!</h1>
+  <button onclick="changeText()">Klick mich</button>
+
+  <script>
+    let count = 0;
+    function changeText() {
+      count++;
+      document.getElementById("title").textContent = "Du hast " + count + " Mal geklickt";
+    }
+  </script>
+</body>
+</html>
