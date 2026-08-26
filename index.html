@@ -3,145 +3,360 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Josef Stalin – Historische Übersicht</title>
+<title>Josef Stalin – Historisches Archiv</title>
 <style>
+  @import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@500;700;900&family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400&family=Special+Elite&display=swap');
+
   :root {
-    --bg: #1a1a1a;
-    --fg: #eee;
-    --accent: #b22222;
-    --card-bg: #2a2a2a;
-    --border: #444;
+    --paper: #e9dcc0;
+    --paper-dark: #d8c69f;
+    --ink: #2b1e12;
+    --sepia: #6b4a25;
+    --accent: #8a1f11;
+    --gold: #b8912f;
+    --gold-bright: #e0bd5c;
+    --card-bg: #f2e8d0;
+    --border: #a98c56;
+    --vignette: rgba(20,12,4,0.55);
   }
-  body.light {
-    --bg: #f4f0e8;
-    --fg: #1a1a1a;
-    --accent: #8b0000;
-    --card-bg: #ffffff;
-    --border: #ccc;
+  body.night {
+    --paper: #14100a;
+    --paper-dark: #0b0805;
+    --ink: #e7d9b8;
+    --sepia: #cbb27f;
+    --accent: #c9432b;
+    --gold: #d9b45a;
+    --gold-bright: #f0d488;
+    --card-bg: #1d160e;
+    --border: #4a3a22;
+    --vignette: rgba(0,0,0,0.7);
   }
+
   * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+
   body {
     margin: 0;
-    font-family: Georgia, 'Times New Roman', serif;
-    background: var(--bg);
-    color: var(--fg);
-    transition: background 0.4s, color 0.4s;
+    min-height: 100vh;
+    font-family: 'Playfair Display', Georgia, serif;
+    color: var(--ink);
+    background:
+      radial-gradient(ellipse at top left, rgba(255,240,200,0.08), transparent 60%),
+      radial-gradient(ellipse at bottom right, rgba(0,0,0,0.15), transparent 60%),
+      var(--paper);
+    transition: background 0.6s ease, color 0.6s ease;
+    position: relative;
+    overflow-x: hidden;
   }
+
+  /* film-grain / paper noise overlay */
+  body::after {
+    content: "";
+    position: fixed; inset: 0;
+    pointer-events: none;
+    z-index: 500;
+    opacity: 0.05;
+    mix-blend-mode: multiply;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  }
+
+  /* vignette */
+  .vignette {
+    position: fixed; inset: 0; z-index: 490; pointer-events: none;
+    box-shadow: inset 0 0 18vw var(--vignette);
+  }
+
+  canvas#embers {
+    position: fixed; inset: 0; width: 100%; height: 100%;
+    z-index: 1; pointer-events: none; opacity: 0.55;
+  }
+
+  /* ---------- Curtain intro ---------- */
+  #curtain {
+    position: fixed; inset: 0; z-index: 1000;
+    background: var(--paper-dark);
+    display: flex; align-items: center; justify-content: center;
+    animation: curtainOut 1.8s 1.2s ease forwards;
+  }
+  #curtain span {
+    font-family: 'Cinzel', serif; font-size: 1.4em; letter-spacing: 6px;
+    color: var(--gold); opacity: 0;
+    animation: curtainText 1.1s 0.2s ease forwards;
+  }
+  @keyframes curtainText { to { opacity: 1; letter-spacing: 10px; } }
+  @keyframes curtainOut {
+    0% { clip-path: inset(0 0 0 0); }
+    100% { clip-path: inset(0 0 100% 0); visibility: hidden; }
+  }
+
+  /* ---------- Header ---------- */
   header {
     position: relative;
-    padding: 60px 20px;
+    padding: 90px 20px 70px;
     text-align: center;
-    background: linear-gradient(135deg, var(--accent), #4b0000);
-    color: #fff;
     overflow: hidden;
+    background:
+      linear-gradient(180deg, rgba(0,0,0,0.35), rgba(0,0,0,0.55)),
+      radial-gradient(circle at 50% 20%, #3c1c12, #170a05 75%);
+    border-bottom: 6px double var(--gold);
+    z-index: 2;
   }
   header::before {
     content: "";
-    position: absolute;
-    top: -50%; left: -50%;
-    width: 200%; height: 200%;
-    background: repeating-linear-gradient(45deg, rgba(255,255,255,0.03) 0 10px, transparent 10px 20px);
-    animation: slide 20s linear infinite;
+    position: absolute; inset: -20%;
+    background: repeating-conic-gradient(from 0deg, rgba(184,145,47,0.05) 0deg 8deg, transparent 8deg 16deg);
+    animation: rotateSlow 90s linear infinite;
   }
-  @keyframes slide {
-    from { transform: translate(0,0); }
-    to { transform: translate(50px, 50px); }
-  }
-  header h1 { position: relative; font-size: 2.8em; margin: 0; letter-spacing: 2px; }
-  header p { position: relative; font-size: 1.1em; opacity: 0.9; }
+  @keyframes rotateSlow { to { transform: rotate(360deg); } }
 
-  nav {
-    position: sticky; top: 0; z-index: 10;
-    display: flex; flex-wrap: wrap; justify-content: center;
-    background: var(--card-bg);
-    border-bottom: 2px solid var(--accent);
+  .crest {
+    width: 74px; height: 74px; margin: 0 auto 18px;
+    border: 2px solid var(--gold);
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    color: var(--gold-bright); font-size: 1.8em;
+    position: relative; z-index: 2;
+    box-shadow: 0 0 25px rgba(224,189,92,0.35), inset 0 0 12px rgba(224,189,92,0.25);
+    animation: crestPulse 4s ease-in-out infinite;
   }
-  nav button {
-    background: none; border: none; color: var(--fg);
-    padding: 14px 20px; cursor: pointer; font-size: 1em;
-    font-family: inherit; border-bottom: 3px solid transparent;
-    transition: 0.25s;
+  @keyframes crestPulse {
+    0%,100% { box-shadow: 0 0 18px rgba(224,189,92,0.25), inset 0 0 10px rgba(224,189,92,0.2); }
+    50% { box-shadow: 0 0 34px rgba(224,189,92,0.55), inset 0 0 16px rgba(224,189,92,0.4); }
   }
-  nav button:hover, nav button.active {
-    border-bottom-color: var(--accent);
-    color: var(--accent);
+
+  header h1 {
+    position: relative; z-index: 2;
+    font-family: 'Cinzel', serif;
+    font-weight: 900;
+    font-size: clamp(2em, 5vw, 3.4em);
+    margin: 0;
+    color: transparent;
+    background: linear-gradient(100deg, #7a5b26, var(--gold-bright) 40%, #7a5b26 60%, var(--gold-bright) 100%);
+    background-size: 250% auto;
+    -webkit-background-clip: text; background-clip: text;
+    animation: shimmer 6s linear infinite, revealTitle 1.4s ease both;
+    animation-delay: 2.6s, 2.6s;
+    letter-spacing: 3px;
+  }
+  @keyframes shimmer { to { background-position: -250% center; } }
+  @keyframes revealTitle {
+    from { opacity: 0; transform: translateY(25px) scale(0.96); filter: blur(6px); }
+    to { opacity: 1; transform: translateY(0) scale(1); filter: blur(0); }
+  }
+
+  header p.subtitle {
+    position: relative; z-index: 2;
+    font-family: 'Special Elite', monospace;
+    color: var(--sepia);
+    letter-spacing: 3px;
+    margin-top: 14px;
+    opacity: 0;
+    animation: revealTitle 1.2s 3.2s ease forwards;
   }
 
   .toggle-theme {
-    position: absolute; top: 15px; right: 20px;
-    background: rgba(255,255,255,0.15); color: #fff; border: 1px solid #fff;
-    padding: 6px 14px; border-radius: 20px; cursor: pointer; font-size: 0.85em;
+    position: absolute; top: 18px; right: 22px; z-index: 5;
+    background: transparent; color: var(--gold-bright);
+    border: 1px solid var(--gold); border-radius: 30px;
+    padding: 7px 16px; cursor: pointer; font-family: 'Special Elite', monospace;
+    font-size: 0.75em; letter-spacing: 1px;
+    transition: all 0.35s;
+  }
+  .toggle-theme:hover { background: rgba(224,189,92,0.15); box-shadow: 0 0 14px rgba(224,189,92,0.4); }
+
+  /* ---------- Nav ---------- */
+  nav {
+    position: sticky; top: 0; z-index: 20;
+    display: flex; flex-wrap: wrap; justify-content: center;
+    background: linear-gradient(180deg, var(--card-bg), var(--paper));
+    border-bottom: 3px solid var(--border);
+    box-shadow: 0 6px 14px rgba(0,0,0,0.25);
+  }
+  nav button {
+    position: relative;
+    background: none; border: none; color: var(--sepia);
+    padding: 16px 22px; cursor: pointer;
+    font-family: 'Cinzel', serif; font-size: 0.85em; letter-spacing: 1px;
+    transition: color 0.3s;
+  }
+  nav button::after {
+    content: "";
+    position: absolute; left: 50%; bottom: 6px;
+    width: 0; height: 2px; background: var(--accent);
+    transform: translateX(-50%);
+    transition: width 0.35s ease;
+  }
+  nav button:hover { color: var(--accent); }
+  nav button.active { color: var(--accent); }
+  nav button.active::after { width: 60%; }
+
+  /* ---------- Main ---------- */
+  main { position: relative; z-index: 2; max-width: 920px; margin: 0 auto; padding: 40px 20px 100px; }
+
+  section { display: none; }
+  section.active {
+    display: block;
+    animation: pageIn 0.75s cubic-bezier(.2,.8,.2,1) both;
+  }
+  @keyframes pageIn {
+    from { opacity: 0; transform: translateY(24px) scale(0.985); filter: blur(4px); }
+    to { opacity: 1; transform: translateY(0) scale(1); filter: blur(0); }
   }
 
-  main { max-width: 900px; margin: 0 auto; padding: 30px 20px 80px; }
-  section { display: none; animation: fadeIn 0.5s ease; }
-  section.active { display: block; }
-  @keyframes fadeIn { from { opacity: 0; transform: translateY(15px); } to { opacity: 1; transform: translateY(0); } }
+  h2 {
+    font-family: 'Cinzel', serif; font-size: 1.6em;
+    color: var(--accent); letter-spacing: 1px;
+    display: flex; align-items: center; gap: 14px;
+    margin-bottom: 26px;
+  }
+  h2::before, h2::after { content: ""; flex: 1; height: 1px; background: linear-gradient(90deg, transparent, var(--gold), transparent); }
 
-  h2 { border-left: 5px solid var(--accent); padding-left: 12px; }
+  .reveal { opacity: 0; transform: translateY(30px); transition: opacity 0.8s ease, transform 0.8s ease; }
+  .reveal.show { opacity: 1; transform: translateY(0); }
 
   .card {
     background: var(--card-bg);
     border: 1px solid var(--border);
-    border-radius: 8px;
-    padding: 20px;
-    margin: 16px 0;
-    box-shadow: 0 2px 6px rgba(0,0,0,0.15);
+    border-image: linear-gradient(135deg, var(--gold), var(--border), var(--gold)) 1;
+    border-radius: 2px;
+    padding: 26px 28px;
+    margin: 18px 0;
+    box-shadow: 0 8px 20px rgba(0,0,0,0.25), inset 0 0 40px rgba(184,145,47,0.05);
+    position: relative;
   }
-
-  .timeline { position: relative; margin: 30px 0; padding-left: 30px; border-left: 3px solid var(--accent); }
-  .timeline-item { position: relative; margin-bottom: 28px; }
-  .timeline-item::before {
+  .card::before {
     content: "";
-    position: absolute; left: -38px; top: 4px;
-    width: 14px; height: 14px; border-radius: 50%;
-    background: var(--accent); border: 2px solid var(--bg);
+    position: absolute; inset: 6px;
+    border: 1px solid rgba(184,145,47,0.35);
+    pointer-events: none;
   }
-  .timeline-item h3 { margin: 0 0 4px; color: var(--accent); }
+  .card p { line-height: 1.75; }
+  .card p::first-letter {
+    font-family: 'Cinzel', serif;
+    font-size: 2.6em; float: left; line-height: 0.8;
+    padding: 6px 8px 0 0; color: var(--accent);
+  }
 
+  /* timeline */
+  .timeline { position: relative; margin: 40px 0 10px; padding-left: 36px; }
+  .timeline::before {
+    content: ""; position: absolute; left: 8px; top: 0; bottom: 0; width: 2px;
+    background: linear-gradient(var(--gold), transparent 95%);
+  }
+  .timeline-item {
+    position: relative; margin-bottom: 34px;
+    opacity: 0; transform: translateX(-24px);
+    transition: opacity 0.7s ease, transform 0.7s ease;
+  }
+  .timeline-item.show { opacity: 1; transform: translateX(0); }
+  .timeline-item .seal {
+    position: absolute; left: -36px; top: 2px;
+    width: 20px; height: 20px; border-radius: 50%;
+    background: radial-gradient(circle at 35% 30%, var(--gold-bright), var(--accent) 70%);
+    box-shadow: 0 0 0 3px var(--paper), 0 0 10px rgba(138,31,17,0.6);
+    transform: scale(0);
+    transition: transform 0.5s cubic-bezier(.34,1.56,.64,1) 0.15s;
+  }
+  .timeline-item.show .seal { transform: scale(1); }
+  .timeline-item h3 {
+    font-family: 'Cinzel', serif; color: var(--accent); margin: 0 0 6px; letter-spacing: 1px;
+  }
+  .timeline-item p { margin: 0; line-height: 1.6; }
+
+  /* quiz */
   .quiz-option {
     display: block; width: 100%; text-align: left;
     background: var(--card-bg); border: 1px solid var(--border);
-    color: var(--fg); padding: 10px 14px; margin: 6px 0;
-    border-radius: 6px; cursor: pointer; font-family: inherit;
-    transition: 0.2s;
+    color: var(--ink); padding: 13px 16px; margin: 8px 0;
+    border-radius: 2px; cursor: pointer; font-family: 'Playfair Display', serif; font-size: 1em;
+    transition: all 0.25s; position: relative; overflow: hidden;
   }
-  .quiz-option:hover { border-color: var(--accent); }
-  .quiz-option.correct { background: #2e7d32; color: #fff; border-color: #2e7d32; }
-  .quiz-option.wrong { background: #c62828; color: #fff; border-color: #c62828; }
-  #quiz-result { margin-top: 12px; font-weight: bold; }
+  .quiz-option::before {
+    content: ""; position: absolute; left: 0; top: 0; bottom: 0; width: 4px;
+    background: var(--gold); transform: scaleY(0); transform-origin: bottom;
+    transition: transform 0.3s;
+  }
+  .quiz-option:hover:not(:disabled)::before { transform: scaleY(1); }
+  .quiz-option:hover:not(:disabled) { transform: translateX(6px); }
+  .quiz-option.correct { background: #2e4a2e; color: #eee; border-color: #6a9a6a; animation: stamp 0.5s ease; }
+  .quiz-option.wrong { background: #4a2323; color: #eee; border-color: #a05a5a; animation: stamp 0.5s ease; }
+  @keyframes stamp {
+    0% { transform: scale(1.15) rotate(-3deg); opacity: 0.4; }
+    60% { transform: scale(0.97) rotate(1deg); }
+    100% { transform: scale(1) rotate(0); opacity: 1; }
+  }
+  #quiz-result { margin-top: 16px; font-family: 'Cinzel', serif; font-weight: 700; letter-spacing: 1px; min-height: 1.4em; }
 
-  .gallery { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 12px; }
+  /* gallery */
+  .gallery { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 16px; }
   .gallery div {
     background: var(--card-bg); border: 1px solid var(--border);
-    border-radius: 6px; padding: 16px; text-align: center;
-    cursor: pointer; transition: transform 0.2s;
+    padding: 22px 12px; text-align: center; cursor: pointer;
+    font-family: 'Special Elite', monospace; font-size: 0.9em;
+    transition: transform 0.35s, box-shadow 0.35s;
+    position: relative;
   }
-  .gallery div:hover { transform: scale(1.05); border-color: var(--accent); }
+  .gallery div:hover {
+    transform: translateY(-6px) rotate(-1deg);
+    box-shadow: 0 14px 24px rgba(0,0,0,0.3);
+    border-color: var(--gold-bright);
+  }
 
-  .counter-box { display: flex; gap: 16px; flex-wrap: wrap; }
+  /* stats */
+  .counter-box { display: flex; gap: 20px; flex-wrap: wrap; }
   .stat {
-    flex: 1; min-width: 140px; background: var(--card-bg);
-    border: 1px solid var(--border); border-radius: 8px;
-    padding: 20px; text-align: center;
+    flex: 1; min-width: 150px; background: var(--card-bg);
+    border: 1px solid var(--border); padding: 26px 18px; text-align: center;
+    position: relative; overflow: hidden;
   }
-  .stat .num { font-size: 2em; color: var(--accent); font-weight: bold; }
+  .stat::after {
+    content: ""; position: absolute; inset: 0;
+    background: radial-gradient(circle at 50% 0%, rgba(184,145,47,0.18), transparent 70%);
+    opacity: 0; transition: opacity 0.4s;
+  }
+  .stat.show::after { opacity: 1; }
+  .stat .num {
+    font-family: 'Cinzel', serif; font-size: 2.3em; color: var(--accent); font-weight: 700;
+    text-shadow: 0 0 18px rgba(138,31,17,0.25);
+  }
+  .stat .label { font-family: 'Special Elite', monospace; font-size: 0.8em; color: var(--sepia); margin-top: 6px; }
 
   footer {
-    text-align: center; padding: 20px; font-size: 0.85em;
-    border-top: 1px solid var(--border); opacity: 0.7;
+    position: relative; z-index: 2;
+    text-align: center; padding: 26px; font-family: 'Special Elite', monospace;
+    font-size: 0.78em; letter-spacing: 1px; color: var(--sepia);
+    border-top: 1px solid var(--border);
   }
 
-  #search-box { width: 100%; padding: 10px; margin-bottom: 14px; border: 1px solid var(--border); border-radius: 6px; background: var(--card-bg); color: var(--fg); font-family: inherit; }
-  .hidden { display: none !important; }
+  #search-box {
+    width: 100%; padding: 12px 14px; margin-bottom: 16px;
+    border: 1px solid var(--border); background: var(--card-bg); color: var(--ink);
+    font-family: 'Special Elite', monospace; letter-spacing: 0.5px;
+  }
+  mark { background: var(--gold-bright); color: #1a1305; padding: 0 2px; }
+
+  textarea {
+    width: 100%; padding: 14px; font-family: 'Special Elite', monospace;
+    background: var(--card-bg); color: var(--ink); border: 1px solid var(--border);
+    line-height: 1.6;
+  }
+
+  @media (max-width: 560px) {
+    nav button { padding: 12px 14px; font-size: 0.75em; }
+  }
 </style>
 </head>
 <body>
 
+<canvas id="embers"></canvas>
+<div class="vignette"></div>
+<div id="curtain"><span>А Р Х И В   О Т К Р Ы В А Е Т С Я</span></div>
+
 <header>
-  <button class="toggle-theme" id="themeBtn">☀ / 🌙 Theme wechseln</button>
+  <button class="toggle-theme" id="themeBtn">Tag ⇄ Nacht</button>
+  <div class="crest">★</div>
   <h1>Josef Wissarionowitsch Stalin</h1>
-  <p>1878 – 1953 · Diktator der Sowjetunion</p>
+  <p class="subtitle">1878 — 1953 · Ein historisches Dossier</p>
 </header>
 
 <nav id="nav">
@@ -156,7 +371,7 @@
 
   <section id="bio" class="active">
     <h2>Biografie</h2>
-    <input type="text" id="search-box" placeholder="Im Text suchen (z.B. 'Georgien')...">
+    <input type="text" id="search-box" placeholder="Im Dokument suchen (z.B. 'Georgien')...">
     <div class="card" id="bio-text">
       <p>Josef Stalin wurde am 18. Dezember 1878 in <strong>Gori, Georgien</strong>, geboren. Er wurde zum Generalsekretär der Kommunistischen Partei der Sowjetunion und regierte das Land von den späten 1920er Jahren bis zu seinem Tod 1953.</p>
       <p>Seine Herrschaft war geprägt von schneller Industrialisierung, Zwangskollektivierung der Landwirtschaft und politischen Säuberungen, dem sogenannten <strong>Großen Terror</strong>, der Millionen Menschenleben forderte.</p>
@@ -167,24 +382,24 @@
   <section id="timeline">
     <h2>Zeitleiste</h2>
     <div class="timeline">
-      <div class="timeline-item"><h3>1878</h3><p>Geburt in Gori, Georgien (damals Russisches Kaiserreich).</p></div>
-      <div class="timeline-item"><h3>1917</h3><p>Teilnahme an der Oktoberrevolution der Bolschewiki.</p></div>
-      <div class="timeline-item"><h3>1922</h3><p>Wird Generalsekretär der Kommunistischen Partei.</p></div>
-      <div class="timeline-item"><h3>1928</h3><p>Beginn der Zwangskollektivierung und der Fünfjahrespläne.</p></div>
-      <div class="timeline-item"><h3>1936–1938</h3><p>Der "Große Terror" – massive politische Säuberungen.</p></div>
-      <div class="timeline-item"><h3>1941–1945</h3><p>Führung der Sowjetunion im Zweiten Weltkrieg gegen NS-Deutschland.</p></div>
-      <div class="timeline-item"><h3>1953</h3><p>Tod am 5. März in Moskau.</p></div>
+      <div class="timeline-item"><span class="seal"></span><h3>1878</h3><p>Geburt in Gori, Georgien (damals Russisches Kaiserreich).</p></div>
+      <div class="timeline-item"><span class="seal"></span><h3>1917</h3><p>Teilnahme an der Oktoberrevolution der Bolschewiki.</p></div>
+      <div class="timeline-item"><span class="seal"></span><h3>1922</h3><p>Wird Generalsekretär der Kommunistischen Partei.</p></div>
+      <div class="timeline-item"><span class="seal"></span><h3>1928</h3><p>Beginn der Zwangskollektivierung und der Fünfjahrespläne.</p></div>
+      <div class="timeline-item"><span class="seal"></span><h3>1936–1938</h3><p>Der "Große Terror" – massive politische Säuberungen.</p></div>
+      <div class="timeline-item"><span class="seal"></span><h3>1941–1945</h3><p>Führung der Sowjetunion im Zweiten Weltkrieg gegen NS-Deutschland.</p></div>
+      <div class="timeline-item"><span class="seal"></span><h3>1953</h3><p>Tod am 5. März in Moskau.</p></div>
     </div>
   </section>
 
   <section id="stats">
     <h2>Zahlen &amp; Fakten</h2>
     <div class="counter-box">
-      <div class="stat"><div class="num" data-target="29">0</div>Jahre an der Macht</div>
-      <div class="stat"><div class="num" data-target="15">0</div>Sowjetrepubliken</div>
-      <div class="stat"><div class="num" data-target="5">0</div>Fünfjahrespläne (bis 1953)</div>
+      <div class="stat"><div class="num" data-target="29">0</div><div class="label">Jahre an der Macht</div></div>
+      <div class="stat"><div class="num" data-target="15">0</div><div class="label">Sowjetrepubliken</div></div>
+      <div class="stat"><div class="num" data-target="5">0</div><div class="label">Fünfjahrespläne bis 1953</div></div>
     </div>
-    <p style="margin-top:20px;font-size:0.9em;opacity:0.75;">Hinweis: Zahlen zu Opfern politischer Repression sind unter Historikern umstritten und stark quellenabhängig – hier bewusst nicht beziffert.</p>
+    <p style="margin-top:22px;font-size:0.9em;opacity:0.75;font-family:'Special Elite',monospace;">Hinweis: Zahlen zu Opfern politischer Repression sind unter Historikern umstritten und stark quellenabhängig – hier bewusst nicht beziffert.</p>
     <div class="gallery">
       <div onclick="alert('Georgien: Geburtsort Stalins')">📍 Gori</div>
       <div onclick="alert('Moskau: Regierungssitz')">🏛 Moskau</div>
@@ -196,7 +411,7 @@
   <section id="quiz">
     <h2>Kurzes Quiz</h2>
     <div class="card">
-      <p id="quiz-question">In welchem Land wurde Stalin geboren?</p>
+      <p id="quiz-question" style="font-family:'Cinzel',serif;">In welchem Land wurde Stalin geboren?</p>
       <button class="quiz-option" data-correct="false">Russland</button>
       <button class="quiz-option" data-correct="true">Georgien</button>
       <button class="quiz-option" data-correct="false">Ukraine</button>
@@ -207,19 +422,64 @@
 
   <section id="notes">
     <h2>Eigene Notizen</h2>
-    <p style="opacity:0.75;font-size:0.9em;">Wird lokal im Browser gespeichert (localStorage) – nur auf diesem Gerät sichtbar.</p>
-    <textarea id="notesArea" rows="8" style="width:100%;padding:12px;font-family:inherit;background:var(--card-bg);color:var(--fg);border:1px solid var(--border);border-radius:6px;"></textarea>
+    <p style="opacity:0.75;font-size:0.88em;font-family:'Special Elite',monospace;">Wird lokal im Browser gespeichert (localStorage) – nur auf diesem Gerät sichtbar.</p>
+    <textarea id="notesArea" rows="8"></textarea>
     <br><br>
     <button class="quiz-option" id="saveNotes" style="width:auto;display:inline-block;">Speichern</button>
-    <span id="saveStatus" style="margin-left:10px;opacity:0.7;"></span>
+    <span id="saveStatus" style="margin-left:10px;opacity:0.7;font-family:'Special Elite',monospace;"></span>
   </section>
 
 </main>
 
-<footer>Testseite · erstellt zu Demonstrationszwecken · &copy; 2026</footer>
+<footer>TESTDOKUMENT · ZU DEMONSTRATIONSZWECKEN ERSTELLT · © 2026</footer>
 
 <script>
-  // Tab-Navigation
+  // remove curtain from DOM after animation
+  setTimeout(() => document.getElementById('curtain').remove(), 3200);
+
+  // ---------- Ember particle background ----------
+  const canvas = document.getElementById('embers');
+  const ctx = canvas.getContext('2d');
+  let w, h, particles;
+
+  function resize() {
+    w = canvas.width = window.innerWidth;
+    h = canvas.height = window.innerHeight;
+  }
+  function makeParticles() {
+    const count = Math.floor((w * h) / 22000);
+    particles = Array.from({ length: count }, () => ({
+      x: Math.random() * w,
+      y: Math.random() * h,
+      r: Math.random() * 1.8 + 0.4,
+      speedY: Math.random() * 0.4 + 0.1,
+      speedX: (Math.random() - 0.5) * 0.3,
+      alpha: Math.random() * 0.6 + 0.2,
+      flicker: Math.random() * 0.02 + 0.005
+    }));
+  }
+  function draw() {
+    ctx.clearRect(0, 0, w, h);
+    const isNight = document.body.classList.contains('night');
+    particles.forEach(p => {
+      p.y -= p.speedY;
+      p.x += p.speedX;
+      p.alpha += (Math.random() - 0.5) * p.flicker;
+      p.alpha = Math.max(0.1, Math.min(0.9, p.alpha));
+      if (p.y < -5) { p.y = h + 5; p.x = Math.random() * w; }
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+      ctx.fillStyle = isNight
+        ? `rgba(224,189,92,${p.alpha})`
+        : `rgba(107,74,37,${p.alpha * 0.6})`;
+      ctx.fill();
+    });
+    requestAnimationFrame(draw);
+  }
+  window.addEventListener('resize', () => { resize(); makeParticles(); });
+  resize(); makeParticles(); draw();
+
+  // ---------- Tab navigation ----------
   const navButtons = document.querySelectorAll('nav button');
   const sections = document.querySelectorAll('main section');
   navButtons.forEach(btn => {
@@ -227,16 +487,18 @@
       navButtons.forEach(b => b.classList.remove('active'));
       sections.forEach(s => s.classList.remove('active'));
       btn.classList.add('active');
-      document.getElementById(btn.dataset.tab).classList.add('active');
+      const target = document.getElementById(btn.dataset.tab);
+      target.classList.add('active');
+      triggerReveals(target);
     });
   });
 
-  // Theme Toggle
+  // ---------- Theme toggle ----------
   document.getElementById('themeBtn').addEventListener('click', () => {
-    document.body.classList.toggle('light');
+    document.body.classList.toggle('night');
   });
 
-  // Suche im Bio-Text (Highlight)
+  // ---------- Search highlight ----------
   const searchBox = document.getElementById('search-box');
   const bioText = document.getElementById('bio-text');
   const originalHTML = bioText.innerHTML;
@@ -245,29 +507,37 @@
     if (!term) { bioText.innerHTML = originalHTML; return; }
     const escaped = term.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
     const regex = new RegExp(escaped, 'gi');
-    bioText.innerHTML = originalHTML.replace(regex, match => `<mark>${match}</mark>`);
+    bioText.innerHTML = originalHTML.replace(regex, m => `<mark>${m}</mark>`);
   });
 
-  // Zähler-Animation
-  const statNums = document.querySelectorAll('.stat .num');
-  let statsAnimated = false;
-  function animateStats() {
-    if (statsAnimated) return;
-    statsAnimated = true;
-    statNums.forEach(el => {
-      const target = parseInt(el.dataset.target, 10);
-      let current = 0;
-      const step = Math.max(1, Math.ceil(target / 40));
-      const interval = setInterval(() => {
-        current += step;
-        if (current >= target) { current = target; clearInterval(interval); }
-        el.textContent = current;
-      }, 30);
+  // ---------- Scroll / tab reveal (timeline + stats) ----------
+  function triggerReveals(scope) {
+    const items = scope.querySelectorAll('.timeline-item, .stat');
+    items.forEach((el, i) => {
+      setTimeout(() => el.classList.add('show'), i * 130);
     });
+    const stats = scope.querySelectorAll('.stat .num');
+    if (stats.length && !scope.dataset.counted) {
+      scope.dataset.counted = 'true';
+      stats.forEach(el => {
+        const target = parseInt(el.dataset.target, 10);
+        let current = 0;
+        const step = Math.max(1, Math.ceil(target / 45));
+        const iv = setInterval(() => {
+          current += step;
+          if (current >= target) { current = target; clearInterval(iv); }
+          el.textContent = current;
+        }, 28);
+      });
+    }
   }
-  document.querySelector('[data-tab="stats"]').addEventListener('click', animateStats);
 
-  // Quiz
+  const io = new IntersectionObserver(entries => {
+    entries.forEach(e => { if (e.isIntersecting) e.target.classList.add('show'); });
+  }, { threshold: 0.2 });
+  document.querySelectorAll('.reveal').forEach(el => io.observe(el));
+
+  // ---------- Quiz ----------
   const quizOptions = document.querySelectorAll('#quiz .quiz-option');
   const quizResult = document.getElementById('quiz-result');
   quizOptions.forEach(opt => {
@@ -278,24 +548,20 @@
         if (o.dataset.correct === 'true') o.classList.add('correct');
       });
       if (!isCorrect) opt.classList.add('wrong');
-      quizResult.textContent = isCorrect ? '✅ Richtig!' : '❌ Falsch. Die richtige Antwort ist markiert.';
+      quizResult.textContent = isCorrect ? '✅ RICHTIG' : '✕ FALSCH — richtige Antwort markiert';
+      quizResult.style.color = isCorrect ? '#3f7a3f' : '#a05a5a';
     });
   });
 
-  // Notizen mit localStorage
+  // ---------- Notes with localStorage ----------
   const notesArea = document.getElementById('notesArea');
   const saveStatus = document.getElementById('saveStatus');
-  try {
-    notesArea.value = localStorage.getItem('stalin-page-notes') || '';
-  } catch (e) { /* localStorage evtl. nicht verfügbar */ }
-
+  try { notesArea.value = localStorage.getItem('stalin-page-notes') || ''; } catch (e) {}
   document.getElementById('saveNotes').addEventListener('click', () => {
     try {
       localStorage.setItem('stalin-page-notes', notesArea.value);
       saveStatus.textContent = 'Gespeichert ✔';
-    } catch (e) {
-      saveStatus.textContent = 'Speichern nicht möglich';
-    }
+    } catch (e) { saveStatus.textContent = 'Speichern nicht möglich'; }
     setTimeout(() => saveStatus.textContent = '', 2000);
   });
 </script>
