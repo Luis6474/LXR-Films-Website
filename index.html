@@ -2,38 +2,303 @@
 <html lang="de">
 <head>
 <meta charset="UTF-8">
-<title>Einfache Seite</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Josef Stalin – Historische Übersicht</title>
 <style>
+  :root {
+    --bg: #1a1a1a;
+    --fg: #eee;
+    --accent: #b22222;
+    --card-bg: #2a2a2a;
+    --border: #444;
+  }
+  body.light {
+    --bg: #f4f0e8;
+    --fg: #1a1a1a;
+    --accent: #8b0000;
+    --card-bg: #ffffff;
+    --border: #ccc;
+  }
+  * { box-sizing: border-box; }
   body {
-    font-family: "Comic Sans MS", "Comic Sans", cursive;
-    letter-spacing: 0.8em;
-    color: #00AA00;
-    writing-mode: vertical-lr;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    height: 100vh;
     margin: 0;
-    background: #f0f0f0;
+    font-family: Georgia, 'Times New Roman', serif;
+    background: var(--bg);
+    color: var(--fg);
+    transition: background 0.4s, color 0.4s;
   }
-  button {
-    padding: 10px 20px;
-    font-size: 16px;
-    cursor: pointer;
+  header {
+    position: relative;
+    padding: 60px 20px;
+    text-align: center;
+    background: linear-gradient(135deg, var(--accent), #4b0000);
+    color: #fff;
+    overflow: hidden;
   }
+  header::before {
+    content: "";
+    position: absolute;
+    top: -50%; left: -50%;
+    width: 200%; height: 200%;
+    background: repeating-linear-gradient(45deg, rgba(255,255,255,0.03) 0 10px, transparent 10px 20px);
+    animation: slide 20s linear infinite;
+  }
+  @keyframes slide {
+    from { transform: translate(0,0); }
+    to { transform: translate(50px, 50px); }
+  }
+  header h1 { position: relative; font-size: 2.8em; margin: 0; letter-spacing: 2px; }
+  header p { position: relative; font-size: 1.1em; opacity: 0.9; }
+
+  nav {
+    position: sticky; top: 0; z-index: 10;
+    display: flex; flex-wrap: wrap; justify-content: center;
+    background: var(--card-bg);
+    border-bottom: 2px solid var(--accent);
+  }
+  nav button {
+    background: none; border: none; color: var(--fg);
+    padding: 14px 20px; cursor: pointer; font-size: 1em;
+    font-family: inherit; border-bottom: 3px solid transparent;
+    transition: 0.25s;
+  }
+  nav button:hover, nav button.active {
+    border-bottom-color: var(--accent);
+    color: var(--accent);
+  }
+
+  .toggle-theme {
+    position: absolute; top: 15px; right: 20px;
+    background: rgba(255,255,255,0.15); color: #fff; border: 1px solid #fff;
+    padding: 6px 14px; border-radius: 20px; cursor: pointer; font-size: 0.85em;
+  }
+
+  main { max-width: 900px; margin: 0 auto; padding: 30px 20px 80px; }
+  section { display: none; animation: fadeIn 0.5s ease; }
+  section.active { display: block; }
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(15px); } to { opacity: 1; transform: translateY(0); } }
+
+  h2 { border-left: 5px solid var(--accent); padding-left: 12px; }
+
+  .card {
+    background: var(--card-bg);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 20px;
+    margin: 16px 0;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.15);
+  }
+
+  .timeline { position: relative; margin: 30px 0; padding-left: 30px; border-left: 3px solid var(--accent); }
+  .timeline-item { position: relative; margin-bottom: 28px; }
+  .timeline-item::before {
+    content: "";
+    position: absolute; left: -38px; top: 4px;
+    width: 14px; height: 14px; border-radius: 50%;
+    background: var(--accent); border: 2px solid var(--bg);
+  }
+  .timeline-item h3 { margin: 0 0 4px; color: var(--accent); }
+
+  .quiz-option {
+    display: block; width: 100%; text-align: left;
+    background: var(--card-bg); border: 1px solid var(--border);
+    color: var(--fg); padding: 10px 14px; margin: 6px 0;
+    border-radius: 6px; cursor: pointer; font-family: inherit;
+    transition: 0.2s;
+  }
+  .quiz-option:hover { border-color: var(--accent); }
+  .quiz-option.correct { background: #2e7d32; color: #fff; border-color: #2e7d32; }
+  .quiz-option.wrong { background: #c62828; color: #fff; border-color: #c62828; }
+  #quiz-result { margin-top: 12px; font-weight: bold; }
+
+  .gallery { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 12px; }
+  .gallery div {
+    background: var(--card-bg); border: 1px solid var(--border);
+    border-radius: 6px; padding: 16px; text-align: center;
+    cursor: pointer; transition: transform 0.2s;
+  }
+  .gallery div:hover { transform: scale(1.05); border-color: var(--accent); }
+
+  .counter-box { display: flex; gap: 16px; flex-wrap: wrap; }
+  .stat {
+    flex: 1; min-width: 140px; background: var(--card-bg);
+    border: 1px solid var(--border); border-radius: 8px;
+    padding: 20px; text-align: center;
+  }
+  .stat .num { font-size: 2em; color: var(--accent); font-weight: bold; }
+
+  footer {
+    text-align: center; padding: 20px; font-size: 0.85em;
+    border-top: 1px solid var(--border); opacity: 0.7;
+  }
+
+  #search-box { width: 100%; padding: 10px; margin-bottom: 14px; border: 1px solid var(--border); border-radius: 6px; background: var(--card-bg); color: var(--fg); font-family: inherit; }
+  .hidden { display: none !important; }
 </style>
 </head>
 <body>
-  <h1 id="title">Hallo!</h1>
-  <button onclick="changeText()">Klick mich</button>
 
-  <script>
-    let count = 0;
-    function changeText() {
-      count++;
-      document.getElementById("title").textContent = "Du hast " + count + " Mal geklickt";
+<header>
+  <button class="toggle-theme" id="themeBtn">☀ / 🌙 Theme wechseln</button>
+  <h1>Josef Wissarionowitsch Stalin</h1>
+  <p>1878 – 1953 · Diktator der Sowjetunion</p>
+</header>
+
+<nav id="nav">
+  <button data-tab="bio" class="active">Biografie</button>
+  <button data-tab="timeline">Zeitleiste</button>
+  <button data-tab="stats">Zahlen &amp; Fakten</button>
+  <button data-tab="quiz">Quiz</button>
+  <button data-tab="notes">Notizen</button>
+</nav>
+
+<main>
+
+  <section id="bio" class="active">
+    <h2>Biografie</h2>
+    <input type="text" id="search-box" placeholder="Im Text suchen (z.B. 'Georgien')...">
+    <div class="card" id="bio-text">
+      <p>Josef Stalin wurde am 18. Dezember 1878 in <strong>Gori, Georgien</strong>, geboren. Er wurde zum Generalsekretär der Kommunistischen Partei der Sowjetunion und regierte das Land von den späten 1920er Jahren bis zu seinem Tod 1953.</p>
+      <p>Seine Herrschaft war geprägt von schneller Industrialisierung, Zwangskollektivierung der Landwirtschaft und politischen Säuberungen, dem sogenannten <strong>Großen Terror</strong>, der Millionen Menschenleben forderte.</p>
+      <p>Unter seiner Führung wurde die Sowjetunion zu einer der beiden Supermächte des 20. Jahrhunderts, insbesondere nach dem Sieg im Zweiten Weltkrieg. Gleichzeitig gilt seine Herrschaft als eine der repressivsten der modernen Geschichte.</p>
+    </div>
+  </section>
+
+  <section id="timeline">
+    <h2>Zeitleiste</h2>
+    <div class="timeline">
+      <div class="timeline-item"><h3>1878</h3><p>Geburt in Gori, Georgien (damals Russisches Kaiserreich).</p></div>
+      <div class="timeline-item"><h3>1917</h3><p>Teilnahme an der Oktoberrevolution der Bolschewiki.</p></div>
+      <div class="timeline-item"><h3>1922</h3><p>Wird Generalsekretär der Kommunistischen Partei.</p></div>
+      <div class="timeline-item"><h3>1928</h3><p>Beginn der Zwangskollektivierung und der Fünfjahrespläne.</p></div>
+      <div class="timeline-item"><h3>1936–1938</h3><p>Der "Große Terror" – massive politische Säuberungen.</p></div>
+      <div class="timeline-item"><h3>1941–1945</h3><p>Führung der Sowjetunion im Zweiten Weltkrieg gegen NS-Deutschland.</p></div>
+      <div class="timeline-item"><h3>1953</h3><p>Tod am 5. März in Moskau.</p></div>
+    </div>
+  </section>
+
+  <section id="stats">
+    <h2>Zahlen &amp; Fakten</h2>
+    <div class="counter-box">
+      <div class="stat"><div class="num" data-target="29">0</div>Jahre an der Macht</div>
+      <div class="stat"><div class="num" data-target="15">0</div>Sowjetrepubliken</div>
+      <div class="stat"><div class="num" data-target="5">0</div>Fünfjahrespläne (bis 1953)</div>
+    </div>
+    <p style="margin-top:20px;font-size:0.9em;opacity:0.75;">Hinweis: Zahlen zu Opfern politischer Repression sind unter Historikern umstritten und stark quellenabhängig – hier bewusst nicht beziffert.</p>
+    <div class="gallery">
+      <div onclick="alert('Georgien: Geburtsort Stalins')">📍 Gori</div>
+      <div onclick="alert('Moskau: Regierungssitz')">🏛 Moskau</div>
+      <div onclick="alert('Sibirien: Ort zahlreicher Gulags')">❄ Sibirien</div>
+      <div onclick="alert('Jalta-Konferenz 1945')">🤝 Jalta</div>
+    </div>
+  </section>
+
+  <section id="quiz">
+    <h2>Kurzes Quiz</h2>
+    <div class="card">
+      <p id="quiz-question">In welchem Land wurde Stalin geboren?</p>
+      <button class="quiz-option" data-correct="false">Russland</button>
+      <button class="quiz-option" data-correct="true">Georgien</button>
+      <button class="quiz-option" data-correct="false">Ukraine</button>
+      <button class="quiz-option" data-correct="false">Armenien</button>
+      <div id="quiz-result"></div>
+    </div>
+  </section>
+
+  <section id="notes">
+    <h2>Eigene Notizen</h2>
+    <p style="opacity:0.75;font-size:0.9em;">Wird lokal im Browser gespeichert (localStorage) – nur auf diesem Gerät sichtbar.</p>
+    <textarea id="notesArea" rows="8" style="width:100%;padding:12px;font-family:inherit;background:var(--card-bg);color:var(--fg);border:1px solid var(--border);border-radius:6px;"></textarea>
+    <br><br>
+    <button class="quiz-option" id="saveNotes" style="width:auto;display:inline-block;">Speichern</button>
+    <span id="saveStatus" style="margin-left:10px;opacity:0.7;"></span>
+  </section>
+
+</main>
+
+<footer>Testseite · erstellt zu Demonstrationszwecken · &copy; 2026</footer>
+
+<script>
+  // Tab-Navigation
+  const navButtons = document.querySelectorAll('nav button');
+  const sections = document.querySelectorAll('main section');
+  navButtons.forEach(btn => {
+    btn.addEventListener('click', () => {
+      navButtons.forEach(b => b.classList.remove('active'));
+      sections.forEach(s => s.classList.remove('active'));
+      btn.classList.add('active');
+      document.getElementById(btn.dataset.tab).classList.add('active');
+    });
+  });
+
+  // Theme Toggle
+  document.getElementById('themeBtn').addEventListener('click', () => {
+    document.body.classList.toggle('light');
+  });
+
+  // Suche im Bio-Text (Highlight)
+  const searchBox = document.getElementById('search-box');
+  const bioText = document.getElementById('bio-text');
+  const originalHTML = bioText.innerHTML;
+  searchBox.addEventListener('input', () => {
+    const term = searchBox.value.trim();
+    if (!term) { bioText.innerHTML = originalHTML; return; }
+    const escaped = term.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    const regex = new RegExp(escaped, 'gi');
+    bioText.innerHTML = originalHTML.replace(regex, match => `<mark>${match}</mark>`);
+  });
+
+  // Zähler-Animation
+  const statNums = document.querySelectorAll('.stat .num');
+  let statsAnimated = false;
+  function animateStats() {
+    if (statsAnimated) return;
+    statsAnimated = true;
+    statNums.forEach(el => {
+      const target = parseInt(el.dataset.target, 10);
+      let current = 0;
+      const step = Math.max(1, Math.ceil(target / 40));
+      const interval = setInterval(() => {
+        current += step;
+        if (current >= target) { current = target; clearInterval(interval); }
+        el.textContent = current;
+      }, 30);
+    });
+  }
+  document.querySelector('[data-tab="stats"]').addEventListener('click', animateStats);
+
+  // Quiz
+  const quizOptions = document.querySelectorAll('#quiz .quiz-option');
+  const quizResult = document.getElementById('quiz-result');
+  quizOptions.forEach(opt => {
+    opt.addEventListener('click', () => {
+      const isCorrect = opt.dataset.correct === 'true';
+      quizOptions.forEach(o => {
+        o.disabled = true;
+        if (o.dataset.correct === 'true') o.classList.add('correct');
+      });
+      if (!isCorrect) opt.classList.add('wrong');
+      quizResult.textContent = isCorrect ? '✅ Richtig!' : '❌ Falsch. Die richtige Antwort ist markiert.';
+    });
+  });
+
+  // Notizen mit localStorage
+  const notesArea = document.getElementById('notesArea');
+  const saveStatus = document.getElementById('saveStatus');
+  try {
+    notesArea.value = localStorage.getItem('stalin-page-notes') || '';
+  } catch (e) { /* localStorage evtl. nicht verfügbar */ }
+
+  document.getElementById('saveNotes').addEventListener('click', () => {
+    try {
+      localStorage.setItem('stalin-page-notes', notesArea.value);
+      saveStatus.textContent = 'Gespeichert ✔';
+    } catch (e) {
+      saveStatus.textContent = 'Speichern nicht möglich';
     }
-  </script>
+    setTimeout(() => saveStatus.textContent = '', 2000);
+  });
+</script>
+
 </body>
 </html>
