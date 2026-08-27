@@ -3,33 +3,24 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Josef Stalin – Historisches Archiv</title>
+<title>LXR Films — Luis Räder</title>
+<meta name="description" content="LXR Films — Videoproduktion aus Hamburg. Werbe- und Imagefilme, Konzept bis Schnitt von einer Person.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=Inter:wght@400;500&display=swap" rel="stylesheet">
 <style>
-  @import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@500;700;900&family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400&family=Special+Elite&display=swap');
-
   :root {
-    --paper: #e9dcc0;
-    --paper-dark: #d8c69f;
-    --ink: #2b1e12;
-    --sepia: #6b4a25;
-    --accent: #8a1f11;
-    --gold: #b8912f;
-    --gold-bright: #e0bd5c;
-    --card-bg: #f2e8d0;
-    --border: #a98c56;
-    --vignette: rgba(20,12,4,0.55);
-  }
-  body.night {
-    --paper: #14100a;
-    --paper-dark: #0b0805;
-    --ink: #e7d9b8;
-    --sepia: #cbb27f;
-    --accent: #c9432b;
-    --gold: #d9b45a;
-    --gold-bright: #f0d488;
-    --card-bg: #1d160e;
-    --border: #4a3a22;
-    --vignette: rgba(0,0,0,0.7);
+    --bg: #0d1216;
+    --bg-deep: #090d10;
+    --text: #e6e9ea;
+    --text-dim: #8b959c;
+    --line: #232b32;
+    --accent: #7d8b93;
+    --col: 720px;
+    --wide: 1120px;
+    --bar-h: 30px;                                  /* bleibender Kinorahmen */
+    --ease: cubic-bezier(0.65, 0, 0.35, 1);         /* langsame Kamerafahrt */
+    --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
   }
 
   * { box-sizing: border-box; }
@@ -37,533 +28,837 @@
 
   body {
     margin: 0;
-    min-height: 100vh;
-    font-family: 'Playfair Display', Georgia, serif;
-    color: var(--ink);
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    font-size: 17px;
+    line-height: 1.65;
+    -webkit-font-smoothing: antialiased;
+  }
+  /* Tiefe statt flacher Fläche */
+  body::before {
+    content: ""; position: fixed; inset: 0; z-index: -1;
     background:
-      radial-gradient(ellipse at top left, rgba(255,240,200,0.08), transparent 60%),
-      radial-gradient(ellipse at bottom right, rgba(0,0,0,0.15), transparent 60%),
-      var(--paper);
-    transition: background 0.6s ease, color 0.6s ease;
-    position: relative;
-    overflow-x: hidden;
+      radial-gradient(140% 90% at 50% 0%, #16202a 0%, var(--bg) 45%, var(--bg-deep) 100%);
   }
 
-  /* film-grain / paper noise overlay */
-  body::after {
-    content: "";
-    position: fixed; inset: 0;
-    pointer-events: none;
-    z-index: 500;
-    opacity: 0.05;
-    mix-blend-mode: multiply;
-    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  h1, h2, h3 { font-family: 'Fraunces', Georgia, serif; font-weight: 500; line-height: 1.18; margin: 0; }
+  p { margin: 0; }
+  img { display: block; width: 100%; height: 100%; object-fit: cover; }
+
+  .wrap { max-width: var(--col); margin: 0 auto; padding: 0 22px; }
+
+  .eyebrow {
+    font-family: 'Inter', sans-serif; font-size: 0.72em; font-weight: 500;
+    letter-spacing: 0.2em; text-transform: uppercase; color: var(--text-dim);
   }
 
-  /* vignette */
+  .reveal { opacity: 0; transform: translateY(18px); transition: opacity 0.9s var(--ease), transform 0.9s var(--ease); }
+  .reveal.show { opacity: 1; transform: none; }
+
+  /* ---------- Filmkorn ----------
+     Eine einzige feine, monochrome Kachel. Bewegt wird ausschließlich per
+     transform in diskreten Schritten -> läuft auf dem Compositor, kein
+     Repaint pro Frame, daher ruckelfrei. */
+  .grain {
+    position: fixed; top: -50%; left: -50%;
+    width: 200%; height: 200%;
+    z-index: 1000; pointer-events: none;
+    background-image: url("data:image/webp;base64,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");
+    background-repeat: repeat;
+    background-size: 160px 160px;
+    mix-blend-mode: overlay;
+    opacity: 0.055;
+    will-change: transform;
+    backface-visibility: hidden;
+    animation: grainShift 0.7s steps(1) infinite;
+  }
+  @keyframes grainShift {
+    0%   { transform: translate3d(0, 0, 0); }
+    12%  { transform: translate3d(-6%, 3%, 0); }
+    25%  { transform: translate3d(4%, -5%, 0); }
+    37%  { transform: translate3d(-3%, -2%, 0); }
+    50%  { transform: translate3d(5%, 4%, 0); }
+    62%  { transform: translate3d(-5%, -4%, 0); }
+    75%  { transform: translate3d(2%, 5%, 0); }
+    87%  { transform: translate3d(-4%, 1%, 0); }
+    100% { transform: translate3d(0, 0, 0); }
+  }
+
+  /* ---------- Vignette ---------- */
   .vignette {
-    position: fixed; inset: 0; z-index: 490; pointer-events: none;
-    box-shadow: inset 0 0 18vw var(--vignette);
+    position: fixed; inset: 0; z-index: 999; pointer-events: none;
+    background: radial-gradient(120% 85% at 50% 45%, transparent 42%, rgba(4,7,10,0.55) 100%);
   }
 
-  canvas#embers {
-    position: fixed; inset: 0; width: 100%; height: 100%;
-    z-index: 1; pointer-events: none; opacity: 0.55;
+  /* ---------- Letterbox ---------- */
+  .lb-bar {
+    position: fixed; left: 0; right: 0; height: 0;
+    background: var(--lb-color, #07090b);
+    z-index: 950; pointer-events: none;
+    transition: height 0.9s var(--ease);
   }
+  .lb-top { top: 0; }
+  .lb-bottom { bottom: 0; }
+  body.lb-shut .lb-bar { height: 52vh; }
+  body.lb-framed .lb-bar { height: var(--bar-h); transition-duration: 0.8s; }
 
-  /* ---------- Curtain intro ---------- */
-  #curtain {
-    position: fixed; inset: 0; z-index: 1000;
-    background: var(--paper-dark);
-    display: flex; align-items: center; justify-content: center;
-    animation: curtainOut 1.8s 1.2s ease forwards;
-  }
-  #curtain span {
-    font-family: 'Cinzel', serif; font-size: 1.4em; letter-spacing: 6px;
-    color: var(--gold); opacity: 0;
-    animation: curtainText 1.1s 0.2s ease forwards;
-  }
-  @keyframes curtainText { to { opacity: 1; letter-spacing: 10px; } }
-  @keyframes curtainOut {
-    0% { clip-path: inset(0 0 0 0); }
-    100% { clip-path: inset(0 0 100% 0); visibility: hidden; }
-  }
+  /* ---------- Seite ---------- */
+  .page { transition: opacity 0.6s var(--ease); }
+  .page.is-hidden { opacity: 0; pointer-events: none; }
+  body.is-viewing { overflow: hidden; }
 
-  /* ---------- Header ---------- */
-  header {
+  /* ---------- Hero ---------- */
+  .hero {
     position: relative;
-    padding: 90px 20px 70px;
-    text-align: center;
+    height: 100vh; min-height: 480px;
+    display: flex; align-items: flex-end;
     overflow: hidden;
-    background:
-      linear-gradient(180deg, rgba(0,0,0,0.35), rgba(0,0,0,0.55)),
-      radial-gradient(circle at 50% 20%, #3c1c12, #170a05 75%);
-    border-bottom: 6px double var(--gold);
-    z-index: 2;
   }
-  header::before {
-    content: "";
-    position: absolute; inset: -20%;
-    background: repeating-conic-gradient(from 0deg, rgba(184,145,47,0.05) 0deg 8deg, transparent 8deg 16deg);
-    animation: rotateSlow 90s linear infinite;
-  }
-  @keyframes rotateSlow { to { transform: rotate(360deg); } }
+  .hero-media { position: absolute; inset: 0; overflow: hidden; }
+  .hero-media > img { position: absolute; inset: 0; z-index: 0; transform-origin: center; }
 
-  .crest {
-    width: 74px; height: 74px; margin: 0 auto 18px;
-    border: 2px solid var(--gold);
-    border-radius: 50%;
-    display: flex; align-items: center; justify-content: center;
-    color: var(--gold-bright); font-size: 1.8em;
-    position: relative; z-index: 2;
-    box-shadow: 0 0 25px rgba(224,189,92,0.35), inset 0 0 12px rgba(224,189,92,0.25);
-    animation: crestPulse 4s ease-in-out infinite;
+  /* Hintergrundfilm: 16:9-Video formatfüllend über den ganzen Hero gezogen,
+     blendet erst auf, wenn es wirklich läuft -- bis dahin steht das Standbild. */
+  .hero-video {
+    position: absolute; inset: 0; z-index: 1;
+    overflow: hidden; pointer-events: none;
+    opacity: 0; transition: opacity 1.8s var(--ease);
   }
-  @keyframes crestPulse {
-    0%,100% { box-shadow: 0 0 18px rgba(224,189,92,0.25), inset 0 0 10px rgba(224,189,92,0.2); }
-    50% { box-shadow: 0 0 34px rgba(224,189,92,0.55), inset 0 0 16px rgba(224,189,92,0.4); }
+  .hero-video.is-ready { opacity: 1; }
+  .hero-video iframe {
+    position: absolute; top: 50%; left: 50%;
+    width: 100vw; height: 56.25vw;
+    min-height: 100vh; min-width: 177.78vh;
+    transform: translate(-50%, -50%) scale(1.02);
+    border: 0; pointer-events: none;
   }
 
-  header h1 {
-    position: relative; z-index: 2;
-    font-family: 'Cinzel', serif;
-    font-weight: 900;
-    font-size: clamp(2em, 5vw, 3.4em);
-    margin: 0;
-    color: transparent;
-    background: linear-gradient(100deg, #7a5b26, var(--gold-bright) 40%, #7a5b26 60%, var(--gold-bright) 100%);
-    background-size: 250% auto;
-    -webkit-background-clip: text; background-clip: text;
-    animation: shimmer 6s linear infinite, revealTitle 1.4s ease both;
-    animation-delay: 2.6s, 2.6s;
-    letter-spacing: 3px;
+  .hero-media::after {
+    content: ""; position: absolute; inset: 0; z-index: 2;
+    background: linear-gradient(to top, rgba(9,13,16,0.94) 0%, rgba(9,13,16,0.45) 40%, rgba(9,13,16,0.12) 72%);
   }
-  @keyframes shimmer { to { background-position: -250% center; } }
-  @keyframes revealTitle {
-    from { opacity: 0; transform: translateY(25px) scale(0.96); filter: blur(6px); }
-    to { opacity: 1; transform: translateY(0) scale(1); filter: blur(0); }
+  .hero-content {
+    position: relative; z-index: 2;
+    width: 100%; max-width: var(--col); margin: 0 auto; padding: 0 22px 64px;
+    animation: heroIn 1.8s 0.3s var(--ease) both;
+  }
+  @keyframes heroIn { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: none; } }
+  .hero-content .eyebrow { display: block; margin-bottom: 18px; }
+  .hero-content h1 {
+    font-size: clamp(1.75em, 6vw, 2.7em);
+    letter-spacing: 0.07em;
+  }
+  .hero-content .line { margin-top: 20px; color: var(--text-dim); max-width: 54ch; }
+
+  /* ---------- Textsektionen ---------- */
+  .band { padding: 104px 0; border-bottom: 1px solid var(--line); }
+  .band h2 { font-size: 1.4em; letter-spacing: 0.06em; margin-bottom: 30px; }
+  .band .lead { font-size: 1.12em; max-width: 60ch; color: var(--text-dim); }
+  .band .body { max-width: 62ch; font-size: 1.02em; line-height: 1.8; color: var(--text-dim); }
+  .band .body + .body { margin-top: 22px; }
+
+  /* ---------- Projektliste ---------- */
+  .projects { padding: 104px 0; border-bottom: 1px solid var(--line); }
+  .projects h2 { font-size: 1.4em; letter-spacing: 0.06em; margin-bottom: 38px; }
+
+  .card + .card { border-top: 1px solid var(--line); }
+  .card:first-of-type { border-top: 1px solid var(--line); }
+  .card:last-of-type { border-bottom: 1px solid var(--line); }
+
+  .card-trigger {
+    display: block; width: 100%; background: none; border: none;
+    color: inherit; text-align: left; padding: 0; font: inherit; cursor: pointer;
+  }
+  .card-trigger:focus-visible { outline: 1px solid var(--card-accent, var(--accent)); outline-offset: 3px; }
+
+  .card-head { display: flex; align-items: center; gap: 20px; padding: 20px 0; }
+  .card-preview { width: 112px; flex-shrink: 0; aspect-ratio: 16 / 10; overflow: hidden; background: var(--bg-deep); }
+  .card-preview img {
+    transition: transform 0.9s var(--ease), filter 0.9s var(--ease);
+    filter: saturate(0.8) brightness(0.88);
+  }
+  .card-trigger:hover .card-preview img { transform: scale(1.05); filter: saturate(1) brightness(1); }
+
+  .card-info { flex: 1; min-width: 0; }
+  .card-titleline { display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap; }
+  .card-titleline .name { font-family: 'Fraunces', serif; font-size: 1.08em; letter-spacing: 0.03em; }
+  .card-titleline .type { font-size: 0.78em; color: var(--text-dim); }
+  .card-teaser { margin-top: 4px; font-size: 0.87em; color: var(--text-dim); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .card-open {
+    flex-shrink: 0; font-size: 0.72em; letter-spacing: 0.16em; text-transform: uppercase;
+    color: var(--card-accent, var(--accent));
+    transition: opacity 0.6s var(--ease);
   }
 
-  header p.subtitle {
-    position: relative; z-index: 2;
-    font-family: 'Special Elite', monospace;
-    color: var(--sepia);
-    letter-spacing: 3px;
-    margin-top: 14px;
+  /* ---------- Kontakt ---------- */
+  .contact { padding: 104px 0 96px; }
+  .contact h2 { font-size: 1.3em; letter-spacing: 0.06em; margin-bottom: 32px; }
+  .contact .who { margin-bottom: 34px; }
+  .contact .who .n { font-family: 'Fraunces', serif; font-size: 1.3em; letter-spacing: 0.03em; }
+  .contact .who .s { color: var(--text-dim); font-size: 0.9em; margin-top: 2px; }
+  .contact .row { display: flex; gap: 14px; padding: 12px 0; border-top: 1px solid var(--line); font-size: 0.97em; }
+  .contact .row:last-of-type { border-bottom: 1px solid var(--line); }
+  .contact .row .k { color: var(--text-dim); min-width: 104px; flex-shrink: 0; }
+  .contact a { color: var(--text); text-decoration: none; border-bottom: 1px solid var(--accent); }
+  .contact a:hover { color: var(--accent); }
+
+  footer { padding: 36px 0; text-align: center; font-size: 0.76em; letter-spacing: 0.14em; text-transform: uppercase; color: var(--text-dim); }
+
+  /* ---------- Projektansicht (Eintauchen) ---------- */
+  .viewer {
+    position: fixed; inset: 0; z-index: 900;
+    background: var(--p-bg);
     opacity: 0;
-    animation: revealTitle 1.2s 3.2s ease forwards;
+    transition: opacity 0.7s var(--ease);
+  }
+  .viewer[hidden] { display: none; }
+  .viewer.is-active { opacity: 1; }
+  .viewer::before {
+    content: ""; position: absolute; inset: 0; pointer-events: none;
+    background: radial-gradient(120% 75% at 50% 0%, var(--p-glow), transparent 68%);
   }
 
-  .toggle-theme {
-    position: absolute; top: 18px; right: 22px; z-index: 5;
-    background: transparent; color: var(--gold-bright);
-    border: 1px solid var(--gold); border-radius: 30px;
-    padding: 7px 16px; cursor: pointer; font-family: 'Special Elite', monospace;
-    font-size: 0.75em; letter-spacing: 1px;
-    transition: all 0.35s;
+  .viewer-scroll {
+    position: absolute; inset: 0;
+    overflow-y: auto; -webkit-overflow-scrolling: touch;
+    padding: calc(var(--bar-h) + 46px) 22px calc(var(--bar-h) + 72px);
   }
-  .toggle-theme:hover { background: rgba(224,189,92,0.15); box-shadow: 0 0 14px rgba(224,189,92,0.4); }
+  .viewer-inner {
+    max-width: var(--wide); margin: 0 auto;
+    opacity: 0; transform: translateY(16px);
+    transition: opacity 0.9s var(--ease) 0.2s, transform 0.9s var(--ease) 0.2s;
+  }
+  .viewer.is-active .viewer-inner { opacity: 1; transform: none; }
 
-  /* ---------- Nav ---------- */
-  nav {
-    position: sticky; top: 0; z-index: 20;
-    display: flex; flex-wrap: wrap; justify-content: center;
-    background: linear-gradient(180deg, var(--card-bg), var(--paper));
-    border-bottom: 3px solid var(--border);
-    box-shadow: 0 6px 14px rgba(0,0,0,0.25);
-  }
-  nav button {
-    position: relative;
-    background: none; border: none; color: var(--sepia);
-    padding: 16px 22px; cursor: pointer;
-    font-family: 'Cinzel', serif; font-size: 0.85em; letter-spacing: 1px;
-    transition: color 0.3s;
-  }
-  nav button::after {
-    content: "";
-    position: absolute; left: 50%; bottom: 6px;
-    width: 0; height: 2px; background: var(--accent);
-    transform: translateX(-50%);
-    transition: width 0.35s ease;
-  }
-  nav button:hover { color: var(--accent); }
-  nav button.active { color: var(--accent); }
-  nav button.active::after { width: 60%; }
+  .viewer-stage { position: relative; aspect-ratio: 21 / 9; overflow: hidden; background: #000; }
+  .viewer-stage img { transform-origin: center; }
 
-  /* ---------- Main ---------- */
-  main { position: relative; z-index: 2; max-width: 920px; margin: 0 auto; padding: 40px 20px 100px; }
-
-  section { display: none; }
-  section.active {
-    display: block;
-    animation: pageIn 0.75s cubic-bezier(.2,.8,.2,1) both;
-  }
-  @keyframes pageIn {
-    from { opacity: 0; transform: translateY(24px) scale(0.985); filter: blur(4px); }
-    to { opacity: 1; transform: translateY(0) scale(1); filter: blur(0); }
+  /* Film läuft: volles 16:9, damit nichts vom Bild beschnitten wird --
+     den Kinoeindruck macht ohnehin der Letterbox-Rahmen. */
+  .viewer-stage.has-video { aspect-ratio: 16 / 9; }
+  .viewer-stage.has-video img { opacity: 0; transition: opacity 0.8s var(--ease); }
+  .viewer-stage iframe {
+    position: absolute; inset: 0; width: 100%; height: 100%;
+    border: 0;
+    pointer-events: none;      /* keine Klicks ins Video -> kein Absprung zu YouTube */
+    transform: scale(1.015);   /* schluckt mögliche 1px-Kanten des Players */
   }
 
-  h2 {
-    font-family: 'Cinzel', serif; font-size: 1.6em;
-    color: var(--accent); letter-spacing: 1px;
-    display: flex; align-items: center; gap: 14px;
-    margin-bottom: 26px;
+  .stage-ui {
+    position: absolute; left: 0; right: 0; bottom: 0;
+    display: flex; align-items: center; gap: 10px;
+    padding: 14px 16px;
+    background: linear-gradient(to top, rgba(0,0,0,0.55), transparent);
+    opacity: 0; transition: opacity 0.5s var(--ease);
   }
-  h2::before, h2::after { content: ""; flex: 1; height: 1px; background: linear-gradient(90deg, transparent, var(--gold), transparent); }
+  .viewer-stage:hover .stage-ui,
+  .stage-ui:focus-within { opacity: 1; }
+  .stage-btn {
+    background: rgba(0,0,0,0.35); border: 1px solid rgba(255,255,255,0.28);
+    color: #fff; font: inherit; font-size: 0.72em;
+    letter-spacing: 0.14em; text-transform: uppercase;
+    padding: 8px 16px; cursor: pointer;
+    transition: border-color 0.4s var(--ease), background 0.4s var(--ease);
+  }
+  .stage-btn:hover { border-color: var(--p-accent); background: rgba(0,0,0,0.55); }
 
-  .reveal { opacity: 0; transform: translateY(30px); transition: opacity 0.8s ease, transform 0.8s ease; }
-  .reveal.show { opacity: 1; transform: translateY(0); }
+  .viewer-head { max-width: 64ch; margin: 44px auto 0; }
+  .viewer-head .eyebrow { display: block; color: var(--p-accent); margin-bottom: 12px; }
+  .viewer-head h2 { font-size: clamp(1.5em, 4vw, 2.1em); letter-spacing: 0.06em; }
 
-  .card {
-    background: var(--card-bg);
-    border: 1px solid var(--border);
-    border-image: linear-gradient(135deg, var(--gold), var(--border), var(--gold)) 1;
-    border-radius: 2px;
-    padding: 26px 28px;
-    margin: 18px 0;
-    box-shadow: 0 8px 20px rgba(0,0,0,0.25), inset 0 0 40px rgba(184,145,47,0.05);
-    position: relative;
-  }
-  .card::before {
-    content: "";
-    position: absolute; inset: 6px;
-    border: 1px solid rgba(184,145,47,0.35);
-    pointer-events: none;
-  }
-  .card p { line-height: 1.75; }
-  .card p::first-letter {
-    font-family: 'Cinzel', serif;
-    font-size: 2.6em; float: left; line-height: 0.8;
-    padding: 6px 8px 0 0; color: var(--accent);
-  }
+  .viewer-text { max-width: 64ch; margin: 26px auto 0; }
+  .viewer-text p { font-size: 1.02em; line-height: 1.8; color: var(--text-dim); }
+  .viewer-text p + p { margin-top: 20px; }
+  .viewer-text .lead { color: var(--text); }
 
-  /* timeline */
-  .timeline { position: relative; margin: 40px 0 10px; padding-left: 36px; }
-  .timeline::before {
-    content: ""; position: absolute; left: 8px; top: 0; bottom: 0; width: 2px;
-    background: linear-gradient(var(--gold), transparent 95%);
-  }
-  .timeline-item {
-    position: relative; margin-bottom: 34px;
-    opacity: 0; transform: translateX(-24px);
-    transition: opacity 0.7s ease, transform 0.7s ease;
-  }
-  .timeline-item.show { opacity: 1; transform: translateX(0); }
-  .timeline-item .seal {
-    position: absolute; left: -36px; top: 2px;
-    width: 20px; height: 20px; border-radius: 50%;
-    background: radial-gradient(circle at 35% 30%, var(--gold-bright), var(--accent) 70%);
-    box-shadow: 0 0 0 3px var(--paper), 0 0 10px rgba(138,31,17,0.6);
-    transform: scale(0);
-    transition: transform 0.5s cubic-bezier(.34,1.56,.64,1) 0.15s;
-  }
-  .timeline-item.show .seal { transform: scale(1); }
-  .timeline-item h3 {
-    font-family: 'Cinzel', serif; color: var(--accent); margin: 0 0 6px; letter-spacing: 1px;
-  }
-  .timeline-item p { margin: 0; line-height: 1.6; }
+  .viewer-grid { display: grid; grid-template-columns: 1fr; gap: 12px; margin: 52px 0; }
+  .viewer-grid > * { aspect-ratio: 16 / 10; overflow: hidden; }
 
-  /* quiz */
-  .quiz-option {
-    display: block; width: 100%; text-align: left;
-    background: var(--card-bg); border: 1px solid var(--border);
-    color: var(--ink); padding: 13px 16px; margin: 8px 0;
-    border-radius: 2px; cursor: pointer; font-family: 'Playfair Display', serif; font-size: 1em;
-    transition: all 0.25s; position: relative; overflow: hidden;
-  }
-  .quiz-option::before {
-    content: ""; position: absolute; left: 0; top: 0; bottom: 0; width: 4px;
-    background: var(--gold); transform: scaleY(0); transform-origin: bottom;
-    transition: transform 0.3s;
-  }
-  .quiz-option:hover:not(:disabled)::before { transform: scaleY(1); }
-  .quiz-option:hover:not(:disabled) { transform: translateX(6px); }
-  .quiz-option.correct { background: #2e4a2e; color: #eee; border-color: #6a9a6a; animation: stamp 0.5s ease; }
-  .quiz-option.wrong { background: #4a2323; color: #eee; border-color: #a05a5a; animation: stamp 0.5s ease; }
-  @keyframes stamp {
-    0% { transform: scale(1.15) rotate(-3deg); opacity: 0.4; }
-    60% { transform: scale(0.97) rotate(1deg); }
-    100% { transform: scale(1) rotate(0); opacity: 1; }
-  }
-  #quiz-result { margin-top: 16px; font-family: 'Cinzel', serif; font-weight: 700; letter-spacing: 1px; min-height: 1.4em; }
-
-  /* gallery */
-  .gallery { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 16px; }
-  .gallery div {
-    background: var(--card-bg); border: 1px solid var(--border);
-    padding: 22px 12px; text-align: center; cursor: pointer;
-    font-family: 'Special Elite', monospace; font-size: 0.9em;
-    transition: transform 0.35s, box-shadow 0.35s;
-    position: relative;
-  }
-  .gallery div:hover {
-    transform: translateY(-6px) rotate(-1deg);
-    box-shadow: 0 14px 24px rgba(0,0,0,0.3);
-    border-color: var(--gold-bright);
+  .viewer-process {
+    max-width: 64ch; margin: 0 auto; padding-top: 20px;
+    border-top: 1px solid rgba(255,255,255,0.1);
+    font-size: 0.9em; color: var(--p-accent);
   }
 
-  /* stats */
-  .counter-box { display: flex; gap: 20px; flex-wrap: wrap; }
-  .stat {
-    flex: 1; min-width: 150px; background: var(--card-bg);
-    border: 1px solid var(--border); padding: 26px 18px; text-align: center;
-    position: relative; overflow: hidden;
+  .viewer-close {
+    display: block; margin: 52px auto 0;
+    background: none; border: 1px solid rgba(255,255,255,0.18);
+    color: var(--text-dim); font: inherit; font-size: 0.76em;
+    letter-spacing: 0.16em; text-transform: uppercase;
+    padding: 12px 26px; cursor: pointer;
+    transition: color 0.5s var(--ease), border-color 0.5s var(--ease);
   }
-  .stat::after {
-    content: ""; position: absolute; inset: 0;
-    background: radial-gradient(circle at 50% 0%, rgba(184,145,47,0.18), transparent 70%);
-    opacity: 0; transition: opacity 0.4s;
-  }
-  .stat.show::after { opacity: 1; }
-  .stat .num {
-    font-family: 'Cinzel', serif; font-size: 2.3em; color: var(--accent); font-weight: 700;
-    text-shadow: 0 0 18px rgba(138,31,17,0.25);
-  }
-  .stat .label { font-family: 'Special Elite', monospace; font-size: 0.8em; color: var(--sepia); margin-top: 6px; }
+  .viewer-close:hover { color: var(--text); border-color: var(--p-accent); }
 
-  footer {
-    position: relative; z-index: 2;
-    text-align: center; padding: 26px; font-family: 'Special Elite', monospace;
-    font-size: 0.78em; letter-spacing: 1px; color: var(--sepia);
-    border-top: 1px solid var(--border);
+  @media (min-width: 760px) {
+    body { font-size: 18px; }
+    :root { --bar-h: 44px; }
+    .card-head { gap: 24px; padding: 24px 0; }
+    .card-preview { width: 132px; }
+    .viewer-grid { grid-template-columns: 1fr 1fr; margin: 64px 0; }
+    .viewer-scroll { padding-left: 40px; padding-right: 40px; }
   }
 
-  #search-box {
-    width: 100%; padding: 12px 14px; margin-bottom: 16px;
-    border: 1px solid var(--border); background: var(--card-bg); color: var(--ink);
-    font-family: 'Special Elite', monospace; letter-spacing: 0.5px;
-  }
-  mark { background: var(--gold-bright); color: #1a1305; padding: 0 2px; }
-
-  textarea {
-    width: 100%; padding: 14px; font-family: 'Special Elite', monospace;
-    background: var(--card-bg); color: var(--ink); border: 1px solid var(--border);
-    line-height: 1.6;
-  }
-
-  @media (max-width: 560px) {
-    nav button { padding: 12px 14px; font-size: 0.75em; }
+  @media (prefers-reduced-motion: reduce) {
+    html { scroll-behavior: auto; }
+    .grain { animation: none; }
+    .reveal, .page, .viewer, .viewer-inner, .lb-bar, .card-preview img { transition-duration: 0.01ms; }
+    .hero-content { animation: none; }
   }
 </style>
 </head>
 <body>
 
-<canvas id="embers"></canvas>
-<div class="vignette"></div>
-<div id="curtain"><span>А Р Х И В   О Т К Р Ы В А Е Т С Я</span></div>
+<div class="grain" aria-hidden="true"></div>
+<div class="vignette" aria-hidden="true"></div>
+<div class="lb-bar lb-top" aria-hidden="true"></div>
+<div class="lb-bar lb-bottom" aria-hidden="true"></div>
 
-<header>
-  <button class="toggle-theme" id="themeBtn">Tag ⇄ Nacht</button>
-  <div class="crest">★</div>
-  <h1>Josef Wissarionowitsch Stalin</h1>
-  <p class="subtitle">1878 — 1953 · Ein historisches Dossier</p>
-</header>
+<div class="page" id="page">
 
-<nav id="nav">
-  <button data-tab="bio" class="active">Biografie</button>
-  <button data-tab="timeline">Zeitleiste</button>
-  <button data-tab="stats">Zahlen &amp; Fakten</button>
-  <button data-tab="quiz">Quiz</button>
-  <button data-tab="notes">Notizen</button>
-</nav>
-
-<main>
-
-  <section id="bio" class="active">
-    <h2>Biografie</h2>
-    <input type="text" id="search-box" placeholder="Im Dokument suchen (z.B. 'Georgien')...">
-    <div class="card" id="bio-text">
-      <p>Josef Stalin wurde am 18. Dezember 1878 in <strong>Gori, Georgien</strong>, geboren. Er wurde zum Generalsekretär der Kommunistischen Partei der Sowjetunion und regierte das Land von den späten 1920er Jahren bis zu seinem Tod 1953.</p>
-      <p>Seine Herrschaft war geprägt von schneller Industrialisierung, Zwangskollektivierung der Landwirtschaft und politischen Säuberungen, dem sogenannten <strong>Großen Terror</strong>, der Millionen Menschenleben forderte.</p>
-      <p>Unter seiner Führung wurde die Sowjetunion zu einer der beiden Supermächte des 20. Jahrhunderts, insbesondere nach dem Sieg im Zweiten Weltkrieg. Gleichzeitig gilt seine Herrschaft als eine der repressivsten der modernen Geschichte.</p>
+  <section class="hero">
+    <div class="hero-media">
+      <!-- Standbild trägt den ersten Eindruck und bleibt Rückfalllösung,
+           falls der Browser Autoplay blockiert (z. B. Datensparmodus). -->
+      <img src="Images/web/nebelberg-1600.webp"
+           srcset="Images/web/nebelberg-800.webp 800w, Images/web/nebelberg-1600.webp 1600w, Images/web/nebelberg-2400.webp 2400w"
+           sizes="100vw" alt="Nebelverhangener Bergrücken in Schottland"
+           fetchpriority="high" decoding="async" data-parallax="0.05">
+      <div class="hero-video" id="heroVideo" data-yt="CH6TXDde2hs" aria-hidden="true"></div>
+    </div>
+    <div class="hero-content">
+      <span class="eyebrow">LXR Films</span>
+      <h1>Film, der mehr zeigt als nur Bilder</h1>
+      <p class="line">Ich bin Luis Räder, Filmemacher und Gründer von LXR Films. Ich produziere keine typischen Werbevideos – ich erzähle Geschichten, die man fühlen kann. Meine Filme fangen Stimmungen ein, transportieren Atmosphäre und lassen Orte, Marken und Menschen lebendig wirken. Es geht nicht nur darum, was man sieht, sondern darum, was man dabei spürt.</p>
     </div>
   </section>
 
-  <section id="timeline">
-    <h2>Zeitleiste</h2>
-    <div class="timeline">
-      <div class="timeline-item"><span class="seal"></span><h3>1878</h3><p>Geburt in Gori, Georgien (damals Russisches Kaiserreich).</p></div>
-      <div class="timeline-item"><span class="seal"></span><h3>1917</h3><p>Teilnahme an der Oktoberrevolution der Bolschewiki.</p></div>
-      <div class="timeline-item"><span class="seal"></span><h3>1922</h3><p>Wird Generalsekretär der Kommunistischen Partei.</p></div>
-      <div class="timeline-item"><span class="seal"></span><h3>1928</h3><p>Beginn der Zwangskollektivierung und der Fünfjahrespläne.</p></div>
-      <div class="timeline-item"><span class="seal"></span><h3>1936–1938</h3><p>Der "Große Terror" – massive politische Säuberungen.</p></div>
-      <div class="timeline-item"><span class="seal"></span><h3>1941–1945</h3><p>Führung der Sowjetunion im Zweiten Weltkrieg gegen NS-Deutschland.</p></div>
-      <div class="timeline-item"><span class="seal"></span><h3>1953</h3><p>Tod am 5. März in Moskau.</p></div>
+  <section class="band">
+    <div class="wrap reveal">
+      <h2>Wer ich bin</h2>
+      <p class="lead">Bei LXR Films entstehen kreative Videoproduktionen mit Blick fürs Detail und Gespür für Atmosphäre. Ich bin Luis Räder, 16 Jahre alt, und arbeite seit einigen Jahren an cinematischen Projekten – von Imagefilmen über Produktvideos bis hin zu spektakulären Reisefilmen. Mein Stil: visuell stark, hochwertig inszeniert, emotional packend. Jede Geschichte verdient es, gut erzählt zu werden.</p>
+      <p class="body" style="margin-top:26px">Ich bin Luis, 16 Jahre alt und Videoproduzent aus Hamburg. Was als Hobby mit einer Drohne begonnen hat, ist heute zu einer echten Leidenschaft geworden: Ich produziere Werbe- und Imagefilme für Unternehmen und Selbstständige – mit professionellem Look, durchdachtem Schnitt und einem Gespür für gute Bilder. Ich habe bereits Videos für lokale Firmen, Produktreels für Designer und cinematische Kurzfilme umgesetzt – alles mit dem Anspruch, dass es auch auf den großen Plattformen bestehen kann. Ich glaube an ehrliche Bilder, präzises Storytelling und daran, dass visuelle Inhalte Emotionen und Vertrauen schaffen können. Wenn du ein Video willst, das auffällt – melde dich gern bei mir.</p>
     </div>
   </section>
 
-  <section id="stats">
-    <h2>Zahlen &amp; Fakten</h2>
-    <div class="counter-box">
-      <div class="stat"><div class="num" data-target="29">0</div><div class="label">Jahre an der Macht</div></div>
-      <div class="stat"><div class="num" data-target="15">0</div><div class="label">Sowjetrepubliken</div></div>
-      <div class="stat"><div class="num" data-target="5">0</div><div class="label">Fünfjahrespläne bis 1953</div></div>
-    </div>
-    <p style="margin-top:22px;font-size:0.9em;opacity:0.75;font-family:'Special Elite',monospace;">Hinweis: Zahlen zu Opfern politischer Repression sind unter Historikern umstritten und stark quellenabhängig – hier bewusst nicht beziffert.</p>
-    <div class="gallery">
-      <div onclick="alert('Georgien: Geburtsort Stalins')">📍 Gori</div>
-      <div onclick="alert('Moskau: Regierungssitz')">🏛 Moskau</div>
-      <div onclick="alert('Sibirien: Ort zahlreicher Gulags')">❄ Sibirien</div>
-      <div onclick="alert('Jalta-Konferenz 1945')">🤝 Jalta</div>
+  <section class="projects">
+    <div class="wrap">
+      <h2 class="reveal">Projekte</h2>
+
+      <div class="card reveal" style="--card-accent:#a9b56d">
+        <button class="card-trigger" data-viewer="v1" aria-haspopup="dialog">
+          <div class="card-head">
+            <div class="card-preview"><img src="Images/web/gaertnerei-finder/still-2025-09-02-204030-6-3-1-800.webp" alt="" loading="lazy" decoding="async"></div>
+            <div class="card-info">
+              <div class="card-titleline">
+                <span class="name">Gärtnerei Eggert Finder</span>
+                <span class="type">Familienbetrieb · Hamburg-Sasel</span>
+              </div>
+              <p class="card-teaser">Seit fast 90 Jahren am selben Ort.</p>
+            </div>
+            <span class="card-open" aria-hidden="true">Ansehen</span>
+          </div>
+        </button>
+      </div>
+
+      <div class="card reveal" style="--card-accent:#93a09b">
+        <button class="card-trigger" data-viewer="v2" aria-haspopup="dialog">
+          <div class="card-head">
+            <div class="card-preview"><img src="Images/web/stephen-am-strand-800.webp" alt="" loading="lazy" decoding="async"></div>
+            <div class="card-info">
+              <div class="card-titleline">
+                <span class="name">[Filmtitel]</span>
+                <span class="type">Porträtfilm · Schottland</span>
+              </div>
+              <p class="card-teaser">[Ein-Satz-Teaser — Text fehlt mir noch]</p>
+            </div>
+            <span class="card-open" aria-hidden="true">Ansehen</span>
+          </div>
+        </button>
+      </div>
+
+      <div class="card reveal" style="--card-accent:#8aa3b2">
+        <button class="card-trigger" data-viewer="v3" aria-haspopup="dialog">
+          <div class="card-head">
+            <div class="card-preview"><img src="Images/web/oesterreich25/still-2025-08-22-215508-4-2-1-800.webp" alt="" loading="lazy" decoding="async"></div>
+            <div class="card-info">
+              <div class="card-titleline">
+                <span class="name">The Mountains</span>
+                <span class="type">Reisefilm · Bayern &amp; Norditalien</span>
+              </div>
+              <p class="card-teaser">Zwischen Morgennebel und Abendlicht durch die Alpen.</p>
+            </div>
+            <span class="card-open" aria-hidden="true">Ansehen</span>
+          </div>
+        </button>
+      </div>
+
+      <div class="card reveal" style="--card-accent:#c8863f">
+        <button class="card-trigger" data-viewer="v4" aria-haspopup="dialog">
+          <div class="card-head">
+            <div class="card-preview"><img src="Images/web/track-of-time/2-19-2-19-1-800.webp" alt="" loading="lazy" decoding="async"></div>
+            <div class="card-info">
+              <div class="card-titleline">
+                <span class="name">Track of Time</span>
+                <span class="type">Kurzfilm · historische Eisenbahn</span>
+              </div>
+              <p class="card-teaser">Einer Dampflok entlang historischer Gleise gefolgt.</p>
+            </div>
+            <span class="card-open" aria-hidden="true">Ansehen</span>
+          </div>
+        </button>
+      </div>
+
+      <div class="card reveal" style="--card-accent:#c8a171">
+        <button class="card-trigger" data-viewer="v5" aria-haspopup="dialog">
+          <div class="card-head">
+            <div class="card-preview"><img src="Images/web/oesterreich24/img-2100-800.webp" alt="" loading="lazy" decoding="async"></div>
+            <div class="card-info">
+              <div class="card-titleline">
+                <span class="name">The South</span>
+                <span class="type">Reisefilm · Österreich, Italien, Bayern</span>
+              </div>
+              <p class="card-teaser">Von Alpenpässen bis in die Kanäle von Venedig.</p>
+            </div>
+            <span class="card-open" aria-hidden="true">Ansehen</span>
+          </div>
+        </button>
+      </div>
+
     </div>
   </section>
 
-  <section id="quiz">
-    <h2>Kurzes Quiz</h2>
-    <div class="card">
-      <p id="quiz-question" style="font-family:'Cinzel',serif;">In welchem Land wurde Stalin geboren?</p>
-      <button class="quiz-option" data-correct="false">Russland</button>
-      <button class="quiz-option" data-correct="true">Georgien</button>
-      <button class="quiz-option" data-correct="false">Ukraine</button>
-      <button class="quiz-option" data-correct="false">Armenien</button>
-      <div id="quiz-result"></div>
+  <section class="band">
+    <div class="wrap reveal">
+      <h2>Meine Arbeitsweise</h2>
+      <p class="body">Am Ende erinnern sich die meisten nicht daran, was genau gesagt wurde, sondern wie sich ein Video angefühlt hat. Deswegen steht bei mir von Anfang an die Stimmung im Mittelpunkt. Bevor ich irgendetwas drehe, suche ich zusammen mit dem Kunden die Musik aus. Der Track legt die emotionale Richtung fest – er ist die Weichenstellung für das gesamte Projekt und beeinflusst später Schnitt, Bildsprache und Tempo des Films.</p>
+      <p class="body">Wenn Idee und Musik zusammenpassen, plane ich den Film in Milanote: Ich halte Ablauf, Farbwelt, Stimmung der Szenen, mögliche Locations und Referenzen fest – alles an einem Ort, auf Wunsch auch für den Kunden einsehbar. Parallel dazu arbeite ich im Schnittprogramm weiter, lege die Musik an und baue einen groben Ablauf mit Platzhaltern. Die Aufnahmen werden später gezielt um die Musik herum geplant, statt den Song im Nachhinein passend zu schneiden. So entsteht ein Film, der rhythmisch und emotional wie aus einem Guss wirkt – und der Dreh bleibt effizient, ohne viele Reshoots.</p>
     </div>
   </section>
 
-  <section id="notes">
-    <h2>Eigene Notizen</h2>
-    <p style="opacity:0.75;font-size:0.88em;font-family:'Special Elite',monospace;">Wird lokal im Browser gespeichert (localStorage) – nur auf diesem Gerät sichtbar.</p>
-    <textarea id="notesArea" rows="8"></textarea>
-    <br><br>
-    <button class="quiz-option" id="saveNotes" style="width:auto;display:inline-block;">Speichern</button>
-    <span id="saveStatus" style="margin-left:10px;opacity:0.7;font-family:'Special Elite',monospace;"></span>
+  <section class="band">
+    <div class="wrap reveal">
+      <h2>Mein Equipment</h2>
+      <p class="body">Gute Bilder entstehen nicht zufällig – sie brauchen Kontrolle über Licht, Bewegung und Ton. Ich filme mit der Lumix S5 II für einen sauberen, cineastischen Look und präzise Farben. Dazu setze ich lichtstarke Optiken ein, die vom weiten Überblick bis zur feinen Detailaufnahme alles abdecken. Ruhige Kamerafahrten und gezielt gesetztes Licht sorgen für Atmosphäre und ein hochwertiges Erscheinungsbild; der Ton wird genauso sorgfältig aufgenommen, damit Aussagen klar und nah klingen.</p>
+      <p class="body">Wenn es die Geschichte verlangt, ergänze ich das durch Drohnenaufnahmen mit der DJI Mavic 3 Classic – für weite Establishing-Shots und fließende Übergänge von oben. Am Ende liefere ich flexibel nach Wunsch: in 24, 25 oder 30 fps und in HD, 4K oder 5K – oder genau in der Auflösung und Framerate, die benötigt wird.</p>
+    </div>
   </section>
 
-</main>
+  <section class="contact">
+    <div class="wrap reveal">
+      <h2>Kontakt</h2>
+      <div class="who">
+        <div class="n">Luis Räder</div>
+        <div class="s">LXR Films</div>
+      </div>
+      <div class="row"><span class="k">Adresse</span><span>Kätnerweg 49F, 22393 Hamburg</span></div>
+      <div class="row"><span class="k">Website</span><a href="https://lxr-films.net">LXR-Films.net</a></div>
+      <div class="row"><span class="k">Telefon</span><a href="tel:+4916095491358">+49 160 95491358</a></div>
+      <div class="row"><span class="k">E-Mail</span><a href="mailto:LXR-Films@web.de">LXR-Films@web.de</a></div>
+    </div>
+  </section>
 
-<footer>TESTDOKUMENT · ZU DEMONSTRATIONSZWECKEN ERSTELLT · © 2026</footer>
+  <footer>LXR Films</footer>
+
+</div><!-- /.page -->
+
+
+<!-- ================= Projektansichten ================= -->
+
+<!-- Gärtnerei Eggert Finder — sattes Grün, warmes Goldlicht, Rosa/Lila-Akzente -->
+<div class="viewer" id="v1" role="dialog" aria-modal="true" aria-labelledby="v1-title" hidden
+     style="--p-bg:#0d1109; --p-accent:#a9b56d; --p-glow:rgba(186,160,80,0.13)">
+  <div class="viewer-scroll">
+    <div class="viewer-inner">
+      <div class="viewer-stage" data-yt="qUV4MVFWDoc">
+        <img src="Images/web/gaertnerei-finder/still-2025-07-01-232800-3-9-1-1600.webp"
+             srcset="Images/web/gaertnerei-finder/still-2025-07-01-232800-3-9-1-800.webp 800w, Images/web/gaertnerei-finder/still-2025-07-01-232800-3-9-1-1600.webp 1600w, Images/web/gaertnerei-finder/still-2025-07-01-232800-3-9-1-2400.webp 2400w"
+             sizes="(min-width: 1120px) 1120px, 100vw"
+             alt="Rosenbogen und Pflanzgefäße im Freigelände der Gärtnerei" loading="lazy" decoding="async">
+      </div>
+      <div class="viewer-head">
+        <span class="eyebrow">Familienbetrieb · Hamburg-Sasel</span>
+        <h2 id="v1-title">Gärtnerei Eggert Finder</h2>
+      </div>
+      <div class="viewer-text">
+        <p class="lead">Die Gärtnerei Eggert Finder in Hamburg-Sasel ist ein Familienbetrieb, der seit fast 90 Jahren am selben Ort arbeitet.</p>
+        <p>Statt eines klassischen Imagefilms mit Sprechertext und Leistungsübersicht entstand ein ruhiges Porträt des Ortes — vom ersten Licht in den Gewächshäusern bis zu den Farben der Pflanzen am Nachmittag. Kein Kommentar, der erklärt, was man sieht.</p>
+        <p>Neben dem Hauptfilm entstand ein kürzeres Reel für Instagram, das denselben Ort in wenigen Sekunden zeigt.</p>
+      </div>
+      <div class="viewer-grid">
+        <div><img src="Images/web/gaertnerei-finder/still-2025-07-01-232800-3-14-1-1600.webp" srcset="Images/web/gaertnerei-finder/still-2025-07-01-232800-3-14-1-800.webp 800w, Images/web/gaertnerei-finder/still-2025-07-01-232800-3-14-1-1600.webp 1600w" sizes="(min-width: 760px) 550px, 100vw" alt="Blühende Pflanzen im Gewächshaus im Gegenlicht" loading="lazy" decoding="async"></div>
+        <div><img src="Images/web/gaertnerei-finder/still-2025-07-01-232800-3-22-1-1600.webp" srcset="Images/web/gaertnerei-finder/still-2025-07-01-232800-3-22-1-800.webp 800w, Images/web/gaertnerei-finder/still-2025-07-01-232800-3-22-1-1600.webp 1600w" sizes="(min-width: 760px) 550px, 100vw" alt="Topfpflanzen auf einem Verkaufstisch" loading="lazy" decoding="async"></div>
+        <div><img src="Images/web/gaertnerei-finder/5-5-5-5-1-1600.webp" srcset="Images/web/gaertnerei-finder/5-5-5-5-1-800.webp 800w, Images/web/gaertnerei-finder/5-5-5-5-1-1600.webp 1600w" sizes="(min-width: 760px) 550px, 100vw" alt="Orchideen im Gewächshaus" loading="lazy" decoding="async"></div>
+        <div><img src="Images/web/gaertnerei-finder/still-2025-07-21-211752-3-53-1-1600.webp" srcset="Images/web/gaertnerei-finder/still-2025-07-21-211752-3-53-1-800.webp 800w, Images/web/gaertnerei-finder/still-2025-07-21-211752-3-53-1-1600.webp 1600w" sizes="(min-width: 760px) 550px, 100vw" alt="Zitrusfrüchte an einem Zweig" loading="lazy" decoding="async"></div>
+        <div><img src="Images/web/gaertnerei-finder/still-2025-07-21-211752-3-25-1-1600.webp" srcset="Images/web/gaertnerei-finder/still-2025-07-21-211752-3-25-1-800.webp 800w, Images/web/gaertnerei-finder/still-2025-07-21-211752-3-25-1-1600.webp 1600w" sizes="(min-width: 760px) 550px, 100vw" alt="Schwebfliege an einer Lavendelblüte" loading="lazy" decoding="async"></div>
+        <div><img src="Images/web/gaertnerei-finder/still-2025-09-02-204030-6-3-1-1600.webp" srcset="Images/web/gaertnerei-finder/still-2025-09-02-204030-6-3-1-800.webp 800w, Images/web/gaertnerei-finder/still-2025-09-02-204030-6-3-1-1600.webp 1600w" sizes="(min-width: 760px) 550px, 100vw" alt="Porträt des Inhabers im Gewächshaus" loading="lazy" decoding="async"></div>
+      </div>
+      <p class="viewer-process">Mein erster Imagefilm. Die Eigentümerfamilie hat mir ihren Betrieb dafür geöffnet und mir dabei Einblick in das Handwerk gegeben, das dahintersteckt.</p>
+      <button class="viewer-close">Schließen</button>
+    </div>
+  </div>
+</div>
+
+<!-- Schottland — kühles Blaugrau, angelehnt an den Grade von „The Same Grey" -->
+<div class="viewer" id="v2" role="dialog" aria-modal="true" aria-labelledby="v2-title" hidden
+     style="--p-bg:#0e1314; --p-accent:#93a09b; --p-glow:rgba(130,155,155,0.10)">
+  <div class="viewer-scroll">
+    <div class="viewer-inner">
+      <div class="viewer-stage" data-yt="">
+        <img src="Images/web/mann-fluss-1600.webp"
+             srcset="Images/web/mann-fluss-800.webp 800w, Images/web/mann-fluss-1600.webp 1600w, Images/web/mann-fluss-2400.webp 2400w"
+             sizes="(min-width: 1120px) 1120px, 100vw"
+             alt="Person am Fluss in einer nebligen schottischen Landschaft" loading="lazy" decoding="async">
+      </div>
+      <div class="viewer-head">
+        <span class="eyebrow">Porträtfilm · Schottland</span>
+        <h2 id="v2-title">[Filmtitel]</h2>
+      </div>
+      <div class="viewer-text">
+        <p class="lead">[2–4 Sätze zum Film: worum es geht, wie der Kontakt zustande kam, was der Ausgangspunkt war.]</p>
+        <p>[Der Text zu diesem Projekt fehlt mir noch. Die Bilder sind bereits final eingebunden.]</p>
+      </div>
+      <div class="viewer-grid">
+        <div><img src="Images/web/nahaufnahme-stephen-1600.webp" srcset="Images/web/nahaufnahme-stephen-800.webp 800w, Images/web/nahaufnahme-stephen-1600.webp 1600w" sizes="(min-width: 760px) 550px, 100vw" alt="Nahaufnahme des Porträtierten" loading="lazy" decoding="async"></div>
+        <div><img src="Images/web/aufnahme-stephen-im-cottage-1600.webp" srcset="Images/web/aufnahme-stephen-im-cottage-800.webp 800w, Images/web/aufnahme-stephen-im-cottage-1600.webp 1600w" sizes="(min-width: 760px) 550px, 100vw" alt="Der Porträtierte in seinem Cottage" loading="lazy" decoding="async"></div>
+        <div><img src="Images/web/highland-cattle-1600.webp" srcset="Images/web/highland-cattle-800.webp 800w, Images/web/highland-cattle-1600.webp 1600w" sizes="(min-width: 760px) 550px, 100vw" alt="Highland Cattle im Profil" loading="lazy" decoding="async"></div>
+        <div><img src="Images/web/schaf-1600.webp" srcset="Images/web/schaf-800.webp 800w, Images/web/schaf-1600.webp 1600w" sizes="(min-width: 760px) 550px, 100vw" alt="Schaf auf einer Klippe über dem Meer" loading="lazy" decoding="async"></div>
+        <div><img src="Images/web/stephen-am-strand-1600.webp" srcset="Images/web/stephen-am-strand-800.webp 800w, Images/web/stephen-am-strand-1600.webp 1600w" sizes="(min-width: 760px) 550px, 100vw" alt="Porträt an der Küste" loading="lazy" decoding="async"></div>
+        <div><img src="Images/web/nebelberg-1600.webp" srcset="Images/web/nebelberg-800.webp 800w, Images/web/nebelberg-1600.webp 1600w" sizes="(min-width: 760px) 550px, 100vw" alt="Nebelverhangener Bergrücken" loading="lazy" decoding="async"></div>
+      </div>
+      <button class="viewer-close">Schließen</button>
+    </div>
+  </div>
+</div>
+
+<!-- The Mountains — kühles Nebelblau/-grün, dunkles Tannengrün, erdige Almtöne -->
+<div class="viewer" id="v3" role="dialog" aria-modal="true" aria-labelledby="v3-title" hidden
+     style="--p-bg:#0a1115; --p-accent:#8aa3b2; --p-glow:rgba(110,145,165,0.13)">
+  <div class="viewer-scroll">
+    <div class="viewer-inner">
+      <div class="viewer-stage" data-yt="FfBvRlTPpvQ">
+        <img src="Images/web/oesterreich25/still-2025-08-22-215508-3-29-1-1600.webp"
+             srcset="Images/web/oesterreich25/still-2025-08-22-215508-3-29-1-800.webp 800w, Images/web/oesterreich25/still-2025-08-22-215508-3-29-1-1600.webp 1600w, Images/web/oesterreich25/still-2025-08-22-215508-3-29-1-2400.webp 2400w"
+             sizes="(min-width: 1120px) 1120px, 100vw"
+             alt="Dolomitengipfel im ersten Morgenlicht" loading="lazy" decoding="async">
+      </div>
+      <div class="viewer-head">
+        <span class="eyebrow">Reisefilm · Bayern &amp; Norditalien</span>
+        <h2 id="v3-title">The Mountains</h2>
+      </div>
+      <div class="viewer-text">
+        <p class="lead">The Mountains ist eine filmische Reise durch die Alpen Bayerns und Norditaliens.</p>
+        <p>Zwischen Morgennebel und Abendlicht entfalten sich Berge, Täler und Dörfer. Der Film sucht weniger das Spektakel als die Atmosphäre — er verweilt in Momenten, in denen Licht, Wind und Landschaft ineinandergreifen.</p>
+        <p>Ein Boot, das durch den Nebel über dem Wasser fährt. Eine Almhütte vor dem Massiv. Eine Kuh im Gegenlicht. Eine Hand, die über Gräser streicht, während dahinter der Gipfel steht.</p>
+      </div>
+      <div class="viewer-grid">
+        <div><img src="Images/web/oesterreich25/still-2025-08-22-215508-4-8-1-1-1-10-1600.webp" srcset="Images/web/oesterreich25/still-2025-08-22-215508-4-8-1-1-1-10-800.webp 800w, Images/web/oesterreich25/still-2025-08-22-215508-4-8-1-1-1-10-1600.webp 1600w" sizes="(min-width: 760px) 550px, 100vw" alt="Boot mit Licht im Nebel über dem Wasser" loading="lazy" decoding="async"></div>
+        <div><img src="Images/web/oesterreich25/still-2025-08-22-215508-4-8-1-1-1-11-1600.webp" srcset="Images/web/oesterreich25/still-2025-08-22-215508-4-8-1-1-1-11-800.webp 800w, Images/web/oesterreich25/still-2025-08-22-215508-4-8-1-1-1-11-1600.webp 1600w" sizes="(min-width: 760px) 550px, 100vw" alt="Wandergruppe im Nebel neben einer Baumsilhouette" loading="lazy" decoding="async"></div>
+        <div><img src="Images/web/oesterreich25/still-2025-08-22-215508-3-53-1-1600.webp" srcset="Images/web/oesterreich25/still-2025-08-22-215508-3-53-1-800.webp 800w, Images/web/oesterreich25/still-2025-08-22-215508-3-53-1-1600.webp 1600w" sizes="(min-width: 760px) 550px, 100vw" alt="Kuh im Gegenlicht auf der Weide" loading="lazy" decoding="async"></div>
+        <div><img src="Images/web/oesterreich25/still-2025-08-22-215508-3-9-1-1600.webp" srcset="Images/web/oesterreich25/still-2025-08-22-215508-3-9-1-800.webp 800w, Images/web/oesterreich25/still-2025-08-22-215508-3-9-1-1600.webp 1600w" sizes="(min-width: 760px) 550px, 100vw" alt="Hand über Gräsern vor einem Gipfel im Abendlicht" loading="lazy" decoding="async"></div>
+        <div><img src="Images/web/oesterreich25/still-2025-08-22-215508-4-2-1-1600.webp" srcset="Images/web/oesterreich25/still-2025-08-22-215508-4-2-1-800.webp 800w, Images/web/oesterreich25/still-2025-08-22-215508-4-2-1-1600.webp 1600w" sizes="(min-width: 760px) 550px, 100vw" alt="Almhütte auf einer Hochebene vor dem Massiv" loading="lazy" decoding="async"></div>
+      </div>
+      <button class="viewer-close">Schließen</button>
+    </div>
+  </div>
+</div>
+
+<!-- Track of Time — warmes Bernstein/Orange, gedämpftes Moosgrün, Sepia -->
+<div class="viewer" id="v4" role="dialog" aria-modal="true" aria-labelledby="v4-title" hidden
+     style="--p-bg:#120e08; --p-accent:#c8863f; --p-glow:rgba(190,120,50,0.14)">
+  <div class="viewer-scroll">
+    <div class="viewer-inner">
+      <div class="viewer-stage" data-yt="o1YdluXKf3g">
+        <img src="Images/web/track-of-time/2-10-2-10-1-1600.webp"
+             srcset="Images/web/track-of-time/2-10-2-10-1-800.webp 800w, Images/web/track-of-time/2-10-2-10-1-1600.webp 1600w, Images/web/track-of-time/2-10-2-10-1-2400.webp 2400w"
+             sizes="(min-width: 1120px) 1120px, 100vw"
+             alt="Luftbild: Dampfzug fährt durch Felder oberhalb der Küste" loading="lazy" decoding="async">
+      </div>
+      <div class="viewer-head">
+        <span class="eyebrow">Kurzfilm · historische Eisenbahn</span>
+        <h2 id="v4-title">Track of Time</h2>
+      </div>
+      <div class="viewer-text">
+        <p class="lead">Manche Orte scheinen stillzustehen und bewegen doch viel.</p>
+        <p>Track of Time folgt einer Dampflok entlang historischer Gleise — durch Felder, an der Ostseeküste entlang, vom Feuer in der Büchse bis zum Rauch über den Bäumen.</p>
+        <p>Es geht nicht nur um die Lok. Es geht um Atmosphäre, Bewegung und Erinnerung: um den Versuch, Zeit sichtbar zu machen und ein Gefühl einzufangen, das bleibt, wenn alles andere längst weitergefahren ist.</p>
+      </div>
+      <div class="viewer-grid">
+        <div><img src="Images/web/track-of-time/2-50-2-50-1-1600.webp" srcset="Images/web/track-of-time/2-50-2-50-1-800.webp 800w, Images/web/track-of-time/2-50-2-50-1-1600.webp 1600w" sizes="(min-width: 760px) 550px, 100vw" alt="Luftbild: Zug mit Dampffahne zwischen Feldern" loading="lazy" decoding="async"></div>
+        <div><img src="Images/web/track-of-time/2-16-2-16-1-1600.webp" srcset="Images/web/track-of-time/2-16-2-16-1-800.webp 800w, Images/web/track-of-time/2-16-2-16-1-1600.webp 1600w" sizes="(min-width: 760px) 550px, 100vw" alt="Feuer in der Feuerbüchse der Lokomotive" loading="lazy" decoding="async"></div>
+        <div><img src="Images/web/tot-molli-1600.webp" srcset="Images/web/tot-molli-800.webp 800w, Images/web/tot-molli-1600.webp 1600w" sizes="(min-width: 760px) 550px, 100vw" alt="Blick von der fahrenden Lok entlang der Gleise" loading="lazy" decoding="async"></div>
+        <div><img src="Images/web/track-of-time-blumen-1600.webp" srcset="Images/web/track-of-time-blumen-800.webp 800w, Images/web/track-of-time-blumen-1600.webp 1600w" sizes="(min-width: 760px) 550px, 100vw" alt="Mohnblumenfeld im Gegenlicht" loading="lazy" decoding="async"></div>
+        <div><img src="Images/web/track-of-time/1-1-1-1-1-1600.webp" srcset="Images/web/track-of-time/1-1-1-1-1-800.webp 800w, Images/web/track-of-time/1-1-1-1-1-1600.webp 1600w" sizes="(min-width: 760px) 550px, 100vw" alt="Sonnenuntergang über der Ostsee" loading="lazy" decoding="async"></div>
+        <div><img src="Images/web/track-of-time/still-2025-12-19-174322-3-1-1-1600.webp" srcset="Images/web/track-of-time/still-2025-12-19-174322-3-1-1-800.webp 800w, Images/web/track-of-time/still-2025-12-19-174322-3-1-1-1600.webp 1600w" sizes="(min-width: 760px) 550px, 100vw" alt="Dünengras an der Küste" loading="lazy" decoding="async"></div>
+      </div>
+      <p class="viewer-process">Gedreht an der Mecklenburgischen Bäderbahn Molli.</p>
+      <button class="viewer-close">Schließen</button>
+    </div>
+  </div>
+</div>
+
+<!-- The South — warme Terrakotta-/Ockertöne, Steinbeige, gedämpftes Himmelblau -->
+<div class="viewer" id="v5" role="dialog" aria-modal="true" aria-labelledby="v5-title" hidden
+     style="--p-bg:#130f0b; --p-accent:#c8a171; --p-glow:rgba(190,145,95,0.14)">
+  <div class="viewer-scroll">
+    <div class="viewer-inner">
+      <div class="viewer-stage" data-yt="o1YdluXKf3g">
+        <img src="Images/web/oesterreich24/img-2098-1500.webp"
+             srcset="Images/web/oesterreich24/img-2098-800.webp 800w, Images/web/oesterreich24/img-2098-1500.webp 1500w"
+             sizes="(min-width: 1120px) 1120px, 100vw"
+             alt="Luftbild: Kapelle über einem türkisfarbenen Bergsee" loading="lazy" decoding="async">
+      </div>
+      <div class="viewer-head">
+        <span class="eyebrow">Reisefilm · Österreich, Italien, Bayern</span>
+        <h2 id="v5-title">The South</h2>
+      </div>
+      <div class="viewer-text">
+        <p class="lead">Ein Film über die Sehnsucht nach Weite, über das Entdecken von Momenten, die bleiben.</p>
+        <p>Zwischen Alpenpässen, alten Gassen und stillen Landschaften, irgendwo zwischen Österreich, Italien und Bayern.</p>
+        <p>Von einem Bergsee mit Kapelle über wolkenverhangene Hänge bis in die Kanäle von Venedig.</p>
+      </div>
+      <div class="viewer-grid">
+        <div><img src="Images/web/oesterreich24/img-2103-1500.webp" srcset="Images/web/oesterreich24/img-2103-800.webp 800w, Images/web/oesterreich24/img-2103-1500.webp 1500w" sizes="(min-width: 760px) 550px, 100vw" alt="Palazzo-Fassaden am Canal Grande" loading="lazy" decoding="async"></div>
+        <div><img src="Images/web/oesterreich24/img-2108-1500.webp" srcset="Images/web/oesterreich24/img-2108-800.webp 800w, Images/web/oesterreich24/img-2108-1500.webp 1500w" sizes="(min-width: 760px) 550px, 100vw" alt="Fassade des Markusdoms" loading="lazy" decoding="async"></div>
+        <div><img src="Images/web/oesterreich24/img-2107-1500.webp" srcset="Images/web/oesterreich24/img-2107-800.webp 800w, Images/web/oesterreich24/img-2107-1500.webp 1500w" sizes="(min-width: 760px) 550px, 100vw" alt="Campanile gegen den Wolkenhimmel" loading="lazy" decoding="async"></div>
+        <div><img src="Images/web/oesterreich24/img-2083-1500.webp" srcset="Images/web/oesterreich24/img-2083-800.webp 800w, Images/web/oesterreich24/img-2083-1500.webp 1500w" sizes="(min-width: 760px) 550px, 100vw" alt="Wolken über einem bewaldeten Berghang am See" loading="lazy" decoding="async"></div>
+        <div><img src="Images/web/oesterreich24/img-2078-1500.webp" srcset="Images/web/oesterreich24/img-2078-800.webp 800w, Images/web/oesterreich24/img-2078-1500.webp 1500w" sizes="(min-width: 760px) 550px, 100vw" alt="Felsgipfel über bewaldeten Hängen" loading="lazy" decoding="async"></div>
+        <div><img src="Images/web/oesterreich24/img-2099-1500.webp" srcset="Images/web/oesterreich24/img-2099-800.webp 800w, Images/web/oesterreich24/img-2099-1500.webp 1500w" sizes="(min-width: 760px) 550px, 100vw" alt="Motiv aus dem Film The South" loading="lazy" decoding="async"></div>
+        <div><img src="Images/web/oesterreich24/img-2101-1500.webp" srcset="Images/web/oesterreich24/img-2101-800.webp 800w, Images/web/oesterreich24/img-2101-1500.webp 1500w" sizes="(min-width: 760px) 550px, 100vw" alt="Motiv aus dem Film The South" loading="lazy" decoding="async"></div>
+        <div><img src="Images/web/oesterreich24/img-2102-1500.webp" srcset="Images/web/oesterreich24/img-2102-800.webp 800w, Images/web/oesterreich24/img-2102-1500.webp 1500w" sizes="(min-width: 760px) 550px, 100vw" alt="Motiv aus dem Film The South" loading="lazy" decoding="async"></div>
+      </div>
+      <button class="viewer-close">Schließen</button>
+    </div>
+  </div>
+</div>
 
 <script>
-  // remove curtain from DOM after animation
-  setTimeout(() => document.getElementById('curtain').remove(), 3200);
+(function () {
+  const page = document.getElementById('page');
+  const body = document.body;
 
-  // ---------- Ember particle background ----------
-  const canvas = document.getElementById('embers');
-  const ctx = canvas.getContext('2d');
-  let w, h, particles;
+  const SHUT_MS  = 900;  // Blende faehrt zu
+  const FRAME_MS = 800;  // Blende oeffnet auf den bleibenden Kinorahmen
+  const EXIT_MS  = 700;  // Blende faehrt beim Schliessen wieder zu
 
-  function resize() {
-    w = canvas.width = window.innerWidth;
-    h = canvas.height = window.innerHeight;
+  let current = null;
+  let busy = false;
+
+  /* ---------- Video ----------
+     YouTube, aber ohne sichtbare YouTube-Oberfläche: nocookie-Domain, alle
+     Bedienelemente des Players abgeschaltet, eigene Steuerung darüber, und das
+     iframe nimmt keine Klicks an -- niemand landet versehentlich auf YouTube.
+     Gesteuert wird per postMessage, damit kein YouTube-Skript geladen werden muss.
+     Trägt eine Stage keine Video-ID, bleibt einfach das Standbild stehen. */
+  function ytCommand(iframe, func, args) {
+    if (!iframe || !iframe.contentWindow) return;
+    iframe.contentWindow.postMessage(
+      JSON.stringify({ event: 'command', func: func, args: args || [] }), '*'
+    );
   }
-  function makeParticles() {
-    const count = Math.floor((w * h) / 22000);
-    particles = Array.from({ length: count }, () => ({
-      x: Math.random() * w,
-      y: Math.random() * h,
-      r: Math.random() * 1.8 + 0.4,
-      speedY: Math.random() * 0.4 + 0.1,
-      speedX: (Math.random() - 0.5) * 0.3,
-      alpha: Math.random() * 0.6 + 0.2,
-      flicker: Math.random() * 0.02 + 0.005
-    }));
-  }
-  function draw() {
-    ctx.clearRect(0, 0, w, h);
-    const isNight = document.body.classList.contains('night');
-    particles.forEach(p => {
-      p.y -= p.speedY;
-      p.x += p.speedX;
-      p.alpha += (Math.random() - 0.5) * p.flicker;
-      p.alpha = Math.max(0.1, Math.min(0.9, p.alpha));
-      if (p.y < -5) { p.y = h + 5; p.x = Math.random() * w; }
-      ctx.beginPath();
-      ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
-      ctx.fillStyle = isNight
-        ? `rgba(224,189,92,${p.alpha})`
-        : `rgba(107,74,37,${p.alpha * 0.6})`;
-      ctx.fill();
-    });
-    requestAnimationFrame(draw);
-  }
-  window.addEventListener('resize', () => { resize(); makeParticles(); });
-  resize(); makeParticles(); draw();
 
-  // ---------- Tab navigation ----------
-  const navButtons = document.querySelectorAll('nav button');
-  const sections = document.querySelectorAll('main section');
-  navButtons.forEach(btn => {
-    btn.addEventListener('click', () => {
-      navButtons.forEach(b => b.classList.remove('active'));
-      sections.forEach(s => s.classList.remove('active'));
-      btn.classList.add('active');
-      const target = document.getElementById(btn.dataset.tab);
-      target.classList.add('active');
-      triggerReveals(target);
-    });
-  });
+  function mountVideo(viewer) {
+    const stage = viewer.querySelector('.viewer-stage');
+    if (!stage) return;
+    const id = (stage.dataset.yt || '').trim();
+    if (!id || stage.querySelector('iframe')) return;
 
-  // ---------- Theme toggle ----------
-  document.getElementById('themeBtn').addEventListener('click', () => {
-    document.body.classList.toggle('night');
-  });
-
-  // ---------- Search highlight ----------
-  const searchBox = document.getElementById('search-box');
-  const bioText = document.getElementById('bio-text');
-  const originalHTML = bioText.innerHTML;
-  searchBox.addEventListener('input', () => {
-    const term = searchBox.value.trim();
-    if (!term) { bioText.innerHTML = originalHTML; return; }
-    const escaped = term.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-    const regex = new RegExp(escaped, 'gi');
-    bioText.innerHTML = originalHTML.replace(regex, m => `<mark>${m}</mark>`);
-  });
-
-  // ---------- Scroll / tab reveal (timeline + stats) ----------
-  function triggerReveals(scope) {
-    const items = scope.querySelectorAll('.timeline-item, .stat');
-    items.forEach((el, i) => {
-      setTimeout(() => el.classList.add('show'), i * 130);
-    });
-    const stats = scope.querySelectorAll('.stat .num');
-    if (stats.length && !scope.dataset.counted) {
-      scope.dataset.counted = 'true';
-      stats.forEach(el => {
-        const target = parseInt(el.dataset.target, 10);
-        let current = 0;
-        const step = Math.max(1, Math.ceil(target / 45));
-        const iv = setInterval(() => {
-          current += step;
-          if (current >= target) { current = target; clearInterval(iv); }
-          el.textContent = current;
-        }, 28);
-      });
+    const params = [
+      'autoplay=1', 'mute=1', 'controls=0', 'rel=0', 'modestbranding=1',
+      'playsinline=1', 'iv_load_policy=3', 'fs=0', 'disablekb=1',
+      'enablejsapi=1'
+    ];
+    // origin nur setzen, wenn es eine echte Web-Adresse gibt. Beim Öffnen als
+    // lokale Datei wäre location.origin der String "null" -- YouTube lehnt die
+    // Einbettung dann ab.
+    if (location.protocol === 'http:' || location.protocol === 'https:') {
+      params.push('origin=' + encodeURIComponent(location.origin));
     }
+
+    const frame = document.createElement('iframe');
+    frame.src = 'https://www.youtube-nocookie.com/embed/' + encodeURIComponent(id) + '?' + params.join('&');
+    frame.title = viewer.querySelector('h2') ? viewer.querySelector('h2').textContent : 'Film';
+    frame.allow = 'autoplay; encrypted-media; picture-in-picture';
+    frame.setAttribute('referrerpolicy', 'strict-origin-when-cross-origin');
+    stage.appendChild(frame);
+
+    const ui = document.createElement('div');
+    ui.className = 'stage-ui';
+    const playBtn = document.createElement('button');
+    playBtn.className = 'stage-btn';
+    playBtn.type = 'button';
+    playBtn.textContent = 'Pause';
+    const soundBtn = document.createElement('button');
+    soundBtn.className = 'stage-btn';
+    soundBtn.type = 'button';
+    soundBtn.textContent = 'Ton an';
+
+    let playing = true;
+    playBtn.addEventListener('click', function () {
+      playing = !playing;
+      ytCommand(frame, playing ? 'playVideo' : 'pauseVideo');
+      playBtn.textContent = playing ? 'Pause' : 'Abspielen';
+    });
+
+    let muted = true;
+    soundBtn.addEventListener('click', function () {
+      muted = !muted;
+      ytCommand(frame, muted ? 'mute' : 'unMute');
+      if (!muted) ytCommand(frame, 'setVolume', [100]);
+      soundBtn.textContent = muted ? 'Ton an' : 'Ton aus';
+    });
+
+    ui.appendChild(playBtn);
+    ui.appendChild(soundBtn);
+    stage.appendChild(ui);
+    stage.classList.add('has-video');
   }
 
-  const io = new IntersectionObserver(entries => {
-    entries.forEach(e => { if (e.isIntersecting) e.target.classList.add('show'); });
-  }, { threshold: 0.2 });
-  document.querySelectorAll('.reveal').forEach(el => io.observe(el));
+  function unmountVideo(viewer) {
+    const stage = viewer.querySelector('.viewer-stage');
+    if (!stage) return;
+    const frame = stage.querySelector('iframe');
+    if (frame) { ytCommand(frame, 'stopVideo'); frame.remove(); }
+    const ui = stage.querySelector('.stage-ui');
+    if (ui) ui.remove();
+    stage.classList.remove('has-video');
+  }
 
-  // ---------- Quiz ----------
-  const quizOptions = document.querySelectorAll('#quiz .quiz-option');
-  const quizResult = document.getElementById('quiz-result');
-  quizOptions.forEach(opt => {
-    opt.addEventListener('click', () => {
-      const isCorrect = opt.dataset.correct === 'true';
-      quizOptions.forEach(o => {
-        o.disabled = true;
-        if (o.dataset.correct === 'true') o.classList.add('correct');
+  function openProject(trigger) {
+    if (busy) return;
+    const viewer = document.getElementById(trigger.dataset.viewer);
+    if (!viewer) return;
+    busy = true;
+    current = viewer;
+
+    // Farbwelt des Projekts uebernehmen -- die Blende ist nicht schwarz,
+    // sondern faehrt bereits im Ton des Films zu.
+    const tone = getComputedStyle(viewer).getPropertyValue('--p-bg').trim();
+    body.style.setProperty('--lb-color', tone || '#07090b');
+
+    // 1) Restliche Seite blendet aus, Blende faehrt zu
+    page.classList.add('is-hidden');
+    body.classList.add('lb-shut');
+
+    setTimeout(function () {
+      // 2) Hinter der geschlossenen Blende wird umgebaut
+      body.classList.add('is-viewing');
+      viewer.hidden = false;
+      void viewer.offsetWidth;               // Reflow erzwingen, damit die Transition greift
+      viewer.classList.add('is-active');
+
+      // 3) Blende oeffnet nur bis zum schmalen Rahmen und bleibt dort stehen
+      body.classList.remove('lb-shut');
+      body.classList.add('lb-framed');
+
+      viewer.querySelector('.viewer-scroll').scrollTop = 0;
+      setTimeout(function () {
+        busy = false;
+        mountVideo(viewer);   // Film startet erst, wenn der Kinorahmen steht
+        const closeBtn = viewer.querySelector('.viewer-close');
+        if (closeBtn) closeBtn.focus({ preventScroll: true });
+      }, FRAME_MS);
+    }, SHUT_MS);
+  }
+
+  function closeProject() {
+    if (busy || !current) return;
+    const viewer = current;
+    busy = true;
+
+    // Blende wieder zu ...
+    unmountVideo(viewer);   // Ton darf nicht weiterlaufen
+    body.classList.remove('lb-framed');
+    body.classList.add('lb-shut');
+    viewer.classList.remove('is-active');
+
+    setTimeout(function () {
+      viewer.hidden = true;
+      page.classList.remove('is-hidden');
+      body.classList.remove('is-viewing');
+      // ... und dann ganz raus, zurueck zum normalen Seitenformat
+      body.classList.remove('lb-shut');
+      current = null;
+      setTimeout(function () { busy = false; }, FRAME_MS);
+    }, EXIT_MS);
+  }
+
+  document.querySelectorAll('.card-trigger').forEach(function (trigger) {
+    trigger.addEventListener('click', function () { openProject(trigger); });
+  });
+  document.querySelectorAll('.viewer-close').forEach(function (btn) {
+    btn.addEventListener('click', closeProject);
+  });
+  document.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape' && current) closeProject();
+  });
+
+  /* ---------- Hintergrundfilm im Hero ----------
+     Wird bewusst erst nach dem Seitenaufbau nachgeladen, damit das Standbild
+     sofort steht und der erste Eindruck nicht auf das Video warten muss.
+     Läuft stumm in Endlosschleife, ohne jede Bedienfläche. */
+  const heroVideo = document.getElementById('heroVideo');
+  const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  if (heroVideo && heroVideo.dataset.yt && !reducedMotion) {
+    window.addEventListener('load', function () {
+      const id = heroVideo.dataset.yt.trim();
+      const params = [
+        'autoplay=1', 'mute=1', 'controls=0', 'loop=1', 'playlist=' + id,
+        'rel=0', 'modestbranding=1', 'playsinline=1', 'iv_load_policy=3',
+        'fs=0', 'disablekb=1'
+      ].join('&');
+
+      const frame = document.createElement('iframe');
+      frame.src = 'https://www.youtube-nocookie.com/embed/' + encodeURIComponent(id) + '?' + params;
+      frame.allow = 'autoplay; encrypted-media';
+      frame.title = 'Hintergrundfilm';
+      frame.tabIndex = -1;
+      frame.setAttribute('referrerpolicy', 'strict-origin-when-cross-origin');
+      frame.addEventListener('load', function () {
+        // kurzer Vorlauf, damit nicht der schwarze Startframe aufblendet
+        setTimeout(function () { heroVideo.classList.add('is-ready'); }, 900);
       });
-      if (!isCorrect) opt.classList.add('wrong');
-      quizResult.textContent = isCorrect ? '✅ RICHTIG' : '✕ FALSCH — richtige Antwort markiert';
-      quizResult.style.color = isCorrect ? '#3f7a3f' : '#a05a5a';
+      heroVideo.appendChild(frame);
     });
-  });
+  }
 
-  // ---------- Notes with localStorage ----------
-  const notesArea = document.getElementById('notesArea');
-  const saveStatus = document.getElementById('saveStatus');
-  try { notesArea.value = localStorage.getItem('stalin-page-notes') || ''; } catch (e) {}
-  document.getElementById('saveNotes').addEventListener('click', () => {
-    try {
-      localStorage.setItem('stalin-page-notes', notesArea.value);
-      saveStatus.textContent = 'Gespeichert ✔';
-    } catch (e) { saveStatus.textContent = 'Speichern nicht möglich'; }
-    setTimeout(() => saveStatus.textContent = '', 2000);
-  });
+  // Langsames Einblenden beim Scrollen
+  const io = new IntersectionObserver(function (entries) {
+    entries.forEach(function (e) {
+      if (e.isIntersecting) { e.target.classList.add('show'); io.unobserve(e.target); }
+    });
+  }, { threshold: 0.12 });
+  document.querySelectorAll('.reveal').forEach(function (el) { io.observe(el); });
+
+  // Leichtes Parallax auf dem Hero-Bild -- wie eine langsame Kamerafahrt.
+  // Der Versatz bleibt im Zoom-Puffer (scale 1.12), es wird nie ein Rand sichtbar.
+  if (!window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+    const els = Array.prototype.slice.call(document.querySelectorAll('[data-parallax]'));
+    els.forEach(function (el) { el.style.willChange = 'transform'; });
+
+    let ticking = false;
+    function apply() {
+      const vh = window.innerHeight;
+      els.forEach(function (el) {
+        const r = el.getBoundingClientRect();
+        if (r.bottom < -300 || r.top > vh + 300) return;
+        const speed = parseFloat(el.dataset.parallax) || 0.05;
+        const max = r.height * 0.05;
+        const shift = Math.max(-max, Math.min(max, (r.top + r.height / 2 - vh / 2) * speed));
+        el.style.transform = 'scale(1.12) translate3d(0,' + shift.toFixed(2) + 'px,0)';
+      });
+      ticking = false;
+    }
+    function onScroll() {
+      if (!ticking) { ticking = true; requestAnimationFrame(apply); }
+    }
+    window.addEventListener('scroll', onScroll, { passive: true });
+    window.addEventListener('resize', onScroll);
+    apply();
+  }
+})();
 </script>
 
 </body>
