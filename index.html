@@ -5,6 +5,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>LXR Films — Luis Räder</title>
 <meta name="description" content="LXR Films — Videoproduktion aus Hamburg. Werbe- und Imagefilme, Konzept bis Schnitt von einer Person.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' fill='%230d1216'/%3E%3Ctext x='16' y='22' font-family='Georgia,serif' font-size='15' fill='%23c8c2b6' text-anchor='middle'%3EL%3C/text%3E%3C/svg%3E">
+<script>document.documentElement.className += ' js';</script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=Inter:wght@400;500&display=swap" rel="stylesheet">
@@ -53,8 +55,45 @@
     letter-spacing: 0.2em; text-transform: uppercase; color: var(--text-dim);
   }
 
-  .reveal { opacity: 0; transform: translateY(18px); transition: opacity 0.9s var(--ease), transform 0.9s var(--ease); }
-  .reveal.show { opacity: 1; transform: none; }
+  /* ---------- Kameraführung ----------
+     Text geht als weiche Blende auf, ohne Sprung. Bewusst nur Deckkraft und
+     ein Hauch Versatz -- alles Härtere liest sich als UI-Animation. */
+  /* Der versteckte Ausgangszustand gilt nur, wenn JavaScript läuft und ihn auch
+     wieder auflösen kann. Ohne JS bleibt die Seite vollständig lesbar, statt
+     bis auf den Hero leer zu sein. */
+  .js .reveal {
+    opacity: 0; transform: translateY(12px);
+    transition: opacity 1.5s var(--ease), transform 1.5s var(--ease);
+  }
+  .js .reveal.show { opacity: 1; transform: none; }
+
+  /* Bilder lösen sich zusätzlich aus einer leichten Unschärfe heraus --
+     das ist der Überblend-Charakter statt eines harten Einblendens. */
+  .js .reveal-media {
+    opacity: 0; transform: scale(1.035);
+    filter: blur(10px);
+    transition: opacity 1.7s var(--ease), transform 1.7s var(--ease), filter 1.7s var(--ease);
+  }
+  .js .reveal-media.show { opacity: 1; transform: none; filter: none; }
+
+  /* Bildkasten: der innere Rahmen ist höher als der Ausschnitt, damit die
+     Kamerafahrt Spielraum hat, ohne je einen Rand freizulegen. */
+  .media-move {
+    position: absolute; inset: -8% 0;
+    will-change: transform;
+  }
+  .media-move > img { width: 100%; height: 100%; object-fit: cover; }
+
+  /* Sehr langsame Eigenbewegung, damit Standbilder wie laufendes Material wirken. */
+  @keyframes drift {
+    from { transform: scale(1.05) translate3d(0, 0, 0); }
+    to   { transform: scale(1.13) translate3d(-1.4%, -1.1%, 0); }
+  }
+  .drift { animation: drift var(--drift, 56s) cubic-bezier(0.45, 0, 0.55, 1) infinite alternate; }
+
+  /* Gehaltene Einstellung: die Zeile bleibt stehen, während der Rest weiterläuft. */
+  .holds { padding-bottom: 12vh; }
+  .holds .standout { position: sticky; top: 46vh; }
 
   /* ---------- Filmkorn ----------
      Eine einzige feine, monochrome Kachel. Bewegt wird ausschließlich per
@@ -67,13 +106,18 @@
     background-image: url("data:image/webp;base64,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");
     background-repeat: repeat;
     background-size: 160px 160px;
-    mix-blend-mode: overlay;
-    /* Auf beinahe schwarzem Grund moduliert Overlay nur schwach -- unter ~0.1
-       ist das Korn faktisch unsichtbar. Deshalb deutlich höher angesetzt. */
-    opacity: 0.19;
     will-change: transform;
     backface-visibility: hidden;
     animation: grainShift 0.7s steps(1) infinite;
+  }
+  /* Zwei Lagen, weil ein einzelner Mischmodus nicht über den ganzen Tonwert-
+     umfang trägt: "overlay" moduliert Mitteltöne (Bilder, Hero) kräftig, wird in
+     fast schwarzen Flächen aber rechnerisch fast null. "screen" hebt dort ein
+     sichtbares Korn heraus, ohne die Schwärzen nennenswert aufzuhellen. */
+  .grain-mid { mix-blend-mode: overlay; opacity: 0.26; }
+  .grain-dark {
+    mix-blend-mode: screen; opacity: 0.045;
+    animation-delay: -0.35s;   /* versetzt, damit sich beide Lagen nicht decken */
   }
   @keyframes grainShift {
     0%   { transform: translate3d(0, 0, 0); }
@@ -118,7 +162,7 @@
     overflow: hidden;
   }
   .hero-media { position: absolute; inset: 0; overflow: hidden; }
-  .hero-media > img { position: absolute; inset: 0; z-index: 0; transform-origin: center; }
+  .hero-media .media-move { z-index: 0; }
 
   /* Hintergrundfilm: 16:9-Video formatfüllend über den ganzen Hero gezogen,
      blendet erst auf, wenn es wirklich läuft -- bis dahin steht das Standbild. */
@@ -138,14 +182,22 @@
     display: block;
   }
 
+  /* Der Abdunkler muss dort sitzen, wo der Text steht -- also in der Mitte.
+     Der Hero-Film hat helle Einstellungen (Gewächshaus, Gegenlicht); ohne den
+     Lichtschutz in der Mitte verschwindet die Headline darin. */
   .hero-media::after {
     content: ""; position: absolute; inset: 0; z-index: 2;
-    background: linear-gradient(to top, rgba(9,13,16,0.94) 0%, rgba(9,13,16,0.45) 40%, rgba(9,13,16,0.12) 72%);
+    background:
+      radial-gradient(62% 55% at 50% 48%, rgba(8,12,15,0.66), rgba(8,12,15,0.18) 72%, transparent 100%),
+      linear-gradient(to top, rgba(9,13,16,0.86) 0%, rgba(9,13,16,0.30) 38%, rgba(9,13,16,0.28) 100%);
   }
   /* Nur Kennung und Headline, mittig im Bild -- sonst nichts, was ablenkt. */
   .hero-content {
     position: relative; z-index: 3;
-    width: 100%; max-width: 20ch; margin: 0 auto; padding: 0 22px;
+    /* max-width in "ch" bezieht sich auf die Schriftgröße DIESES Elements,
+       nicht auf die der Überschrift -- damit war die Spalte viel zu schmal
+       und die Headline brach in Einzelwörter um. Daher feste Breite. */
+    width: 100%; max-width: 900px; margin: 0 auto; padding: 0 22px;
     text-align: center;
     animation: heroIn 1.8s 0.4s var(--ease) both;
   }
@@ -167,18 +219,48 @@
   }
 
   /* ---------- Textsektionen ----------
-     Getrennt wird über Abstand, nicht über sichtbare Linien. */
-  .band { padding: 116px 0; }
-  .band.lead-band { padding: 132px 0 116px; }
-  .band .opening { font-size: 1.2em; line-height: 1.72; max-width: 58ch; color: var(--text); }
-  .band h2 { font-size: 1.4em; letter-spacing: 0.06em; margin-bottom: 30px; }
-  .band .lead { font-size: 1.12em; max-width: 60ch; color: var(--text-dim); }
-  .band .body { max-width: 62ch; font-size: 1.02em; line-height: 1.8; color: var(--text-dim); }
-  .band .body + .body { margin-top: 22px; }
+     Getrennt wird über Abstand, nicht über sichtbare Linien.
+     Jede Sektion trägt einen weichen Lichtschein auf der Textseite -- das gibt
+     der Fläche Tiefe, statt sie flach dunkel stehen zu lassen. */
+  .band { position: relative; padding: 124px 0; }
+  .band::before {
+    content: ""; position: absolute; inset: 0; pointer-events: none;
+    background: radial-gradient(70% 60% at 22% 42%, rgba(122,158,186,0.09), transparent 68%);
+  }
+  .band.lead-band { padding: 140px 0 124px; }
+  .band-inner { position: relative; max-width: var(--wide); margin: 0 auto; padding: 0 22px; }
 
-  /* ---------- Projektliste ---------- */
-  .projects { padding: 116px 0; }
-  .projects h2 { font-size: 1.4em; letter-spacing: 0.06em; margin-bottom: 38px; }
+  /* Asymmetrisch: Text sitzt links, rechts bleibt bewusst Luft (oder ein Bild). */
+  .band-grid { display: grid; grid-template-columns: 1fr; gap: 44px; }
+  .band-text { max-width: 46ch; }
+
+  .band h2 { font-size: 1.35em; letter-spacing: 0.08em; margin-bottom: 26px; }
+
+  /* Hierarchie: Auftakt hell und groß, der Rest tritt zurück. */
+  .band .opening { font-size: 1.35em; line-height: 1.6; color: var(--text); letter-spacing: 0.005em; }
+  .band .lead { font-size: 1.16em; line-height: 1.66; color: var(--text); }
+  .band .body { font-size: 0.98em; line-height: 1.85; color: var(--text-dim); }
+  .band .lead + .body, .band .body + .body { margin-top: 20px; }
+
+  /* Eine Zeile, die für sich stehen soll -- wie eine Texttafel im Film. */
+  .band .standout {
+    margin-top: 46px;
+    font-family: 'Fraunces', Georgia, serif;
+    font-size: clamp(1.3em, 2.4vw, 1.75em);
+    line-height: 1.35; letter-spacing: 0.045em;
+    color: var(--text); max-width: 22ch;
+  }
+
+  .band-figure { align-self: center; }
+  .band-figure img { aspect-ratio: 4 / 5; }
+  .band-figure figcaption { margin-top: 12px; font-size: 0.78em; color: var(--text-dim); letter-spacing: 0.04em; }
+
+  /* ---------- Projektliste ----------
+     Liegt bewusst auf derselben linken Kante wie die Textsektionen, sonst
+     springt die Seite beim Scrollen zwischen mittig und linksbündig. */
+  .projects { padding: 104px 0; }
+  .projects .band-inner > * { max-width: 760px; }
+  .projects h2 { font-size: 1.35em; letter-spacing: 0.08em; margin-bottom: 34px; }
 
   /* Statt durchgehender Linien nur ein an den Rändern auslaufender Hauch --
      trennt die Zeilen, ohne wie ein Bedienelement zu wirken. */
@@ -220,9 +302,16 @@
   .contact .who { margin-bottom: 34px; }
   .contact .who .n { font-family: 'Fraunces', serif; font-size: 1.3em; letter-spacing: 0.03em; }
   .contact .who .s { color: var(--text-dim); font-size: 0.9em; margin-top: 2px; }
-  .contact .row { display: flex; gap: 14px; padding: 9px 0; font-size: 0.97em; }
+  .contact .row { display: flex; align-items: center; gap: 14px; padding: 2px 0; font-size: 0.97em; }
   .contact .row .k { color: var(--text-dim); min-width: 104px; flex-shrink: 0; }
-  .contact a { color: var(--text); text-decoration: none; border-bottom: 1px solid var(--accent); }
+  /* Genug Fläche zum Antippen (Richtwert 44px). Unterstrich über
+     text-decoration statt Rahmen, damit die Polsterung ihn nicht verschiebt. */
+  .contact a {
+    display: inline-block; padding: 11px 0;
+    color: var(--text); text-decoration: underline;
+    text-decoration-color: var(--accent); text-underline-offset: 5px;
+    text-decoration-thickness: 1px;
+  }
   .contact a:hover { color: var(--accent); }
 
   footer { padding: 36px 0; text-align: center; font-size: 0.76em; letter-spacing: 0.14em; text-transform: uppercase; color: var(--text-dim); }
@@ -301,7 +390,7 @@
   .viewer-text .lead { color: var(--text); }
 
   .viewer-grid { display: grid; grid-template-columns: 1fr; gap: 12px; margin: 52px 0; }
-  .viewer-grid > * { aspect-ratio: 16 / 10; overflow: hidden; }
+  .viewer-grid > * { position: relative; aspect-ratio: 16 / 10; overflow: hidden; }
 
   .viewer-process {
     max-width: 64ch; margin: 0 auto; padding-top: 22px;
@@ -323,6 +412,46 @@
   }
   .viewer-close:hover { color: var(--text); border-color: var(--p-accent); }
 
+  /* ---------- Schmale Schirme ----------
+     Die einzeilige Kartenzeile funktioniert hier nicht: Für den Text bleiben
+     neben Vorschaubild und "Ansehen" nur gut 120px, der Teaser wird dadurch
+     unbrauchbar gekürzt. Also: "Ansehen" weg (die ganze Zeile ist ohnehin
+     antippbar), Bild kleiner, Text darf umbrechen. */
+  @media (max-width: 620px) {
+    .card-open { display: none; }
+    .card-preview { width: 96px; }
+    .card-head { gap: 14px; padding: 15px 0; }
+    .card-titleline { display: block; }
+    .card-titleline .name { font-size: 1em; }
+    .card-titleline .type { display: block; font-size: 0.72em; margin-top: 3px; }
+    .card-teaser {
+      white-space: normal;
+      display: -webkit-box; -webkit-line-clamp: 2; line-clamp: 2;
+      -webkit-box-orient: vertical; overflow: hidden;
+      font-size: 0.82em; line-height: 1.45; margin-top: 6px;
+    }
+  }
+
+  /* Querformat auf dem Handy: der Hero darf nicht höher sein als der Schirm,
+     sonst wird die nächste Sektion angerissen. */
+  @media (max-height: 520px) {
+    .hero { min-height: 0; }
+    .hero-content h1 { font-size: clamp(1.4em, 5vw, 2.1em); }
+    .hero-content .eyebrow { margin-bottom: 12px; }
+    .hero-scroll { display: none; }
+  }
+
+  @media (min-width: 900px) {
+    /* Text im linken Bereich, rechts Luft -- statt mittig über die volle Breite. */
+    .band-grid { grid-template-columns: minmax(0, 5fr) minmax(0, 4fr); gap: 72px; }
+    .band-grid.text-right { grid-template-columns: minmax(0, 4fr) minmax(0, 5fr); }
+    .band-grid.text-right .band-text { grid-column: 2; }
+    .band-grid.text-right .band-figure { grid-column: 1; grid-row: 1; }
+    .band.alt::before {
+      background: radial-gradient(70% 60% at 76% 42%, rgba(122,158,186,0.09), transparent 68%);
+    }
+  }
+
   @media (min-width: 760px) {
     body { font-size: 18px; }
     :root { --bar-h: 44px; }
@@ -335,14 +464,18 @@
   @media (prefers-reduced-motion: reduce) {
     html { scroll-behavior: auto; }
     .grain { animation: none; }
-    .reveal, .page, .viewer, .viewer-inner, .lb-bar, .card-preview img { transition-duration: 0.01ms; }
+    .page, .viewer, .viewer-inner, .lb-bar, .card-preview img { transition-duration: 0.01ms; }
+    /* Inhalte sofort zeigen, statt sie an eine Scroll-Animation zu koppeln. */
+    .js .reveal, .js .reveal-media { opacity: 1; transform: none; filter: none; transition: none; }
+    .holds .standout { position: static; }
     .hero-content { animation: none; }
   }
 </style>
 </head>
 <body>
 
-<div class="grain" aria-hidden="true"></div>
+<div class="grain grain-mid" aria-hidden="true"></div>
+<div class="grain grain-dark" aria-hidden="true"></div>
 <div class="vignette" aria-hidden="true"></div>
 <div class="lb-bar lb-top" aria-hidden="true"></div>
 <div class="lb-bar lb-bottom" aria-hidden="true"></div>
@@ -356,7 +489,7 @@
       <img src="Images/web/hero-supercut-1280.webp"
            srcset="Images/web/hero-supercut-800.webp 800w, Images/web/hero-supercut-1280.webp 1280w"
            sizes="100vw" alt="Standbild aus dem Hero-Film"
-           fetchpriority="high" decoding="async" data-parallax="0.05">
+           fetchpriority="high" decoding="async">
       <div class="hero-video" id="heroVideo" data-yt="CH6TXDde2hs" aria-hidden="true"></div>
     </div>
     <div class="hero-content">
@@ -367,21 +500,32 @@
   </section>
 
   <section class="band lead-band">
-    <div class="wrap reveal">
-      <p class="opening">Ich bin Luis Räder, Filmemacher und Gründer von LXR Films. Ich produziere keine typischen Werbevideos – ich erzähle Geschichten, die man fühlen kann. Meine Filme fangen Stimmungen ein, transportieren Atmosphäre und lassen Orte, Marken und Menschen lebendig wirken. Es geht nicht nur darum, was man sieht, sondern darum, was man dabei spürt.</p>
+    <div class="band-inner">
+      <div class="band-grid">
+        <div class="band-text reveal">
+          <p class="opening">Ich produziere keine typischen Werbevideos – ich erzähle Geschichten, die man fühlen kann.</p>
+          <p class="body" style="margin-top:24px">Meine Filme fangen Stimmungen ein, transportieren Atmosphäre und lassen Orte, Marken und Menschen lebendig wirken. Es geht nicht nur darum, was man sieht, sondern darum, was man dabei spürt.</p>
+        </div>
+      </div>
     </div>
   </section>
 
   <section class="band">
-    <div class="wrap reveal">
-      <h2>Wer ich bin</h2>
-      <p class="lead">Bei LXR Films entstehen kreative Videoproduktionen mit Blick fürs Detail und Gespür für Atmosphäre. Ich bin Luis Räder, 16 Jahre alt, und arbeite seit einigen Jahren an cinematischen Projekten – von Imagefilmen über Produktvideos bis hin zu spektakulären Reisefilmen. Mein Stil: visuell stark, hochwertig inszeniert, emotional packend. Jede Geschichte verdient es, gut erzählt zu werden.</p>
-      <p class="body" style="margin-top:26px">Ich bin Luis, 16 Jahre alt und Videoproduzent aus Hamburg. Was als Hobby mit einer Drohne begonnen hat, ist heute zu einer echten Leidenschaft geworden: Ich produziere Werbe- und Imagefilme für Unternehmen und Selbstständige – mit professionellem Look, durchdachtem Schnitt und einem Gespür für gute Bilder. Ich habe bereits Videos für lokale Firmen, Produktreels für Designer und cinematische Kurzfilme umgesetzt – alles mit dem Anspruch, dass es auch auf den großen Plattformen bestehen kann. Ich glaube an ehrliche Bilder, präzises Storytelling und daran, dass visuelle Inhalte Emotionen und Vertrauen schaffen können. Wenn du ein Video willst, das auffällt – melde dich gern bei mir.</p>
+    <div class="band-inner">
+      <div class="band-grid">
+        <div class="band-text holds reveal">
+          <h2>Wer ich bin</h2>
+          <p class="lead">Ich bin Luis, 16 Jahre alt und Videoproduzent aus Hamburg. Was als Hobby mit einer Drohne begonnen hat, ist heute zu einer echten Leidenschaft geworden.</p>
+          <p class="body">Ich produziere Werbe- und Imagefilme für Unternehmen und Selbstständige – mit professionellem Look, durchdachtem Schnitt und einem Gespür für gute Bilder. Ich habe bereits Videos für lokale Firmen, Produktreels für Designer und cinematische Kurzfilme umgesetzt – alles mit dem Anspruch, dass es auch auf den großen Plattformen bestehen kann.</p>
+          <p class="body">Ich glaube an ehrliche Bilder, präzises Storytelling und daran, dass visuelle Inhalte Emotionen und Vertrauen schaffen können. Wenn du ein Video willst, das auffällt – melde dich gern bei mir.</p>
+          <p class="standout">Jede Geschichte verdient es, gut erzählt zu werden.</p>
+        </div>
+      </div>
     </div>
   </section>
 
   <section class="projects">
-    <div class="wrap">
+    <div class="band-inner">
       <h2 class="reveal">Projekte</h2>
 
       <div class="card reveal" style="--card-accent:#a9b56d">
@@ -467,19 +611,37 @@
     </div>
   </section>
 
-  <section class="band">
-    <div class="wrap reveal">
-      <h2>Meine Arbeitsweise</h2>
-      <p class="body">Am Ende erinnern sich die meisten nicht daran, was genau gesagt wurde, sondern wie sich ein Video angefühlt hat. Deswegen steht bei mir von Anfang an die Stimmung im Mittelpunkt. Bevor ich irgendetwas drehe, suche ich zusammen mit dem Kunden die Musik aus. Der Track legt die emotionale Richtung fest – er ist die Weichenstellung für das gesamte Projekt und beeinflusst später Schnitt, Bildsprache und Tempo des Films.</p>
-      <p class="body">Wenn Idee und Musik zusammenpassen, plane ich den Film in Milanote: Ich halte Ablauf, Farbwelt, Stimmung der Szenen, mögliche Locations und Referenzen fest – alles an einem Ort, auf Wunsch auch für den Kunden einsehbar. Parallel dazu arbeite ich im Schnittprogramm weiter, lege die Musik an und baue einen groben Ablauf mit Platzhaltern. Die Aufnahmen werden später gezielt um die Musik herum geplant, statt den Song im Nachhinein passend zu schneiden. So entsteht ein Film, der rhythmisch und emotional wie aus einem Guss wirkt – und der Dreh bleibt effizient, ohne viele Reshoots.</p>
+  <section class="band alt">
+    <div class="band-inner">
+      <div class="band-grid text-right">
+        <div class="band-text holds reveal">
+          <h2>Meine Arbeitsweise</h2>
+          <p class="lead">Am Ende erinnern sich die meisten nicht daran, was genau gesagt wurde, sondern wie sich ein Video angefühlt hat.</p>
+          <p class="body">Deswegen steht bei mir von Anfang an die Stimmung im Mittelpunkt. Bevor ich irgendetwas drehe, suche ich zusammen mit dem Kunden die Musik aus. Der Track legt die emotionale Richtung fest – er ist die Weichenstellung für das gesamte Projekt und beeinflusst später Schnitt, Bildsprache und Tempo des Films.</p>
+          <p class="body">Wenn Idee und Musik zusammenpassen, plane ich den Film in Milanote: Ich halte Ablauf, Farbwelt, Stimmung der Szenen, mögliche Locations und Referenzen fest – alles an einem Ort, auf Wunsch auch für den Kunden einsehbar. Parallel dazu arbeite ich im Schnittprogramm weiter, lege die Musik an und baue einen groben Ablauf mit Platzhaltern.</p>
+          <p class="body">Die Aufnahmen werden später gezielt um die Musik herum geplant, statt den Song im Nachhinein passend zu schneiden. So entsteht ein Film, der rhythmisch und emotional wie aus einem Guss wirkt – und der Dreh bleibt effizient, ohne viele Reshoots.</p>
+          <p class="standout">Zuerst die Musik, dann die erste Aufnahme.</p>
+        </div>
+      </div>
     </div>
   </section>
 
   <section class="band">
-    <div class="wrap reveal">
-      <h2>Mein Equipment</h2>
-      <p class="body">Gute Bilder entstehen nicht zufällig – sie brauchen Kontrolle über Licht, Bewegung und Ton. Ich filme mit der Lumix S5 II für einen sauberen, cineastischen Look und präzise Farben. Dazu setze ich lichtstarke Optiken ein, die vom weiten Überblick bis zur feinen Detailaufnahme alles abdecken. Ruhige Kamerafahrten und gezielt gesetztes Licht sorgen für Atmosphäre und ein hochwertiges Erscheinungsbild; der Ton wird genauso sorgfältig aufgenommen, damit Aussagen klar und nah klingen.</p>
-      <p class="body">Wenn es die Geschichte verlangt, ergänze ich das durch Drohnenaufnahmen mit der DJI Mavic 3 Classic – für weite Establishing-Shots und fließende Übergänge von oben. Am Ende liefere ich flexibel nach Wunsch: in 24, 25 oder 30 fps und in HD, 4K oder 5K – oder genau in der Auflösung und Framerate, die benötigt wird.</p>
+    <div class="band-inner">
+      <div class="band-grid">
+        <div class="band-text reveal">
+          <h2>Mein Equipment</h2>
+          <p class="lead">Gute Bilder entstehen nicht zufällig – sie brauchen Kontrolle über Licht, Bewegung und Ton.</p>
+          <p class="body">Ich filme mit der Lumix S5 II für einen sauberen, cineastischen Look und präzise Farben. Dazu setze ich lichtstarke Optiken ein, die vom weiten Überblick bis zur feinen Detailaufnahme alles abdecken. Ruhige Kamerafahrten und gezielt gesetztes Licht sorgen für Atmosphäre und ein hochwertiges Erscheinungsbild; der Ton wird genauso sorgfältig aufgenommen, damit Aussagen klar und nah klingen.</p>
+          <p class="body">Wenn es die Geschichte verlangt, ergänze ich das durch Drohnenaufnahmen mit der DJI Mavic 3 Classic – für weite Establishing-Shots und fließende Übergänge von oben. Am Ende liefere ich flexibel nach Wunsch: in 24, 25 oder 30 fps und in HD, 4K oder 5K – oder genau in der Auflösung und Framerate, die benötigt wird.</p>
+        </div>
+        <!-- Platz für das Kamera-Setup-Foto -- sobald die Datei da ist, kommt sie hierher.
+        <figure class="band-figure reveal">
+          <img src="Images/web/DATEINAME-1600.webp" alt="Kamera-Setup beim Dreh" loading="lazy" decoding="async">
+          <figcaption>Lumix S5 II</figcaption>
+        </figure>
+        -->
+      </div>
     </div>
   </section>
 
@@ -713,7 +875,12 @@
   /* Deckt eine beliebig geformte Fläche mit einem stets exakt 16:9 grossen
      Player ab. Ohne diese Rechnung weicht das iframe vom 16:9-Raster ab und
      YouTube legt selbst schwarze Balken hinein. */
-  function fitFrame(box, frame) {
+  /* Überzoom: YouTube blendet Kanalname und Bedienflächen in den äußeren
+     Randbereichen des Players ein. "controls=0" entfernt sie nicht zuverlässig
+     -- also wird der Player so weit vergrößert, dass diese Zonen außerhalb des
+     sichtbaren Ausschnitts liegen. Kostet Bildrand, ist aber der einzige Weg,
+     der ohne YouTube-Oberfläche auskommt. */
+  function fitFrame(box, frame, overscan) {
     const w = box.clientWidth;
     const h = box.clientHeight;
     if (!w || !h) return;
@@ -721,18 +888,18 @@
     let fw = w;
     let fh = w / VIDEO_AR;
     if (fh < h) { fh = h; fw = h * VIDEO_AR; }
-    const OVERSCAN = 1.03;   // schluckt Rundungskanten des Players
-    frame.style.width = Math.ceil(fw * OVERSCAN) + 'px';
-    frame.style.height = Math.ceil(fh * OVERSCAN) + 'px';
+    const z = overscan || 1.04;
+    frame.style.width = Math.ceil(fw * z) + 'px';
+    frame.style.height = Math.ceil(fh * z) + 'px';
   }
 
   const fitted = [];
-  function registerFit(box, frame) {
-    fitted.push([box, frame]);
-    fitFrame(box, frame);
+  function registerFit(box, frame, overscan) {
+    fitted.push([box, frame, overscan]);
+    fitFrame(box, frame, overscan);
   }
   window.addEventListener('resize', function () {
-    fitted.forEach(function (pair) { fitFrame(pair[0], pair[1]); });
+    fitted.forEach(function (p) { fitFrame(p[0], p[1], p[2]); });
   });
 
   /* Meldet zurück, wann der Film tatsächlich läuft. Dafür wird kein
@@ -782,7 +949,7 @@
     frame.allow = 'autoplay; encrypted-media; picture-in-picture';
     frame.setAttribute('referrerpolicy', 'strict-origin-when-cross-origin');
     stage.appendChild(frame);
-    registerFit(stage, frame);
+    registerFit(stage, frame, 1.18);   // Kanalleiste des Players ausserhalb halten
     whenPlaying(frame, function () { stage.classList.add('is-playing'); });
 
     const ui = document.createElement('div');
@@ -917,47 +1084,106 @@
       frame.tabIndex = -1;
       frame.setAttribute('referrerpolicy', 'strict-origin-when-cross-origin');
       heroVideo.appendChild(frame);
-      registerFit(heroVideo, frame);
+      registerFit(heroVideo, frame, 1.32);  // Hintergrundfilm: groesserer Rand, dafuer keinerlei Player-Oberflaeche
       // Erst aufblenden, wenn der Film wirklich laeuft -- sonst blitzt YouTubes
       // Ladeansicht mit Play-Symbol durch.
       whenPlaying(frame, function () { heroVideo.classList.add('is-ready'); });
     });
   }
 
-  // Langsames Einblenden beim Scrollen
+  /* ---------- Kameraführung ----------
+     Jeder Bildkasten bekommt einen inneren Rahmen, der beim Scrollen langsamer
+     mitläuft als der Text davor (Dolly), und im Bild selbst eine sehr langsame
+     Eigenbewegung. Beides sind getrennte Ebenen, damit sich die Transformationen
+     nicht gegenseitig überschreiben. */
+  const cam = [];
+
+  function prepareMedia(box, speed, index) {
+    const img = box.querySelector(':scope > img');
+    if (!img || box.querySelector(':scope > .media-move')) return;
+
+    const move = document.createElement('div');
+    move.className = 'media-move';
+    box.insertBefore(move, img);
+    move.appendChild(img);
+
+    if (!reducedMotion) {
+      img.classList.add('drift');
+      // Leicht unterschiedliche Dauern, damit die Bilder nicht im Gleichtakt atmen.
+      img.style.setProperty('--drift', (46 + (index % 5) * 7) + 's');
+      cam.push({ move: move, box: box, speed: speed });
+    }
+  }
+
+  function updateCam() {
+    const vh = window.innerHeight;
+    for (let i = 0; i < cam.length; i++) {
+      const item = cam[i];
+      const r = item.box.getBoundingClientRect();
+      if (r.bottom < -200 || r.top > vh + 200 || !r.height) continue;
+      // Verschiebung relativ zur Bildschirmmitte, begrenzt auf den Überstand.
+      const centre = r.top + r.height / 2 - vh / 2;
+      const max = r.height * 0.07;
+      const shift = Math.max(-max, Math.min(max, -centre * item.speed));
+      item.move.style.transform = 'translate3d(0,' + shift.toFixed(2) + 'px,0)';
+    }
+    camTicking = false;
+  }
+
+  let camTicking = false;
+  function onCamScroll() {
+    if (!camTicking) { camTicking = true; requestAnimationFrame(updateCam); }
+  }
+
+  let mediaIndex = 0;
+  document.querySelectorAll('.hero-media').forEach(function (box) {
+    prepareMedia(box, 0.14, mediaIndex++);
+  });
+  document.querySelectorAll('.viewer-stage').forEach(function (box) {
+    prepareMedia(box, 0.10, mediaIndex++);
+  });
+  document.querySelectorAll('.viewer-grid > *').forEach(function (box) {
+    prepareMedia(box, 0.07, mediaIndex++);
+  });
+
+  window.addEventListener('scroll', onCamScroll, { passive: true });
+  window.addEventListener('resize', onCamScroll);
+  // Die Projektansicht scrollt in einem eigenen Bereich -- der muss die Fahrt
+  // ebenfalls auslösen, sonst stehen dort die Bilder still.
+  document.querySelectorAll('.viewer-scroll').forEach(function (sc) {
+    sc.addEventListener('scroll', onCamScroll, { passive: true });
+  });
+  updateCam();
+
+  /* Weiche Blende beim Scrollen. Bild und Text gehen leicht versetzt auf,
+     damit es wie eine Überblendung wirkt und nicht wie ein UI-Effekt. */
   const io = new IntersectionObserver(function (entries) {
     entries.forEach(function (e) {
-      if (e.isIntersecting) { e.target.classList.add('show'); io.unobserve(e.target); }
+      if (!e.isIntersecting) return;
+      const el = e.target;
+      const delay = el.dataset.hold ? parseFloat(el.dataset.hold) : 0;
+      setTimeout(function () { el.classList.add('show'); }, delay);
+      io.unobserve(el);
     });
   }, { threshold: 0.12 });
-  document.querySelectorAll('.reveal').forEach(function (el) { io.observe(el); });
 
-  // Leichtes Parallax auf dem Hero-Bild -- wie eine langsame Kamerafahrt.
-  // Der Versatz bleibt im Zoom-Puffer (scale 1.12), es wird nie ein Rand sichtbar.
-  if (!window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
-    const els = Array.prototype.slice.call(document.querySelectorAll('[data-parallax]'));
-    els.forEach(function (el) { el.style.willChange = 'transform'; });
+  document.querySelectorAll('.reveal, .reveal-media').forEach(function (el) { io.observe(el); });
 
-    let ticking = false;
-    function apply() {
-      const vh = window.innerHeight;
-      els.forEach(function (el) {
-        const r = el.getBoundingClientRect();
-        if (r.bottom < -300 || r.top > vh + 300) return;
-        const speed = parseFloat(el.dataset.parallax) || 0.05;
-        const max = r.height * 0.05;
-        const shift = Math.max(-max, Math.min(max, (r.top + r.height / 2 - vh / 2) * speed));
-        el.style.transform = 'scale(1.12) translate3d(0,' + shift.toFixed(2) + 'px,0)';
-      });
-      ticking = false;
-    }
-    function onScroll() {
-      if (!ticking) { ticking = true; requestAnimationFrame(apply); }
-    }
-    window.addEventListener('scroll', onScroll, { passive: true });
-    window.addEventListener('resize', onScroll);
-    apply();
-  }
+  // Bilder in der Projektansicht laufen gestaffelt auf -- wie nacheinander
+  // gesetzte Einstellungen, nicht als Block.
+  document.querySelectorAll('.viewer-grid').forEach(function (grid) {
+    Array.prototype.forEach.call(grid.children, function (child, i) {
+      child.classList.add('reveal-media');
+      child.dataset.hold = String(i * 130);
+      io.observe(child);
+    });
+  });
+  document.querySelectorAll('.viewer-text, .viewer-process').forEach(function (el) {
+    el.classList.add('reveal');
+    el.dataset.hold = '220';   // Text folgt dem Bild
+    io.observe(el);
+  });
+
 })();
 </script>
 
