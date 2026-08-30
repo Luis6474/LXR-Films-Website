@@ -21,8 +21,10 @@ SRC_DIR = Path(__file__).parent / "Images"
 OUT_DIR = SRC_DIR / "web"
 
 WIDTHS = [800, 1600, 2400]
-WEBP_QUALITY = 80
-JPEG_QUALITY = 82
+# Hoch angesetzt: das Material lebt von weichen Verlaeufen (Nebel, Himmel,
+# Gegenlicht). Genau dort erzeugt staerkere Kompression sichtbare Stufen.
+WEBP_QUALITY = 92
+JPEG_QUALITY = 90
 SOURCE_SUFFIXES = {".jpg", ".jpeg", ".png", ".tif", ".tiff", ".webp"}
 
 UMLAUTS = {"ä": "ae", "ö": "oe", "ü": "ue", "ß": "ss"}

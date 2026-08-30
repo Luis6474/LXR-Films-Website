@@ -68,7 +68,9 @@
     background-repeat: repeat;
     background-size: 160px 160px;
     mix-blend-mode: overlay;
-    opacity: 0.055;
+    /* Auf beinahe schwarzem Grund moduliert Overlay nur schwach -- unter ~0.1
+       ist das Korn faktisch unsichtbar. Deshalb deutlich höher angesetzt. */
+    opacity: 0.19;
     will-change: transform;
     backface-visibility: hidden;
     animation: grainShift 0.7s steps(1) infinite;
@@ -112,7 +114,7 @@
   .hero {
     position: relative;
     height: 100vh; min-height: 480px;
-    display: flex; align-items: flex-end;
+    display: flex; align-items: center; justify-content: center;
     overflow: hidden;
   }
   .hero-media { position: absolute; inset: 0; overflow: hidden; }
@@ -126,45 +128,64 @@
     opacity: 0; transition: opacity 1.8s var(--ease);
   }
   .hero-video.is-ready { opacity: 1; }
+  /* Breite und Höhe werden per JS exakt berechnet, damit das iframe immer
+     genau 16:9 bleibt. Sobald es davon abweicht, baut YouTube selbst schwarze
+     Balken ein -- genau die Balken, die hier nicht auftauchen sollen. */
   .hero-video iframe {
     position: absolute; top: 50%; left: 50%;
-    width: 100vw; height: 56.25vw;
-    min-height: 100vh; min-width: 177.78vh;
-    transform: translate(-50%, -50%) scale(1.02);
+    transform: translate(-50%, -50%);
     border: 0; pointer-events: none;
+    display: block;
   }
 
   .hero-media::after {
     content: ""; position: absolute; inset: 0; z-index: 2;
     background: linear-gradient(to top, rgba(9,13,16,0.94) 0%, rgba(9,13,16,0.45) 40%, rgba(9,13,16,0.12) 72%);
   }
+  /* Nur Kennung und Headline, mittig im Bild -- sonst nichts, was ablenkt. */
   .hero-content {
-    position: relative; z-index: 2;
-    width: 100%; max-width: var(--col); margin: 0 auto; padding: 0 22px 64px;
-    animation: heroIn 1.8s 0.3s var(--ease) both;
+    position: relative; z-index: 3;
+    width: 100%; max-width: 20ch; margin: 0 auto; padding: 0 22px;
+    text-align: center;
+    animation: heroIn 1.8s 0.4s var(--ease) both;
   }
   @keyframes heroIn { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: none; } }
-  .hero-content .eyebrow { display: block; margin-bottom: 18px; }
+  .hero-content .eyebrow { display: block; margin-bottom: 22px; }
   .hero-content h1 {
-    font-size: clamp(1.75em, 6vw, 2.7em);
-    letter-spacing: 0.07em;
+    font-size: clamp(2.1em, 6.4vw, 4em);
+    letter-spacing: 0.08em;
+    text-wrap: balance;
   }
-  .hero-content .line { margin-top: 20px; color: var(--text-dim); max-width: 54ch; }
 
-  /* ---------- Textsektionen ---------- */
-  .band { padding: 104px 0; border-bottom: 1px solid var(--line); }
+  /* Dezenter Hinweis, dass es weitergeht -- ohne die nächste Sektion anzureißen. */
+  .hero-scroll {
+    position: absolute; z-index: 3; left: 50%; bottom: 40px;
+    transform: translateX(-50%);
+    width: 1px; height: 56px;
+    background: linear-gradient(to bottom, transparent, rgba(255,255,255,0.4));
+    animation: heroIn 1.4s 1.6s var(--ease) both;
+  }
+
+  /* ---------- Textsektionen ----------
+     Getrennt wird über Abstand, nicht über sichtbare Linien. */
+  .band { padding: 116px 0; }
+  .band.lead-band { padding: 132px 0 116px; }
+  .band .opening { font-size: 1.2em; line-height: 1.72; max-width: 58ch; color: var(--text); }
   .band h2 { font-size: 1.4em; letter-spacing: 0.06em; margin-bottom: 30px; }
   .band .lead { font-size: 1.12em; max-width: 60ch; color: var(--text-dim); }
   .band .body { max-width: 62ch; font-size: 1.02em; line-height: 1.8; color: var(--text-dim); }
   .band .body + .body { margin-top: 22px; }
 
   /* ---------- Projektliste ---------- */
-  .projects { padding: 104px 0; border-bottom: 1px solid var(--line); }
+  .projects { padding: 116px 0; }
   .projects h2 { font-size: 1.4em; letter-spacing: 0.06em; margin-bottom: 38px; }
 
-  .card + .card { border-top: 1px solid var(--line); }
-  .card:first-of-type { border-top: 1px solid var(--line); }
-  .card:last-of-type { border-bottom: 1px solid var(--line); }
+  /* Statt durchgehender Linien nur ein an den Rändern auslaufender Hauch --
+     trennt die Zeilen, ohne wie ein Bedienelement zu wirken. */
+  .card + .card::before {
+    content: ""; display: block; height: 1px;
+    background: linear-gradient(to right, transparent, rgba(255,255,255,0.09) 22%, rgba(255,255,255,0.09) 78%, transparent);
+  }
 
   .card-trigger {
     display: block; width: 100%; background: none; border: none;
@@ -185,20 +206,21 @@
   .card-titleline .name { font-family: 'Fraunces', serif; font-size: 1.08em; letter-spacing: 0.03em; }
   .card-titleline .type { font-size: 0.78em; color: var(--text-dim); }
   .card-teaser { margin-top: 4px; font-size: 0.87em; color: var(--text-dim); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  /* Gedämpft und dunkel -- die Projektfarbe kommt erst beim Darüberfahren durch. */
   .card-open {
-    flex-shrink: 0; font-size: 0.72em; letter-spacing: 0.16em; text-transform: uppercase;
-    color: var(--card-accent, var(--accent));
-    transition: opacity 0.6s var(--ease);
+    flex-shrink: 0; font-size: 0.68em; letter-spacing: 0.18em; text-transform: uppercase;
+    color: #5d666c;
+    transition: color 0.6s var(--ease);
   }
+  .card-trigger:hover .card-open { color: var(--card-accent, var(--accent)); }
 
   /* ---------- Kontakt ---------- */
-  .contact { padding: 104px 0 96px; }
+  .contact { padding: 116px 0 96px; }
   .contact h2 { font-size: 1.3em; letter-spacing: 0.06em; margin-bottom: 32px; }
   .contact .who { margin-bottom: 34px; }
   .contact .who .n { font-family: 'Fraunces', serif; font-size: 1.3em; letter-spacing: 0.03em; }
   .contact .who .s { color: var(--text-dim); font-size: 0.9em; margin-top: 2px; }
-  .contact .row { display: flex; gap: 14px; padding: 12px 0; border-top: 1px solid var(--line); font-size: 0.97em; }
-  .contact .row:last-of-type { border-bottom: 1px solid var(--line); }
+  .contact .row { display: flex; gap: 14px; padding: 9px 0; font-size: 0.97em; }
   .contact .row .k { color: var(--text-dim); min-width: 104px; flex-shrink: 0; }
   .contact a { color: var(--text); text-decoration: none; border-bottom: 1px solid var(--accent); }
   .contact a:hover { color: var(--accent); }
@@ -234,16 +256,22 @@
   .viewer-stage { position: relative; aspect-ratio: 21 / 9; overflow: hidden; background: #000; }
   .viewer-stage img { transform-origin: center; }
 
-  /* Film läuft: volles 16:9, damit nichts vom Bild beschnitten wird --
-     den Kinoeindruck macht ohnehin der Letterbox-Rahmen. */
-  .viewer-stage.has-video { aspect-ratio: 16 / 9; }
+  /* Die Bühne bekommt das echte Format des jeweiligen Films (data-ar).
+     Das iframe wird per JS exakt 16:9 gehalten und formatfüllend darübergelegt --
+     dadurch verschwinden von YouTube eingebackene Balken außerhalb des Rahmens. */
+  .viewer-stage.has-video { aspect-ratio: var(--ar, 16 / 9); }
   .viewer-stage.has-video img { opacity: 0; transition: opacity 0.8s var(--ease); }
+  .viewer-stage.is-playing img { opacity: 0; }
   .viewer-stage iframe {
-    position: absolute; inset: 0; width: 100%; height: 100%;
-    border: 0;
+    position: absolute; top: 50%; left: 50%;
+    transform: translate(-50%, -50%);
+    border: 0; display: block;
     pointer-events: none;      /* keine Klicks ins Video -> kein Absprung zu YouTube */
-    transform: scale(1.015);   /* schluckt mögliche 1px-Kanten des Players */
+    opacity: 0; transition: opacity 0.7s var(--ease);
   }
+  /* Der Player wird erst sichtbar, wenn der Film wirklich läuft. Vorher steht
+     das Standbild -- so blitzt weder YouTubes Ladekreis noch dessen Play-Symbol auf. */
+  .viewer-stage.is-playing iframe { opacity: 1; }
 
   .stage-ui {
     position: absolute; left: 0; right: 0; bottom: 0;
@@ -276,9 +304,13 @@
   .viewer-grid > * { aspect-ratio: 16 / 10; overflow: hidden; }
 
   .viewer-process {
-    max-width: 64ch; margin: 0 auto; padding-top: 20px;
-    border-top: 1px solid rgba(255,255,255,0.1);
+    max-width: 64ch; margin: 0 auto; padding-top: 22px;
     font-size: 0.9em; color: var(--p-accent);
+    position: relative;
+  }
+  .viewer-process::before {
+    content: ""; position: absolute; top: 0; left: 0; right: 0; height: 1px;
+    background: linear-gradient(to right, rgba(255,255,255,0.14), transparent 70%);
   }
 
   .viewer-close {
@@ -319,18 +351,24 @@
 
   <section class="hero">
     <div class="hero-media">
-      <!-- Standbild trägt den ersten Eindruck und bleibt Rückfalllösung,
-           falls der Browser Autoplay blockiert (z. B. Datensparmodus). -->
-      <img src="Images/web/nebelberg-1600.webp"
-           srcset="Images/web/nebelberg-800.webp 800w, Images/web/nebelberg-1600.webp 1600w, Images/web/nebelberg-2400.webp 2400w"
-           sizes="100vw" alt="Nebelverhangener Bergrücken in Schottland"
+      <!-- Standbild aus dem Hero-Film selbst. Trägt den ersten Eindruck und
+           bleibt Rückfalllösung, falls der Browser Autoplay blockiert. -->
+      <img src="Images/web/hero-supercut-1280.webp"
+           srcset="Images/web/hero-supercut-800.webp 800w, Images/web/hero-supercut-1280.webp 1280w"
+           sizes="100vw" alt="Standbild aus dem Hero-Film"
            fetchpriority="high" decoding="async" data-parallax="0.05">
       <div class="hero-video" id="heroVideo" data-yt="CH6TXDde2hs" aria-hidden="true"></div>
     </div>
     <div class="hero-content">
       <span class="eyebrow">LXR Films</span>
       <h1>Film, der mehr zeigt als nur Bilder</h1>
-      <p class="line">Ich bin Luis Räder, Filmemacher und Gründer von LXR Films. Ich produziere keine typischen Werbevideos – ich erzähle Geschichten, die man fühlen kann. Meine Filme fangen Stimmungen ein, transportieren Atmosphäre und lassen Orte, Marken und Menschen lebendig wirken. Es geht nicht nur darum, was man sieht, sondern darum, was man dabei spürt.</p>
+    </div>
+    <div class="hero-scroll" aria-hidden="true"></div>
+  </section>
+
+  <section class="band lead-band">
+    <div class="wrap reveal">
+      <p class="opening">Ich bin Luis Räder, Filmemacher und Gründer von LXR Films. Ich produziere keine typischen Werbevideos – ich erzähle Geschichten, die man fühlen kann. Meine Filme fangen Stimmungen ein, transportieren Atmosphäre und lassen Orte, Marken und Menschen lebendig wirken. Es geht nicht nur darum, was man sieht, sondern darum, was man dabei spürt.</p>
     </div>
   </section>
 
@@ -471,7 +509,7 @@
      style="--p-bg:#0d1109; --p-accent:#a9b56d; --p-glow:rgba(186,160,80,0.13)">
   <div class="viewer-scroll">
     <div class="viewer-inner">
-      <div class="viewer-stage" data-yt="qUV4MVFWDoc">
+      <div class="viewer-stage" data-yt="qUV4MVFWDoc" data-ar="2.133">
         <img src="Images/web/gaertnerei-finder/still-2025-07-01-232800-3-9-1-1600.webp"
              srcset="Images/web/gaertnerei-finder/still-2025-07-01-232800-3-9-1-800.webp 800w, Images/web/gaertnerei-finder/still-2025-07-01-232800-3-9-1-1600.webp 1600w, Images/web/gaertnerei-finder/still-2025-07-01-232800-3-9-1-2400.webp 2400w"
              sizes="(min-width: 1120px) 1120px, 100vw"
@@ -537,7 +575,7 @@
      style="--p-bg:#0a1115; --p-accent:#8aa3b2; --p-glow:rgba(110,145,165,0.13)">
   <div class="viewer-scroll">
     <div class="viewer-inner">
-      <div class="viewer-stage" data-yt="FfBvRlTPpvQ">
+      <div class="viewer-stage" data-yt="FfBvRlTPpvQ" data-ar="1.778">
         <img src="Images/web/oesterreich25/still-2025-08-22-215508-3-29-1-1600.webp"
              srcset="Images/web/oesterreich25/still-2025-08-22-215508-3-29-1-800.webp 800w, Images/web/oesterreich25/still-2025-08-22-215508-3-29-1-1600.webp 1600w, Images/web/oesterreich25/still-2025-08-22-215508-3-29-1-2400.webp 2400w"
              sizes="(min-width: 1120px) 1120px, 100vw"
@@ -569,7 +607,7 @@
      style="--p-bg:#120e08; --p-accent:#c8863f; --p-glow:rgba(190,120,50,0.14)">
   <div class="viewer-scroll">
     <div class="viewer-inner">
-      <div class="viewer-stage" data-yt="o1YdluXKf3g">
+      <div class="viewer-stage" data-yt="o1YdluXKf3g" data-ar="1.778">
         <img src="Images/web/track-of-time/2-10-2-10-1-1600.webp"
              srcset="Images/web/track-of-time/2-10-2-10-1-800.webp 800w, Images/web/track-of-time/2-10-2-10-1-1600.webp 1600w, Images/web/track-of-time/2-10-2-10-1-2400.webp 2400w"
              sizes="(min-width: 1120px) 1120px, 100vw"
@@ -603,7 +641,7 @@
      style="--p-bg:#130f0b; --p-accent:#c8a171; --p-glow:rgba(190,145,95,0.14)">
   <div class="viewer-scroll">
     <div class="viewer-inner">
-      <div class="viewer-stage" data-yt="o1YdluXKf3g">
+      <div class="viewer-stage" data-yt="o1YdluXKf3g" data-ar="1.778">
         <img src="Images/web/oesterreich24/img-2098-1500.webp"
              srcset="Images/web/oesterreich24/img-2098-800.webp 800w, Images/web/oesterreich24/img-2098-1500.webp 1500w"
              sizes="(min-width: 1120px) 1120px, 100vw"
@@ -658,30 +696,94 @@
     );
   }
 
+  function ytParams(id, extra) {
+    const p = [
+      'autoplay=1', 'mute=1', 'controls=0', 'rel=0', 'modestbranding=1',
+      'playsinline=1', 'iv_load_policy=3', 'fs=0', 'disablekb=1',
+      'showinfo=0', 'cc_load_policy=0', 'color=white', 'enablejsapi=1'
+    ].concat(extra || []);
+    // origin nur bei echter Web-Adresse -- als lokale Datei waere es "null"
+    // und YouTube verweigert die Einbettung.
+    if (location.protocol === 'http:' || location.protocol === 'https:') {
+      p.push('origin=' + encodeURIComponent(location.origin));
+    }
+    return p.join('&');
+  }
+
+  /* Deckt eine beliebig geformte Fläche mit einem stets exakt 16:9 grossen
+     Player ab. Ohne diese Rechnung weicht das iframe vom 16:9-Raster ab und
+     YouTube legt selbst schwarze Balken hinein. */
+  function fitFrame(box, frame) {
+    const w = box.clientWidth;
+    const h = box.clientHeight;
+    if (!w || !h) return;
+    const VIDEO_AR = 16 / 9;
+    let fw = w;
+    let fh = w / VIDEO_AR;
+    if (fh < h) { fh = h; fw = h * VIDEO_AR; }
+    const OVERSCAN = 1.03;   // schluckt Rundungskanten des Players
+    frame.style.width = Math.ceil(fw * OVERSCAN) + 'px';
+    frame.style.height = Math.ceil(fh * OVERSCAN) + 'px';
+  }
+
+  const fitted = [];
+  function registerFit(box, frame) {
+    fitted.push([box, frame]);
+    fitFrame(box, frame);
+  }
+  window.addEventListener('resize', function () {
+    fitted.forEach(function (pair) { fitFrame(pair[0], pair[1]); });
+  });
+
+  /* Meldet zurück, wann der Film tatsächlich läuft. Dafür wird kein
+     YouTube-Skript geladen -- der Player selbst schickt die Zustände,
+     sobald man sich per postMessage anmeldet. */
+  function whenPlaying(frame, onPlaying) {
+    let done = false;
+    function finish() {
+      if (done) return;
+      done = true;
+      window.removeEventListener('message', onMessage);
+      clearInterval(handshake);
+      onPlaying();
+    }
+    function onMessage(e) {
+      if (!e.data || typeof e.data !== 'string') return;
+      if (e.source !== frame.contentWindow) return;
+      try {
+        const msg = JSON.parse(e.data);
+        if (msg.event === 'onStateChange' && msg.info === 1) finish();
+        if (msg.event === 'infoDelivery' && msg.info && msg.info.playerState === 1) finish();
+      } catch (err) { /* andere Nachrichten ignorieren */ }
+    }
+    window.addEventListener('message', onMessage);
+    const handshake = setInterval(function () {
+      if (frame.contentWindow) {
+        frame.contentWindow.postMessage('{"event":"listening"}', '*');
+      }
+    }, 250);
+    // Rückfall, falls keine Rückmeldung kommt
+    setTimeout(finish, 4000);
+  }
+
   function mountVideo(viewer) {
     const stage = viewer.querySelector('.viewer-stage');
     if (!stage) return;
     const id = (stage.dataset.yt || '').trim();
     if (!id || stage.querySelector('iframe')) return;
 
-    const params = [
-      'autoplay=1', 'mute=1', 'controls=0', 'rel=0', 'modestbranding=1',
-      'playsinline=1', 'iv_load_policy=3', 'fs=0', 'disablekb=1',
-      'enablejsapi=1'
-    ];
-    // origin nur setzen, wenn es eine echte Web-Adresse gibt. Beim Öffnen als
-    // lokale Datei wäre location.origin der String "null" -- YouTube lehnt die
-    // Einbettung dann ab.
-    if (location.protocol === 'http:' || location.protocol === 'https:') {
-      params.push('origin=' + encodeURIComponent(location.origin));
-    }
+    // Echtes Format des Films -- damit von YouTube eingebackene Balken
+    // ausserhalb der sichtbaren Flaeche landen.
+    stage.style.setProperty('--ar', (stage.dataset.ar || '1.778'));
 
     const frame = document.createElement('iframe');
-    frame.src = 'https://www.youtube-nocookie.com/embed/' + encodeURIComponent(id) + '?' + params.join('&');
+    frame.src = 'https://www.youtube-nocookie.com/embed/' + encodeURIComponent(id) + '?' + ytParams(id);
     frame.title = viewer.querySelector('h2') ? viewer.querySelector('h2').textContent : 'Film';
     frame.allow = 'autoplay; encrypted-media; picture-in-picture';
     frame.setAttribute('referrerpolicy', 'strict-origin-when-cross-origin');
     stage.appendChild(frame);
+    registerFit(stage, frame);
+    whenPlaying(frame, function () { stage.classList.add('is-playing'); });
 
     const ui = document.createElement('div');
     ui.className = 'stage-ui';
@@ -722,7 +824,10 @@
     if (frame) { ytCommand(frame, 'stopVideo'); frame.remove(); }
     const ui = stage.querySelector('.stage-ui');
     if (ui) ui.remove();
-    stage.classList.remove('has-video');
+    stage.classList.remove('has-video', 'is-playing');
+    for (let i = fitted.length - 1; i >= 0; i--) {
+      if (fitted[i][0] === stage) fitted.splice(i, 1);
+    }
   }
 
   function openProject(trigger) {
@@ -804,23 +909,18 @@
   if (heroVideo && heroVideo.dataset.yt && !reducedMotion) {
     window.addEventListener('load', function () {
       const id = heroVideo.dataset.yt.trim();
-      const params = [
-        'autoplay=1', 'mute=1', 'controls=0', 'loop=1', 'playlist=' + id,
-        'rel=0', 'modestbranding=1', 'playsinline=1', 'iv_load_policy=3',
-        'fs=0', 'disablekb=1'
-      ].join('&');
-
       const frame = document.createElement('iframe');
-      frame.src = 'https://www.youtube-nocookie.com/embed/' + encodeURIComponent(id) + '?' + params;
+      frame.src = 'https://www.youtube-nocookie.com/embed/' + encodeURIComponent(id) + '?' +
+                  ytParams(id, ['loop=1', 'playlist=' + id]);
       frame.allow = 'autoplay; encrypted-media';
       frame.title = 'Hintergrundfilm';
       frame.tabIndex = -1;
       frame.setAttribute('referrerpolicy', 'strict-origin-when-cross-origin');
-      frame.addEventListener('load', function () {
-        // kurzer Vorlauf, damit nicht der schwarze Startframe aufblendet
-        setTimeout(function () { heroVideo.classList.add('is-ready'); }, 900);
-      });
       heroVideo.appendChild(frame);
+      registerFit(heroVideo, frame);
+      // Erst aufblenden, wenn der Film wirklich laeuft -- sonst blitzt YouTubes
+      // Ladeansicht mit Play-Symbol durch.
+      whenPlaying(frame, function () { heroVideo.classList.add('is-ready'); });
     });
   }
 
