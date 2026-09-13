@@ -767,6 +767,9 @@
     /* Text im linken Bereich, rechts Luft -- statt mittig über die volle Breite. */
     .band-grid { grid-template-columns: minmax(0, 5fr) minmax(0, 4fr); gap: 72px; }
     .band-grid.text-right { grid-template-columns: minmax(0, 4fr) minmax(0, 5fr); }
+    /* Ein Abschnitt bekommt bewusst mehr Bild. Die Textspalte verliert dabei
+       nichts Sichtbares -- die Zeilenlaenge ist auf 46 Zeichen gedeckelt. */
+    .band-grid.text-right.bild-gross { grid-template-columns: minmax(0, 6fr) minmax(0, 5fr); }
     .band-grid.text-right .band-text { grid-column: 2; }
     .band-grid.text-right .band-figure { grid-column: 1; grid-row: 1; }
     .band.alt::before {
@@ -859,6 +862,15 @@
           <p class="opening">Ich produziere keine typischen Werbevideos – ich erzähle Geschichten, die man fühlen kann.</p>
           <p class="body" style="margin-top:24px">Meine Filme fangen Stimmungen ein, transportieren Atmosphäre und lassen Orte, Marken und Menschen lebendig wirken. Es geht nicht nur darum, was man sieht, sondern darum, was man dabei spürt.</p>
         </div>
+        <figure class="band-figure reveal-media">
+          <div class="figure-media aura-host" style="--fig-ar: 4 / 3">
+            <img src="Images/web/whatsapp-image-2026-09-13-at-20-36-50-1600.webp"
+                 srcset="Images/web/whatsapp-image-2026-09-13-at-20-36-50-800.webp 800w, Images/web/whatsapp-image-2026-09-13-at-20-36-50-1600.webp 1600w, Images/web/whatsapp-image-2026-09-13-at-20-36-50-2400.webp 2400w"
+                 sizes="(min-width: 900px) 42vw, 100vw"
+                 alt="Dreh mit Teleobjektiv auf einer Weide, im Hintergrund Highlandrinder"
+                 loading="lazy" decoding="async">
+          </div>
+        </figure>
       </div>
     </div>
   </section>
@@ -976,7 +988,7 @@
 
   <section class="band alt">
     <div class="band-inner">
-      <div class="band-grid text-right">
+      <div class="band-grid text-right bild-gross">
         <div class="band-text holds reveal">
           <h2>Meine Arbeitsweise</h2>
           <p class="lead">Am Ende erinnern sich die meisten nicht daran, was genau gesagt wurde, sondern wie sich ein Video angefühlt hat.</p>
@@ -985,6 +997,15 @@
           <p class="body">Die Aufnahmen werden später gezielt um die Musik herum geplant, statt den Song im Nachhinein passend zu schneiden. So entsteht ein Film, der rhythmisch und emotional wie aus einem Guss wirkt – und der Dreh bleibt effizient, ohne viele Reshoots.</p>
           <p class="standout">Zuerst die Musik, dann die erste Aufnahme.</p>
         </div>
+        <figure class="band-figure reveal-media">
+          <div class="figure-media aura-host" style="--fig-ar: 3 / 4">
+            <img src="Images/web/img-1773-1600.webp"
+                 srcset="Images/web/img-1773-800.webp 800w, Images/web/img-1773-1600.webp 1600w, Images/web/img-1773-2400.webp 2400w"
+                 sizes="(min-width: 900px) 48vw, 100vw"
+                 alt="Nächtlicher Drehaufbau: Filmleuchte auf einem Stativ vor einem Cottage, warmes Licht im Fenster"
+                 loading="lazy" decoding="async">
+          </div>
+        </figure>
       </div>
     </div>
   </section>
@@ -1384,14 +1405,14 @@
         e.style.setProperty('--breite', (1 + Math.random() * 1.8).toFixed(1) + 'px');
         e.style.setProperty('--dauer', (0.45 + Math.random() * 0.85).toFixed(2) + 's');
       });
-    }, 7000, 19000);     // Streifen: haeufiger als zuvor, aber weiterhin selten
+    }, 4000, 11000);     // Streifen: rund achtmal pro Minute
 
     planen(function () {
       einmal(zucken, function (e) {
         // Laenger als zuvor: ein weiches Atmen der Belichtung, kein Blitz.
         e.style.setProperty('--dauer', (0.8 + Math.random() * 1.1).toFixed(2) + 's');
       });
-    }, 6000, 17000);     // Zucken: haeufiger, dafuer weich und kaum merklich
+    }, 3000, 8000);      // Zucken: rund elfmal pro Minute, dafuer weich
   })();
 
   const page = document.getElementById('page');
