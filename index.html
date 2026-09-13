@@ -25,7 +25,7 @@
     --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
     --ease-dock: cubic-bezier(0.72, 0, 0.16, 1);  /* Umschalten, kein Mitschrumpfen */
     /* Die beiden Korn-Kacheln werden beim Laden gerechnet (siehe Skript). */
-    --grain-size: 256px;
+    --grain-size: 256px;        /* wird beim Laden exakt aufs Bildpunkteraster gesetzt */
     --grain-rate: 0.5s;   /* 12 Schritte je Durchlauf = 24 Wechsel/s, Kinobildrate */
   }
 
@@ -124,13 +124,37 @@
   }
   .aura.on { opacity: 0.78; }
 
+  /* ---------- Weiche Bildkanten ----------
+     Zweiter, eigenstaendiger Effekt neben dem Lichthof: die Kante selbst wird
+     ausgeblendet, damit das Bild nicht als Rechteck in der dunklen Flaeche
+     steht, sondern hineinlaeuft. Umgesetzt ueber zwei Verlaufsmasken (waagerecht
+     und senkrecht), die miteinander verschnitten werden -- so sind alle vier
+     Kanten weich, die Bildmitte bleibt unangetastet.
+     Wichtig: die Maske sitzt auf dem Bild, NICHT auf dem Kasten -- sonst wuerde
+     sie den Lichthof gleich mit wegschneiden, der ja ueber die Kante
+     hinausreichen soll. */
+  .figure-media > img:not(.aura),
+  .viewer-grid > * {
+    --feder: 2%;
+    -webkit-mask-image:
+      linear-gradient(to right,  transparent 0, #000 var(--feder), #000 calc(100% - var(--feder)), transparent 100%),
+      linear-gradient(to bottom, transparent 0, #000 var(--feder), #000 calc(100% - var(--feder)), transparent 100%);
+    -webkit-mask-composite: source-in;
+            mask-image:
+      linear-gradient(to right,  transparent 0, #000 var(--feder), #000 calc(100% - var(--feder)), transparent 100%),
+      linear-gradient(to bottom, transparent 0, #000 var(--feder), #000 calc(100% - var(--feder)), transparent 100%);
+            mask-composite: intersect;
+  }
+  /* Kleine Bilder vertragen weniger Feder, sonst bleibt zu wenig Bild uebrig. */
+  .viewer-grid > * { --feder: 1.6%; }
+
   /* ---------- Schaerfefeld ----------
      Ein Feld um den Mauszeiger bleibt scharf, der Rest geht ganz leicht aus dem
      Fokus -- wie eine offene Blende. Bewusst schwach (gut zwei Pixel) und mit
      grosszuegigem scharfem Kern, damit nichts unleserlich wird. Nur dort, wo es
      ueberhaupt einen Mauszeiger gibt. */
   .focus {
-    position: fixed; inset: 0; z-index: 600; pointer-events: none;
+    position: fixed; inset: 0; z-index: 490; pointer-events: none;
     opacity: 0; transition: opacity 1s var(--ease);
   }
   /* Solange der Hero-Film formatfuellend steht, ist er das ganze Bild -- ein
@@ -155,13 +179,21 @@
      transform in diskreten Schritten -> läuft auf dem Compositor, kein
      Repaint pro Frame, daher ruckelfrei. */
   .grain {
-    position: fixed; top: -50%; left: -50%;
-    width: 200%; height: 200%;
+    /* Nur so gross wie noetig: das Bild wird hoechstens um eine Kachelbreite
+       verschoben, also reicht Fenster plus zwei Kacheln. Vorher war die Flaeche
+       doppelt so breit UND doppelt so hoch wie das Fenster -- die vierfache
+       Flaeche als dauerhaft vorgehaltene Ebene.
+       Kein will-change: eine laufende transform-Animation wird ohnehin auf der
+       Grafikkarte gerechnet. Erzwungene Ebenen kosten hier nur Speicher, und
+       knapper Grafikspeicher ist genau das, was einzelne Kacheln flackern
+       laesst. */
+    position: fixed;
+    top: calc(-1 * var(--grain-size)); left: calc(-1 * var(--grain-size));
+    width: calc(100% + 2 * var(--grain-size));
+    height: calc(100% + 2 * var(--grain-size));
     z-index: 500; pointer-events: none;
     background-repeat: repeat;
     background-size: var(--grain-size) var(--grain-size);
-    will-change: transform;
-    backface-visibility: hidden;
     animation: grainShift var(--grain-rate) steps(1) infinite;
   }
   /* Zwei Lagen mit unterschiedlichen Kacheln, weil ein Mischmodus allein nicht
@@ -178,26 +210,29 @@
   .grain-mid { background-image: var(--grain-mid-img); mix-blend-mode: overlay; opacity: 0.155; }
   .grain-dark {
     background-image: var(--grain-dark-img);
-    mix-blend-mode: screen; opacity: 0.075;
+    mix-blend-mode: screen; opacity: 0.095;
     animation-delay: calc(var(--grain-rate) / -2);   /* versetzt, damit sich beide Lagen nicht decken */
   }
   /* Zwoelf Schritte je halber Sekunde: das Korn wechselt 24-mal pro Sekunde,
      also so oft wie Einzelbilder im Kino. Bei den vorherigen elf Wechseln pro
      Sekunde las sich die Bewegung als Stottern. Die Spruenge sind bewusst
      unregelmaessig, damit nichts als gleitende Textur wahrgenommen wird. */
+  /* Verschoben wird in Kachelbreiten, nie weiter als eine ganze Kachel -- das
+     Muster wiederholt sich ohnehin, mehr Weg braucht es nicht. Zwoelf Schritte
+     je halber Sekunde ergeben 24 Wechsel pro Sekunde, also Kinobildrate. */
   @keyframes grainShift {
     0%    { transform: translate3d(0, 0, 0); }
-    8.3%  { transform: translate3d(-37%, 19%, 0); }
-    16.6% { transform: translate3d(23%, -41%, 0); }
-    25%   { transform: translate3d(-13%, -27%, 0); }
-    33.3% { transform: translate3d(44%, 31%, 0); }
-    41.6% { transform: translate3d(-29%, -12%, 0); }
-    50%   { transform: translate3d(17%, 43%, 0); }
-    58.3% { transform: translate3d(-45%, -33%, 0); }
-    66.6% { transform: translate3d(35%, -18%, 0); }
-    75%   { transform: translate3d(-21%, 38%, 0); }
-    83.3% { transform: translate3d(11%, -46%, 0); }
-    91.6% { transform: translate3d(-40%, 25%, 0); }
+    8.3%  { transform: translate3d(calc(var(--grain-size) * -0.73), calc(var(--grain-size) *  0.41), 0); }
+    16.6% { transform: translate3d(calc(var(--grain-size) *  0.52), calc(var(--grain-size) * -0.88), 0); }
+    25%   { transform: translate3d(calc(var(--grain-size) * -0.29), calc(var(--grain-size) * -0.61), 0); }
+    33.3% { transform: translate3d(calc(var(--grain-size) *  0.91), calc(var(--grain-size) *  0.67), 0); }
+    41.6% { transform: translate3d(calc(var(--grain-size) * -0.64), calc(var(--grain-size) * -0.23), 0); }
+    50%   { transform: translate3d(calc(var(--grain-size) *  0.36), calc(var(--grain-size) *  0.94), 0); }
+    58.3% { transform: translate3d(calc(var(--grain-size) * -0.95), calc(var(--grain-size) * -0.72), 0); }
+    66.6% { transform: translate3d(calc(var(--grain-size) *  0.78), calc(var(--grain-size) * -0.39), 0); }
+    75%   { transform: translate3d(calc(var(--grain-size) * -0.47), calc(var(--grain-size) *  0.83), 0); }
+    83.3% { transform: translate3d(calc(var(--grain-size) *  0.24), calc(var(--grain-size) * -0.96), 0); }
+    91.6% { transform: translate3d(calc(var(--grain-size) * -0.86), calc(var(--grain-size) *  0.55), 0); }
     100%  { transform: translate3d(0, 0, 0); }
   }
 
@@ -500,10 +535,12 @@
      Zeichenkontext -- die Lagen könnten dann nicht mehr mit dem Hintergrund
      darunter verrechnen und legten sich als graue Fläche darüber. */
   .viewer-grain {
-    position: absolute; top: -50%; left: -50%; width: 200%; height: 200%;
+    position: absolute;
+    top: calc(-1 * var(--grain-size)); left: calc(-1 * var(--grain-size));
+    width: calc(100% + 2 * var(--grain-size));
+    height: calc(100% + 2 * var(--grain-size));
     z-index: 0; pointer-events: none;
     background-repeat: repeat; background-size: var(--grain-size) var(--grain-size);
-    will-change: transform; backface-visibility: hidden;
     animation: grainShift var(--grain-rate) steps(1) infinite;
   }
 
@@ -519,28 +556,18 @@
   /* Korn der Fotos: liegt IM Bildkasten, nicht ueber der Seite. Beim laufenden
      Film wird es abgeschaltet -- und weil es gar nicht erst ausserhalb des
      Kastens existiert, kann es ein Video auch nicht versehentlich ueberlagern. */
-  .stage-wrap .viewer-stage::before,
   .stage-wrap .viewer-stage::after,
-  .viewer-grid > *::before,
   .viewer-grid > *::after {
-    content: ""; position: absolute; inset: -50%;
+    content: ""; position: absolute;
+    top: calc(-1 * var(--grain-size)); left: calc(-1 * var(--grain-size));
+    width: calc(100% + 2 * var(--grain-size));
+    height: calc(100% + 2 * var(--grain-size));
     z-index: 3; pointer-events: none;
     background-repeat: repeat; background-size: var(--grain-size) var(--grain-size);
-    will-change: transform; backface-visibility: hidden;
+    background-image: var(--grain-mid-img);
+    mix-blend-mode: overlay; opacity: 0.16;
     animation: grainShift var(--grain-rate) steps(1) infinite;
   }
-  .stage-wrap .viewer-stage::before,
-  .viewer-grid > *::before {
-    background-image: var(--grain-dark-img);
-    mix-blend-mode: screen; opacity: 0.075;
-    animation-delay: calc(var(--grain-rate) / -2);
-  }
-  .stage-wrap .viewer-stage::after,
-  .viewer-grid > *::after {
-    background-image: var(--grain-mid-img);
-    mix-blend-mode: overlay; opacity: 0.155;
-  }
-  .viewer-stage.is-playing::before,
   .viewer-stage.is-playing::after { content: none; }
   .viewer-inner {
     max-width: var(--wide); margin: 0 auto;
@@ -1135,8 +1162,13 @@
        werden soll. So bleibt ein Korn rund einen echten Bildpunkt gross.
        Bei mehr als dem Doppelten wird gedeckelt, sonst wird die Kachel unnoetig
        gross, ohne dass man den Unterschied noch sieht. */
-    const DICHTE = Math.min(2, Math.max(1, Math.round(window.devicePixelRatio || 1)));
-    const SIZE = 256 * DICHTE;
+    /* Die Kachel wird so gerechnet und angezeigt, dass ein Bildpunkt der Kachel
+       genau einem Bildpunkt des Bildschirms entspricht. Sonst muss der Browser
+       das Muster bei jedem Zeichnen umrechnen -- das kostet nicht nur Leistung,
+       es macht das Korn auch matschig. Bei sehr dichten Schirmen wird die Kachel
+       gedeckelt; das Korn faellt dort einfach feiner aus. */
+    const DPR = window.devicePixelRatio || 1;
+    const SIZE = Math.round(320 * Math.min(2, DPR));
 
     /* Normalverteilte Werte einmal vorrechnen und danach nur noch auslosen.
        Die Verteilung Punkt fuer Punkt zu berechnen waere bei einer halben
@@ -1149,14 +1181,50 @@
     }
     function gauss() { return GLOCKE[(Math.random() * 4096) | 0]; }
 
-    function tile(fill) {
+    /* Einmal leicht verschleifen -- und zwar ueber den Kachelrand hinweg, damit
+       die Kachel nahtlos bleibt. Das ist der eigentliche Unterschied zwischen
+       Videorauschen und Filmkorn: reines Punkt-fuer-Punkt-Rauschen ergibt harte
+       Einzelpunkte, echtes Korn besteht aus weichen, leicht zusammenhaengenden
+       Koernchen. Danach wird der Kontrast wieder angehoben, den das Verschleifen
+       herausnimmt. */
+    function weichzeichnen(src) {
+      const tmp = new Float32Array(SIZE * SIZE);
+      const out = new Float32Array(SIZE * SIZE);
+      for (let y = 0; y < SIZE; y++) {
+        const z = y * SIZE;
+        for (let x = 0; x < SIZE; x++) {
+          tmp[z + x] = 0.25 * src[z + (x ? x - 1 : SIZE - 1)]
+                     + 0.5  * src[z + x]
+                     + 0.25 * src[z + (x + 1 === SIZE ? 0 : x + 1)];
+        }
+      }
+      for (let y = 0; y < SIZE; y++) {
+        const o = (y ? y - 1 : SIZE - 1) * SIZE;
+        const u = (y + 1 === SIZE ? 0 : y + 1) * SIZE;
+        const z = y * SIZE;
+        for (let x = 0; x < SIZE; x++) {
+          out[z + x] = 0.25 * tmp[o + x] + 0.5 * tmp[z + x] + 0.25 * tmp[u + x];
+        }
+      }
+      // Das Verschleifen druckt die Streuung auf 0,375 -- hier wieder herauf.
+      for (let i = 0; i < out.length; i++) out[i] *= 2.667;
+      return out;
+    }
+
+    function rauschfeld() {
+      const f = new Float32Array(SIZE * SIZE);
+      for (let i = 0; i < f.length; i++) f[i] = gauss();
+      return weichzeichnen(f);
+    }
+
+    function tile(feld, abbild) {
       const c = document.createElement('canvas');
       c.width = c.height = SIZE;
       const ctx = c.getContext('2d');
       const im = ctx.createImageData(SIZE, SIZE);
       const d = im.data;
-      for (let i = 0; i < d.length; i += 4) {
-        const v = fill();
+      for (let i = 0, p = 0; i < d.length; i += 4, p++) {
+        const v = abbild(feld[p]);
         d[i] = d[i + 1] = d[i + 2] = v;
         d[i + 3] = 255;
       }
@@ -1165,18 +1233,25 @@
     }
 
     try {
-      const mitte = tile(function () {
-        const v = 128 + gauss() * 29;
+      // Mitteltoene: Normalverteilung um den neutralen Wert 128.
+      const mitte = tile(rauschfeld(), function (n) {
+        const v = 128 + n * 26;
         return v < 0 ? 0 : (v > 255 ? 255 : v) | 0;
       });
-      const tiefen = tile(function () {
-        // Rund ein Sechstel der Punkte traegt ein Korn, der Rest bleibt schwarz.
-        if (Math.random() < 0.83) return 0;
-        return (60 + Math.random() * 195) | 0;
+      // Tiefen: der Betrag der Abweichung, nicht nur die obere Flanke. Dadurch
+      // traegt JEDER Bildpunkt ein wenig Korn statt nur jeder sechste.
+      // Vorher waren es vereinzelte helle Punkte auf Schwarz -- das liest sich
+      // als Staub oder Videorauschen. Echtes Korn in den Tiefen ist dicht und
+      // kontrastarm: viele sehr feine Koerner, keine hellen Einzelpunkte.
+      const tiefen = tile(rauschfeld(), function (n) {
+        const v = (n < 0 ? -n : n) * 44;
+        return v > 255 ? 255 : v | 0;
       });
       const root = document.documentElement;
       root.style.setProperty('--grain-mid-img', mitte);
       root.style.setProperty('--grain-dark-img', tiefen);
+      // Kachel genau im Raster der Bildpunkte anzeigen -- kein Umrechnen.
+      root.style.setProperty('--grain-size', (SIZE / DPR) + 'px');
     } catch (e) {
       // Ohne Korn sieht die Seite ruhiger aus, aber nichts ist kaputt.
     }
