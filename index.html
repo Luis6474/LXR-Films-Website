@@ -113,40 +113,20 @@
        Angaben fuer rechts und unten werden dann ignoriert -- das Bild landete
        dadurch in voller Groesse im Textfluss. */
     position: absolute;
-    left: -19%; top: -19%; width: 138%; height: 138%;
+    /* Weit gestreut statt eng gebuendelt: der Schein reicht rundum etwa eine
+       halbe Bildbreite hinaus und nimmt dabei gleichmaessig ab. */
+    left: -55%; top: -55%; width: 210%; height: 210%;
     object-fit: cover;
     z-index: 0; pointer-events: none;
-    filter: blur(58px) saturate(2.6) brightness(1.45);
+    filter: blur(92px) saturate(2.3) brightness(1.3);
     opacity: 0; transition: opacity 1.8s var(--ease);
-    /* Ohne Auslaufen zeichnet sich die Kante des Scheins als Kasten ab. */
-    -webkit-mask-image: radial-gradient(closest-side, #000 46%, transparent 100%);
-            mask-image: radial-gradient(closest-side, #000 46%, transparent 100%);
+    /* Beginnt schon nahe der Mitte abzunehmen -- dadurch ein weiches Streulicht
+       statt eines hellen Kerns mit Rand. */
+    -webkit-mask-image: radial-gradient(closest-side, #000 8%, rgba(0,0,0,0.42) 44%, transparent 100%);
+            mask-image: radial-gradient(closest-side, #000 8%, rgba(0,0,0,0.42) 44%, transparent 100%);
   }
-  .aura.on { opacity: 0.78; }
+  .aura.on { opacity: 0.5; }
 
-  /* ---------- Weiche Bildkanten ----------
-     Zweiter, eigenstaendiger Effekt neben dem Lichthof: die Kante selbst wird
-     ausgeblendet, damit das Bild nicht als Rechteck in der dunklen Flaeche
-     steht, sondern hineinlaeuft. Umgesetzt ueber zwei Verlaufsmasken (waagerecht
-     und senkrecht), die miteinander verschnitten werden -- so sind alle vier
-     Kanten weich, die Bildmitte bleibt unangetastet.
-     Wichtig: die Maske sitzt auf dem Bild, NICHT auf dem Kasten -- sonst wuerde
-     sie den Lichthof gleich mit wegschneiden, der ja ueber die Kante
-     hinausreichen soll. */
-  .figure-media > img:not(.aura),
-  .viewer-grid > * {
-    --feder: 2%;
-    -webkit-mask-image:
-      linear-gradient(to right,  transparent 0, #000 var(--feder), #000 calc(100% - var(--feder)), transparent 100%),
-      linear-gradient(to bottom, transparent 0, #000 var(--feder), #000 calc(100% - var(--feder)), transparent 100%);
-    -webkit-mask-composite: source-in;
-            mask-image:
-      linear-gradient(to right,  transparent 0, #000 var(--feder), #000 calc(100% - var(--feder)), transparent 100%),
-      linear-gradient(to bottom, transparent 0, #000 var(--feder), #000 calc(100% - var(--feder)), transparent 100%);
-            mask-composite: intersect;
-  }
-  /* Kleine Bilder vertragen weniger Feder, sonst bleibt zu wenig Bild uebrig. */
-  .viewer-grid > * { --feder: 1.6%; }
 
   /* ---------- Schaerfefeld ----------
      Ein Feld um den Mauszeiger bleibt scharf, der Rest geht ganz leicht aus dem
@@ -236,6 +216,61 @@
     100%  { transform: translate3d(0, 0, 0); }
   }
 
+  /* ---------- Analoge Stoerungen ----------
+     Seltene Erinnerungen an eine Filmvorfuehrung: ein senkrechter Kratzer, der
+     kurz durchs Bild laeuft, und ab und zu ein Zucken in der Helligkeit.
+     Beides liegt auf derselben Ebene wie das Korn und damit UNTER den
+     Videoflaechen -- Filme bleiben unangetastet.
+     Gezeigt wird nur, was das Skript gerade eingeschaltet hat; im Ruhezustand
+     ist hier nichts zu rechnen. */
+  .analog {
+    position: fixed; inset: 0; z-index: 501; pointer-events: none;
+    overflow: hidden;
+  }
+  .kratzer {
+    position: absolute; top: -4%; height: 108%;
+    width: var(--breite, 2px);
+    background: linear-gradient(to bottom,
+      transparent 0, rgba(228,234,238,0.07) 9%, rgba(228,234,238,0.17) 38%,
+      transparent 52%, rgba(228,234,238,0.05) 64%, rgba(228,234,238,0.12) 86%, transparent 100%);
+    mix-blend-mode: screen;
+    opacity: 0;
+    filter: blur(0.7px);
+  }
+  /* Ein echter Kratzer steht nicht ruhig -- er springt und setzt aus. */
+  .kratzer.laeuft { animation: kratzer var(--dauer, 0.9s) steps(1) 1; }
+  @keyframes kratzer {
+    0%   { opacity: 0;    transform: translateX(0); }
+    6%   { opacity: 0.55; transform: translateX(0); }
+    13%  { opacity: 0;    transform: translateX(1px); }
+    19%  { opacity: 0.85; transform: translateX(-1px); }
+    31%  { opacity: 0.30; transform: translateX(0); }
+    38%  { opacity: 0.95; transform: translateX(1px); }
+    49%  { opacity: 0.15; transform: translateX(2px); }
+    57%  { opacity: 0.75; transform: translateX(0); }
+    68%  { opacity: 0.35; transform: translateX(-1px); }
+    79%  { opacity: 0.80; transform: translateX(1px); }
+    88%  { opacity: 0.25; transform: translateX(0); }
+    100% { opacity: 0;    transform: translateX(0); }
+  }
+
+  .zucken {
+    position: fixed; inset: 0; z-index: 502; pointer-events: none;
+    background: #d6e3ec;
+    mix-blend-mode: soft-light;
+    opacity: 0;
+  }
+  .zucken.laeuft { animation: zucken var(--dauer, 0.16s) steps(1) 1; }
+  @keyframes zucken {
+    0%   { opacity: 0; }
+    18%  { opacity: 0.085; }
+    34%  { opacity: 0.015; }
+    52%  { opacity: 0.065; }
+    71%  { opacity: 0.010; }
+    86%  { opacity: 0.040; }
+    100% { opacity: 0; }
+  }
+
   /* ---------- Vignette ---------- */
   .vignette {
     position: fixed; inset: 0; z-index: 999; pointer-events: none;
@@ -273,7 +308,14 @@
   .hero {
     position: relative;
     height: 100vh; min-height: 480px;
-    overflow: hidden;
+    /* Nur waagerecht abschneiden: die Laufschrift ist breiter als das Fenster
+       und muss beschnitten werden. Senkrecht NICHT -- sonst wird der Lichthof
+       an der Unterkante des Hero gekappt, und zwar mitten im Verlauf. Genau das
+       war die sichtbare Kante unter dem Video.
+       "clip" statt "hidden", weil "hidden" auf einer Achse die andere Achse zu
+       einem Scrollbereich machen wuerde. */
+    overflow-x: clip;
+    overflow-y: visible;
   }
 
   /* Zentriert über inset+margin statt über transform: ein transform würde einen
@@ -319,16 +361,24 @@
      Dadurch ist die Farbe echt aus dem Bild genommen, nicht geraten. */
   .hero-aura {
     position: absolute; inset: 0; margin: auto;
-    width: min(104vw, 189.6vh); height: min(58.5vw, 106.7vh);
-    z-index: 1;
-    filter: blur(64px) saturate(2.6) brightness(1.4);
+    /* Deutlich groesser als das Video: der Schein soll sich weit verteilen und
+       dabei nach aussen ruhig abnehmen, statt als heller Fleck am Rand zu
+       sitzen. */
+    width: min(168vw, 306vh); height: min(94.5vw, 172vh);
+    /* z-index 0 statt 1: der Schein reicht jetzt unter den Hero hinaus und
+       wuerde sonst ueber dem Text des naechsten Abschnitts liegen. Bei 0 liegt
+       er in derselben Ebene wie die folgenden Abschnitte, aber davor in der
+       Reihenfolge -- also dahinter. */
+    z-index: 0;
+    filter: blur(104px) saturate(2.4) brightness(1.32);
     opacity: 0; transition: opacity 1400ms var(--ease);
     pointer-events: none;
-    /* Ohne dieses Auslaufen zeichnet sich der Rand des Scheins als Kasten ab. */
-    -webkit-mask-image: radial-gradient(closest-side, #000 44%, transparent 100%);
-            mask-image: radial-gradient(closest-side, #000 44%, transparent 100%);
+    /* Der Verlauf beginnt fast in der Mitte abzunehmen: langes, weiches
+       Auslaufen statt harter Kante am Rand des Scheins. */
+    -webkit-mask-image: radial-gradient(closest-side, #000 6%, rgba(0,0,0,0.45) 46%, transparent 100%);
+            mask-image: radial-gradient(closest-side, #000 6%, rgba(0,0,0,0.45) 46%, transparent 100%);
   }
-  .hero-aura.on { opacity: 0.8; }
+  .hero-aura.on { opacity: 0.5; }
 
   .hero-content {
     position: absolute; inset: 0; z-index: 507;
@@ -661,7 +711,7 @@
        Bildschirm Leere. Die Hoehe faehrt deshalb in derselben Bewegung mit. */
     .hero { transition: height 820ms var(--ease-dock); }
     .hero.is-docked { height: 62vh; min-height: 0; }
-    .hero-aura { width: min(112vw, 199vh); height: min(63vw, 112vh); }
+    .hero-aura { width: min(176vw, 313vh); height: min(99vw, 176vh); }
     .m-word { font-size: clamp(1.25em, 7vw, 2em); }
     .card-open { display: none; }
     .card-preview { width: 96px; }
@@ -715,6 +765,7 @@
     .hero-content { animation: none; }
     /* Kein Durchlauf, keine Umschaltbewegung, kein Schaerfefeld. */
     .marquee-track { animation: none; }
+    .analog, .zucken { display: none; }
     .hero-frame { transition: none; }
     .hero-video { display: none; }
     .focus { display: none; }
@@ -727,6 +778,11 @@
 <div class="grain grain-mid" aria-hidden="true"></div>
 <div class="grain grain-dark" aria-hidden="true"></div>
 <div class="focus" id="focus" aria-hidden="true"></div>
+<div class="analog" id="analog" aria-hidden="true">
+  <div class="kratzer" id="kratzer1"></div>
+  <div class="kratzer" id="kratzer2"></div>
+</div>
+<div class="zucken" id="zucken" aria-hidden="true"></div>
 <div class="vignette" aria-hidden="true"></div>
 <div class="lb-bar lb-top" aria-hidden="true"></div>
 <div class="lb-bar lb-bottom" aria-hidden="true"></div>
@@ -1156,105 +1212,157 @@
                    treten hervor -- so bekommen auch die dunklen Flaechen Korn,
                    ohne dass die Schwaerzen aufgehellt werden. */
   (function buildGrain() {
-    /* Die Kachel wird in der Aufloesung des Bildschirms gerechnet, nicht in
-       CSS-Punkten: auf einem Handy mit dreifacher Punktdichte waere ein Korn
-       sonst ein 3x3 grosser Block -- genau der grobe Eindruck, der vermieden
-       werden soll. So bleibt ein Korn rund einen echten Bildpunkt gross.
-       Bei mehr als dem Doppelten wird gedeckelt, sonst wird die Kachel unnoetig
-       gross, ohne dass man den Unterschied noch sieht. */
-    /* Die Kachel wird so gerechnet und angezeigt, dass ein Bildpunkt der Kachel
-       genau einem Bildpunkt des Bildschirms entspricht. Sonst muss der Browser
-       das Muster bei jedem Zeichnen umrechnen -- das kostet nicht nur Leistung,
-       es macht das Korn auch matschig. Bei sehr dichten Schirmen wird die Kachel
-       gedeckelt; das Korn faellt dort einfach feiner aus. */
+    /* Die Kachel wird doppelt so fein gerechnet wie sie spaeter angezeigt wird
+       und erst am Ende einmal sauber heruntergerechnet. Das ist der Grund,
+       warum das Korn rund statt kantig wirkt: bei einem Korn, das direkt in
+       Bildschirmpunkten entsteht, IST jedes Korn ein Quadrat. Erst durch das
+       Herunterrechnen bekommen die Koerner weiche, runde Raender.
+
+       Zweiter Punkt: die Werte werden ueber eine weiche Kennlinie abgebildet
+       (Tangens hyperbolicus) statt am Ende hart abgeschnitten. Abgeschnittene
+       Werte ergeben Koerner mit flachem Deckel und harter Kante -- genau der
+       grobe Eindruck, der weg sollte. */
     const DPR = window.devicePixelRatio || 1;
-    const SIZE = Math.round(320 * Math.min(2, DPR));
+    const ZIEL = Math.round(256 * Math.min(2, DPR));   // Kachel in Bildpunkten
+    const S = ZIEL * 2;                                // doppelt so fein gerechnet
 
     /* Normalverteilte Werte einmal vorrechnen und danach nur noch auslosen.
-       Die Verteilung Punkt fuer Punkt zu berechnen waere bei einer halben
+       Die Verteilung Punkt fuer Punkt zu berechnen waere bei ueber einer
        Million Bildpunkten spuerbare Rechenzeit beim Seitenaufbau. */
-    const GLOCKE = new Float32Array(4096);
+    const GLOCKE = new Float32Array(8192);
     for (let i = 0; i < GLOCKE.length; i++) {
       let s = 0;
       for (let k = 0; k < 6; k++) s += Math.random();
       GLOCKE[i] = (s - 3) / 0.7071;      // Mittelwert 0, Standardabweichung 1
     }
-    function gauss() { return GLOCKE[(Math.random() * 4096) | 0]; }
 
-    /* Einmal leicht verschleifen -- und zwar ueber den Kachelrand hinweg, damit
-       die Kachel nahtlos bleibt. Das ist der eigentliche Unterschied zwischen
-       Videorauschen und Filmkorn: reines Punkt-fuer-Punkt-Rauschen ergibt harte
-       Einzelpunkte, echtes Korn besteht aus weichen, leicht zusammenhaengenden
-       Koernchen. Danach wird der Kontrast wieder angehoben, den das Verschleifen
-       herausnimmt. */
-    function weichzeichnen(src) {
-      const tmp = new Float32Array(SIZE * SIZE);
-      const out = new Float32Array(SIZE * SIZE);
-      for (let y = 0; y < SIZE; y++) {
-        const z = y * SIZE;
-        for (let x = 0; x < SIZE; x++) {
-          tmp[z + x] = 0.25 * src[z + (x ? x - 1 : SIZE - 1)]
+    /* Ein Durchgang Weichzeichnung, umlaufend gerechnet, damit die Kachel
+       nahtlos bleibt. Zwei Durchgaenge ergeben runde Koerner statt Einzelpunkte. */
+    function weich(src) {
+      const tmp = new Float32Array(S * S);
+      const out = new Float32Array(S * S);
+      for (let y = 0; y < S; y++) {
+        const z = y * S;
+        for (let x = 0; x < S; x++) {
+          tmp[z + x] = 0.25 * src[z + (x ? x - 1 : S - 1)]
                      + 0.5  * src[z + x]
-                     + 0.25 * src[z + (x + 1 === SIZE ? 0 : x + 1)];
+                     + 0.25 * src[z + (x + 1 === S ? 0 : x + 1)];
         }
       }
-      for (let y = 0; y < SIZE; y++) {
-        const o = (y ? y - 1 : SIZE - 1) * SIZE;
-        const u = (y + 1 === SIZE ? 0 : y + 1) * SIZE;
-        const z = y * SIZE;
-        for (let x = 0; x < SIZE; x++) {
+      for (let y = 0; y < S; y++) {
+        const o = (y ? y - 1 : S - 1) * S;
+        const u = (y + 1 === S ? 0 : y + 1) * S;
+        const z = y * S;
+        for (let x = 0; x < S; x++) {
           out[z + x] = 0.25 * tmp[o + x] + 0.5 * tmp[z + x] + 0.25 * tmp[u + x];
         }
       }
-      // Das Verschleifen druckt die Streuung auf 0,375 -- hier wieder herauf.
-      for (let i = 0; i < out.length; i++) out[i] *= 2.667;
       return out;
     }
 
     function rauschfeld() {
-      const f = new Float32Array(SIZE * SIZE);
-      for (let i = 0; i < f.length; i++) f[i] = gauss();
-      return weichzeichnen(f);
+      let f = new Float32Array(S * S);
+      for (let i = 0; i < f.length; i++) f[i] = GLOCKE[(Math.random() * 8192) | 0];
+      f = weich(weich(f));
+      // Auf die tatsaechliche Streuung normieren statt auf einen geschaetzten
+      // Faktor -- die haengt von der Zahl der Durchgaenge ab.
+      let s2 = 0;
+      for (let i = 0; i < f.length; i++) s2 += f[i] * f[i];
+      const sd = Math.sqrt(s2 / f.length) || 1;
+      for (let i = 0; i < f.length; i++) f[i] /= sd;
+      return f;
     }
 
     function tile(feld, abbild) {
-      const c = document.createElement('canvas');
-      c.width = c.height = SIZE;
-      const ctx = c.getContext('2d');
-      const im = ctx.createImageData(SIZE, SIZE);
+      const gross = document.createElement('canvas');
+      gross.width = gross.height = S;
+      const gctx = gross.getContext('2d');
+      const im = gctx.createImageData(S, S);
       const d = im.data;
       for (let i = 0, p = 0; i < d.length; i += 4, p++) {
         const v = abbild(feld[p]);
-        d[i] = d[i + 1] = d[i + 2] = v;
+        d[i] = d[i + 1] = d[i + 2] = v < 0 ? 0 : (v > 255 ? 255 : v) | 0;
         d[i + 3] = 255;
       }
-      ctx.putImageData(im, 0, 0);
-      return 'url("' + c.toDataURL('image/png') + '")';
+      gctx.putImageData(im, 0, 0);
+
+      // Einmal sauber halbieren -- das gibt den Koernern ihre runde Form.
+      const klein = document.createElement('canvas');
+      klein.width = klein.height = ZIEL;
+      const kctx = klein.getContext('2d');
+      kctx.imageSmoothingEnabled = true;
+      kctx.imageSmoothingQuality = 'high';
+      kctx.drawImage(gross, 0, 0, ZIEL, ZIEL);
+      return 'url("' + klein.toDataURL('image/png') + '")';
     }
 
     try {
-      // Mitteltoene: Normalverteilung um den neutralen Wert 128.
+      /* Mitteltoene: um den neutralen Wert 128. Die Kennlinie laeuft sanft aus,
+         erreicht die Grenzen also nie -- kein hartes Abschneiden. */
       const mitte = tile(rauschfeld(), function (n) {
-        const v = 128 + n * 26;
-        return v < 0 ? 0 : (v > 255 ? 255 : v) | 0;
+        return 128 + 62 * Math.tanh(n * 0.62);
       });
-      // Tiefen: der Betrag der Abweichung, nicht nur die obere Flanke. Dadurch
-      // traegt JEDER Bildpunkt ein wenig Korn statt nur jeder sechste.
-      // Vorher waren es vereinzelte helle Punkte auf Schwarz -- das liest sich
-      // als Staub oder Videorauschen. Echtes Korn in den Tiefen ist dicht und
-      // kontrastarm: viele sehr feine Koerner, keine hellen Einzelpunkte.
+      /* Tiefen: der Betrag der Abweichung, damit JEDER Bildpunkt Korn traegt
+         und nicht nur jeder sechste. Auch hier weich auslaufend. */
       const tiefen = tile(rauschfeld(), function (n) {
-        const v = (n < 0 ? -n : n) * 44;
-        return v > 255 ? 255 : v | 0;
+        return 77 * Math.tanh((n < 0 ? -n : n) * 0.72);
       });
       const root = document.documentElement;
       root.style.setProperty('--grain-mid-img', mitte);
       root.style.setProperty('--grain-dark-img', tiefen);
       // Kachel genau im Raster der Bildpunkte anzeigen -- kein Umrechnen.
-      root.style.setProperty('--grain-size', (SIZE / DPR) + 'px');
+      root.style.setProperty('--grain-size', (ZIEL / DPR) + 'px');
     } catch (e) {
       // Ohne Korn sieht die Seite ruhiger aus, aber nichts ist kaputt.
     }
+  })();
+
+  /* ---------- Analoge Stoerungen ----------
+     Seltene Erinnerungen an eine Filmvorfuehrung: ein senkrechter Kratzer, der
+     kurz durchs Bild laeuft, und ab und zu ein Zucken in der Helligkeit.
+     Bewusst selten -- alle paar Sekunden waere es ein Effekt, alle paar
+     Minuten ist es ein Detail, das man kaum bewusst bemerkt. */
+  (function stoerungen() {
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+    const kratzer = [document.getElementById('kratzer1'),
+                     document.getElementById('kratzer2')];
+    const zucken = document.getElementById('zucken');
+    if (!kratzer[0] || !kratzer[1] || !zucken) return;
+
+    function einmal(el, vorbereiten) {
+      if (el.classList.contains('laeuft')) return;
+      vorbereiten(el);
+      el.classList.add('laeuft');
+      el.addEventListener('animationend', function ende() {
+        el.classList.remove('laeuft');
+        el.removeEventListener('animationend', ende);
+      });
+    }
+
+    function planen(fn, min, max) {
+      setTimeout(function () {
+        // Im Hintergrundtab passiert nichts -- das spart Rechenzeit und
+        // verhindert, dass sich beim Zurueckkommen etwas staut.
+        if (!document.hidden) fn();
+        planen(fn, min, max);
+      }, min + Math.random() * (max - min));
+    }
+
+    let welcher = 0;
+    planen(function () {
+      const el = kratzer[welcher++ % 2];
+      einmal(el, function (e) {
+        e.style.left = (4 + Math.random() * 92).toFixed(1) + '%';
+        e.style.setProperty('--breite', (1 + Math.random() * 1.8).toFixed(1) + 'px');
+        e.style.setProperty('--dauer', (0.45 + Math.random() * 0.85).toFixed(2) + 's');
+      });
+    }, 11000, 30000);
+
+    planen(function () {
+      einmal(zucken, function (e) {
+        e.style.setProperty('--dauer', (0.09 + Math.random() * 0.13).toFixed(2) + 's');
+      });
+    }, 17000, 50000);
   })();
 
   const page = document.getElementById('page');
