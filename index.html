@@ -82,16 +82,22 @@
 
   /* Bildkasten: der innere Rahmen ist höher als der Ausschnitt, damit die
      Kamerafahrt Spielraum hat, ohne je einen Rand freizulegen. */
+  /* Der innere Rahmen ist hoeher als der Ausschnitt, damit die Kamerafahrt
+     Spielraum hat. Jeder Prozentpunkt hier kostet aber Bild: man sieht immer
+     nur die Mitte. Frueher -8 % (also 16 % hoeher) -- das hat bei Portraets
+     den Kopf gekappt. Jetzt -3 %, passend zum kleineren Fahrweg unten. */
   .media-move {
-    position: absolute; inset: -8% 0;
+    position: absolute; inset: -3% 0;
     will-change: transform;
   }
   .media-move > img { width: 100%; height: 100%; object-fit: cover; }
 
   /* Sehr langsame Eigenbewegung, damit Standbilder wie laufendes Material wirken. */
+  /* Beginnt bei 100 % -- vorher waren schon im Ruhezustand 5 % Bild weg, und
+     am Ende der Bewegung 13 %. Die Bewegung bleibt, der Beschnitt faellt weg. */
   @keyframes drift {
-    from { transform: scale(1.05) translate3d(0, 0, 0); }
-    to   { transform: scale(1.13) translate3d(-1.4%, -1.1%, 0); }
+    from { transform: scale(1)     translate3d(0, 0, 0); }
+    to   { transform: scale(1.055) translate3d(-0.8%, -0.6%, 0); }
   }
   .drift { animation: drift var(--drift, 56s) cubic-bezier(0.45, 0, 0.55, 1) infinite alternate; }
 
@@ -115,17 +121,22 @@
     position: absolute;
     /* Weit gestreut statt eng gebuendelt: der Schein reicht rundum etwa eine
        halbe Bildbreite hinaus und nimmt dabei gleichmaessig ab. */
-    left: -55%; top: -55%; width: 210%; height: 210%;
+    left: -80%; top: -80%; width: 260%; height: 260%;
     object-fit: cover;
     z-index: 0; pointer-events: none;
-    filter: blur(92px) saturate(2.3) brightness(1.3);
+    filter: blur(118px) saturate(2.2) brightness(1.28);
     opacity: 0; transition: opacity 1.8s var(--ease);
-    /* Beginnt schon nahe der Mitte abzunehmen -- dadurch ein weiches Streulicht
-       statt eines hellen Kerns mit Rand. */
-    -webkit-mask-image: radial-gradient(closest-side, #000 8%, rgba(0,0,0,0.42) 44%, transparent 100%);
-            mask-image: radial-gradient(closest-side, #000 8%, rgba(0,0,0,0.42) 44%, transparent 100%);
+    /* Entscheidend ist nicht die Groesse allein, sondern dass die Maske schon in
+       der MITTE gedeckelt ist: vorher war der Kern voll deckend, aussen kam
+       kaum etwas an -- das las sich als kleiner heller Fleck. Jetzt beginnt der
+       Verlauf bei gut der Haelfte und laeuft ueber die ganze Flaeche aus.
+       Dadurch verteilt sich dieselbe Lichtmenge weiter und wirkt schwaecher. */
+    -webkit-mask-image: radial-gradient(closest-side,
+      rgba(0,0,0,0.60) 0%, rgba(0,0,0,0.34) 30%, rgba(0,0,0,0.13) 62%, transparent 100%);
+            mask-image: radial-gradient(closest-side,
+      rgba(0,0,0,0.60) 0%, rgba(0,0,0,0.34) 30%, rgba(0,0,0,0.13) 62%, transparent 100%);
   }
-  .aura.on { opacity: 0.5; }
+  .aura.on { opacity: 0.62; }
 
 
   /* ---------- Schaerfefeld ----------
@@ -230,27 +241,35 @@
   .kratzer {
     position: absolute; top: -4%; height: 108%;
     width: var(--breite, 2px);
+    /* Kraeftiger als zuvor -- er war so zurueckhaltend, dass er nie aufgefallen
+       ist. Die Unterbrechungen im Verlauf sind Absicht: ein Laufstreifen auf
+       Super 8 ist nie durchgehend gleich stark, er setzt aus und kommt wieder. */
     background: linear-gradient(to bottom,
-      transparent 0, rgba(228,234,238,0.07) 9%, rgba(228,234,238,0.17) 38%,
-      transparent 52%, rgba(228,234,238,0.05) 64%, rgba(228,234,238,0.12) 86%, transparent 100%);
+      transparent 0, rgba(232,238,242,0.20) 7%, rgba(232,238,242,0.46) 24%,
+      rgba(232,238,242,0.10) 41%, rgba(232,238,242,0.38) 56%,
+      transparent 68%, rgba(232,238,242,0.30) 82%, rgba(232,238,242,0.14) 93%, transparent 100%);
     mix-blend-mode: screen;
     opacity: 0;
     filter: blur(0.7px);
   }
   /* Ein echter Kratzer steht nicht ruhig -- er springt und setzt aus. */
-  .kratzer.laeuft { animation: kratzer var(--dauer, 0.9s) steps(1) 1; }
+  /* Ein Anteil Sprunghaftigkeit bleibt -- ein Kratzer flackert wirklich --
+     aber deutlich feiner gestuft als vorher, dadurch weniger digital. */
+  .kratzer.laeuft { animation: kratzer var(--dauer, 0.9s) steps(2) 1; }
   @keyframes kratzer {
     0%   { opacity: 0;    transform: translateX(0); }
-    6%   { opacity: 0.55; transform: translateX(0); }
-    13%  { opacity: 0;    transform: translateX(1px); }
-    19%  { opacity: 0.85; transform: translateX(-1px); }
-    31%  { opacity: 0.30; transform: translateX(0); }
-    38%  { opacity: 0.95; transform: translateX(1px); }
-    49%  { opacity: 0.15; transform: translateX(2px); }
-    57%  { opacity: 0.75; transform: translateX(0); }
-    68%  { opacity: 0.35; transform: translateX(-1px); }
-    79%  { opacity: 0.80; transform: translateX(1px); }
-    88%  { opacity: 0.25; transform: translateX(0); }
+    5%   { opacity: 0.45; transform: translateX(0); }
+    11%  { opacity: 0.12; transform: translateX(1px); }
+    17%  { opacity: 0.90; transform: translateX(-1px); }
+    24%  { opacity: 0.55; transform: translateX(0); }
+    33%  { opacity: 1;    transform: translateX(1px); }
+    41%  { opacity: 0.35; transform: translateX(0); }
+    48%  { opacity: 0.85; transform: translateX(2px); }
+    56%  { opacity: 0.20; transform: translateX(1px); }
+    63%  { opacity: 0.80; transform: translateX(0); }
+    72%  { opacity: 0.45; transform: translateX(-1px); }
+    81%  { opacity: 0.70; transform: translateX(1px); }
+    90%  { opacity: 0.22; transform: translateX(0); }
     100% { opacity: 0;    transform: translateX(0); }
   }
 
@@ -260,14 +279,21 @@
     mix-blend-mode: soft-light;
     opacity: 0;
   }
-  .zucken.laeuft { animation: zucken var(--dauer, 0.16s) steps(1) 1; }
+  /* KEIN steps() mehr: die harten Spruenge waren genau das Digitale daran.
+     Jetzt laufen die Werte weich ineinander -- wie die Belichtung einer
+     Super-8-Rolle, die leicht atmet. */
+  .zucken.laeuft { animation: zucken var(--dauer, 1.1s) cubic-bezier(0.4, 0, 0.5, 1) 1; }
+  /* Unregelmaessige Abstaende zwischen den Punkten, damit kein Takt entsteht. */
   @keyframes zucken {
     0%   { opacity: 0; }
-    18%  { opacity: 0.085; }
-    34%  { opacity: 0.015; }
-    52%  { opacity: 0.065; }
-    71%  { opacity: 0.010; }
-    86%  { opacity: 0.040; }
+    11%  { opacity: 0.052; }
+    23%  { opacity: 0.018; }
+    31%  { opacity: 0.088; }
+    44%  { opacity: 0.030; }
+    58%  { opacity: 0.072; }
+    67%  { opacity: 0.012; }
+    79%  { opacity: 0.056; }
+    90%  { opacity: 0.022; }
     100% { opacity: 0; }
   }
 
@@ -524,7 +550,7 @@
   .card-trigger:focus-visible { outline: 1px solid var(--card-accent, var(--accent)); outline-offset: 3px; }
 
   .card-head { display: flex; align-items: center; gap: 20px; padding: 20px 0; }
-  .card-preview { width: 112px; flex-shrink: 0; aspect-ratio: 16 / 10; overflow: hidden; background: var(--bg-deep); }
+  .card-preview { width: 112px; flex-shrink: 0; aspect-ratio: 2 / 1; overflow: hidden; background: var(--bg-deep); }
   .card-preview img {
     transition: transform 0.9s var(--ease), filter 0.9s var(--ease);
     filter: saturate(0.8) brightness(0.88);
@@ -676,7 +702,9 @@
   .viewer-text .lead { color: var(--text); }
 
   .viewer-grid { display: grid; grid-template-columns: 1fr; gap: 12px; margin: 52px 0; }
-  .viewer-grid > * { position: relative; aspect-ratio: 16 / 10; overflow: hidden; }
+  /* 2:1 statt 16:10 -- die Filmkader sind breit (bis 2,13:1). Bei 16:10
+     schnitt der Rahmen links und rechts rund ein Viertel des Bildes weg. */
+  .viewer-grid > * { position: relative; aspect-ratio: 2 / 1; overflow: hidden; }
 
   .viewer-process {
     max-width: 64ch; margin: 0 auto; padding-top: 22px;
@@ -1356,13 +1384,14 @@
         e.style.setProperty('--breite', (1 + Math.random() * 1.8).toFixed(1) + 'px');
         e.style.setProperty('--dauer', (0.45 + Math.random() * 0.85).toFixed(2) + 's');
       });
-    }, 11000, 30000);
+    }, 7000, 19000);     // Streifen: haeufiger als zuvor, aber weiterhin selten
 
     planen(function () {
       einmal(zucken, function (e) {
-        e.style.setProperty('--dauer', (0.09 + Math.random() * 0.13).toFixed(2) + 's');
+        // Laenger als zuvor: ein weiches Atmen der Belichtung, kein Blitz.
+        e.style.setProperty('--dauer', (0.8 + Math.random() * 1.1).toFixed(2) + 's');
       });
-    }, 17000, 50000);
+    }, 6000, 17000);     // Zucken: haeufiger, dafuer weich und kaum merklich
   })();
 
   const page = document.getElementById('page');
@@ -1800,7 +1829,7 @@
       if (r.bottom < -200 || r.top > vh + 200 || !r.height) continue;
       // Verschiebung relativ zur Bildschirmmitte, begrenzt auf den Überstand.
       const centre = r.top + r.height / 2 - vh / 2;
-      const max = r.height * 0.07;
+      const max = r.height * 0.028;   // muss unter dem Ueberstand von 3 % bleiben
       const shift = Math.max(-max, Math.min(max, -centre * item.speed));
       item.move.style.transform = 'translate3d(0,' + shift.toFixed(2) + 'px,0)';
     }
