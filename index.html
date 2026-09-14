@@ -5,6 +5,25 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>LXR Films — Luis Räder</title>
 <meta name="description" content="LXR Films — Videoproduktion aus Hamburg. Werbe- und Imagefilme, Konzept bis Schnitt von einer Person.">
+<meta name="theme-color" content="#0d1216">
+
+<!-- Vorschau, wenn jemand den Link weitergibt -- in WhatsApp, per Mail, auf
+     LinkedIn. Ohne diese Angaben erscheint dort nur die nackte Adresse, bei
+     einer Filmproduktion ein schlechter erster Eindruck. Das Bild ist der
+     erste Kader des Hero-Films, 1280x720 und damit im erwarteten Format.
+     ACHTUNG: og:url und og:image brauchen vollstaendige Adressen. Wenn die
+     Seite spaeter unter lxr-films.net laeuft, muessen beide Zeilen mit. -->
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="LXR Films">
+<meta property="og:locale" content="de_DE">
+<meta property="og:title" content="LXR Films — Luis Räder">
+<meta property="og:description" content="Werbe- und Imagefilme aus Hamburg. Konzept, Kamera und Schnitt von einer Person.">
+<meta property="og:url" content="https://luis6474.github.io/LXR-Films-Website/">
+<meta property="og:image" content="https://luis6474.github.io/LXR-Films-Website/Images/web/hero-frame-1280.jpg">
+<meta property="og:image:width" content="1280">
+<meta property="og:image:height" content="720">
+<meta property="og:image:alt" content="Bildkader aus einem Film von LXR Films">
+<meta name="twitter:card" content="summary_large_image">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' fill='%230d1216'/%3E%3Ctext x='16' y='22' font-family='Georgia,serif' font-size='15' fill='%23c8c2b6' text-anchor='middle'%3EL%3C/text%3E%3C/svg%3E">
 <script>document.documentElement.className += ' js';</script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -743,7 +762,15 @@
      Das iframe wird per JS exakt 16:9 gehalten und formatfüllend darübergelegt --
      dadurch verschwinden von YouTube eingebackene Balken außerhalb des Rahmens. */
   .viewer-stage.has-video { aspect-ratio: var(--ar, 16 / 9); }
-  .viewer-stage.has-video img { opacity: 0; transition: opacity 0.8s var(--ease); }
+  /* has-video gibt dem Standbild nur die Ueberblendung mit -- ausgeblendet wird
+     es erst, wenn der Film wirklich laeuft.
+     Vorher stand hier opacity: 0 schon bei has-video, also ab dem Moment, in
+     dem der Player eingehaengt wurde. Das Standbild verschwand damit, bevor
+     ueberhaupt ein Bild da war. Sichtbar wurde das in drei Faellen: waehrend
+     des Ladens, nach dem Ende des Films (dann kam das Standbild nicht zurueck)
+     und dauerhaft bei jedem, der YouTube blockiert -- statt des Bildkaders
+     stand dort ein schwarzes Rechteck. */
+  .viewer-stage.has-video img { transition: opacity 0.8s var(--ease); }
   .viewer-stage.is-playing img { opacity: 0; }
   .viewer-stage iframe {
     position: absolute; top: 50%; left: 50%;
