@@ -1546,6 +1546,7 @@
   let current = null;
   let busy = false;
   let rueckkehr = null;   // Knopf, der die Ansicht geoeffnet hat
+  let zuGewuenscht = false;   // Escape kam, waehrend die Blende noch lief
 
   /* ---------- Video ----------
      YouTube, aber ohne sichtbare YouTube-Oberfläche: nocookie-Domain, alle
@@ -1818,12 +1819,17 @@
         busy = false;
         const closeBtn = viewer.querySelector('.viewer-close');
         if (closeBtn) closeBtn.focus({ preventScroll: true });
+        // Wer waehrend der Oeffnungsbewegung Escape gedrueckt hat, bekommt
+        // jetzt sein Schliessen -- die 1,7 Sekunden der Blende sind lang genug,
+        // dass man sonst ins Leere drueckt und nicht weiss, ob etwas passiert.
+        if (zuGewuenscht) { zuGewuenscht = false; closeProject(); }
       }, FRAME_MS);
     }, SHUT_MS);
   }
 
   function closeProject() {
-    if (busy || !current) return;
+    if (!current) return;
+    if (busy) { zuGewuenscht = true; return; }
     const viewer = current;
     busy = true;
 
@@ -1842,6 +1848,7 @@
       // ... und dann ganz raus, zurueck zum normalen Seitenformat
       body.classList.remove('lb-shut');
       current = null;
+      zuGewuenscht = false;
       // Zurueck auf den Knopf, der die Ansicht geoeffnet hat. Ohne das faellt
       // der Fokus auf den Seitenanfang und man muss sich erneut durch die
       // ganze Seite tabben, um weiterzulesen.
