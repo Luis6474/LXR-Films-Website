@@ -5,25 +5,6 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>LXR Films — Luis Räder</title>
 <meta name="description" content="LXR Films — Videoproduktion aus Hamburg. Werbe- und Imagefilme, Konzept bis Schnitt von einer Person.">
-<meta name="theme-color" content="#0d1216">
-
-<!-- Vorschau, wenn jemand den Link weitergibt -- in WhatsApp, per Mail, auf
-     LinkedIn. Ohne diese Angaben erscheint dort nur die nackte Adresse, bei
-     einer Filmproduktion ein schlechter erster Eindruck. Das Bild ist der
-     erste Kader des Hero-Films, 1280x720 und damit im erwarteten Format.
-     ACHTUNG: og:url und og:image brauchen vollstaendige Adressen. Wenn die
-     Seite spaeter unter lxr-films.net laeuft, muessen beide Zeilen mit. -->
-<meta property="og:type" content="website">
-<meta property="og:site_name" content="LXR Films">
-<meta property="og:locale" content="de_DE">
-<meta property="og:title" content="LXR Films — Luis Räder">
-<meta property="og:description" content="Werbe- und Imagefilme aus Hamburg. Konzept, Kamera und Schnitt von einer Person.">
-<meta property="og:url" content="https://luis6474.github.io/LXR-Films-Website/">
-<meta property="og:image" content="https://luis6474.github.io/LXR-Films-Website/Images/web/hero-frame-1280.jpg">
-<meta property="og:image:width" content="1280">
-<meta property="og:image:height" content="720">
-<meta property="og:image:alt" content="Bildkader aus einem Film von LXR Films">
-<meta name="twitter:card" content="summary_large_image">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' fill='%230d1216'/%3E%3Ctext x='16' y='22' font-family='Georgia,serif' font-size='15' fill='%23c8c2b6' text-anchor='middle'%3EL%3C/text%3E%3C/svg%3E">
 <script>document.documentElement.className += ' js';</script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -202,23 +183,18 @@
      transform in diskreten Schritten -> läuft auf dem Compositor, kein
      Repaint pro Frame, daher ruckelfrei. */
   .grain {
-    /* Nur so gross wie noetig. Der Schluessel: die Kachel wiederholt sich,
-       also ist eine Verschiebung um 0,73 Kachelbreiten bildgleich mit einer um
-       -0,27 -- das Muster liegt hinterher exakt gleich. Alle Verschiebungen
-       sind deshalb auf hoechstens 0,38 Kacheln zusammengefaltet -- gemessen bleiben
-       damit knapp 18 px Reserve an jedem Rand --, und die
-       vorgehaltene Flaeche schrumpft von Fenster plus zwei Kacheln auf Fenster
-       plus 0,9 Kacheln. Bei 1440x900 sind das je Lage 9,2 MB -> 6,1 MB, bei
-       vier Lagen in der Projektansicht zusammen ueber 12 MB weniger -- ohne
-       jeden sichtbaren Unterschied.
+    /* Nur so gross wie noetig: das Bild wird hoechstens um eine Kachelbreite
+       verschoben, also reicht Fenster plus zwei Kacheln. Vorher war die Flaeche
+       doppelt so breit UND doppelt so hoch wie das Fenster -- die vierfache
+       Flaeche als dauerhaft vorgehaltene Ebene.
        Kein will-change: eine laufende transform-Animation wird ohnehin auf der
        Grafikkarte gerechnet. Erzwungene Ebenen kosten hier nur Speicher, und
        knapper Grafikspeicher ist genau das, was einzelne Kacheln flackern
        laesst. */
     position: fixed;
-    top: calc(-0.45 * var(--grain-size)); left: calc(-0.45 * var(--grain-size));
-    width: calc(100% + 0.9 * var(--grain-size));
-    height: calc(100% + 0.9 * var(--grain-size));
+    top: calc(-1 * var(--grain-size)); left: calc(-1 * var(--grain-size));
+    width: calc(100% + 2 * var(--grain-size));
+    height: calc(100% + 2 * var(--grain-size));
     z-index: 500; pointer-events: none;
     background-repeat: repeat;
     background-size: var(--grain-size) var(--grain-size);
@@ -248,23 +224,19 @@
   /* Verschoben wird in Kachelbreiten, nie weiter als eine ganze Kachel -- das
      Muster wiederholt sich ohnehin, mehr Weg braucht es nicht. Zwoelf Schritte
      je halber Sekunde ergeben 24 Wechsel pro Sekunde, also Kinobildrate. */
-  /* Dieselben zwoelf Sprungbilder wie zuvor, nur jeweils um ganze Kachelbreiten
-     verschoben, sodass keiner weiter als 0,45 Kacheln aus der Mitte laeuft.
-     Weil sich die Kachel wiederholt, ist das Ergebnis Bildpunkt fuer Bildpunkt
-     dasselbe -- nur muss dafuer viel weniger Flaeche vorgehalten werden. */
   @keyframes grainShift {
     0%    { transform: translate3d(0, 0, 0); }
-    8.3%  { transform: translate3d(calc(var(--grain-size) *  0.27), calc(var(--grain-size) *  0.38), 0); }
-    16.7% { transform: translate3d(calc(var(--grain-size) * -0.38), calc(var(--grain-size) *  0.12), 0); }
-    25.0% { transform: translate3d(calc(var(--grain-size) * -0.29), calc(var(--grain-size) *  0.36), 0); }
-    33.3% { transform: translate3d(calc(var(--grain-size) * -0.09), calc(var(--grain-size) * -0.33), 0); }
-    41.7% { transform: translate3d(calc(var(--grain-size) *  0.36), calc(var(--grain-size) * -0.23), 0); }
-    50.0% { transform: translate3d(calc(var(--grain-size) *  0.33), calc(var(--grain-size) * -0.06), 0); }
-    58.3% { transform: translate3d(calc(var(--grain-size) *  0.05), calc(var(--grain-size) *  0.28), 0); }
-    66.7% { transform: translate3d(calc(var(--grain-size) * -0.22), calc(var(--grain-size) * -0.36), 0); }
-    75.0% { transform: translate3d(calc(var(--grain-size) * -0.38), calc(var(--grain-size) * -0.17), 0); }
-    83.3% { transform: translate3d(calc(var(--grain-size) *  0.24), calc(var(--grain-size) *  0.04), 0); }
-    91.7% { transform: translate3d(calc(var(--grain-size) *  0.14), calc(var(--grain-size) * -0.38), 0); }
+    8.3%  { transform: translate3d(calc(var(--grain-size) * -0.73), calc(var(--grain-size) *  0.41), 0); }
+    16.6% { transform: translate3d(calc(var(--grain-size) *  0.52), calc(var(--grain-size) * -0.88), 0); }
+    25%   { transform: translate3d(calc(var(--grain-size) * -0.29), calc(var(--grain-size) * -0.61), 0); }
+    33.3% { transform: translate3d(calc(var(--grain-size) *  0.91), calc(var(--grain-size) *  0.67), 0); }
+    41.6% { transform: translate3d(calc(var(--grain-size) * -0.64), calc(var(--grain-size) * -0.23), 0); }
+    50%   { transform: translate3d(calc(var(--grain-size) *  0.36), calc(var(--grain-size) *  0.94), 0); }
+    58.3% { transform: translate3d(calc(var(--grain-size) * -0.95), calc(var(--grain-size) * -0.72), 0); }
+    66.6% { transform: translate3d(calc(var(--grain-size) *  0.78), calc(var(--grain-size) * -0.39), 0); }
+    75%   { transform: translate3d(calc(var(--grain-size) * -0.47), calc(var(--grain-size) *  0.83), 0); }
+    83.3% { transform: translate3d(calc(var(--grain-size) *  0.24), calc(var(--grain-size) * -0.96), 0); }
+    91.6% { transform: translate3d(calc(var(--grain-size) * -0.86), calc(var(--grain-size) *  0.55), 0); }
     100%  { transform: translate3d(0, 0, 0); }
   }
 
@@ -302,7 +274,7 @@
   .zucken {
     position: fixed; inset: 0; z-index: 502; pointer-events: none;
     background: radial-gradient(125% 105% at 50% 64%,
-      #ffdca8 0%, #f8c27f 40%, #efac60 72%, #e29c4e 100%);
+      #ffe0b4 0%, #f7c489 42%, #e0a263 74%, #c9884b 100%);
     mix-blend-mode: soft-light;
     opacity: 0;
     filter: opacity(var(--staerke, 1));
@@ -357,26 +329,8 @@
      Schirmen reicht er damit ueber den Fensterrand -- 'clip' schneidet das
      seitlich ab, ohne (anders als 'hidden') einen eigenen Scrollbereich
      aufzumachen; das haengende Zitat bleibt dadurch klebend. */
-  .page { transition: opacity 0.6s var(--ease), visibility 0s; overflow-x: clip; }
-  /* visibility zusaetzlich zu opacity: eine nur durchsichtige Seite wird
-     weiterhin gezeichnet und belegt Grafikspeicher -- gemessen rund 11 MB fuer
-     Hero-Film, Titelzeile und die Bildkaesten, alles unsichtbar hinter der
-     Projektansicht. Der Umschaltpunkt liegt am Ende der Ueberblendung, damit
-     das Ausblenden weich bleibt; beim Zurueckkommen greift er sofort. */
-  .page.is-hidden {
-    opacity: 0; pointer-events: none; visibility: hidden;
-    transition: opacity 0.6s var(--ease), visibility 0s 0.6s;
-  }
-
-  /* Korn, Dithering, Teelicht und Schaerfefeld liegen auf z-index 490 bis 502,
-     die Projektansicht auf 900 mit deckendem Hintergrund -- sie sind dort also
-     ohnehin verdeckt, wurden aber weiter gezeichnet. Zusammen rund 27 MB
-     Texturflaeche. Die Projektansicht bringt ihr eigenes Korn mit. Der Wechsel
-     passiert hinter der geschlossenen Blende, also ohne sichtbaren Sprung. */
-  body.is-viewing .grain,
-  body.is-viewing .dither,
-  body.is-viewing .zucken,
-  body.is-viewing .focus { display: none; }
+  .page { transition: opacity 0.6s var(--ease); overflow-x: clip; }
+  .page.is-hidden { opacity: 0; pointer-events: none; }
   body.is-viewing { overflow: hidden; }
 
   /* ---------- Hero ----------
@@ -385,15 +339,7 @@
      Breite) und bleibt dort -- die Größe hängt NICHT am Scrollfortschritt. */
   .hero {
     position: relative;
-    /* 100vh meint auf dem iPhone die Hoehe OHNE Adressleiste -- beim Laden ist
-       der sichtbare Bereich also kleiner, und der Hero ragt unten darueber
-       hinaus. Der Titel saesse dadurch rund 45 px unter der optischen Mitte.
-       100svh ist genau die Hoehe, die beim Laden zu sehen ist. Die Zeile davor
-       bleibt als Rueckfall fuer aeltere Browser stehen; auf dem Schreibtisch
-       und auf dem iPad sind beide Werte ohnehin gleich. */
-    height: 100vh;
-    height: 100svh;
-    min-height: 480px;
+    height: 100vh; min-height: 480px;
     /* Der verkleinerte Film sitzt nicht in der Mitte des Hero, sondern ein
        Stueck tiefer. Grund: umgeschaltet wird erst, wenn jemand nach unten
        scrollt -- in diesem Moment ist der Hero bereits ein Stueck nach oben
@@ -721,9 +667,9 @@
      darunter verrechnen und legten sich als graue Fläche darüber. */
   .viewer-grain {
     position: absolute;
-    top: calc(-0.45 * var(--grain-size)); left: calc(-0.45 * var(--grain-size));
-    width: calc(100% + 0.9 * var(--grain-size));
-    height: calc(100% + 0.9 * var(--grain-size));
+    top: calc(-1 * var(--grain-size)); left: calc(-1 * var(--grain-size));
+    width: calc(100% + 2 * var(--grain-size));
+    height: calc(100% + 2 * var(--grain-size));
     z-index: 0; pointer-events: none;
     background-repeat: repeat; background-size: var(--grain-size) var(--grain-size);
     animation: grainShift var(--grain-rate) steps(1) infinite;
@@ -770,23 +716,8 @@
      Das iframe wird per JS exakt 16:9 gehalten und formatfüllend darübergelegt --
      dadurch verschwinden von YouTube eingebackene Balken außerhalb des Rahmens. */
   .viewer-stage.has-video { aspect-ratio: var(--ar, 16 / 9); }
-  /* has-video gibt dem Standbild nur die Ueberblendung mit -- ausgeblendet wird
-     es erst, wenn der Film wirklich laeuft.
-     Vorher stand hier opacity: 0 schon bei has-video, also ab dem Moment, in
-     dem der Player eingehaengt wurde. Das Standbild verschwand damit, bevor
-     ueberhaupt ein Bild da war. Sichtbar wurde das in drei Faellen: waehrend
-     des Ladens, nach dem Ende des Films (dann kam das Standbild nicht zurueck)
-     und dauerhaft bei jedem, der YouTube blockiert -- statt des Bildkaders
-     stand dort ein schwarzes Rechteck. */
-  .viewer-stage.has-video img { transition: opacity 0.8s var(--ease); }
-  /* is-playing heisst "Player eingeblendet", is-proven heisst "der Film laeuft
-     nachweislich". Nur der Nachweis nimmt das Standbild weg.
-     Der Unterschied zaehlt fuer alle, die YouTube blockieren: dort meldet sich
-     der Player nie, und nach 14 Sekunden greift der Notnagel, der den Player
-     trotzdem einblendet. Frueher verschwand damit auch das Standbild und es
-     blieb ein schwarzes Rechteck. Jetzt bleibt der Bildkader stehen -- laeuft
-     der Film doch, deckt er ihn ohnehin zu, weil er darueber liegt. */
-  .viewer-stage.is-proven img { opacity: 0; }
+  .viewer-stage.has-video img { opacity: 0; transition: opacity 0.8s var(--ease); }
+  .viewer-stage.is-playing img { opacity: 0; }
   .viewer-stage iframe {
     position: absolute; top: 50%; left: 50%;
     transform: translate(-50%, -50%);
@@ -807,20 +738,10 @@
   }
   .viewer-stage:hover .stage-ui,
   .stage-ui:focus-within { opacity: 1; }
-  /* Ohne Maus gibt es kein Ueberfahren. Auf Handy und Tablet blieb die Leiste
-     deshalb unsichtbar -- und damit liess sich der Ton eines Projektfilms dort
-     ueberhaupt nicht einschalten. Dort steht sie jetzt einfach da. */
-  @media (hover: none) {
-    .stage-ui { opacity: 1; }
-  }
   .stage-btn {
     background: rgba(0,0,0,0.35); border: 1px solid rgba(255,255,255,0.28);
     color: #fff; font: inherit; font-size: 0.72em;
     letter-spacing: 0.14em; text-transform: uppercase;
-    /* 44 px hoch: darunter wird das Treffen mit dem Finger unzuverlaessig,
-       vorher waren es 38. Die Schrift bleibt gleich, nur der Rahmen waechst. */
-    display: inline-flex; align-items: center; justify-content: center;
-    min-height: 44px;
     padding: 8px 16px; cursor: pointer;
     transition: border-color 0.4s var(--ease), background 0.4s var(--ease);
   }
@@ -874,7 +795,7 @@
     .hero { transition: height 820ms var(--ease-dock); }
     /* Hier faehrt der Hero selbst zusammen, der Film wandert dadurch schon
        nach oben ins Bild. Ein zusaetzlicher Versatz waere hier zu viel. */
-    .hero.is-docked { height: 62vh; height: 62svh; min-height: 0; --dock-drop: 0px; }
+    .hero.is-docked { height: 62vh; min-height: 0; --dock-drop: 0px; }
     .hero-aura { width: 100vw; height: min(150vh, 121vw); }
     .m-word { font-size: clamp(1.25em, 7vw, 2em); }
     .card-open { display: none; }
@@ -1040,9 +961,7 @@
       <div class="card reveal" style="--card-accent:#a9b56d">
         <button class="card-trigger" data-viewer="v1" aria-haspopup="dialog">
           <div class="card-head">
-            <div class="card-preview"><img src="Images/web/gaertnerei-finder/still-2025-09-02-204030-6-3-1-800.webp"
-                   srcset="Images/web/gaertnerei-finder/still-2025-09-02-204030-6-3-1-400.webp 400w, Images/web/gaertnerei-finder/still-2025-09-02-204030-6-3-1-800.webp 800w"
-                   sizes="(min-width: 760px) 139px, (min-width: 621px) 118px, 101px" alt="" loading="lazy" decoding="async"></div>
+            <div class="card-preview"><img src="Images/web/gaertnerei-finder/still-2025-09-02-204030-6-3-1-800.webp" alt="" loading="lazy" decoding="async"></div>
             <div class="card-info">
               <div class="card-titleline">
                 <span class="name">Gärtnerei Eggert Finder</span>
@@ -1058,9 +977,7 @@
       <div class="card reveal" style="--card-accent:#93a09b">
         <button class="card-trigger" data-viewer="v2" aria-haspopup="dialog">
           <div class="card-head">
-            <div class="card-preview"><img src="Images/web/stephen-am-strand-800.webp"
-                   srcset="Images/web/stephen-am-strand-400.webp 400w, Images/web/stephen-am-strand-800.webp 800w"
-                   sizes="(min-width: 760px) 139px, (min-width: 621px) 118px, 101px" alt="" loading="lazy" decoding="async"></div>
+            <div class="card-preview"><img src="Images/web/stephen-am-strand-800.webp" alt="" loading="lazy" decoding="async"></div>
             <div class="card-info">
               <div class="card-titleline">
                 <span class="name">[Filmtitel]</span>
@@ -1076,9 +993,7 @@
       <div class="card reveal" style="--card-accent:#8aa3b2">
         <button class="card-trigger" data-viewer="v3" aria-haspopup="dialog">
           <div class="card-head">
-            <div class="card-preview"><img src="Images/web/oesterreich25/still-2025-08-22-215508-4-2-1-800.webp"
-                   srcset="Images/web/oesterreich25/still-2025-08-22-215508-4-2-1-400.webp 400w, Images/web/oesterreich25/still-2025-08-22-215508-4-2-1-800.webp 800w"
-                   sizes="(min-width: 760px) 139px, (min-width: 621px) 118px, 101px" alt="" loading="lazy" decoding="async"></div>
+            <div class="card-preview"><img src="Images/web/oesterreich25/still-2025-08-22-215508-4-2-1-800.webp" alt="" loading="lazy" decoding="async"></div>
             <div class="card-info">
               <div class="card-titleline">
                 <span class="name">The Mountains</span>
@@ -1094,9 +1009,7 @@
       <div class="card reveal" style="--card-accent:#c8863f">
         <button class="card-trigger" data-viewer="v4" aria-haspopup="dialog">
           <div class="card-head">
-            <div class="card-preview"><img src="Images/web/track-of-time/2-19-2-19-1-800.webp"
-                   srcset="Images/web/track-of-time/2-19-2-19-1-400.webp 400w, Images/web/track-of-time/2-19-2-19-1-800.webp 800w"
-                   sizes="(min-width: 760px) 139px, (min-width: 621px) 118px, 101px" alt="" loading="lazy" decoding="async"></div>
+            <div class="card-preview"><img src="Images/web/track-of-time/2-19-2-19-1-800.webp" alt="" loading="lazy" decoding="async"></div>
             <div class="card-info">
               <div class="card-titleline">
                 <span class="name">Track of Time</span>
@@ -1112,9 +1025,7 @@
       <div class="card reveal" style="--card-accent:#c8a171">
         <button class="card-trigger" data-viewer="v5" aria-haspopup="dialog">
           <div class="card-head">
-            <div class="card-preview"><img src="Images/web/oesterreich24/img-2100-800.webp"
-                   srcset="Images/web/oesterreich24/img-2100-400.webp 400w, Images/web/oesterreich24/img-2100-800.webp 800w"
-                   sizes="(min-width: 760px) 139px, (min-width: 621px) 118px, 101px" alt="" loading="lazy" decoding="async"></div>
+            <div class="card-preview"><img src="Images/web/oesterreich24/img-2100-800.webp" alt="" loading="lazy" decoding="async"></div>
             <div class="card-info">
               <div class="card-titleline">
                 <span class="name">The South</span>
@@ -1521,35 +1432,44 @@
     const zucken = document.getElementById('zucken');
     if (!zucken) return;
 
-    /* Gleichverteilte Abstaende klingen wie ein Metronom. Eine Flamme haelt
-       keinen Takt -- mal zuckt sie zweimal kurz hintereinander, mal haelt sie
-       einen Wimpernschlag inne. Das leistet eine Exponentialverteilung: der
-       naechste Zeitpunkt haengt nicht davon ab, wie lange der letzte her ist. */
+    function einmal(el, vorbereiten) {
+      if (el.classList.contains('laeuft')) return;
+      vorbereiten(el);
+      el.classList.add('laeuft');
+      el.addEventListener('animationend', function ende() {
+        el.classList.remove('laeuft');
+        el.removeEventListener('animationend', ende);
+      });
+    }
+
+    /* Gleichverteilte Abstaende klingen wie ein Metronom: nie kuerzer als das
+       Minimum, nie laenger als das Maximum, im Mittel immer dasselbe. Eine
+       Flamme haelt keinen Takt -- mal zuckt sie zweimal kurz hintereinander,
+       mal steht sie einen Moment ruhig. Das leistet eine Exponentialverteilung
+       (Poisson): der naechste Zeitpunkt haengt nicht davon ab, wie lange der
+       letzte her ist. */
     function abstand(mittel, minimum) {
       return minimum + (-Math.log(1 - Math.random()) * mittel);
     }
 
-    /* Verkettet statt getaktet. Vorher lief ein Zeitgeber unabhaengig von der
-       Animation und wurde verworfen, solange noch eine lief -- gemessen stand
-       das Licht dadurch bis zu einer Sekunde am Stueck vollkommen still, was
-       eine Kerze nie tut. Jetzt beginnt der naechste Bogen kurz nachdem der
-       vorige geendet hat: gemessen rund neun Zehntel der Zeit in Bewegung. */
-    function bogen() {
-      if (document.hidden) { setTimeout(bogen, 500); return; }
-      zucken.style.setProperty('--dauer', (0.55 + Math.random() * 0.85).toFixed(2) + 's');
-      // Mal kaum zu sehen, mal deutlich -- das nimmt dem Licht die Regelmaessigkeit.
-      zucken.style.setProperty('--staerke', (0.5 + Math.random() * 0.8).toFixed(2));
-      zucken.classList.add('laeuft');
-      zucken.addEventListener('animationend', function ende() {
-        zucken.removeEventListener('animationend', ende);
-        zucken.classList.remove('laeuft');
-        // Sehr kurze, zufaellige Pause -- lang genug, dass der Browser die
-        // Animation als neu erkennt, kurz genug fuer ein durchgehendes Atmen.
-        setTimeout(bogen, abstand(80, 25));
-      });
+    function planen(fn, mittel, minimum) {
+      setTimeout(function () {
+        // Im Hintergrundtab passiert nichts -- das spart Rechenzeit und
+        // verhindert, dass sich beim Zurueckkommen etwas staut.
+        if (!document.hidden) fn();
+        planen(fn, mittel, minimum);
+      }, abstand(mittel, minimum));
     }
 
-    bogen();
+    planen(function () {
+      einmal(zucken, function (e) {
+        // Kurze Boegen, die dicht aufeinander folgen -- zusammen ergibt das ein
+        // fast durchgehendes Atmen statt einzelner, abgesetzter Zuckungen.
+        e.style.setProperty('--dauer', (0.55 + Math.random() * 0.85).toFixed(2) + 's');
+        // Mal kaum zu sehen, mal deutlich -- das nimmt dem Licht die Regelmaessigkeit.
+        e.style.setProperty('--staerke', (0.45 + Math.random() * 0.75).toFixed(2));
+      });
+    }, 420, 120);     // im Mittel alle 0,54 s, stark schwankend und in Schueben
   })();
 
   const page = document.getElementById('page');
@@ -1561,8 +1481,6 @@
 
   let current = null;
   let busy = false;
-  let rueckkehr = null;   // Knopf, der die Ansicht geoeffnet hat
-  let zuGewuenscht = false;   // Escape kam, waehrend die Blende noch lief
 
   /* ---------- Video ----------
      YouTube, aber ohne sichtbare YouTube-Oberfläche: nocookie-Domain, alle
@@ -1637,14 +1555,13 @@
   function watchPlayer(frame, opts) {
     let baseTime = null;
     let shown = false;
-    let verbunden = false;
 
     function arm() { baseTime = null; shown = false; }
 
-    function show(bewiesen) {
+    function show() {
       if (shown) return;
       shown = true;
-      opts.onShow(bewiesen === true);
+      opts.onShow();
     }
 
     function hide() {
@@ -1658,9 +1575,6 @@
       if (e.source !== frame.contentWindow) return;
       let msg;
       try { msg = JSON.parse(e.data); } catch (err) { return; }
-      // Ab der ersten Rueckmeldung steht die Verbindung -- weiter zu rufen
-      // waere nur noch Leerlauf.
-      if (!verbunden) { verbunden = true; clearInterval(handshake); }
       const info = msg.info;
       if (!info || typeof info !== 'object') return;
 
@@ -1680,37 +1594,19 @@
       // muss deshalb getrennt ausgewertet werden.
       if (typeof info.currentTime === 'number') {
         if (baseTime === null) { baseTime = info.currentTime; return; }
-        if (info.currentTime - baseTime >= PLAY_PROOF_SECONDS) show(true);
+        if (info.currentTime - baseTime >= PLAY_PROOF_SECONDS) show();
       }
     }
 
     window.addEventListener('message', onMessage);
-    /* Der Ruf muss wiederholt werden, weil der Player beim Einhaengen noch
-       nicht zuhoert. Er lief aber bisher die ganze Zeit weiter -- fuenfmal je
-       Sekunde, solange jemand den Film ansieht, und erst recht bei allen, die
-       YouTube blockieren: dort kommt nie eine Antwort. Jetzt hoert er auf,
-       sobald der Player antwortet, spaetestens nach 15 Sekunden. */
-    let rufe = 0;
     const handshake = setInterval(function () {
       if (frame.contentWindow) {
         frame.contentWindow.postMessage('{"event":"listening"}', '*');
       }
-      if (++rufe >= 75) clearInterval(handshake);
     }, 200);
     // Notnagel: kommt gar keine Rueckmeldung, lieber den Film zeigen als
     // dauerhaft beim Standbild zu bleiben.
-    /* Notnagel fuer den Fall, dass der Player zwar da ist, aber keine Laufzeit
-       meldet: dann trotzdem einblenden, das Standbild bleibt darunter stehen.
-
-       Aber nur, wenn sich der Player ueberhaupt je gemeldet hat. Ist YouTube
-       nicht erreichbar -- Trackingblocker, strenges Firmennetz, kein Netz --,
-       dann zeigt der Browser in dem Rahmen SEINE EIGENE Fehlerseite: eine
-       hellgraue Flaeche mit Papiersymbol, mitten in der Projektansicht.
-       Nachgemessen mit umgebogener Namensaufloesung. Deshalb bleibt der Rahmen
-       in diesem Fall unsichtbar und es steht schlicht der Bildkader da. */
-    const fallback = setTimeout(function () {
-      if (verbunden) show(false);
-    }, PLAY_FALLBACK_MS);
+    const fallback = setTimeout(show, PLAY_FALLBACK_MS);
 
     return {
       replay: function () {
@@ -1741,21 +1637,13 @@
     frame.title = viewer.querySelector('h2') ? viewer.querySelector('h2').textContent : 'Film';
     frame.allow = 'autoplay; encrypted-media; picture-in-picture';
     frame.setAttribute('referrerpolicy', 'strict-origin-when-cross-origin');
-    // Nicht anspringbar: mit der Tabulatortaste landete man sonst IM Player,
-    // und YouTube blendet dann seine eigene Bedienung samt Kanalverweis ein --
-    // genau das, was die Einbettung sonst ueberall vermeidet. Bedient wird der
-    // Film ueber die eigenen Schaltflaechen darunter.
-    frame.tabIndex = -1;
     stage.appendChild(frame);
     registerFit(stage, frame, 1.18);   // Kanalleiste des Players ausserhalb halten
     stage._player = watchPlayer(frame, {
-      onShow: function (bewiesen) {
-        stage.classList.add('is-playing');
-        if (bewiesen) stage.classList.add('is-proven');
-      },
+      onShow: function () { stage.classList.add('is-playing'); },
       onHide: function () {
         // Zurueck aufs Standbild -- so bleiben Abspann-Vorschlaege verdeckt.
-        stage.classList.remove('is-playing', 'is-proven');
+        stage.classList.remove('is-playing');
         if (stage._playBtn) stage._playBtn.textContent = 'Erneut abspielen';
       }
     });
@@ -1821,7 +1709,6 @@
     if (!viewer) return;
     busy = true;
     current = viewer;
-    rueckkehr = trigger;
 
     // Farbwelt des Projekts uebernehmen -- die Blende ist nicht schwarz,
     // sondern faehrt bereits im Ton des Films zu.
@@ -1835,13 +1722,6 @@
     setTimeout(function () {
       // 2) Hinter der geschlossenen Blende wird umgebaut
       body.classList.add('is-viewing');
-      document.dispatchEvent(new CustomEvent('lxr:projekt-auf'));
-      // Die Seite dahinter ist unsichtbar, war aber weiterhin mit der
-      // Tabulatortaste erreichbar: nach dem Schliessen-Knopf sprang der Fokus
-      // in die verdeckten Projektknoepfe, und Enter oeffnete von dort eine
-      // zweite Ansicht. inert nimmt den ganzen Bereich aus der Bedienung --
-      // auch fuer Vorleseprogramme, die sonst durch die Seite hindurchlesen.
-      page.inert = true;
       viewer.hidden = false;
       void viewer.offsetWidth;               // Reflow erzwingen, damit die Transition greift
       viewer.classList.add('is-active');
@@ -1860,17 +1740,12 @@
         busy = false;
         const closeBtn = viewer.querySelector('.viewer-close');
         if (closeBtn) closeBtn.focus({ preventScroll: true });
-        // Wer waehrend der Oeffnungsbewegung Escape gedrueckt hat, bekommt
-        // jetzt sein Schliessen -- die 1,7 Sekunden der Blende sind lang genug,
-        // dass man sonst ins Leere drueckt und nicht weiss, ob etwas passiert.
-        if (zuGewuenscht) { zuGewuenscht = false; closeProject(); }
       }, FRAME_MS);
     }, SHUT_MS);
   }
 
   function closeProject() {
-    if (!current) return;
-    if (busy) { zuGewuenscht = true; return; }
+    if (busy || !current) return;
     const viewer = current;
     busy = true;
 
@@ -1882,21 +1757,11 @@
 
     setTimeout(function () {
       viewer.hidden = true;
-      document.dispatchEvent(new CustomEvent('lxr:projekt-zu'));
-      page.inert = false;
       page.classList.remove('is-hidden');
       body.classList.remove('is-viewing');
       // ... und dann ganz raus, zurueck zum normalen Seitenformat
       body.classList.remove('lb-shut');
       current = null;
-      zuGewuenscht = false;
-      // Zurueck auf den Knopf, der die Ansicht geoeffnet hat. Ohne das faellt
-      // der Fokus auf den Seitenanfang und man muss sich erneut durch die
-      // ganze Seite tabben, um weiterzulesen.
-      if (rueckkehr && document.contains(rueckkehr)) {
-        rueckkehr.focus({ preventScroll: true });
-      }
-      rueckkehr = null;
       setTimeout(function () { busy = false; }, FRAME_MS);
     }, EXIT_MS);
   }
@@ -1910,26 +1775,6 @@
   });
   document.addEventListener('keydown', function (e) {
     if (e.key === 'Escape' && current) closeProject();
-  });
-
-  /* Rueckfall fuer Browser ohne inert (Safari vor 15.5): dort haelt erst diese
-     Schleife den Fokus in der Ansicht. Wo inert greift, kommt sie nie zum
-     Zug -- ausserhalb ist dann ohnehin nichts mehr anspringbar. */
-  const FOKUSSIERBAR = 'a[href], button:not([disabled]), [tabindex]:not([tabindex="-1"])';
-  document.addEventListener('keydown', function (e) {
-    if (e.key !== 'Tab' || !current) return;
-    const ziele = Array.prototype.filter.call(
-      current.querySelectorAll(FOKUSSIERBAR),
-      function (el) { return el.offsetParent !== null; });
-    if (!ziele.length) return;
-    const erste = ziele[0], letzte = ziele[ziele.length - 1];
-    if (!current.contains(document.activeElement)) {
-      e.preventDefault(); erste.focus();
-    } else if (e.shiftKey && document.activeElement === erste) {
-      e.preventDefault(); letzte.focus();
-    } else if (!e.shiftKey && document.activeElement === letzte) {
-      e.preventDefault(); erste.focus();
-    }
   });
 
   /* ---------- Hero-Film und Umschalten ----------
@@ -2017,40 +1862,17 @@
     }
     function auraOff() { if (auraTimer) { clearInterval(auraTimer); auraTimer = null; } }
     heroVideo.addEventListener('loadeddata', paintAura);
-
-    /* Der Film lief bisher immer weiter -- auch weit unten auf der Seite und
-       auch hinter einer offenen Projektansicht. Ein 1080p-Bild 30-mal je
-       Sekunde zu entschluesseln kostet dort dauerhaft Rechenzeit und Akku,
-       ohne dass jemand es sieht. Deshalb laufen Film und Lichthof nur noch,
-       wenn der Hero im Fenster steht, keine Projektansicht offen ist und der
-       Tab im Vordergrund liegt. */
-    let imBild = true;
-    let projektOffen = false;
-
-    function abgleichen() {
-      if (imBild && !projektOffen && !document.hidden) {
-        auraOn();
-        if (heroVideo.paused) {
-          const go = heroVideo.play();
-          if (go && go.catch) { go.catch(function () {}); }
-        }
-      } else {
-        auraOff();
-        if (!heroVideo.paused) heroVideo.pause();
-      }
-    }
-
+    // Nur zeichnen, solange der Hero ueberhaupt im Bild ist.
     if ('IntersectionObserver' in window) {
       new IntersectionObserver(function (es) {
-        es.forEach(function (e) { imBild = e.isIntersecting; });
-        abgleichen();
+        es.forEach(function (e) { e.isIntersecting ? auraOn() : auraOff(); });
       }, { threshold: 0 }).observe(heroSection);
     } else {
       auraOn();
     }
-    document.addEventListener('visibilitychange', abgleichen);
-    document.addEventListener('lxr:projekt-auf', function () { projektOffen = true; abgleichen(); });
-    document.addEventListener('lxr:projekt-zu', function () { projektOffen = false; abgleichen(); });
+    document.addEventListener('visibilitychange', function () {
+      document.hidden ? auraOff() : auraOn();
+    });
   }
 
   /* ---------- Kameraführung ----------
@@ -2162,71 +1984,15 @@
     }).join(',');
   }
 
-  /* Das Auslesen der Farbe ist einmalig, aber nicht gratis: getImageData holt
-     das fertig gezeichnete Bild aus dem Grafikspeicher zurueck. Gemessen auf
-     einem vierfach gedrosselten Prozessor waren das 59 bis 117 ms je Bild --
-     und zwar genau dann, wenn beim Scrollen neue Bilder nachluden. Das war die
-     einzige verbliebene Quelle fuer Haenger beim Scrollen.
-
-     Deshalb laufen die Berechnungen jetzt einzeln in den Leerlaufpausen des
-     Browsers statt sofort und hintereinander weg. Sichtbar aendert das nichts:
-     der Lichthof blendet ohnehin ueber 1,8 Sekunden ein. */
-  /* Die Farbe steht fertig in Images/web/glow.json -- erzeugt von
-     optimize-images.py aus demselben Mittelwert, den der Rueckfall unten im
-     Browser rechnet.
-
-     Warum ueberhaupt vorberechnet: das Mitteln selbst dauert 0,2 ms, aber das
-     erste Zeichnen eines Bildes auf ein Canvas zwingt den Browser, das
-     entpackte Bild umzurechnen. Gemessen auf einem vierfach gedrosselten
-     Prozessor waren das 40 ms im Mittel und bis zu 118 ms je Bild -- und zwar
-     genau beim Scrollen, wenn neue Bilder nachluden. Das waren die letzten
-     Haenger. Weder eine andere Canvas-Einstellung noch vorheriges decode()
-     noch das Verlegen in die Leerlaufpausen haben daran etwas geaendert; die
-     Umrechnung kostet, was sie kostet. Sie faellt jetzt gar nicht mehr an.
-
-     Der Rueckfall bleibt: fuer Bilder, die noch nicht in der Liste stehen, und
-     fuer den Fall, dass die Seite als lokale Datei geoeffnet wird -- dort
-     schlaegt fetch fehl. */
-  let glowTabelle = null;
-  const glowBereit = (window.fetch && location.protocol !== 'file:')
-    ? fetch('Images/web/glow.json')
-        .then(function (r) { return r.ok ? r.json() : null; })
-        .then(function (j) { glowTabelle = j; })
-        .catch(function () {})
-    : Promise.resolve();
-
-  /* Schluessel ist der Bildpfad ohne "-<Breite>.<Endung>". Welche Breite der
-     Browser aus dem srcset gewaehlt hat, spielt fuer die Farbe keine Rolle. */
-  function glowSchluessel(img) {
-    return (img.getAttribute('src') || '').replace(/-\d+\.(webp|jpe?g|png)$/i, '');
-  }
-
-  /* Nur noch fuer den Rueckfall: die Berechnungen laufen einzeln in den
-     Leerlaufpausen, damit sie sich nicht zu einer langen Aufgabe stapeln. */
-  const auraWarten = [];
-  let auraLaeuft = false;
-  const imLeerlauf = window.requestIdleCallback || function (fn) {
-    return setTimeout(fn, 1);
-  };
-
-  function auraNachziehen() {
-    if (auraLaeuft || !auraWarten.length) return;
-    auraLaeuft = true;
-    imLeerlauf(function () {
-      auraLaeuft = false;
-      const naechste = auraWarten.shift();
-      if (naechste) naechste();
-      auraNachziehen();
-    }, { timeout: 1500 });
-  }
-
   function buildAura(host) {
     if (!host || host.dataset.aura) return;
     const src = host.querySelector('img:not(.aura)');
     if (!src) return;
 
-    function anlegenMit(farbe) {
-      if (host.dataset.aura || !farbe) return;
+    function anlegen() {
+      if (host.dataset.aura) return;
+      const farbe = glowFarbe(src);
+      if (!farbe) return;
       host.dataset.aura = '1';
       const aura = document.createElement('div');
       aura.className = 'aura';
@@ -2236,24 +2002,8 @@
       requestAnimationFrame(function () { aura.classList.add('on'); });
     }
 
-    function selbstRechnen() {
-      auraWarten.push(function () { anlegenMit(glowFarbe(src)); });
-      auraNachziehen();
-    }
-
-    function los() {
-      const fertig = glowTabelle && glowTabelle[glowSchluessel(src)];
-      if (fertig) { anlegenMit(fertig); return; }
-      // Rueckfall: erst entpacken lassen, dann rechnen.
-      if (src.complete && src.naturalWidth) {
-        if (src.decode) src.decode().then(selbstRechnen, selbstRechnen);
-        else selbstRechnen();
-      } else {
-        src.addEventListener('load', selbstRechnen, { once: true });
-      }
-    }
-
-    glowBereit.then(los);
+    if (src.complete && src.naturalWidth) anlegen();
+    else src.addEventListener('load', anlegen, { once: true });
   }
   document.querySelectorAll('.page .aura-host').forEach(buildAura);
 
