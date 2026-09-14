@@ -148,15 +148,15 @@
      Die Unschaerfe zieht auf Kreisbahnen um den Zeiger: Mitte scharf, nach
      aussen zunehmende Drehung -- wie eine geschwenkte Kinooptik.
 
-     Eine wirklich stufenlose Drehunschaerfe muesste jeden Punkt entlang SEINER
-     Kreisbahn verwischen; die Richtung aendert sich also ueberall. Der Browser
-     kann nur entlang fester Achsen weichzeichnen, und den Seiteninhalt gibt er
-     nicht als Bilddaten heraus. Der Kreis wird deshalb in 4 Richtungen zerlegt
-     (alle 45.0 Grad). Jede Lage gilt nur in dem Winkelbereich, in dem die
-     Kreisbahn genau so verlaeuft; die Bereiche blenden weich ineinander.
-     Groesster Richtungsfehler: 22.5 Grad.
-     Die Winkelbereiche kommen von repeating-conic-gradient -- nur damit lassen
-     sich auch schraege Sektoren sauber abgrenzen. */
+     Zwei Richtungen, nicht mehr. Eine feinere Aufteilung (vier oder acht) sah
+     runder aus, brauchte aber feConvolveMatrix: 169 Texturzugriffe je Bildpunkt
+     und Ebene, bei vier Ebenen 1,4 Milliarden pro Einzelbild. Das hat die
+     Grafikkarte ueberlastet -- sichtbar als Ruckeln, Reissen und kurz
+     aufblitzenden schwarzen Rechtecken.
+     Die waagerechte Unschaerfe gilt ueber und unter dem Zeiger (dort verlaeuft
+     die Kreisbahn waagerecht), die senkrechte links und rechts davon. In den
+     Diagonalen greifen beide und ergeben dort eine gewoehnliche Unschaerfe --
+     das ist der Preis fuer eine Seite, die fluessig laeuft. */
   .focus {
     position: fixed; inset: 0; z-index: 490; pointer-events: none;
     opacity: 0; transition: opacity 1s var(--ease);
@@ -164,67 +164,27 @@
   @media (hover: hover) and (pointer: fine) {
     .hero-docked .focus.on { opacity: 1; }
 
-    .hero-docked .focus-00.on {
-      -webkit-backdrop-filter: url(#dreh00);
-              backdrop-filter: url(#dreh00);
+    .hero-docked .focus-quer.on {
+      -webkit-backdrop-filter: url(#drehQuer);
+              backdrop-filter: url(#drehQuer);
       -webkit-mask-image:
-        repeating-conic-gradient(from 0deg at var(--fx, 50%) var(--fy, 45%),
-          #000 0deg, #000 12.38deg, transparent 32.62deg,
-          transparent 147.38deg, #000 167.62deg, #000 180deg),
+        radial-gradient(ellipse 46% 170% at var(--fx, 50%) var(--fy, 45%), #000 0 34%, transparent 82%),
         radial-gradient(circle at var(--fx, 50%) var(--fy, 45%), transparent 0 420px, #000 1200px);
       -webkit-mask-composite: source-in;
               mask-image:
-        repeating-conic-gradient(from 0deg at var(--fx, 50%) var(--fy, 45%),
-          #000 0deg, #000 12.38deg, transparent 32.62deg,
-          transparent 147.38deg, #000 167.62deg, #000 180deg),
+        radial-gradient(ellipse 46% 170% at var(--fx, 50%) var(--fy, 45%), #000 0 34%, transparent 82%),
         radial-gradient(circle at var(--fx, 50%) var(--fy, 45%), transparent 0 420px, #000 1200px);
               mask-composite: intersect;
     }
-    .hero-docked .focus-01.on {
-      -webkit-backdrop-filter: url(#dreh01);
-              backdrop-filter: url(#dreh01);
+    .hero-docked .focus-hoch.on {
+      -webkit-backdrop-filter: url(#drehHoch);
+              backdrop-filter: url(#drehHoch);
       -webkit-mask-image:
-        repeating-conic-gradient(from 45deg at var(--fx, 50%) var(--fy, 45%),
-          #000 0deg, #000 12.38deg, transparent 32.62deg,
-          transparent 147.38deg, #000 167.62deg, #000 180deg),
+        radial-gradient(ellipse 170% 46% at var(--fx, 50%) var(--fy, 45%), #000 0 34%, transparent 82%),
         radial-gradient(circle at var(--fx, 50%) var(--fy, 45%), transparent 0 420px, #000 1200px);
       -webkit-mask-composite: source-in;
               mask-image:
-        repeating-conic-gradient(from 45deg at var(--fx, 50%) var(--fy, 45%),
-          #000 0deg, #000 12.38deg, transparent 32.62deg,
-          transparent 147.38deg, #000 167.62deg, #000 180deg),
-        radial-gradient(circle at var(--fx, 50%) var(--fy, 45%), transparent 0 420px, #000 1200px);
-              mask-composite: intersect;
-    }
-    .hero-docked .focus-02.on {
-      -webkit-backdrop-filter: url(#dreh02);
-              backdrop-filter: url(#dreh02);
-      -webkit-mask-image:
-        repeating-conic-gradient(from 90deg at var(--fx, 50%) var(--fy, 45%),
-          #000 0deg, #000 12.38deg, transparent 32.62deg,
-          transparent 147.38deg, #000 167.62deg, #000 180deg),
-        radial-gradient(circle at var(--fx, 50%) var(--fy, 45%), transparent 0 420px, #000 1200px);
-      -webkit-mask-composite: source-in;
-              mask-image:
-        repeating-conic-gradient(from 90deg at var(--fx, 50%) var(--fy, 45%),
-          #000 0deg, #000 12.38deg, transparent 32.62deg,
-          transparent 147.38deg, #000 167.62deg, #000 180deg),
-        radial-gradient(circle at var(--fx, 50%) var(--fy, 45%), transparent 0 420px, #000 1200px);
-              mask-composite: intersect;
-    }
-    .hero-docked .focus-03.on {
-      -webkit-backdrop-filter: url(#dreh03);
-              backdrop-filter: url(#dreh03);
-      -webkit-mask-image:
-        repeating-conic-gradient(from 135deg at var(--fx, 50%) var(--fy, 45%),
-          #000 0deg, #000 12.38deg, transparent 32.62deg,
-          transparent 147.38deg, #000 167.62deg, #000 180deg),
-        radial-gradient(circle at var(--fx, 50%) var(--fy, 45%), transparent 0 420px, #000 1200px);
-      -webkit-mask-composite: source-in;
-              mask-image:
-        repeating-conic-gradient(from 135deg at var(--fx, 50%) var(--fy, 45%),
-          #000 0deg, #000 12.38deg, transparent 32.62deg,
-          transparent 147.38deg, #000 167.62deg, #000 180deg),
+        radial-gradient(ellipse 170% 46% at var(--fx, 50%) var(--fy, 45%), #000 0 34%, transparent 82%),
         radial-gradient(circle at var(--fx, 50%) var(--fy, 45%), transparent 0 420px, #000 1200px);
               mask-composite: intersect;
     }
@@ -913,81 +873,21 @@
 
 <div class="grain grain-mid" aria-hidden="true"></div>
 <div class="grain grain-dark" aria-hidden="true"></div>
-<!-- Drehunschaerfe: je eine Bewegungsunschaerfe pro Richtung.
-     13x13 ist die groesste Kerngroesse, die Chrome noch ausfuehrt --
-     ab 17x17 wird der Filter stillschweigend uebersprungen (nachgemessen).
-     Deshalb wird jeder Kern 1x hintereinander angewandt; das verlaengert
-     die Schmierstrecke, ohne die Groessengrenze zu reissen. -->
+<!-- Drehunschaerfe: eine waagerechte und eine senkrechte Bewegungsunschaerfe.
+     Bewusst feGaussianBlur und nicht feConvolveMatrix: die Faltung holt je
+     Bildpunkt 169 Werte, bei vier Vollbild-Ebenen sind das 1,4 Milliarden
+     Texturzugriffe pro Einzelbild -- das hat die Grafikkarte in die Knie
+     gezwungen. Eine Gauss-Unschaerfe ist separierbar und braucht rund sechs.
+     Der zweite Wert ist bewusst nicht null: rein einachsig ergaebe das auf
+     Schrift harte Streifen, ein kleiner Queranteil laesst sie verschmelzen. -->
 <svg class="filter-defs" aria-hidden="true" focusable="false">
-  <filter id="dreh00" x="-14%" y="-14%" width="128%" height="128%">
-    <feConvolveMatrix order="13 13" preserveAlpha="true" divisor="1"
-      kernelMatrix="0 0 0 0 0 0 0 0 0 0 0 0 0
-                  0 0 0 0 0 0 0 0 0 0 0 0 0
-                  2e-05 2e-05 2e-05 2e-05 2e-05 2e-05 2e-05 2e-05 2e-05 2e-05 2e-05 2e-05 2e-05
-                  0.00049 0.00049 0.00049 0.00049 0.00049 0.00049 0.00049 0.00049 0.00049 0.00049 0.00049 0.00049 0.00049
-                  0.00476 0.00476 0.00476 0.00476 0.00476 0.00476 0.00476 0.00476 0.00476 0.00476 0.00476 0.00476 0.00476
-                  0.01857 0.01857 0.01857 0.01857 0.01857 0.01857 0.01857 0.01857 0.01857 0.01857 0.01857 0.01857 0.01857
-                  0.02923 0.02923 0.02923 0.02923 0.02923 0.02923 0.02923 0.02923 0.02923 0.02923 0.02923 0.02923 0.02923
-                  0.01857 0.01857 0.01857 0.01857 0.01857 0.01857 0.01857 0.01857 0.01857 0.01857 0.01857 0.01857 0.01857
-                  0.00476 0.00476 0.00476 0.00476 0.00476 0.00476 0.00476 0.00476 0.00476 0.00476 0.00476 0.00476 0.00476
-                  0.00049 0.00049 0.00049 0.00049 0.00049 0.00049 0.00049 0.00049 0.00049 0.00049 0.00049 0.00049 0.00049
-                  2e-05 2e-05 2e-05 2e-05 2e-05 2e-05 2e-05 2e-05 2e-05 2e-05 2e-05 2e-05 2e-05
-                  0 0 0 0 0 0 0 0 0 0 0 0 0
-                  0 0 0 0 0 0 0 0 0 0 0 0 0"/>
-  </filter>
-  <filter id="dreh01" x="-14%" y="-14%" width="128%" height="128%">
-    <feConvolveMatrix order="13 13" preserveAlpha="true" divisor="1"
-      kernelMatrix="0 0 0 0 0.00084 0.00011 1e-05 0 0 0 0 0 0
-                  0 0 0 0.01276 0.00411 0.00084 0.00011 1e-05 0 0 0 0 0
-                  0 0 0.03161 0.0252 0.01276 0.00411 0.00084 0.00011 1e-05 0 0 0 0
-                  0 0.01276 0.0252 0.03161 0.0252 0.01276 0.00411 0.00084 0.00011 1e-05 0 0 0
-                  0.00084 0.00411 0.01276 0.0252 0.03161 0.0252 0.01276 0.00411 0.00084 0.00011 1e-05 0 0
-                  0.00011 0.00084 0.00411 0.01276 0.0252 0.03161 0.0252 0.01276 0.00411 0.00084 0.00011 1e-05 0
-                  1e-05 0.00011 0.00084 0.00411 0.01276 0.0252 0.03161 0.0252 0.01276 0.00411 0.00084 0.00011 1e-05
-                  0 1e-05 0.00011 0.00084 0.00411 0.01276 0.0252 0.03161 0.0252 0.01276 0.00411 0.00084 0.00011
-                  0 0 1e-05 0.00011 0.00084 0.00411 0.01276 0.0252 0.03161 0.0252 0.01276 0.00411 0.00084
-                  0 0 0 1e-05 0.00011 0.00084 0.00411 0.01276 0.0252 0.03161 0.0252 0.01276 0
-                  0 0 0 0 1e-05 0.00011 0.00084 0.00411 0.01276 0.0252 0.03161 0 0
-                  0 0 0 0 0 1e-05 0.00011 0.00084 0.00411 0.01276 0 0 0
-                  0 0 0 0 0 0 1e-05 0.00011 0.00084 0 0 0 0"/>
-  </filter>
-  <filter id="dreh02" x="-14%" y="-14%" width="128%" height="128%">
-    <feConvolveMatrix order="13 13" preserveAlpha="true" divisor="1"
-      kernelMatrix="0 0 2e-05 0.00049 0.00476 0.01857 0.02923 0.01857 0.00476 0.00049 2e-05 0 0
-                  0 0 2e-05 0.00049 0.00476 0.01857 0.02923 0.01857 0.00476 0.00049 2e-05 0 0
-                  0 0 2e-05 0.00049 0.00476 0.01857 0.02923 0.01857 0.00476 0.00049 2e-05 0 0
-                  0 0 2e-05 0.00049 0.00476 0.01857 0.02923 0.01857 0.00476 0.00049 2e-05 0 0
-                  0 0 2e-05 0.00049 0.00476 0.01857 0.02923 0.01857 0.00476 0.00049 2e-05 0 0
-                  0 0 2e-05 0.00049 0.00476 0.01857 0.02923 0.01857 0.00476 0.00049 2e-05 0 0
-                  0 0 2e-05 0.00049 0.00476 0.01857 0.02923 0.01857 0.00476 0.00049 2e-05 0 0
-                  0 0 2e-05 0.00049 0.00476 0.01857 0.02923 0.01857 0.00476 0.00049 2e-05 0 0
-                  0 0 2e-05 0.00049 0.00476 0.01857 0.02923 0.01857 0.00476 0.00049 2e-05 0 0
-                  0 0 2e-05 0.00049 0.00476 0.01857 0.02923 0.01857 0.00476 0.00049 2e-05 0 0
-                  0 0 2e-05 0.00049 0.00476 0.01857 0.02923 0.01857 0.00476 0.00049 2e-05 0 0
-                  0 0 2e-05 0.00049 0.00476 0.01857 0.02923 0.01857 0.00476 0.00049 2e-05 0 0
-                  0 0 2e-05 0.00049 0.00476 0.01857 0.02923 0.01857 0.00476 0.00049 2e-05 0 0"/>
-  </filter>
-  <filter id="dreh03" x="-14%" y="-14%" width="128%" height="128%">
-    <feConvolveMatrix order="13 13" preserveAlpha="true" divisor="1"
-      kernelMatrix="0 0 0 0 0 0 1e-05 0.00011 0.00084 0 0 0 0
-                  0 0 0 0 0 1e-05 0.00011 0.00084 0.00411 0.01276 0 0 0
-                  0 0 0 0 1e-05 0.00011 0.00084 0.00411 0.01276 0.0252 0.03161 0 0
-                  0 0 0 1e-05 0.00011 0.00084 0.00411 0.01276 0.0252 0.03161 0.0252 0.01276 0
-                  0 0 1e-05 0.00011 0.00084 0.00411 0.01276 0.0252 0.03161 0.0252 0.01276 0.00411 0.00084
-                  0 1e-05 0.00011 0.00084 0.00411 0.01276 0.0252 0.03161 0.0252 0.01276 0.00411 0.00084 0.00011
-                  1e-05 0.00011 0.00084 0.00411 0.01276 0.0252 0.03161 0.0252 0.01276 0.00411 0.00084 0.00011 1e-05
-                  0.00011 0.00084 0.00411 0.01276 0.0252 0.03161 0.0252 0.01276 0.00411 0.00084 0.00011 1e-05 0
-                  0.00084 0.00411 0.01276 0.0252 0.03161 0.0252 0.01276 0.00411 0.00084 0.00011 1e-05 0 0
-                  0 0.01276 0.0252 0.03161 0.0252 0.01276 0.00411 0.00084 0.00011 1e-05 0 0 0
-                  0 0 0.03161 0.0252 0.01276 0.00411 0.00084 0.00011 1e-05 0 0 0 0
-                  0 0 0 0.01276 0.00411 0.00084 0.00011 1e-05 0 0 0 0 0
-                  0 0 0 0 0.00084 0.00011 1e-05 0 0 0 0 0 0"/>
-  </filter>
+  <filter id="drehQuer" x="-15%" y="-15%" width="130%" height="130%">
+    <feGaussianBlur stdDeviation="6 1.9"/></filter>
+  <filter id="drehHoch" x="-15%" y="-15%" width="130%" height="130%">
+    <feGaussianBlur stdDeviation="1.9 6"/></filter>
 </svg>
-<div class="focus focus-00" id="focus-00" aria-hidden="true"></div>
-<div class="focus focus-01" id="focus-01" aria-hidden="true"></div>
-<div class="focus focus-02" id="focus-02" aria-hidden="true"></div>
-<div class="focus focus-03" id="focus-03" aria-hidden="true"></div>
+<div class="focus focus-quer" id="focus-quer" aria-hidden="true"></div>
+<div class="focus focus-hoch" id="focus-hoch" aria-hidden="true"></div>
 <div class="dither" aria-hidden="true"></div>
 <div class="analog" id="analog" aria-hidden="true">
   <div class="kratzer" id="kratzer1"></div>
