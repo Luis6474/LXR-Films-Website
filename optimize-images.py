@@ -11,6 +11,7 @@ Projektunterordner werden mitgenommen und in Images/web/ gespiegelt, z. B.
     Images/Gärtnerei Finder/5.5_5.5.1.jpg  ->  Images/web/gaertnerei-finder/5-5-5-5-1-800.webp
 """
 
+import json
 import re
 import unicodedata
 from pathlib import Path
@@ -42,6 +43,38 @@ SOURCE_SUFFIXES = {".jpg", ".jpeg", ".png", ".tif", ".tiff", ".webp"}
 
 UMLAUTS = {"ä": "ae", "ö": "oe", "ü": "ue", "ß": "ss"}
 
+# Die Lichthoefe hinter Bildern und Videos nehmen die Farbe des jeweiligen
+# Bildes an. Diese Farbe wurde bisher im Browser ermittelt: Bild auf ein 8x8
+# grosses Feld zeichnen, mitteln, saettigen. Das Mitteln selbst dauert 0,2 ms --
+# aber das erste Zeichnen eines Bildes auf ein Canvas zwingt den Browser, das
+# entpackte Bild umzurechnen, und das kostete auf einem vierfach gedrosselten
+# Prozessor 40 ms im Mittel und bis zu 100 ms je Bild. Genau das waren die
+# Haenger beim Scrollen, sobald neue Bilder nachluden.
+# Die Farbe aendert sich nie. Einmal hier ausgerechnet und als glow.json
+# mitgeliefert, kostet sie den Besucher nichts.
+GLOW_DATEI = "glow.json"
+GLOW_SAETTIGUNG = 2.15   # muss zu "kraft" in index.html passen
+GLOW_HELLIGKEIT = 1.5    # muss zu "hell"  in index.html passen
+
+
+def glow_farbe(img: "Image.Image") -> str:
+    """Mittlere Bildfarbe, angehoben -- dieselbe Rechnung wie im Browser."""
+    # BOX auf 8x8 ist der Flaechenmittelwert, also genau das, was das
+    # Gegenstueck im Browser annaehert.
+    klein = img.resize((8, 8), Image.BOX)
+    pixel = list(klein.getdata())
+    n = len(pixel)
+    r = sum(p[0] for p in pixel) / n
+    g = sum(p[1] for p in pixel) / n
+    b = sum(p[2] for p in pixel) / n
+    mitte = (r + g + b) / 3
+    werte = []
+    for v in (r, g, b):
+        x = (mitte + (v - mitte) * GLOW_SAETTIGUNG) * GLOW_HELLIGKEIT
+        werte.append(max(0, min(255, round(x))))
+    return ",".join(str(v) for v in werte)
+
+
 
 def slugify(name: str) -> str:
     """'Aufnahme Stephen im Cottage' -> 'aufnahme-stephen-im-cottage'"""
@@ -66,7 +99,7 @@ def target_dir(path: Path) -> Path:
     return out
 
 
-def process(path: Path) -> tuple[int, int]:
+def process(path: Path, glows: dict) -> tuple[int, int]:
     """Gibt (Quellgröße, Summe der erzeugten Größen) zurück."""
     out_dir = target_dir(path)
     slug = slugify(path.stem)
@@ -74,6 +107,10 @@ def process(path: Path) -> tuple[int, int]:
 
     with Image.open(path) as img:
         img = img.convert("RGB")
+
+        # Schluessel ist der Web-Pfad ohne "-<Breite>.<Endung>" -- so findet die
+        # Seite ihn unabhaengig davon, welche Breite der Browser gewaehlt hat.
+        glows[out_dir.relative_to(SRC_DIR.parent).as_posix() + "/" + slug] = glow_farbe(img)
 
         # Nie hochskalieren. Ist die Quelle schmaler als die groesste Zielbreite,
         # kommt zusaetzlich ihre native Breite dazu -- sonst haette z. B. ein
@@ -115,12 +152,20 @@ def main() -> None:
 
     OUT_DIR.mkdir(exist_ok=True)
 
+    glows: dict[str, str] = {}
     total_src = total_out = 0
     for path in sources:
         print(f"\n{path.relative_to(SRC_DIR)}  ({human(path.stat().st_size)})")
-        src_size, out_size = process(path)
+        src_size, out_size = process(path, glows)
         total_src += src_size
         total_out += out_size
+
+    glow_pfad = OUT_DIR / GLOW_DATEI
+    glow_pfad.write_text(
+        json.dumps(dict(sorted(glows.items())), ensure_ascii=False, indent=0),
+        encoding="utf-8",
+    )
+    print(f"Lichthof-Farben: {len(glows)} Eintraege -> {glow_pfad.relative_to(SRC_DIR.parent)}")
 
     print(f"\n{len(sources)} Bilder verarbeitet.")
     print(f"Originale:  {human(total_src)}")

@@ -2121,15 +2121,71 @@
     }).join(',');
   }
 
+  /* Das Auslesen der Farbe ist einmalig, aber nicht gratis: getImageData holt
+     das fertig gezeichnete Bild aus dem Grafikspeicher zurueck. Gemessen auf
+     einem vierfach gedrosselten Prozessor waren das 59 bis 117 ms je Bild --
+     und zwar genau dann, wenn beim Scrollen neue Bilder nachluden. Das war die
+     einzige verbliebene Quelle fuer Haenger beim Scrollen.
+
+     Deshalb laufen die Berechnungen jetzt einzeln in den Leerlaufpausen des
+     Browsers statt sofort und hintereinander weg. Sichtbar aendert das nichts:
+     der Lichthof blendet ohnehin ueber 1,8 Sekunden ein. */
+  /* Die Farbe steht fertig in Images/web/glow.json -- erzeugt von
+     optimize-images.py aus demselben Mittelwert, den der Rueckfall unten im
+     Browser rechnet.
+
+     Warum ueberhaupt vorberechnet: das Mitteln selbst dauert 0,2 ms, aber das
+     erste Zeichnen eines Bildes auf ein Canvas zwingt den Browser, das
+     entpackte Bild umzurechnen. Gemessen auf einem vierfach gedrosselten
+     Prozessor waren das 40 ms im Mittel und bis zu 118 ms je Bild -- und zwar
+     genau beim Scrollen, wenn neue Bilder nachluden. Das waren die letzten
+     Haenger. Weder eine andere Canvas-Einstellung noch vorheriges decode()
+     noch das Verlegen in die Leerlaufpausen haben daran etwas geaendert; die
+     Umrechnung kostet, was sie kostet. Sie faellt jetzt gar nicht mehr an.
+
+     Der Rueckfall bleibt: fuer Bilder, die noch nicht in der Liste stehen, und
+     fuer den Fall, dass die Seite als lokale Datei geoeffnet wird -- dort
+     schlaegt fetch fehl. */
+  let glowTabelle = null;
+  const glowBereit = (window.fetch && location.protocol !== 'file:')
+    ? fetch('Images/web/glow.json')
+        .then(function (r) { return r.ok ? r.json() : null; })
+        .then(function (j) { glowTabelle = j; })
+        .catch(function () {})
+    : Promise.resolve();
+
+  /* Schluessel ist der Bildpfad ohne "-<Breite>.<Endung>". Welche Breite der
+     Browser aus dem srcset gewaehlt hat, spielt fuer die Farbe keine Rolle. */
+  function glowSchluessel(img) {
+    return (img.getAttribute('src') || '').replace(/-\d+\.(webp|jpe?g|png)$/i, '');
+  }
+
+  /* Nur noch fuer den Rueckfall: die Berechnungen laufen einzeln in den
+     Leerlaufpausen, damit sie sich nicht zu einer langen Aufgabe stapeln. */
+  const auraWarten = [];
+  let auraLaeuft = false;
+  const imLeerlauf = window.requestIdleCallback || function (fn) {
+    return setTimeout(fn, 1);
+  };
+
+  function auraNachziehen() {
+    if (auraLaeuft || !auraWarten.length) return;
+    auraLaeuft = true;
+    imLeerlauf(function () {
+      auraLaeuft = false;
+      const naechste = auraWarten.shift();
+      if (naechste) naechste();
+      auraNachziehen();
+    }, { timeout: 1500 });
+  }
+
   function buildAura(host) {
     if (!host || host.dataset.aura) return;
     const src = host.querySelector('img:not(.aura)');
     if (!src) return;
 
-    function anlegen() {
-      if (host.dataset.aura) return;
-      const farbe = glowFarbe(src);
-      if (!farbe) return;
+    function anlegenMit(farbe) {
+      if (host.dataset.aura || !farbe) return;
       host.dataset.aura = '1';
       const aura = document.createElement('div');
       aura.className = 'aura';
@@ -2139,8 +2195,24 @@
       requestAnimationFrame(function () { aura.classList.add('on'); });
     }
 
-    if (src.complete && src.naturalWidth) anlegen();
-    else src.addEventListener('load', anlegen, { once: true });
+    function selbstRechnen() {
+      auraWarten.push(function () { anlegenMit(glowFarbe(src)); });
+      auraNachziehen();
+    }
+
+    function los() {
+      const fertig = glowTabelle && glowTabelle[glowSchluessel(src)];
+      if (fertig) { anlegenMit(fertig); return; }
+      // Rueckfall: erst entpacken lassen, dann rechnen.
+      if (src.complete && src.naturalWidth) {
+        if (src.decode) src.decode().then(selbstRechnen, selbstRechnen);
+        else selbstRechnen();
+      } else {
+        src.addEventListener('load', selbstRechnen, { once: true });
+      }
+    }
+
+    glowBereit.then(los);
   }
   document.querySelectorAll('.page .aura-host').forEach(buildAura);
 
