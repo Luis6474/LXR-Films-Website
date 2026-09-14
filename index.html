@@ -302,7 +302,7 @@
   .zucken {
     position: fixed; inset: 0; z-index: 502; pointer-events: none;
     background: radial-gradient(125% 105% at 50% 64%,
-      #ffe0b4 0%, #f7c489 42%, #e0a263 74%, #c9884b 100%);
+      #ffdca8 0%, #f8c27f 40%, #efac60 72%, #e29c4e 100%);
     mix-blend-mode: soft-light;
     opacity: 0;
     filter: opacity(var(--staerke, 1));
@@ -1521,44 +1521,35 @@
     const zucken = document.getElementById('zucken');
     if (!zucken) return;
 
-    function einmal(el, vorbereiten) {
-      if (el.classList.contains('laeuft')) return;
-      vorbereiten(el);
-      el.classList.add('laeuft');
-      el.addEventListener('animationend', function ende() {
-        el.classList.remove('laeuft');
-        el.removeEventListener('animationend', ende);
-      });
-    }
-
-    /* Gleichverteilte Abstaende klingen wie ein Metronom: nie kuerzer als das
-       Minimum, nie laenger als das Maximum, im Mittel immer dasselbe. Eine
-       Flamme haelt keinen Takt -- mal zuckt sie zweimal kurz hintereinander,
-       mal steht sie einen Moment ruhig. Das leistet eine Exponentialverteilung
-       (Poisson): der naechste Zeitpunkt haengt nicht davon ab, wie lange der
-       letzte her ist. */
+    /* Gleichverteilte Abstaende klingen wie ein Metronom. Eine Flamme haelt
+       keinen Takt -- mal zuckt sie zweimal kurz hintereinander, mal haelt sie
+       einen Wimpernschlag inne. Das leistet eine Exponentialverteilung: der
+       naechste Zeitpunkt haengt nicht davon ab, wie lange der letzte her ist. */
     function abstand(mittel, minimum) {
       return minimum + (-Math.log(1 - Math.random()) * mittel);
     }
 
-    function planen(fn, mittel, minimum) {
-      setTimeout(function () {
-        // Im Hintergrundtab passiert nichts -- das spart Rechenzeit und
-        // verhindert, dass sich beim Zurueckkommen etwas staut.
-        if (!document.hidden) fn();
-        planen(fn, mittel, minimum);
-      }, abstand(mittel, minimum));
+    /* Verkettet statt getaktet. Vorher lief ein Zeitgeber unabhaengig von der
+       Animation und wurde verworfen, solange noch eine lief -- gemessen stand
+       das Licht dadurch bis zu einer Sekunde am Stueck vollkommen still, was
+       eine Kerze nie tut. Jetzt beginnt der naechste Bogen kurz nachdem der
+       vorige geendet hat: gemessen rund neun Zehntel der Zeit in Bewegung. */
+    function bogen() {
+      if (document.hidden) { setTimeout(bogen, 500); return; }
+      zucken.style.setProperty('--dauer', (0.55 + Math.random() * 0.85).toFixed(2) + 's');
+      // Mal kaum zu sehen, mal deutlich -- das nimmt dem Licht die Regelmaessigkeit.
+      zucken.style.setProperty('--staerke', (0.5 + Math.random() * 0.8).toFixed(2));
+      zucken.classList.add('laeuft');
+      zucken.addEventListener('animationend', function ende() {
+        zucken.removeEventListener('animationend', ende);
+        zucken.classList.remove('laeuft');
+        // Sehr kurze, zufaellige Pause -- lang genug, dass der Browser die
+        // Animation als neu erkennt, kurz genug fuer ein durchgehendes Atmen.
+        setTimeout(bogen, abstand(80, 25));
+      });
     }
 
-    planen(function () {
-      einmal(zucken, function (e) {
-        // Kurze Boegen, die dicht aufeinander folgen -- zusammen ergibt das ein
-        // fast durchgehendes Atmen statt einzelner, abgesetzter Zuckungen.
-        e.style.setProperty('--dauer', (0.55 + Math.random() * 0.85).toFixed(2) + 's');
-        // Mal kaum zu sehen, mal deutlich -- das nimmt dem Licht die Regelmaessigkeit.
-        e.style.setProperty('--staerke', (0.45 + Math.random() * 0.75).toFixed(2));
-      });
-    }, 420, 120);     // im Mittel alle 0,54 s, stark schwankend und in Schueben
+    bogen();
   })();
 
   const page = document.getElementById('page');
