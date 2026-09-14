@@ -329,8 +329,26 @@
      Schirmen reicht er damit ueber den Fensterrand -- 'clip' schneidet das
      seitlich ab, ohne (anders als 'hidden') einen eigenen Scrollbereich
      aufzumachen; das haengende Zitat bleibt dadurch klebend. */
-  .page { transition: opacity 0.6s var(--ease); overflow-x: clip; }
-  .page.is-hidden { opacity: 0; pointer-events: none; }
+  .page { transition: opacity 0.6s var(--ease), visibility 0s; overflow-x: clip; }
+  /* visibility zusaetzlich zu opacity: eine nur durchsichtige Seite wird
+     weiterhin gezeichnet und belegt Grafikspeicher -- gemessen rund 11 MB fuer
+     Hero-Film, Titelzeile und die Bildkaesten, alles unsichtbar hinter der
+     Projektansicht. Der Umschaltpunkt liegt am Ende der Ueberblendung, damit
+     das Ausblenden weich bleibt; beim Zurueckkommen greift er sofort. */
+  .page.is-hidden {
+    opacity: 0; pointer-events: none; visibility: hidden;
+    transition: opacity 0.6s var(--ease), visibility 0s 0.6s;
+  }
+
+  /* Korn, Dithering, Teelicht und Schaerfefeld liegen auf z-index 490 bis 502,
+     die Projektansicht auf 900 mit deckendem Hintergrund -- sie sind dort also
+     ohnehin verdeckt, wurden aber weiter gezeichnet. Zusammen rund 27 MB
+     Texturflaeche. Die Projektansicht bringt ihr eigenes Korn mit. Der Wechsel
+     passiert hinter der geschlossenen Blende, also ohne sichtbaren Sprung. */
+  body.is-viewing .grain,
+  body.is-viewing .dither,
+  body.is-viewing .zucken,
+  body.is-viewing .focus { display: none; }
   body.is-viewing { overflow: hidden; }
 
   /* ---------- Hero ----------
@@ -961,7 +979,9 @@
       <div class="card reveal" style="--card-accent:#a9b56d">
         <button class="card-trigger" data-viewer="v1" aria-haspopup="dialog">
           <div class="card-head">
-            <div class="card-preview"><img src="Images/web/gaertnerei-finder/still-2025-09-02-204030-6-3-1-800.webp" alt="" loading="lazy" decoding="async"></div>
+            <div class="card-preview"><img src="Images/web/gaertnerei-finder/still-2025-09-02-204030-6-3-1-800.webp"
+                   srcset="Images/web/gaertnerei-finder/still-2025-09-02-204030-6-3-1-400.webp 400w, Images/web/gaertnerei-finder/still-2025-09-02-204030-6-3-1-800.webp 800w"
+                   sizes="(min-width: 760px) 139px, (min-width: 621px) 118px, 101px" alt="" loading="lazy" decoding="async"></div>
             <div class="card-info">
               <div class="card-titleline">
                 <span class="name">Gärtnerei Eggert Finder</span>
@@ -977,7 +997,9 @@
       <div class="card reveal" style="--card-accent:#93a09b">
         <button class="card-trigger" data-viewer="v2" aria-haspopup="dialog">
           <div class="card-head">
-            <div class="card-preview"><img src="Images/web/stephen-am-strand-800.webp" alt="" loading="lazy" decoding="async"></div>
+            <div class="card-preview"><img src="Images/web/stephen-am-strand-800.webp"
+                   srcset="Images/web/stephen-am-strand-400.webp 400w, Images/web/stephen-am-strand-800.webp 800w"
+                   sizes="(min-width: 760px) 139px, (min-width: 621px) 118px, 101px" alt="" loading="lazy" decoding="async"></div>
             <div class="card-info">
               <div class="card-titleline">
                 <span class="name">[Filmtitel]</span>
@@ -993,7 +1015,9 @@
       <div class="card reveal" style="--card-accent:#8aa3b2">
         <button class="card-trigger" data-viewer="v3" aria-haspopup="dialog">
           <div class="card-head">
-            <div class="card-preview"><img src="Images/web/oesterreich25/still-2025-08-22-215508-4-2-1-800.webp" alt="" loading="lazy" decoding="async"></div>
+            <div class="card-preview"><img src="Images/web/oesterreich25/still-2025-08-22-215508-4-2-1-800.webp"
+                   srcset="Images/web/oesterreich25/still-2025-08-22-215508-4-2-1-400.webp 400w, Images/web/oesterreich25/still-2025-08-22-215508-4-2-1-800.webp 800w"
+                   sizes="(min-width: 760px) 139px, (min-width: 621px) 118px, 101px" alt="" loading="lazy" decoding="async"></div>
             <div class="card-info">
               <div class="card-titleline">
                 <span class="name">The Mountains</span>
@@ -1009,7 +1033,9 @@
       <div class="card reveal" style="--card-accent:#c8863f">
         <button class="card-trigger" data-viewer="v4" aria-haspopup="dialog">
           <div class="card-head">
-            <div class="card-preview"><img src="Images/web/track-of-time/2-19-2-19-1-800.webp" alt="" loading="lazy" decoding="async"></div>
+            <div class="card-preview"><img src="Images/web/track-of-time/2-19-2-19-1-800.webp"
+                   srcset="Images/web/track-of-time/2-19-2-19-1-400.webp 400w, Images/web/track-of-time/2-19-2-19-1-800.webp 800w"
+                   sizes="(min-width: 760px) 139px, (min-width: 621px) 118px, 101px" alt="" loading="lazy" decoding="async"></div>
             <div class="card-info">
               <div class="card-titleline">
                 <span class="name">Track of Time</span>
@@ -1025,7 +1051,9 @@
       <div class="card reveal" style="--card-accent:#c8a171">
         <button class="card-trigger" data-viewer="v5" aria-haspopup="dialog">
           <div class="card-head">
-            <div class="card-preview"><img src="Images/web/oesterreich24/img-2100-800.webp" alt="" loading="lazy" decoding="async"></div>
+            <div class="card-preview"><img src="Images/web/oesterreich24/img-2100-800.webp"
+                   srcset="Images/web/oesterreich24/img-2100-400.webp 400w, Images/web/oesterreich24/img-2100-800.webp 800w"
+                   sizes="(min-width: 760px) 139px, (min-width: 621px) 118px, 101px" alt="" loading="lazy" decoding="async"></div>
             <div class="card-info">
               <div class="card-titleline">
                 <span class="name">The South</span>
@@ -1481,6 +1509,7 @@
 
   let current = null;
   let busy = false;
+  let rueckkehr = null;   // Knopf, der die Ansicht geoeffnet hat
 
   /* ---------- Video ----------
      YouTube, aber ohne sichtbare YouTube-Oberfläche: nocookie-Domain, alle
@@ -1637,6 +1666,11 @@
     frame.title = viewer.querySelector('h2') ? viewer.querySelector('h2').textContent : 'Film';
     frame.allow = 'autoplay; encrypted-media; picture-in-picture';
     frame.setAttribute('referrerpolicy', 'strict-origin-when-cross-origin');
+    // Nicht anspringbar: mit der Tabulatortaste landete man sonst IM Player,
+    // und YouTube blendet dann seine eigene Bedienung samt Kanalverweis ein --
+    // genau das, was die Einbettung sonst ueberall vermeidet. Bedient wird der
+    // Film ueber die eigenen Schaltflaechen darunter.
+    frame.tabIndex = -1;
     stage.appendChild(frame);
     registerFit(stage, frame, 1.18);   // Kanalleiste des Players ausserhalb halten
     stage._player = watchPlayer(frame, {
@@ -1709,6 +1743,7 @@
     if (!viewer) return;
     busy = true;
     current = viewer;
+    rueckkehr = trigger;
 
     // Farbwelt des Projekts uebernehmen -- die Blende ist nicht schwarz,
     // sondern faehrt bereits im Ton des Films zu.
@@ -1722,6 +1757,13 @@
     setTimeout(function () {
       // 2) Hinter der geschlossenen Blende wird umgebaut
       body.classList.add('is-viewing');
+      document.dispatchEvent(new CustomEvent('lxr:projekt-auf'));
+      // Die Seite dahinter ist unsichtbar, war aber weiterhin mit der
+      // Tabulatortaste erreichbar: nach dem Schliessen-Knopf sprang der Fokus
+      // in die verdeckten Projektknoepfe, und Enter oeffnete von dort eine
+      // zweite Ansicht. inert nimmt den ganzen Bereich aus der Bedienung --
+      // auch fuer Vorleseprogramme, die sonst durch die Seite hindurchlesen.
+      page.inert = true;
       viewer.hidden = false;
       void viewer.offsetWidth;               // Reflow erzwingen, damit die Transition greift
       viewer.classList.add('is-active');
@@ -1757,11 +1799,20 @@
 
     setTimeout(function () {
       viewer.hidden = true;
+      document.dispatchEvent(new CustomEvent('lxr:projekt-zu'));
+      page.inert = false;
       page.classList.remove('is-hidden');
       body.classList.remove('is-viewing');
       // ... und dann ganz raus, zurueck zum normalen Seitenformat
       body.classList.remove('lb-shut');
       current = null;
+      // Zurueck auf den Knopf, der die Ansicht geoeffnet hat. Ohne das faellt
+      // der Fokus auf den Seitenanfang und man muss sich erneut durch die
+      // ganze Seite tabben, um weiterzulesen.
+      if (rueckkehr && document.contains(rueckkehr)) {
+        rueckkehr.focus({ preventScroll: true });
+      }
+      rueckkehr = null;
       setTimeout(function () { busy = false; }, FRAME_MS);
     }, EXIT_MS);
   }
@@ -1775,6 +1826,26 @@
   });
   document.addEventListener('keydown', function (e) {
     if (e.key === 'Escape' && current) closeProject();
+  });
+
+  /* Rueckfall fuer Browser ohne inert (Safari vor 15.5): dort haelt erst diese
+     Schleife den Fokus in der Ansicht. Wo inert greift, kommt sie nie zum
+     Zug -- ausserhalb ist dann ohnehin nichts mehr anspringbar. */
+  const FOKUSSIERBAR = 'a[href], button:not([disabled]), [tabindex]:not([tabindex="-1"])';
+  document.addEventListener('keydown', function (e) {
+    if (e.key !== 'Tab' || !current) return;
+    const ziele = Array.prototype.filter.call(
+      current.querySelectorAll(FOKUSSIERBAR),
+      function (el) { return el.offsetParent !== null; });
+    if (!ziele.length) return;
+    const erste = ziele[0], letzte = ziele[ziele.length - 1];
+    if (!current.contains(document.activeElement)) {
+      e.preventDefault(); erste.focus();
+    } else if (e.shiftKey && document.activeElement === erste) {
+      e.preventDefault(); letzte.focus();
+    } else if (!e.shiftKey && document.activeElement === letzte) {
+      e.preventDefault(); erste.focus();
+    }
   });
 
   /* ---------- Hero-Film und Umschalten ----------
@@ -1862,17 +1933,40 @@
     }
     function auraOff() { if (auraTimer) { clearInterval(auraTimer); auraTimer = null; } }
     heroVideo.addEventListener('loadeddata', paintAura);
-    // Nur zeichnen, solange der Hero ueberhaupt im Bild ist.
+
+    /* Der Film lief bisher immer weiter -- auch weit unten auf der Seite und
+       auch hinter einer offenen Projektansicht. Ein 1080p-Bild 30-mal je
+       Sekunde zu entschluesseln kostet dort dauerhaft Rechenzeit und Akku,
+       ohne dass jemand es sieht. Deshalb laufen Film und Lichthof nur noch,
+       wenn der Hero im Fenster steht, keine Projektansicht offen ist und der
+       Tab im Vordergrund liegt. */
+    let imBild = true;
+    let projektOffen = false;
+
+    function abgleichen() {
+      if (imBild && !projektOffen && !document.hidden) {
+        auraOn();
+        if (heroVideo.paused) {
+          const go = heroVideo.play();
+          if (go && go.catch) { go.catch(function () {}); }
+        }
+      } else {
+        auraOff();
+        if (!heroVideo.paused) heroVideo.pause();
+      }
+    }
+
     if ('IntersectionObserver' in window) {
       new IntersectionObserver(function (es) {
-        es.forEach(function (e) { e.isIntersecting ? auraOn() : auraOff(); });
+        es.forEach(function (e) { imBild = e.isIntersecting; });
+        abgleichen();
       }, { threshold: 0 }).observe(heroSection);
     } else {
       auraOn();
     }
-    document.addEventListener('visibilitychange', function () {
-      document.hidden ? auraOff() : auraOn();
-    });
+    document.addEventListener('visibilitychange', abgleichen);
+    document.addEventListener('lxr:projekt-auf', function () { projektOffen = true; abgleichen(); });
+    document.addEventListener('lxr:projekt-zu', function () { projektOffen = false; abgleichen(); });
   }
 
   /* ---------- Kameraführung ----------

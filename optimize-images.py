@@ -21,6 +21,19 @@ SRC_DIR = Path(__file__).parent / "Images"
 OUT_DIR = SRC_DIR / "web"
 
 WIDTHS = [800, 1600, 2400]
+
+# Die Vorschaubilder der Projektliste werden nur 96-132 px breit dargestellt.
+# Mit der 800er-Fassung laedt ein Handy dort das Achtfache dessen, was es zeigt
+# -- gemessen 280 KB fuer fuenf Kacheln. 400 px decken auch Bildschirme mit
+# dreifacher Punktdichte ab (132 px x 1,05 Vergroesserung beim Ueberfahren x 3).
+THUMB_WIDTH = 400
+THUMB_SLUGS = {
+    "still-2025-09-02-204030-6-3-1",
+    "stephen-am-strand",
+    "still-2025-08-22-215508-4-2-1",
+    "2-19-2-19-1",
+    "img-2100",
+}
 # Hoch angesetzt: das Material lebt von weichen Verlaeufen (Nebel, Himmel,
 # Gegenlicht). Genau dort erzeugt staerkere Kompression sichtbare Stufen.
 WEBP_QUALITY = 92
@@ -68,6 +81,8 @@ def process(path: Path) -> tuple[int, int]:
         widths = [w for w in WIDTHS if w <= img.width]
         if img.width < max(WIDTHS) and img.width not in widths:
             widths.append(img.width)
+        if slug in THUMB_SLUGS and THUMB_WIDTH <= img.width:
+            widths.insert(0, THUMB_WIDTH)
 
         for width in widths:
             height = round(img.height * width / img.width)
