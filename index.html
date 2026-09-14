@@ -123,10 +123,10 @@
        hinaus. Der Grossteil der Weichheit kommt dabei aus der Vergroesserung
        selbst -- ein auf das Siebenfache gezogenes Bild ist von sich aus weich.
        Das ist deutlich billiger zu rechnen als noch mehr Weichzeichnung. */
-    left: -320%; top: -320%; width: 740%; height: 740%;
+    left: -450%; top: -450%; width: 1000%; height: 1000%;
     object-fit: cover;
     z-index: 0; pointer-events: none;
-    filter: blur(250px) saturate(2.6) brightness(1.5);
+    filter: blur(300px) saturate(2.7) brightness(1.58);
     opacity: 0; transition: opacity 1.8s var(--ease);
     /* Entscheidend ist nicht die Groesse allein, sondern dass die Maske schon in
        der MITTE gedeckelt ist: vorher war der Kern voll deckend, aussen kam
@@ -134,12 +134,14 @@
        Verlauf bei gut der Haelfte und laeuft ueber die ganze Flaeche aus.
        Dadurch verteilt sich dieselbe Lichtmenge weiter und wirkt schwaecher. */
     -webkit-mask-image: radial-gradient(closest-side,
-      rgba(0,0,0,0.95) 0%, rgba(0,0,0,0.55) 16%, rgba(0,0,0,0.30) 34%,
-      rgba(0,0,0,0.16) 54%, rgba(0,0,0,0.07) 76%, transparent 100%);
+      rgba(0,0,0,0.95) 0%, rgba(0,0,0,0.66) 16%, rgba(0,0,0,0.44) 34%,
+      rgba(0,0,0,0.27) 54%, rgba(0,0,0,0.13) 78%, transparent 100%);
             mask-image: radial-gradient(closest-side,
-      rgba(0,0,0,0.95) 0%, rgba(0,0,0,0.55) 16%, rgba(0,0,0,0.30) 34%,
-      rgba(0,0,0,0.16) 54%, rgba(0,0,0,0.07) 76%, transparent 100%);
+      rgba(0,0,0,0.95) 0%, rgba(0,0,0,0.66) 16%, rgba(0,0,0,0.44) 34%,
+      rgba(0,0,0,0.27) 54%, rgba(0,0,0,0.13) 78%, transparent 100%);
   }
+  /* 0,54 ist der hoechste Wert, bei dem der Fliesstext noch auf 4,5:1
+     Kontrast kommt -- darueber gemessen 4,38 und 3,98. */
   .aura.on { opacity: 0.54; }
 
 
@@ -539,13 +541,13 @@
     /* Deutlich groesser als das Video: der Schein soll sich weit verteilen und
        dabei nach aussen ruhig abnehmen, statt als heller Fleck am Rand zu
        sitzen. */
-    width: min(460vw, 838vh); height: min(259vw, 471vh);
+    width: min(620vw, 1130vh); height: min(349vw, 635vh);
     /* z-index 0 statt 1: der Schein reicht jetzt unter den Hero hinaus und
        wuerde sonst ueber dem Text des naechsten Abschnitts liegen. Bei 0 liegt
        er in derselben Ebene wie die folgenden Abschnitte, aber davor in der
        Reihenfolge -- also dahinter. */
     z-index: 0;
-    filter: blur(260px) saturate(2.7) brightness(1.5);
+    filter: blur(320px) saturate(2.8) brightness(1.58);
     opacity: 0; transition: opacity 1400ms var(--ease);
     pointer-events: none;
     /* Der Verlauf beginnt fast in der Mitte abzunehmen: langes, weiches
@@ -553,7 +555,7 @@
     -webkit-mask-image: radial-gradient(closest-side, #000 4%, rgba(0,0,0,0.72) 24%, rgba(0,0,0,0.44) 48%, rgba(0,0,0,0.20) 72%, transparent 100%);
             mask-image: radial-gradient(closest-side, #000 4%, rgba(0,0,0,0.72) 24%, rgba(0,0,0,0.44) 48%, rgba(0,0,0,0.20) 72%, transparent 100%);
   }
-  .hero-aura.on { opacity: 0.48; }
+  .hero-aura.on { opacity: 0.5; }
 
   .hero-content {
     position: absolute; inset: 0; z-index: 507;
@@ -637,7 +639,21 @@
 
   /* Asymmetrisch: Text sitzt links, rechts bleibt bewusst Luft (oder ein Bild). */
   .band-grid { display: grid; grid-template-columns: 1fr; gap: 44px; }
-  .band-text { max-width: 46ch; }
+  /* Der Textblock liegt ueber dem Lichthof. Damit der weit gestreute Schein
+     den Kontrast nicht unter den Richtwert drueckt (gemessen 3,6:1 statt der
+     noetigen 4,5), dunkelt der Text seinen Grund selbst ab -- aber ueber einen
+     Schatten an den Buchstaben, nicht ueber eine Flaeche dahinter.
+     Ein Kasten dahinter waere als Rechteck sichtbar; ein Schatten hat keine
+     Form und wirkt nur dort, wo er gebraucht wird.
+     z-index 1: sonst laege der Schein der Bildspalte darueber, weil die Bilder
+     spaeter im Dokument stehen. */
+  .band-text { max-width: 46ch; position: relative; z-index: 1; }
+  .band-text h2,
+  .band-text p {
+    text-shadow: 0 1px 2px rgba(6,9,12,0.85),
+                 0 0 14px rgba(6,9,12,0.75),
+                 0 0 34px rgba(6,9,12,0.55);
+  }
 
   .band h2 { font-size: 1.35em; letter-spacing: 0.08em; margin-bottom: 26px; }
 
@@ -888,7 +904,7 @@
        Bildschirm Leere. Die Hoehe faehrt deshalb in derselben Bewegung mit. */
     .hero { transition: height 820ms var(--ease-dock); }
     .hero.is-docked { height: 62vh; min-height: 0; }
-    .hero-aura { width: min(470vw, 845vh); height: min(264vw, 475vh); }
+    .hero-aura { width: min(630vw, 1140vh); height: min(354vw, 640vh); }
     .m-word { font-size: clamp(1.25em, 7vw, 2em); }
     .card-open { display: none; }
     .card-preview { width: 96px; }
