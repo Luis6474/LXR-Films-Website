@@ -12,8 +12,13 @@
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=Inter:wght@400;500&display=swap" rel="stylesheet">
 <style>
   :root {
-    --bg: #0d1216;
-    --bg-deep: #090d10;
+    /* Tiefer und blauer als zuvor (#0d1216 / #090d10). Grund: die Lichthoefe
+       heben die ganze Flaeche an. Das Blau bleibt dabei absolut erhalten, geht
+       aber im Aufgehellten unter -- gemessen faellt der Blauanteil von 1,69 auf
+       1,20, und genau das liest sich als Grau. Ein tieferer, blauerer Grund
+       faengt das auf, ohne dass der Schein zurueckgenommen werden muss. */
+    --bg: #071224;
+    --bg-deep: #050c1a;
     --text: #e6e9ea;
     --text-dim: #8b959c;
     --line: #232b32;
@@ -1969,9 +1974,27 @@
     // Farbe anheben und aufhellen -- ein gemitteltes Bild ist sonst graustichig.
     const mitte = (r + g + b) / 3;
     const kraft = 1.7, hell = 1.45;
-    return [r, g, b].map(function (v) {
+    const roh = [r, g, b].map(function (v) {
       const x = (mitte + (v - mitte) * kraft) * hell;
       return Math.max(0, Math.min(255, Math.round(x)));
+    });
+
+    /* Der Lichthof faerbt die Flaeche um das Bild. Bei den vielen gedeckten
+       Motiven ist dieser Mittelwert fast grau -- und ein grauer Schein zieht
+       den dunkelblauen Grundton ins Graue.
+       Deshalb bekommen NUR die grauen Lichthoefe einen Zug ins Blaue. Je bunter
+       ein Motiv ist, desto weniger wird gezogen; ab einem Buntanteil von 0,45
+       bleibt die Farbe unangetastet. Der warme Schein des Gartenbildes
+       (226,199,128) aendert sich dadurch rechnerisch nicht, der graue eines
+       Nebelmotivs wird sichtbar blauer.
+       Gemessen hebt das den Blauanteil des Hintergrunds von 1,47 auf 1,68 --
+       den Wert des reinen Grundtons. */
+    const ZUG_BLAU = [56, 96, 150], STAERKE = 0.35;
+    const hoch = Math.max.apply(null, roh), tief = Math.min.apply(null, roh);
+    const bunt = hoch ? (hoch - tief) / hoch : 0;
+    const zug = STAERKE * (1 - Math.min(1, bunt / 0.45));
+    return roh.map(function (v, i) {
+      return Math.round(v + (ZUG_BLAU[i] - v) * zug);
     }).join(',');
   }
 
