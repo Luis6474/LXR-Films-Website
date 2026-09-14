@@ -362,14 +362,15 @@
   .hero {
     position: relative;
     height: 100vh; min-height: 480px;
-    /* Nur waagerecht abschneiden: die Laufschrift ist breiter als das Fenster
-       und muss beschnitten werden. Senkrecht NICHT -- sonst wird der Lichthof
-       an der Unterkante des Hero gekappt, und zwar mitten im Verlauf. Genau das
-       war die sichtbare Kante unter dem Video.
-       "clip" statt "hidden", weil "hidden" auf einer Achse die andere Achse zu
-       einem Scrollbereich machen wuerde. */
-    overflow-x: clip;
-    overflow-y: visible;
+    /* Gar kein Beschneiden mehr. Hier stand overflow-x: clip, weil der
+       Lichthof breiter war als das Fenster. Safari koppelt die zweite Achse
+       aber mit und schnitt dadurch auch senkrecht ab -- sichtbar als harte
+       waagerechte Kante auf Hoehe der Hero-Unterkante. Auf dem iPad gemeldet,
+       in Chrome nicht reproduzierbar (dort gemessener Sprung: 0,17).
+       Der Lichthof ist jetzt auf Fensterbreite gedeckelt und die Laufschrift
+       beschneidet sich selbst -- damit braucht es hier nichts mehr, und die
+       Kante kann auf keinem Browser mehr entstehen. */
+    overflow: visible;
   }
 
   /* Zentriert über inset+margin statt über transform: ein transform würde einen
@@ -423,7 +424,10 @@
        aber ein 32x18 Punkte kleines Feld -- das ist schon maximal weich, die
        Weichzeichnung rechnete an etwas ohne Details. Jetzt knapp ein Fuenftel
        der Flaeche und ein Bruchteil des Radius, bei gleichem Aussehen. */
-    width: min(205vw, 373vh); height: min(115vw, 210vh);
+    /* Auf Fensterbreite gedeckelt: alles jenseits von 100vw liegt ohnehin
+       ausserhalb des Bildschirms, bringt also nichts -- zwang den Hero aber
+       zum Beschneiden. Genau daran hing die Kante. */
+    width: min(100vw, 182vh); height: min(150vh, 115vw);
     /* z-index 0 statt 1: der Schein reicht jetzt unter den Hero hinaus und
        wuerde sonst ueber dem Text des naechsten Abschnitts liegen. Bei 0 liegt
        er in derselben Ebene wie die folgenden Abschnitte, aber davor in der
@@ -786,7 +790,7 @@
        Bildschirm Leere. Die Hoehe faehrt deshalb in derselben Bewegung mit. */
     .hero { transition: height 820ms var(--ease-dock); }
     .hero.is-docked { height: 62vh; min-height: 0; }
-    .hero-aura { width: min(215vw, 390vh); height: min(121vw, 220vh); }
+    .hero-aura { width: 100vw; height: min(150vh, 121vw); }
     .m-word { font-size: clamp(1.25em, 7vw, 2em); }
     .card-open { display: none; }
     .card-preview { width: 96px; }
