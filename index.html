@@ -121,10 +121,10 @@
     position: absolute;
     /* Weit gestreut statt eng gebuendelt: der Schein reicht rundum etwa eine
        halbe Bildbreite hinaus und nimmt dabei gleichmaessig ab. */
-    left: -110%; top: -110%; width: 320%; height: 320%;
+    left: -190%; top: -190%; width: 480%; height: 480%;
     object-fit: cover;
     z-index: 0; pointer-events: none;
-    filter: blur(142px) saturate(2.4) brightness(1.38);
+    filter: blur(190px) saturate(2.5) brightness(1.45);
     opacity: 0; transition: opacity 1.8s var(--ease);
     /* Entscheidend ist nicht die Groesse allein, sondern dass die Maske schon in
        der MITTE gedeckelt ist: vorher war der Kern voll deckend, aussen kam
@@ -132,16 +132,17 @@
        Verlauf bei gut der Haelfte und laeuft ueber die ganze Flaeche aus.
        Dadurch verteilt sich dieselbe Lichtmenge weiter und wirkt schwaecher. */
     -webkit-mask-image: radial-gradient(closest-side,
-      rgba(0,0,0,0.74) 0%, rgba(0,0,0,0.46) 30%, rgba(0,0,0,0.20) 62%, transparent 100%);
+      rgba(0,0,0,0.80) 0%, rgba(0,0,0,0.58) 26%, rgba(0,0,0,0.32) 52%, rgba(0,0,0,0.12) 76%, transparent 100%);
             mask-image: radial-gradient(closest-side,
-      rgba(0,0,0,0.74) 0%, rgba(0,0,0,0.46) 30%, rgba(0,0,0,0.20) 62%, transparent 100%);
+      rgba(0,0,0,0.80) 0%, rgba(0,0,0,0.58) 26%, rgba(0,0,0,0.32) 52%, rgba(0,0,0,0.12) 76%, transparent 100%);
   }
   .aura.on { opacity: 0.82; }
 
 
-  /* ---------- Radial-Unschaerfe ----------
-     Kein gleichmaessiges Weichzeichnen mehr, sondern eine Schmierung, die vom
-     Zeiger nach aussen zieht -- wie eine Zoomfahrt waehrend der Belichtung.
+  /* ---------- Drehunschaerfe ----------
+     Kein gleichmaessiges Weichzeichnen, sondern eine Schmierung entlang von
+     Kreisbahnen um den Zeiger -- der Mittelpunkt bleibt scharf, nach aussen
+     nimmt die Drehung zu.
 
      Warum zwei Lagen: Eine echte radiale Schmierung muesste jeden Bildpunkt
      entlang seiner Verbindungslinie zum Mittelpunkt verwischen. Das kann der
@@ -150,10 +151,12 @@
      Hintergrund-Kopie NICHT mit der Skalierung des Elements mitzieht.
      Was geht: ueber einen SVG-Filter gerichtet weichzeichnen -- einmal nur
      waagerecht, einmal nur senkrecht. Jede Lage wird dann auf die Zone
-     maskiert, in der ihre Richtung der radialen entspricht: die waagerechte
-     links und rechts vom Zeiger, die senkrechte darueber und darunter. In den
-     Ecken greifen beide und ergeben die schraege Richtung.
-     Das Ergebnis strahlt sichtbar nach aussen aus, statt flaechig zu matschen. */
+     maskiert, in der die Kreisbahn um den Zeiger genau so verlaeuft: die
+     waagerechte ueber und unter dem Zeiger, die senkrechte links und rechts
+     davon. Dadurch zieht die Unschaerfe AUF einer Kreisbahn um den Punkt --
+     Drehunschaerfe, wie bei einer geschwenkten Kinooptik.
+     (Andersherum maskiert ergaebe es eine Zoomunschaerfe, die nach aussen
+     zieht -- das liest sich als Schlieren und ist hier nicht gemeint.) */
   .focus {
     position: fixed; inset: 0; z-index: 490; pointer-events: none;
     opacity: 0; transition: opacity 1s var(--ease);
@@ -167,24 +170,24 @@
       -webkit-backdrop-filter: url(#unschaerfeQuer);
               backdrop-filter: url(#unschaerfeQuer);
       -webkit-mask-image:
-        radial-gradient(ellipse 165% 62% at var(--fx, 50%) var(--fy, 45%), #000 0 34%, transparent 82%),
-        radial-gradient(circle at var(--fx, 50%) var(--fy, 45%), transparent 0 340px, #000 1200px);
+        radial-gradient(ellipse 46% 170% at var(--fx, 50%) var(--fy, 45%), #000 0 34%, transparent 82%),
+        radial-gradient(circle at var(--fx, 50%) var(--fy, 45%), transparent 0 480px, #000 1400px);
       -webkit-mask-composite: source-in;
               mask-image:
-        radial-gradient(ellipse 165% 62% at var(--fx, 50%) var(--fy, 45%), #000 0 34%, transparent 82%),
-        radial-gradient(circle at var(--fx, 50%) var(--fy, 45%), transparent 0 340px, #000 1200px);
+        radial-gradient(ellipse 46% 170% at var(--fx, 50%) var(--fy, 45%), #000 0 34%, transparent 82%),
+        radial-gradient(circle at var(--fx, 50%) var(--fy, 45%), transparent 0 480px, #000 1400px);
               mask-composite: intersect;
     }
     .hero-docked .focus-hoch.on {
       -webkit-backdrop-filter: url(#unschaerfeHoch);
               backdrop-filter: url(#unschaerfeHoch);
       -webkit-mask-image:
-        radial-gradient(ellipse 62% 165% at var(--fx, 50%) var(--fy, 45%), #000 0 34%, transparent 82%),
-        radial-gradient(circle at var(--fx, 50%) var(--fy, 45%), transparent 0 340px, #000 1200px);
+        radial-gradient(ellipse 170% 46% at var(--fx, 50%) var(--fy, 45%), #000 0 34%, transparent 82%),
+        radial-gradient(circle at var(--fx, 50%) var(--fy, 45%), transparent 0 480px, #000 1400px);
       -webkit-mask-composite: source-in;
               mask-image:
-        radial-gradient(ellipse 62% 165% at var(--fx, 50%) var(--fy, 45%), #000 0 34%, transparent 82%),
-        radial-gradient(circle at var(--fx, 50%) var(--fy, 45%), transparent 0 340px, #000 1200px);
+        radial-gradient(ellipse 170% 46% at var(--fx, 50%) var(--fy, 45%), #000 0 34%, transparent 82%),
+        radial-gradient(circle at var(--fx, 50%) var(--fy, 45%), transparent 0 480px, #000 1400px);
               mask-composite: intersect;
     }
   }
@@ -417,19 +420,19 @@
     /* Deutlich groesser als das Video: der Schein soll sich weit verteilen und
        dabei nach aussen ruhig abnehmen, statt als heller Fleck am Rand zu
        sitzen. */
-    width: min(212vw, 386vh); height: min(119vw, 217vh);
+    width: min(300vw, 546vh); height: min(169vw, 307vh);
     /* z-index 0 statt 1: der Schein reicht jetzt unter den Hero hinaus und
        wuerde sonst ueber dem Text des naechsten Abschnitts liegen. Bei 0 liegt
        er in derselben Ebene wie die folgenden Abschnitte, aber davor in der
        Reihenfolge -- also dahinter. */
     z-index: 0;
-    filter: blur(132px) saturate(2.5) brightness(1.4);
+    filter: blur(196px) saturate(2.6) brightness(1.46);
     opacity: 0; transition: opacity 1400ms var(--ease);
     pointer-events: none;
     /* Der Verlauf beginnt fast in der Mitte abzunehmen: langes, weiches
        Auslaufen statt harter Kante am Rand des Scheins. */
-    -webkit-mask-image: radial-gradient(closest-side, #000 6%, rgba(0,0,0,0.55) 46%, transparent 100%);
-            mask-image: radial-gradient(closest-side, #000 6%, rgba(0,0,0,0.55) 46%, transparent 100%);
+    -webkit-mask-image: radial-gradient(closest-side, #000 5%, rgba(0,0,0,0.62) 34%, rgba(0,0,0,0.28) 64%, transparent 100%);
+            mask-image: radial-gradient(closest-side, #000 5%, rgba(0,0,0,0.62) 34%, rgba(0,0,0,0.28) 64%, transparent 100%);
   }
   .hero-aura.on { opacity: 0.68; }
 
@@ -766,7 +769,7 @@
        Bildschirm Leere. Die Hoehe faehrt deshalb in derselben Bewegung mit. */
     .hero { transition: height 820ms var(--ease-dock); }
     .hero.is-docked { height: 62vh; min-height: 0; }
-    .hero-aura { width: min(222vw, 395vh); height: min(125vw, 222vh); }
+    .hero-aura { width: min(310vw, 552vh); height: min(174vw, 310vh); }
     .m-word { font-size: clamp(1.25em, 7vw, 2em); }
     .card-open { display: none; }
     .card-preview { width: 96px; }
@@ -838,9 +841,9 @@
 <!-- Gerichtete Weichzeichner fuer die Radial-Unschaerfe (siehe CSS) -->
 <svg class="filter-defs" aria-hidden="true" focusable="false">
   <filter id="unschaerfeQuer" x="-15%" y="-15%" width="130%" height="130%">
-    <feGaussianBlur stdDeviation="9 0"/></filter>
+    <feGaussianBlur stdDeviation="6 1.9"/></filter>
   <filter id="unschaerfeHoch" x="-15%" y="-15%" width="130%" height="130%">
-    <feGaussianBlur stdDeviation="0 9"/></filter>
+    <feGaussianBlur stdDeviation="1.9 6"/></filter>
 </svg>
 <div class="focus focus-quer" id="focusQuer" aria-hidden="true"></div>
 <div class="focus focus-hoch" id="focusHoch" aria-hidden="true"></div>
