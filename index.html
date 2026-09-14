@@ -237,7 +237,15 @@
     top: calc(-1 * var(--grain-size)); left: calc(-1 * var(--grain-size));
     width: calc(100% + 2 * var(--grain-size));
     height: calc(100% + 2 * var(--grain-size));
-    z-index: 500; pointer-events: none;
+    /* z-index -1 statt 500. Damit liegt das Korn zwar noch ueber dem
+       Hintergrundverlauf (der steht ebenfalls auf -1, aber frueher im
+       Dokument), aber UNTER allem, was im normalen Fluss steht: Fotos, Text,
+       Karten. Vorher lag es als oberste Ebene ueber der ganzen Seite und damit
+       zwangslaeufig auch auf jedem Bild.
+       Der Hero-Film brauchte dafuer bisher eine eigene Ausnahme (z-index 505,
+       siehe unten) -- die ist jetzt nur noch Beiwerk, weil ihn ohnehin nichts
+       mehr ueberlagert. */
+    z-index: -1; pointer-events: none;
     background-repeat: repeat;
     background-size: var(--grain-size) var(--grain-size);
     animation: grainShift var(--grain-rate) steps(1) infinite;
@@ -253,13 +261,12 @@
      die Fotos, ohne die Schwärzen aufzuhellen. */
   /* Staerke bewusst in der Mitte zwischen den beiden Extremen: das erste
      Mass war im Hintergrund nicht zu sehen, das zweite zu aufdringlich. */
-  /* Etwas zurueckgenommen (vorher 0,155). Nicht, damit weniger Korn zu sehen
-     ist, sondern weil groessere Koerner bei gleicher Amplitude deutlich
-     praesenter wirken als feine -- das Auge sieht Struktur, nicht Amplitude. */
-  .grain-mid { background-image: var(--grain-mid-img); mix-blend-mode: overlay; opacity: 0.135; }
+  /* 0,105 -- der Weg war 0,155 (Ausgangsfassung), dann 0,135, jetzt hierher.
+     Das Korn soll auf dem Grund zu ahnen sein und nicht ins Bild treten. */
+  .grain-mid { background-image: var(--grain-mid-img); mix-blend-mode: overlay; opacity: 0.105; }
   .grain-dark {
     background-image: var(--grain-dark-img);
-    mix-blend-mode: screen; opacity: 0.085;
+    mix-blend-mode: screen; opacity: 0.07;
     animation-delay: calc(var(--grain-rate) / -2);   /* versetzt, damit sich beide Lagen nicht decken */
   }
   /* Zwoelf Schritte je halber Sekunde: das Korn wechselt 24-mal pro Sekunde,
@@ -295,12 +302,15 @@
      wieder zum Vorschein. Diese Lage steht deshalb still. Sie ist so schwach,
      dass man sie nicht als Muster wahrnimmt -- sie bricht nur die Stufen. */
   .dither {
-    position: fixed; inset: 0; z-index: 499; pointer-events: none;
+    /* Gleicher Grund wie beim Korn: gehoert auf den Hintergrund, nicht auf die
+       Bilder. Die Stufen, die es bricht, entstehen ohnehin nur in den weit
+       gezogenen Verlaeufen -- auf einem Foto gibt es nichts zu brechen. */
+    position: fixed; inset: 0; z-index: -1; pointer-events: none;
     background-image: var(--grain-dark-img);
     background-repeat: repeat;
     background-size: var(--grain-size) var(--grain-size);
     mix-blend-mode: screen;
-    opacity: 0.085;
+    opacity: 0.075;
   }
 
   /* ---------- Teelicht ----------
@@ -728,26 +738,10 @@
     padding: calc(var(--bar-h) + 46px) 22px calc(var(--bar-h) + 72px);
   }
 
-  /* Korn der Fotos: liegt IM Bildkasten, nicht ueber der Seite. Beim laufenden
-     Film wird es abgeschaltet -- und weil es gar nicht erst ausserhalb des
-     Kastens existiert, kann es ein Video auch nicht versehentlich ueberlagern. */
-  .stage-wrap .viewer-stage::after,
-  .viewer-grid > *::after {
-    content: ""; position: absolute;
-    top: calc(-1 * var(--grain-size)); left: calc(-1 * var(--grain-size));
-    width: calc(100% + 2 * var(--grain-size));
-    height: calc(100% + 2 * var(--grain-size));
-    z-index: 3; pointer-events: none;
-    background-repeat: repeat; background-size: var(--grain-size) var(--grain-size);
-    background-image: var(--grain-mid-img);
-    /* Vorher 0,16. Ueber den Fotos liegt zusaetzlich die Kornschicht der ganzen
-       Ansicht, ebenfalls im Modus "overlay" -- zusammen kam auf hellen
-       Bildstellen also rund die doppelte Staerke an. Genau dort ist das Korn
-       als digitales Rauschen aufgefallen. */
-    mix-blend-mode: overlay; opacity: 0.105;
-    animation: grainShift var(--grain-rate) steps(1) infinite;
-  }
-  .viewer-stage.is-playing::after { content: none; }
+  /* Hier lag eine eigene Kornschicht in jedem Bildkasten der Projektansicht --
+     auf der Buehne und auf jedem Foto des Rasters. Sie ist ersatzlos raus:
+     die Fotos tragen jetzt gar kein Korn mehr, nur noch der Grund dahinter
+     (.viewer-grain, liegt unter .viewer-scroll und damit unter dem Inhalt). */
   .viewer-inner {
     max-width: var(--wide); margin: 0 auto;
     opacity: 0; transform: translateY(16px);
@@ -809,7 +803,8 @@
     opacity: 0; transition: opacity 0.5s var(--ease);
   }
   .viewer-stage:hover .stage-ui,
-  .stage-ui:focus-within { opacity: 1; }
+  .stage-ui:focus-within,
+  .stage-ui.sichtbar { opacity: 1; }
   .stage-btn {
     background: rgba(0,0,0,0.35); border: 1px solid rgba(255,255,255,0.28);
     color: #fff; font: inherit; font-size: 0.72em;
@@ -1478,9 +1473,7 @@
     }
 
     /* Ein Durchgang Weichzeichnung, umlaufend gerechnet, damit die Kachel
-       nahtlos bleibt. Zwei Durchgaenge ergeben runde Koerner statt Einzelpunkte.
-       Die Kantenlaenge steht als Wert dabei, weil die grobe Lage auf einem
-       kleineren Raster gerechnet wird (siehe grobfeld). */
+       nahtlos bleibt. Zwei Durchgaenge ergeben runde Koerner statt Einzelpunkte. */
     function weich(src, K) {
       const tmp = new Float32Array(K * K);
       const out = new Float32Array(K * K);
@@ -1509,46 +1502,6 @@
       return f;
     }
 
-    /* Die zweite, grobe Lage -- und der eigentliche Unterschied zwischen Film
-       und Sensor.
-       Silberkorn liegt nicht als gleichmaessiges Punktraster in der Schicht.
-       Die Koerner lagern sich zu Klumpen zusammen, und diese Klumpen bilden
-       ihrerseits dichtere und duennere Zonen. Ein Filmbild hat also Struktur
-       auf mehreren Groessenordnungen zugleich. Eine einzige feine Lage -- und
-       genau das stand hier bisher -- hat nur eine, und das liest sich als
-       Rauschen eines Bildsensors: fein, gleichfoermig, ueberall gleich dicht.
-       Gerechnet wird die grobe Lage auf einem Viertel der Kantenlaenge und
-       danach umlaufend weich hochgezogen. Die Klumpen werden dadurch rund
-       viermal so gross, und die Rechnung kostet ein Sechzehntel dessen, was
-       dieselbe Lage in voller Aufloesung kosten wuerde. */
-    function grobfeld(teiler) {
-      const G = (S / teiler) | 0;
-      const f = weich(weich(gewuerfelt(G * G), G), G);
-      const out = new Float32Array(S * S);
-      /* Weich ueberblenden statt geradlinig. Eine geradlinige Interpolation
-         hat an den Stuetzstellen einen Knick, und weil die Stuetzstellen auf
-         einem festen Raster liegen, ergeben diese Knicke ein regelmaessiges
-         Gitter -- bei dreifacher Vergroesserung war es als Gewebemuster im
-         Korn zu sehen. Genau so ein Muster ist das Digitale, das hier weg
-         sollte. Die Kurve 3t^2 - 2t^3 laeuft an den Stuetzstellen waagerecht
-         aus, der Knick verschwindet und mit ihm das Gitter. */
-      for (let y = 0; y < S; y++) {
-        const fy = y / teiler, y0 = fy | 0, ry = fy - y0;
-        const ty = ry * ry * (3 - 2 * ry);
-        const r0 = (y0 % G) * G, r1 = ((y0 + 1) % G) * G;
-        const z = y * S;
-        for (let x = 0; x < S; x++) {
-          const fx = x / teiler, x0 = fx | 0, rx = fx - x0;
-          const tx = rx * rx * (3 - 2 * rx);
-          const c0 = x0 % G, c1 = (x0 + 1) % G;
-          const a = f[r0 + c0] + (f[r0 + c1] - f[r0 + c0]) * tx;
-          const b = f[r1 + c0] + (f[r1 + c1] - f[r1 + c0]) * tx;
-          out[z + x] = a + (b - a) * ty;
-        }
-      }
-      return out;
-    }
-
     // Auf die tatsaechliche Streuung normieren statt auf einen geschaetzten
     // Faktor -- die haengt von der Zahl der Durchgaenge ab.
     function norm(f) {
@@ -1559,22 +1512,23 @@
       return f;
     }
 
-    /* Jede Lage wird erst fuer sich auf gleiche Streuung gebracht, sonst
-       entschiede der Zufall der Weichzeichnung ueber das Mischverhaeltnis. */
-    function rauschfeld(w4, w8) {
-      const fein = norm(weich(weich(gewuerfelt(S * S), S), S));
-      const wf = 1 - w4 - w8;
-      const f = new Float32Array(S * S);
-      for (let i = 0; i < f.length; i++) f[i] = wf * fein[i];
-      if (w4 > 0) {
-        const g = norm(grobfeld(4));
-        for (let i = 0; i < f.length; i++) f[i] += w4 * g[i];
-      }
-      if (w8 > 0) {
-        const g = norm(grobfeld(8));
-        for (let i = 0; i < f.length; i++) f[i] += w8 * g[i];
-      }
-      return norm(f);
+    /* EINE feine Lage -- nach einem Umweg wieder.
+       Zwischendurch lagen hier drei Groessenordnungen uebereinander
+       (Einzelkorn, Klumpen, und die Zonen, in denen die Klumpen dichter
+       stehen). Als Nachbildung echten Filmkorns war das richtig, in
+       Originalgroesse aber schlicht zu grob: auf dem ruhigen Grund standen
+       wolkige Flecken, die dem Bild Kontrast genommen statt Struktur gegeben
+       haben.
+       Nachgemessen war der Umweg auch gar nicht noetig. Der Eindruck von
+       "digitalem Sensorrauschen" kam zum groessten Teil nicht vom Korn selbst,
+       sondern davon, dass es auf den FOTOS lag -- dort sogar in zwei Lagen
+       uebereinander. Auf Bildern liegt jetzt gar keines mehr (siehe z-index
+       der Kornschicht), und damit traegt die feine Lage allein.
+       Gemessen: Korngroesse 0,96 px. Eine zusaetzliche grobe Lage mit 8 bis
+       15 % Anteil haette daran nichts geaendert -- ebenfalls 0,96 px -- und
+       waere reine Rechenzeit beim Seitenaufbau gewesen. */
+    function rauschfeld() {
+      return norm(weich(weich(gewuerfelt(S * S), S), S));
     }
 
     function tile(feld, abbild) {
@@ -1603,12 +1557,7 @@
     try {
       /* Mitteltoene: um den neutralen Wert 128. Die Kennlinie laeuft sanft aus,
          erreicht die Grenzen also nie -- kein hartes Abschneiden. */
-      /* Drei Groessenordnungen: Einzelkorn, Klumpen, und darueber die
-         dichteren und duenneren Zonen, in denen die Klumpen liegen. Erst das
-         dritte Mass macht den Unterschied zwischen "gleichmaessig verrauscht"
-         und "gewachsen". Diese Kachel bewegt sich 24-mal in der Sekunde, ein
-         wiederkehrendes Muster kann sich darin nicht festsetzen. */
-      const mitte = tile(rauschfeld(0.34, 0.14), function (n) {
+      const mitte = tile(rauschfeld(), function (n) {
         /* Leicht unsymmetrisch. Ein Silberkorn setzt Dichte, es nimmt keine
            weg -- die Verteilung einer Filmschicht ist deshalb zur hellen Seite
            hin etwas laenger gezogen als zur dunklen. Ein exakt symmetrisches
@@ -1617,12 +1566,10 @@
       });
       /* Tiefen: der Betrag der Abweichung, damit JEDER Bildpunkt Korn traegt
          und nicht nur jeder sechste. Auch hier weich auslaufend. */
-      /* Bewusst OHNE die groebste Lage. Diese Kachel liegt nicht nur im
-         bewegten Korn, sondern auch in der stillstehenden Dither-Schicht
-         (siehe CSS) -- und was stillsteht, wiederholt sich sichtbar. Grosse
-         helle und dunkle Zonen wuerden dort als Kachelmuster auffallen.
-         Feines Korn und kleine Klumpen tun das nicht. */
-      const tiefen = tile(rauschfeld(0.30, 0), function (n) {
+      /* Diese Kachel liegt nicht nur im bewegten Korn, sondern auch in der
+         stillstehenden Dither-Schicht (siehe CSS) -- und was stillsteht,
+         wiederholt sich sichtbar. Umso wichtiger, dass sie fein bleibt. */
+      const tiefen = tile(rauschfeld(), function (n) {
         return 77 * Math.tanh((n < 0 ? -n : n) * 0.72);
       });
       const root = document.documentElement;
@@ -1725,11 +1672,23 @@
   /* Deckt eine beliebig geformte Fläche mit einem stets exakt 16:9 grossen
      Player ab. Ohne diese Rechnung weicht das iframe vom 16:9-Raster ab und
      YouTube legt selbst schwarze Balken hinein. */
-  /* Überzoom: YouTube blendet Kanalname und Bedienflächen in den äußeren
-     Randbereichen des Players ein. "controls=0" entfernt sie nicht zuverlässig
-     -- also wird der Player so weit vergrößert, dass diese Zonen außerhalb des
-     sichtbaren Ausschnitts liegen. Kostet Bildrand, ist aber der einzige Weg,
-     der ohne YouTube-Oberfläche auskommt. */
+  /* Ueberzoom, jetzt nur noch 2 % statt 18 %.
+     Begruendet war der grosse Wert damit, dass YouTube Kanalname und
+     Bedienflaechen in die Randzonen des Players einblendet. Nachgemessen tut
+     es das hier nicht: ueber 40 Sekunden Laufzeit ist mit 1,0 keine einzige
+     YouTube-Flaeche im Bild erschienen. Die Oberflaeche braucht einen Zeiger
+     ueber dem Player, und das iframe nimmt gar keine Zeigerereignisse an.
+     Die 18 % waren dagegen teuer: das iframe war in jeder Richtung 18 %
+     groesser als die sichtbare Flaeche, es wurde also rund ein Drittel aller
+     Bildpunkte weggeschnitten. Der Player lieferte 720 Zeilen, davon blieben
+     sichtbar knapp 610 auf 630 Bildpunkten Hoehe -- das Bild wurde also sogar
+     wieder hochgerechnet. Genau das sah weich aus.
+     Bei 1,02 bleibt nur eine Reserve gegen Rundungskanten am Rand.
+     Nebenwirkung, bewusst in Kauf genommen: der Film hat in einigen
+     Einstellungen eigene schwarze Balken (Breitwand im 16:9-Kasten). Die
+     wurden vom Ueberzoom bisher mit weggeschnitten und sind jetzt zu sehen --
+     dafuer steht der Bildausschnitt so, wie er im Schnitt angelegt wurde. */
+  const UEBERZOOM = 1.02;
   function fitFrame(box, frame, overscan) {
     const w = box.clientWidth;
     const h = box.clientHeight;
@@ -1864,9 +1823,9 @@
     function aufblenden() {
       /* Der Player wird neu eingepasst, SOLANGE die Blende noch zu ist. Danach
          waere der Sprung von der alten auf die neue Groesse sichtbar. */
-      fitFrame(stage, frame, 1.18);
+      fitFrame(stage, frame, UEBERZOOM);
       setTimeout(function () {
-        fitFrame(stage, frame, 1.18);
+        fitFrame(stage, frame, UEBERZOOM);
         wrap.classList.remove('fs-zu');
         btn.textContent = drin() ? 'Vollbild aus' : 'Vollbild';
         btn.setAttribute('aria-pressed', drin() ? 'true' : 'false');
@@ -1947,7 +1906,7 @@
     frame.allow = 'autoplay; encrypted-media; picture-in-picture';
     frame.setAttribute('referrerpolicy', 'strict-origin-when-cross-origin');
     stage.appendChild(frame);
-    registerFit(stage, frame, 1.18);   // Kanalleiste des Players ausserhalb halten
+    registerFit(stage, frame, UEBERZOOM);
     stage._player = watchPlayer(frame, {
       onShow: function () { stage.classList.add('is-playing'); },
       onHide: function () {
@@ -1972,6 +1931,8 @@
     fsBtn.className = 'stage-btn';
     fsBtn.type = 'button';
     fsBtn.textContent = 'Vollbild';
+    fsBtn.title = 'Vollbild (Taste F)';
+    playBtn.title = 'Abspielen und Pause (Leertaste)';
 
     stage._playBtn = playBtn;
     let playing = true;
@@ -2101,6 +2062,53 @@
       setTimeout(function () { busy = false; }, FRAME_MS);
     }, EXIT_MS);
   }
+
+  /* ---------- Tastatur ----------
+     Die Buehne haengt sonst ganz an der Maus: die Bedienleiste zeigt sich beim
+     Ueberfahren, und gedrueckt wird mit dem Zeiger. Bei offener Projektansicht
+     gehen Vollbild und Abspielen deshalb auch ueber die Tastatur.
+     Weil die Leiste ohne Zeiger unsichtbar bleibt, blendet sie sich nach jedem
+     Tastendruck kurz ein -- sonst gaebe es keine Rueckmeldung. */
+  let leisteZeit = null;
+  function leisteZeigen(stage) {
+    const ui = stage.querySelector('.stage-ui');
+    if (!ui) return;
+    ui.classList.add('sichtbar');
+    clearTimeout(leisteZeit);
+    leisteZeit = setTimeout(function () { ui.classList.remove('sichtbar'); }, 2200);
+  }
+
+  document.addEventListener('keydown', function (e) {
+    if (!current || e.ctrlKey || e.metaKey || e.altKey || !e.key) return;
+    const ziel = e.target;
+    if (ziel && (ziel.tagName === 'INPUT' || ziel.tagName === 'TEXTAREA'
+                 || ziel.isContentEditable)) return;
+
+    const stage = current.querySelector('.viewer-stage');
+    if (!stage || !stage.classList.contains('has-video')) return;
+    const taste = e.key.toLowerCase();
+
+    if (taste === 'f') {
+      const wrap = current.querySelector('.stage-wrap');
+      if (wrap && wrap._fsUm) {
+        e.preventDefault();
+        wrap._fsUm();
+        leisteZeigen(stage);
+      }
+      return;
+    }
+
+    /* Leertaste und Eingabe bedienen eine Schaltflaeche, auf der der Fokus
+       steht, bereits von sich aus -- dann hier nichts tun, sonst liefe beides
+       gleichzeitig. */
+    const aufKnopf = document.activeElement && document.activeElement.closest
+                     && document.activeElement.closest('.stage-ui, .viewer-close');
+    if ((taste === ' ' || taste === 'k') && !aufKnopf) {
+      e.preventDefault();          // sonst scrollt die Leertaste die Ansicht
+      if (stage._playBtn) stage._playBtn.click();
+      leisteZeigen(stage);
+    }
+  });
 
   // Gilt fuer die Projektliste und fuer die Verweise in den Bildunterschriften.
   document.querySelectorAll('[data-viewer]').forEach(function (trigger) {
