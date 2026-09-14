@@ -121,10 +121,10 @@
     position: absolute;
     /* Weit gestreut statt eng gebuendelt: der Schein reicht rundum etwa eine
        halbe Bildbreite hinaus und nimmt dabei gleichmaessig ab. */
-    left: -80%; top: -80%; width: 260%; height: 260%;
+    left: -110%; top: -110%; width: 320%; height: 320%;
     object-fit: cover;
     z-index: 0; pointer-events: none;
-    filter: blur(118px) saturate(2.2) brightness(1.28);
+    filter: blur(142px) saturate(2.4) brightness(1.38);
     opacity: 0; transition: opacity 1.8s var(--ease);
     /* Entscheidend ist nicht die Groesse allein, sondern dass die Maske schon in
        der MITTE gedeckelt ist: vorher war der Kern voll deckend, aussen kam
@@ -132,36 +132,60 @@
        Verlauf bei gut der Haelfte und laeuft ueber die ganze Flaeche aus.
        Dadurch verteilt sich dieselbe Lichtmenge weiter und wirkt schwaecher. */
     -webkit-mask-image: radial-gradient(closest-side,
-      rgba(0,0,0,0.60) 0%, rgba(0,0,0,0.34) 30%, rgba(0,0,0,0.13) 62%, transparent 100%);
+      rgba(0,0,0,0.74) 0%, rgba(0,0,0,0.46) 30%, rgba(0,0,0,0.20) 62%, transparent 100%);
             mask-image: radial-gradient(closest-side,
-      rgba(0,0,0,0.60) 0%, rgba(0,0,0,0.34) 30%, rgba(0,0,0,0.13) 62%, transparent 100%);
+      rgba(0,0,0,0.74) 0%, rgba(0,0,0,0.46) 30%, rgba(0,0,0,0.20) 62%, transparent 100%);
   }
-  .aura.on { opacity: 0.62; }
+  .aura.on { opacity: 0.82; }
 
 
-  /* ---------- Schaerfefeld ----------
-     Ein Feld um den Mauszeiger bleibt scharf, der Rest geht ganz leicht aus dem
-     Fokus -- wie eine offene Blende. Bewusst schwach (gut zwei Pixel) und mit
-     grosszuegigem scharfem Kern, damit nichts unleserlich wird. Nur dort, wo es
-     ueberhaupt einen Mauszeiger gibt. */
+  /* ---------- Radial-Unschaerfe ----------
+     Kein gleichmaessiges Weichzeichnen mehr, sondern eine Schmierung, die vom
+     Zeiger nach aussen zieht -- wie eine Zoomfahrt waehrend der Belichtung.
+
+     Warum zwei Lagen: Eine echte radiale Schmierung muesste jeden Bildpunkt
+     entlang seiner Verbindungslinie zum Mittelpunkt verwischen. Das kann der
+     Browser nicht direkt. Nachgemessen: der uebliche Trick (mehrere skalierte
+     Kopien des Hintergrunds uebereinander) funktioniert nicht, weil Chrome die
+     Hintergrund-Kopie NICHT mit der Skalierung des Elements mitzieht.
+     Was geht: ueber einen SVG-Filter gerichtet weichzeichnen -- einmal nur
+     waagerecht, einmal nur senkrecht. Jede Lage wird dann auf die Zone
+     maskiert, in der ihre Richtung der radialen entspricht: die waagerechte
+     links und rechts vom Zeiger, die senkrechte darueber und darunter. In den
+     Ecken greifen beide und ergeben die schraege Richtung.
+     Das Ergebnis strahlt sichtbar nach aussen aus, statt flaechig zu matschen. */
   .focus {
     position: fixed; inset: 0; z-index: 490; pointer-events: none;
     opacity: 0; transition: opacity 1s var(--ease);
   }
-  /* Solange der Hero-Film formatfuellend steht, ist er das ganze Bild -- ein
-     Schaerfefeld haette dort nichts zu betonen. Erst nach dem Umschalten. */
   @media (hover: hover) and (pointer: fine) {
-    .hero-docked .focus.on {
-      opacity: 1;
-      -webkit-backdrop-filter: blur(2.7px);
-              backdrop-filter: blur(2.7px);
-      /* Kern grosszuegig (340 px voll scharf), Uebergang lang bis 900 px.
-         Gemessen: im weichen Bereich bleiben noch gut neun Zehntel der
-         Kantenzeichnung stehen -- Fliesstext bleibt damit lesbar. */
-      -webkit-mask-image: radial-gradient(circle at var(--fx, 50%) var(--fy, 45%),
-                          transparent 0, transparent 340px, #000 900px);
-              mask-image: radial-gradient(circle at var(--fx, 50%) var(--fy, 45%),
-                          transparent 0, transparent 340px, #000 900px);
+    .hero-docked .focus.on { opacity: 1; }
+
+    /* Gemeinsam: innen voellig scharf, nach aussen zunehmend. Der scharfe Kern
+       bleibt grosszuegig, damit Fliesstext unter dem Zeiger lesbar ist. */
+    .hero-docked .focus-quer.on {
+      -webkit-backdrop-filter: url(#unschaerfeQuer);
+              backdrop-filter: url(#unschaerfeQuer);
+      -webkit-mask-image:
+        radial-gradient(ellipse 165% 62% at var(--fx, 50%) var(--fy, 45%), #000 0 34%, transparent 82%),
+        radial-gradient(circle at var(--fx, 50%) var(--fy, 45%), transparent 0 340px, #000 1200px);
+      -webkit-mask-composite: source-in;
+              mask-image:
+        radial-gradient(ellipse 165% 62% at var(--fx, 50%) var(--fy, 45%), #000 0 34%, transparent 82%),
+        radial-gradient(circle at var(--fx, 50%) var(--fy, 45%), transparent 0 340px, #000 1200px);
+              mask-composite: intersect;
+    }
+    .hero-docked .focus-hoch.on {
+      -webkit-backdrop-filter: url(#unschaerfeHoch);
+              backdrop-filter: url(#unschaerfeHoch);
+      -webkit-mask-image:
+        radial-gradient(ellipse 62% 165% at var(--fx, 50%) var(--fy, 45%), #000 0 34%, transparent 82%),
+        radial-gradient(circle at var(--fx, 50%) var(--fy, 45%), transparent 0 340px, #000 1200px);
+      -webkit-mask-composite: source-in;
+              mask-image:
+        radial-gradient(ellipse 62% 165% at var(--fx, 50%) var(--fy, 45%), #000 0 34%, transparent 82%),
+        radial-gradient(circle at var(--fx, 50%) var(--fy, 45%), transparent 0 340px, #000 1200px);
+              mask-composite: intersect;
     }
   }
 
@@ -250,7 +274,7 @@
       transparent 68%, rgba(232,238,242,0.30) 82%, rgba(232,238,242,0.14) 93%, transparent 100%);
     mix-blend-mode: screen;
     opacity: 0;
-    filter: blur(0.7px);
+    filter: blur(0.7px) opacity(var(--staerke, 1));
   }
   /* Ein echter Kratzer steht nicht ruhig -- er springt und setzt aus. */
   /* Ein Anteil Sprunghaftigkeit bleibt -- ein Kratzer flackert wirklich --
@@ -278,6 +302,7 @@
     background: #d6e3ec;
     mix-blend-mode: soft-light;
     opacity: 0;
+    filter: opacity(var(--staerke, 1));
   }
   /* KEIN steps() mehr: die harten Spruenge waren genau das Digitale daran.
      Jetzt laufen die Werte weich ineinander -- wie die Belichtung einer
@@ -298,6 +323,8 @@
   }
 
   /* ---------- Vignette ---------- */
+  .filter-defs { position: absolute; width: 0; height: 0; overflow: hidden; }
+
   .vignette {
     position: fixed; inset: 0; z-index: 999; pointer-events: none;
     background: radial-gradient(120% 85% at 50% 45%, transparent 42%, rgba(4,7,10,0.55) 100%);
@@ -390,21 +417,21 @@
     /* Deutlich groesser als das Video: der Schein soll sich weit verteilen und
        dabei nach aussen ruhig abnehmen, statt als heller Fleck am Rand zu
        sitzen. */
-    width: min(168vw, 306vh); height: min(94.5vw, 172vh);
+    width: min(212vw, 386vh); height: min(119vw, 217vh);
     /* z-index 0 statt 1: der Schein reicht jetzt unter den Hero hinaus und
        wuerde sonst ueber dem Text des naechsten Abschnitts liegen. Bei 0 liegt
        er in derselben Ebene wie die folgenden Abschnitte, aber davor in der
        Reihenfolge -- also dahinter. */
     z-index: 0;
-    filter: blur(104px) saturate(2.4) brightness(1.32);
+    filter: blur(132px) saturate(2.5) brightness(1.4);
     opacity: 0; transition: opacity 1400ms var(--ease);
     pointer-events: none;
     /* Der Verlauf beginnt fast in der Mitte abzunehmen: langes, weiches
        Auslaufen statt harter Kante am Rand des Scheins. */
-    -webkit-mask-image: radial-gradient(closest-side, #000 6%, rgba(0,0,0,0.45) 46%, transparent 100%);
-            mask-image: radial-gradient(closest-side, #000 6%, rgba(0,0,0,0.45) 46%, transparent 100%);
+    -webkit-mask-image: radial-gradient(closest-side, #000 6%, rgba(0,0,0,0.55) 46%, transparent 100%);
+            mask-image: radial-gradient(closest-side, #000 6%, rgba(0,0,0,0.55) 46%, transparent 100%);
   }
-  .hero-aura.on { opacity: 0.5; }
+  .hero-aura.on { opacity: 0.68; }
 
   .hero-content {
     position: absolute; inset: 0; z-index: 507;
@@ -739,7 +766,7 @@
        Bildschirm Leere. Die Hoehe faehrt deshalb in derselben Bewegung mit. */
     .hero { transition: height 820ms var(--ease-dock); }
     .hero.is-docked { height: 62vh; min-height: 0; }
-    .hero-aura { width: min(176vw, 313vh); height: min(99vw, 176vh); }
+    .hero-aura { width: min(222vw, 395vh); height: min(125vw, 222vh); }
     .m-word { font-size: clamp(1.25em, 7vw, 2em); }
     .card-open { display: none; }
     .card-preview { width: 96px; }
@@ -808,7 +835,15 @@
 
 <div class="grain grain-mid" aria-hidden="true"></div>
 <div class="grain grain-dark" aria-hidden="true"></div>
-<div class="focus" id="focus" aria-hidden="true"></div>
+<!-- Gerichtete Weichzeichner fuer die Radial-Unschaerfe (siehe CSS) -->
+<svg class="filter-defs" aria-hidden="true" focusable="false">
+  <filter id="unschaerfeQuer" x="-15%" y="-15%" width="130%" height="130%">
+    <feGaussianBlur stdDeviation="9 0"/></filter>
+  <filter id="unschaerfeHoch" x="-15%" y="-15%" width="130%" height="130%">
+    <feGaussianBlur stdDeviation="0 9"/></filter>
+</svg>
+<div class="focus focus-quer" id="focusQuer" aria-hidden="true"></div>
+<div class="focus focus-hoch" id="focusHoch" aria-hidden="true"></div>
 <div class="analog" id="analog" aria-hidden="true">
   <div class="kratzer" id="kratzer1"></div>
   <div class="kratzer" id="kratzer2"></div>
@@ -1388,13 +1423,22 @@
       });
     }
 
-    function planen(fn, min, max) {
+    /* Gleichverteilte Abstaende klingen wie ein Metronom: nie kuerzer als das
+       Minimum, nie laenger als das Maximum, im Mittel immer dasselbe. Echtes
+       analoges Rauschen kommt in Schueben -- mal zweimal kurz hintereinander,
+       mal lange nichts. Das leistet eine Exponentialverteilung (Poisson): der
+       naechste Zeitpunkt haengt nicht davon ab, wie lange der letzte her ist. */
+    function abstand(mittel, minimum) {
+      return minimum + (-Math.log(1 - Math.random()) * mittel);
+    }
+
+    function planen(fn, mittel, minimum) {
       setTimeout(function () {
         // Im Hintergrundtab passiert nichts -- das spart Rechenzeit und
         // verhindert, dass sich beim Zurueckkommen etwas staut.
         if (!document.hidden) fn();
-        planen(fn, min, max);
-      }, min + Math.random() * (max - min));
+        planen(fn, mittel, minimum);
+      }, abstand(mittel, minimum));
     }
 
     let welcher = 0;
@@ -1404,15 +1448,19 @@
         e.style.left = (4 + Math.random() * 92).toFixed(1) + '%';
         e.style.setProperty('--breite', (1 + Math.random() * 1.8).toFixed(1) + 'px');
         e.style.setProperty('--dauer', (0.45 + Math.random() * 0.85).toFixed(2) + 's');
+        // Jeder Streifen anders kraeftig -- gleich starke waeren wiederum ein Muster.
+        e.style.setProperty('--staerke', (0.35 + Math.random() * 0.65).toFixed(2));
       });
-    }, 4000, 11000);     // Streifen: rund achtmal pro Minute
+    }, 3600, 800);       // Streifen: im Mittel alle 4,4 s, aber in Schueben
 
     planen(function () {
       einmal(zucken, function (e) {
         // Laenger als zuvor: ein weiches Atmen der Belichtung, kein Blitz.
-        e.style.setProperty('--dauer', (0.8 + Math.random() * 1.1).toFixed(2) + 's');
+        e.style.setProperty('--dauer', (0.7 + Math.random() * 1.3).toFixed(2) + 's');
+        // Mal kaum zu sehen, mal deutlicher -- das nimmt dem Effekt die Regelmaessigkeit.
+        e.style.setProperty('--staerke', (0.3 + Math.random() * 0.7).toFixed(2));
       });
-    }, 3000, 8000);      // Zucken: rund elfmal pro Minute, dafuer weich
+    }, 2100, 450);       // Zucken: im Mittel alle 2,6 s, stark schwankend
   })();
 
   const page = document.getElementById('page');
@@ -1926,15 +1974,18 @@
      Folgt dem Zeiger mit leichter Verzoegerung, damit es sich wie eine
      nachziehende Schaerfe anfuehlt und nicht wie ein angehefteter Kreis.
      Nur bei echtem Zeigergeraet -- auf dem Handy gaebe es nichts zu folgen. */
-  const focusLayer = document.getElementById('focus');
+  const focusLayers = [document.getElementById('focusQuer'),
+                       document.getElementById('focusHoch')];
   const finePointer = window.matchMedia('(hover: hover) and (pointer: fine)').matches;
-  if (focusLayer && finePointer && !reducedMotion) {
+  if (focusLayers[0] && focusLayers[1] && finePointer && !reducedMotion) {
     let tx = window.innerWidth / 2, ty = window.innerHeight * 0.45;
     let cx = tx, cy = ty, raf = null, live = false;
 
+    // Der Mittelpunkt liegt an der Wurzel -- beide Lagen erben ihn von dort.
+    const wurzel = document.documentElement;
     function place() {
-      focusLayer.style.setProperty('--fx', cx.toFixed(1) + 'px');
-      focusLayer.style.setProperty('--fy', cy.toFixed(1) + 'px');
+      wurzel.style.setProperty('--fx', cx.toFixed(1) + 'px');
+      wurzel.style.setProperty('--fy', cy.toFixed(1) + 'px');
     }
     function tick() {
       cx += (tx - cx) * 0.14;
@@ -1947,11 +1998,13 @@
     document.addEventListener('pointermove', function (e) {
       if (e.pointerType && e.pointerType !== 'mouse') return;
       tx = e.clientX; ty = e.clientY;
-      if (!live) { live = true; cx = tx; cy = ty; place(); focusLayer.classList.add('on'); }
+      if (!live) { live = true; cx = tx; cy = ty; place();
+                   focusLayers.forEach(function (l) { l.classList.add('on'); }); }
       if (!raf) raf = requestAnimationFrame(tick);
     }, { passive: true });
     document.addEventListener('mouseleave', function () {
-      focusLayer.classList.remove('on'); live = false;
+      focusLayers.forEach(function (l) { l.classList.remove('on'); });
+      live = false;
     });
   }
 
