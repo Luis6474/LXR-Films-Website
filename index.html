@@ -254,74 +254,48 @@
     opacity: 0.085;
   }
 
-  /* ---------- Analoge Stoerungen ----------
-     Seltene Erinnerungen an eine Filmvorfuehrung: ein senkrechter Kratzer, der
-     kurz durchs Bild laeuft, und ab und zu ein Zucken in der Helligkeit.
-     Beides liegt auf derselben Ebene wie das Korn und damit UNTER den
-     Videoflaechen -- Filme bleiben unangetastet.
-     Gezeigt wird nur, was das Skript gerade eingeschaltet hat; im Ruhezustand
-     ist hier nichts zu rechnen. */
-  .analog {
-    position: fixed; inset: 0; z-index: 501; pointer-events: none;
-    overflow: hidden;
-  }
-  .kratzer {
-    position: absolute; top: -4%; height: 108%;
-    width: var(--breite, 2px);
-    /* Kraeftiger als zuvor -- er war so zurueckhaltend, dass er nie aufgefallen
-       ist. Die Unterbrechungen im Verlauf sind Absicht: ein Laufstreifen auf
-       Super 8 ist nie durchgehend gleich stark, er setzt aus und kommt wieder. */
-    background: linear-gradient(to bottom,
-      transparent 0, rgba(232,238,242,0.20) 7%, rgba(232,238,242,0.46) 24%,
-      rgba(232,238,242,0.10) 41%, rgba(232,238,242,0.38) 56%,
-      transparent 68%, rgba(232,238,242,0.30) 82%, rgba(232,238,242,0.14) 93%, transparent 100%);
-    mix-blend-mode: screen;
-    opacity: 0;
-    filter: blur(0.7px) opacity(var(--staerke, 1));
-  }
-  /* Ein echter Kratzer steht nicht ruhig -- er springt und setzt aus. */
-  /* Ein Anteil Sprunghaftigkeit bleibt -- ein Kratzer flackert wirklich --
-     aber deutlich feiner gestuft als vorher, dadurch weniger digital. */
-  .kratzer.laeuft { animation: kratzer var(--dauer, 0.9s) steps(2) 1; }
-  @keyframes kratzer {
-    0%   { opacity: 0;    transform: translateX(0); }
-    5%   { opacity: 0.45; transform: translateX(0); }
-    11%  { opacity: 0.12; transform: translateX(1px); }
-    17%  { opacity: 0.90; transform: translateX(-1px); }
-    24%  { opacity: 0.55; transform: translateX(0); }
-    33%  { opacity: 1;    transform: translateX(1px); }
-    41%  { opacity: 0.35; transform: translateX(0); }
-    48%  { opacity: 0.85; transform: translateX(2px); }
-    56%  { opacity: 0.20; transform: translateX(1px); }
-    63%  { opacity: 0.80; transform: translateX(0); }
-    72%  { opacity: 0.45; transform: translateX(-1px); }
-    81%  { opacity: 0.70; transform: translateX(1px); }
-    90%  { opacity: 0.22; transform: translateX(0); }
-    100% { opacity: 0;    transform: translateX(0); }
-  }
+  /* ---------- Teelicht ----------
+     Die einzige verbliebene Erinnerung an eine Filmvorfuehrung: ein warmes,
+     unruhiges Licht, das ueber der Seite atmet -- wie eine Kerze, die im Raum
+     steht. Die senkrechten Laufstreifen sind bewusst entfallen; sie waren das
+     Technische an dem Effekt, der Rest ist das Lebendige.
 
+     Warm statt kalt: vorher lag hier ein blaeuliches Weiss, das wie eine
+     Leuchtstoffroehre wirkte. Eine Flamme ist bernsteinfarben, und sie
+     leuchtet nicht gleichmaessig -- deshalb ein Verlauf statt einer Flaeche.
+     Der Verlauf kostet keine zusaetzliche Ebene und keinen Weichzeichner.
+
+     Liegt auf derselben Ebene wie das Korn und damit UNTER den Videoflaechen --
+     Filme bleiben unangetastet. */
   .zucken {
     position: fixed; inset: 0; z-index: 502; pointer-events: none;
-    background: #d6e3ec;
+    background: radial-gradient(125% 105% at 50% 64%,
+      #ffe0b4 0%, #f7c489 42%, #e0a263 74%, #c9884b 100%);
     mix-blend-mode: soft-light;
     opacity: 0;
     filter: opacity(var(--staerke, 1));
   }
-  /* KEIN steps() mehr: die harten Spruenge waren genau das Digitale daran.
-     Jetzt laufen die Werte weich ineinander -- wie die Belichtung einer
-     Super-8-Rolle, die leicht atmet. */
-  .zucken.laeuft { animation: zucken var(--dauer, 1.1s) cubic-bezier(0.4, 0, 0.5, 1) 1; }
-  /* Unregelmaessige Abstaende zwischen den Punkten, damit kein Takt entsteht. */
+  /* KEIN steps(): harte Spruenge waeren genau das Digitale daran. Die Werte
+     laufen weich ineinander, mit sinusfoermiger Ueberblendung -- so bewegt sich
+     eine Flamme, sie springt nicht. */
+  .zucken.laeuft { animation: zucken var(--dauer, 1.1s) cubic-bezier(0.37, 0, 0.63, 1) 1; }
+  /* Unregelmaessige Abstaende zwischen den Punkten, damit kein Takt entsteht:
+     viele kleine Regungen, dazwischen ein paar deutlichere Aufwallungen. */
   @keyframes zucken {
     0%   { opacity: 0; }
-    11%  { opacity: 0.052; }
-    23%  { opacity: 0.018; }
-    31%  { opacity: 0.088; }
-    44%  { opacity: 0.030; }
-    58%  { opacity: 0.072; }
-    67%  { opacity: 0.012; }
-    79%  { opacity: 0.056; }
-    90%  { opacity: 0.022; }
+    7%   { opacity: 0.041; }
+    14%  { opacity: 0.020; }
+    21%  { opacity: 0.064; }
+    29%  { opacity: 0.032; }
+    36%  { opacity: 0.088; }
+    43%  { opacity: 0.047; }
+    51%  { opacity: 0.072; }
+    58%  { opacity: 0.024; }
+    65%  { opacity: 0.057; }
+    73%  { opacity: 0.035; }
+    80%  { opacity: 0.080; }
+    88%  { opacity: 0.029; }
+    94%  { opacity: 0.049; }
     100% { opacity: 0; }
   }
 
@@ -362,6 +336,15 @@
   .hero {
     position: relative;
     height: 100vh; min-height: 480px;
+    /* Der verkleinerte Film sitzt nicht in der Mitte des Hero, sondern ein
+       Stueck tiefer. Grund: umgeschaltet wird erst, wenn jemand nach unten
+       scrollt -- in diesem Moment ist der Hero bereits ein Stueck nach oben
+       gewandert. Saesse der Film genau mittig, stuende er dann zu hoch und man
+       muesste zurueckscrollen, um ihn zentriert zu sehen. Um diesen Betrag
+       tiefer gesetzt, steht er nach dem ersten Scrollen mittig im Fenster.
+       Ganz oben auf der Seite steht er dafuer etwas tief -- das ist der
+       gewollte Tausch, denn dort ist der Film ohnehin noch bildfuellend. */
+    --dock-drop: 0px;
     /* Gar kein Beschneiden mehr. Hier stand overflow-x: clip, weil der
        Lichthof breiter war als das Fenster. Safari koppelt die zweite Achse
        aber mit und schnitt dadurch auch senkrecht ab -- sichtbar als harte
@@ -380,12 +363,21 @@
     position: absolute; inset: 0; margin: auto;
     width: 100%; height: 100%;
     overflow: hidden;
-    transition: width 820ms var(--ease-dock), height 820ms var(--ease-dock);
+    transition: width 820ms var(--ease-dock), height 820ms var(--ease-dock),
+                top 820ms var(--ease-dock);
   }
   /* Beide Masse so gewaehlt, dass 16:9 erhalten bleibt -- egal ob die Breite
      oder die Hoehe des Fensters der engere Wert ist. Sonst wuerde der Film je
      nach Bildschirm anders beschnitten. */
-  .hero-frame.is-docked { width: min(78vw, 145.8vh); height: min(43.875vw, 82vh); }
+  /* top + margin:auto statt transform -- ein transform wuerde einen eigenen
+     Zeichenkontext aufspannen und der Film kaeme nicht mehr ueber die
+     Kornschicht. Bei top = 2x Versatz und bottom = 0 teilen die automatischen
+     Raender den Rest so auf, dass die Oberkante genau um den Versatz sinkt. */
+  .hero.is-docked { --dock-drop: 9vh; }
+  .hero-frame.is-docked {
+    width: min(78vw, 145.8vh); height: min(43.875vw, 82vh);
+    top: calc(2 * var(--dock-drop));
+  }
 
   .hero-media { position: absolute; inset: 0; overflow: hidden; }
 
@@ -471,8 +463,12 @@
      Sitzt außerhalb von .hero-frame und damit über die volle Fensterbreite --
      die Zeile läuft seitlich über die Kanten des Films hinaus. */
   .hero-marquee {
-    position: absolute; left: 0; right: 0; top: 50%;
+    position: absolute; left: 0; right: 0;
+    /* Die Zeile laeuft durch die Mitte des Films, also wandert sie um denselben
+       Betrag mit nach unten. */
+    top: calc(50% + var(--dock-drop, 0px));
     transform: translateY(-50%);
+    transition: top 820ms var(--ease-dock);
     z-index: 520;
     overflow: hidden; pointer-events: none;
     /* Ohne diese Polsterung ist der Kasten exakt eine Zeile hoch. Dann schneidet
@@ -789,7 +785,9 @@
        voller Fensterhoehe, staende unter dem kleinen Video mehr als ein halber
        Bildschirm Leere. Die Hoehe faehrt deshalb in derselben Bewegung mit. */
     .hero { transition: height 820ms var(--ease-dock); }
-    .hero.is-docked { height: 62vh; min-height: 0; }
+    /* Hier faehrt der Hero selbst zusammen, der Film wandert dadurch schon
+       nach oben ins Bild. Ein zusaetzlicher Versatz waere hier zu viel. */
+    .hero.is-docked { height: 62vh; min-height: 0; --dock-drop: 0px; }
     .hero-aura { width: 100vw; height: min(150vh, 121vw); }
     .m-word { font-size: clamp(1.25em, 7vw, 2em); }
     .card-open { display: none; }
@@ -847,7 +845,7 @@
     .hero-content { animation: none; }
     /* Kein Durchlauf, keine Umschaltbewegung, kein Schaerfefeld. */
     .marquee-track { animation: none; }
-    .analog, .zucken { display: none; }   /* .dither bleibt: es bewegt sich nicht */
+    .zucken { display: none; }            /* .dither bleibt: es bewegt sich nicht */
     .hero-frame { transition: none; }
     .hero-video { display: none; }
     .focus { display: none; }
@@ -861,10 +859,6 @@
 <div class="grain grain-dark" aria-hidden="true"></div>
 <div class="focus" id="focus" aria-hidden="true"></div>
 <div class="dither" aria-hidden="true"></div>
-<div class="analog" id="analog" aria-hidden="true">
-  <div class="kratzer" id="kratzer1"></div>
-  <div class="kratzer" id="kratzer2"></div>
-</div>
 <div class="zucken" id="zucken" aria-hidden="true"></div>
 <div class="vignette" aria-hidden="true"></div>
 <div class="lb-bar lb-top" aria-hidden="true"></div>
@@ -922,6 +916,7 @@
                  alt="Dreh mit Teleobjektiv auf einer Weide, im Hintergrund Highlandrinder"
                  loading="lazy" decoding="async">
           </div>
+          <figcaption>Teleaufnahmen für „The same gray“ in Schottland</figcaption>
         </figure>
       </div>
     </div>
@@ -1057,6 +1052,7 @@
                  alt="Nächtlicher Drehaufbau: Filmleuchte auf einem Stativ vor einem Cottage, warmes Licht im Fenster"
                  loading="lazy" decoding="async">
           </div>
+          <figcaption>Drehort für den Kurzfilm „The same gray“ in Auchindrain</figcaption>
         </figure>
       </div>
     </div>
@@ -1072,11 +1068,11 @@
           <p class="body">Wenn es die Geschichte verlangt, ergänze ich das durch Drohnenaufnahmen mit der DJI Mavic 3 Classic – für weite Establishing-Shots und fließende Übergänge von oben. Am Ende liefere ich flexibel nach Wunsch: in 24, 25 oder 30 fps und in HD, 4K oder 5K – oder genau in der Auflösung und Framerate, die benötigt wird.</p>
         </div>
         <figure class="band-figure reveal-media">
-          <div class="figure-media aura-host" style="--fig-ar: 32 / 15">
-            <img src="Images/web/gaertnerei-finder/still-2025-07-21-211752-3-25-1-1600.webp"
-                 srcset="Images/web/gaertnerei-finder/still-2025-07-21-211752-3-25-1-800.webp 800w, Images/web/gaertnerei-finder/still-2025-07-21-211752-3-25-1-1600.webp 1600w, Images/web/gaertnerei-finder/still-2025-07-21-211752-3-25-1-2400.webp 2400w"
+          <div class="figure-media aura-host" style="--fig-ar: 16 / 9">
+            <img src="Images/web/gaertnerei-finder/still-2025-07-01-232800-3-9-1-1600.webp"
+                 srcset="Images/web/gaertnerei-finder/still-2025-07-01-232800-3-9-1-800.webp 800w, Images/web/gaertnerei-finder/still-2025-07-01-232800-3-9-1-1600.webp 1600w, Images/web/gaertnerei-finder/still-2025-07-01-232800-3-9-1-2400.webp 2400w"
                  sizes="(min-width: 900px) 42vw, 100vw"
-                 alt="Schwebfliege auf einer Lavendelblüte, Bildkader aus dem Film für die Gärtnerei"
+                 alt="Rosenpavillon aus Schmiedeeisen über einem Kopfsteinpflasterweg im Gegenlicht"
                  loading="lazy" decoding="async">
           </div>
           <figcaption>Frame aus meinem Projekt „<button type="button" class="in-link" data-viewer="v1">Gärtnerei Finder</button>“</figcaption>
@@ -1094,8 +1090,6 @@
         <div class="n">Luis Räder</div>
         <div class="s">LXR Films</div>
       </div>
-      <div class="row"><span class="k">Adresse</span><span>Kätnerweg 49F, 22393 Hamburg</span></div>
-      <div class="row"><span class="k">Website</span><a href="https://lxr-films.net">LXR-Films.net</a></div>
       <div class="row"><span class="k">Telefon</span><a href="tel:+4916095491358">+49 160 95491358</a></div>
       <div class="row"><span class="k">E-Mail</span><a href="mailto:LXR-Films@web.de">LXR-Films@web.de</a></div>
     </div>
@@ -1212,6 +1206,7 @@
         <div><img src="Images/web/oesterreich25/still-2025-08-22-215508-3-53-1-1600.webp" srcset="Images/web/oesterreich25/still-2025-08-22-215508-3-53-1-800.webp 800w, Images/web/oesterreich25/still-2025-08-22-215508-3-53-1-1600.webp 1600w" sizes="(min-width: 760px) 550px, 100vw" alt="Kuh im Gegenlicht auf der Weide" loading="lazy" decoding="async"></div>
         <div><img src="Images/web/oesterreich25/still-2025-08-22-215508-3-9-1-1600.webp" srcset="Images/web/oesterreich25/still-2025-08-22-215508-3-9-1-800.webp 800w, Images/web/oesterreich25/still-2025-08-22-215508-3-9-1-1600.webp 1600w" sizes="(min-width: 760px) 550px, 100vw" alt="Hand über Gräsern vor einem Gipfel im Abendlicht" loading="lazy" decoding="async"></div>
         <div><img src="Images/web/oesterreich25/still-2025-08-22-215508-4-2-1-1600.webp" srcset="Images/web/oesterreich25/still-2025-08-22-215508-4-2-1-800.webp 800w, Images/web/oesterreich25/still-2025-08-22-215508-4-2-1-1600.webp 1600w" sizes="(min-width: 760px) 550px, 100vw" alt="Almhütte auf einer Hochebene vor dem Massiv" loading="lazy" decoding="async"></div>
+        <div><img src="Images/web/oesterreich25/still-2025-08-22-215508-3-29-1-1600.webp" srcset="Images/web/oesterreich25/still-2025-08-22-215508-3-29-1-800.webp 800w, Images/web/oesterreich25/still-2025-08-22-215508-3-29-1-1600.webp 1600w" sizes="(min-width: 760px) 550px, 100vw" alt="Dolomitengipfel im ersten Morgenlicht" loading="lazy" decoding="async"></div>
       </div>
       <button class="viewer-close">Schließen</button>
     </div>
@@ -1264,7 +1259,7 @@
   <div class="viewer-scroll">
     <div class="viewer-inner">
       <div class="stage-wrap aura-host">
-      <div class="viewer-stage" data-yt="o1YdluXKf3g" data-ar="1.778">
+      <div class="viewer-stage" data-yt="rKGhlvCMp7U" data-ar="1.778">
         <img src="Images/web/oesterreich24/img-2098-1500.webp"
              srcset="Images/web/oesterreich24/img-2098-800.webp 800w, Images/web/oesterreich24/img-2098-1500.webp 1500w"
              sizes="(min-width: 1120px) 1120px, 100vw"
@@ -1418,17 +1413,16 @@
     }
   })();
 
-  /* ---------- Analoge Stoerungen ----------
-     Seltene Erinnerungen an eine Filmvorfuehrung: ein senkrechter Kratzer, der
-     kurz durchs Bild laeuft, und ab und zu ein Zucken in der Helligkeit.
-     Bewusst selten -- alle paar Sekunden waere es ein Effekt, alle paar
-     Minuten ist es ein Detail, das man kaum bewusst bemerkt. */
-  (function stoerungen() {
+  /* ---------- Teelicht ----------
+     Ein warmes, unruhiges Licht ueber der Seite. Frueher lagen hier zwei
+     Effekte: senkrechte Laufstreifen und ein Helligkeitszucken. Die Streifen
+     sind entfallen -- geblieben ist das Flackern, und das laeuft jetzt so dicht
+     und so unregelmaessig, dass es wie eine Kerzenflamme wirkt statt wie eine
+     gelegentliche Stoerung. */
+  (function teelicht() {
     if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
-    const kratzer = [document.getElementById('kratzer1'),
-                     document.getElementById('kratzer2')];
     const zucken = document.getElementById('zucken');
-    if (!kratzer[0] || !kratzer[1] || !zucken) return;
+    if (!zucken) return;
 
     function einmal(el, vorbereiten) {
       if (el.classList.contains('laeuft')) return;
@@ -1441,10 +1435,11 @@
     }
 
     /* Gleichverteilte Abstaende klingen wie ein Metronom: nie kuerzer als das
-       Minimum, nie laenger als das Maximum, im Mittel immer dasselbe. Echtes
-       analoges Rauschen kommt in Schueben -- mal zweimal kurz hintereinander,
-       mal lange nichts. Das leistet eine Exponentialverteilung (Poisson): der
-       naechste Zeitpunkt haengt nicht davon ab, wie lange der letzte her ist. */
+       Minimum, nie laenger als das Maximum, im Mittel immer dasselbe. Eine
+       Flamme haelt keinen Takt -- mal zuckt sie zweimal kurz hintereinander,
+       mal steht sie einen Moment ruhig. Das leistet eine Exponentialverteilung
+       (Poisson): der naechste Zeitpunkt haengt nicht davon ab, wie lange der
+       letzte her ist. */
     function abstand(mittel, minimum) {
       return minimum + (-Math.log(1 - Math.random()) * mittel);
     }
@@ -1458,26 +1453,14 @@
       }, abstand(mittel, minimum));
     }
 
-    let welcher = 0;
-    planen(function () {
-      const el = kratzer[welcher++ % 2];
-      einmal(el, function (e) {
-        e.style.left = (4 + Math.random() * 92).toFixed(1) + '%';
-        e.style.setProperty('--breite', (1 + Math.random() * 1.8).toFixed(1) + 'px');
-        e.style.setProperty('--dauer', (0.45 + Math.random() * 0.85).toFixed(2) + 's');
-        // Jeder Streifen anders kraeftig -- gleich starke waeren wiederum ein Muster.
-        e.style.setProperty('--staerke', (0.35 + Math.random() * 0.65).toFixed(2));
-      });
-    }, 3600, 800);       // Streifen: im Mittel alle 4,4 s, aber in Schueben
-
     planen(function () {
       einmal(zucken, function (e) {
-        // Laenger als zuvor: ein weiches Atmen der Belichtung, kein Blitz.
+        // Ein weiches Atmen der Belichtung, kein Blitz.
         e.style.setProperty('--dauer', (0.7 + Math.random() * 1.3).toFixed(2) + 's');
-        // Mal kaum zu sehen, mal deutlicher -- das nimmt dem Effekt die Regelmaessigkeit.
+        // Mal kaum zu sehen, mal deutlicher -- das nimmt dem Licht die Regelmaessigkeit.
         e.style.setProperty('--staerke', (0.3 + Math.random() * 0.7).toFixed(2));
       });
-    }, 2100, 450);       // Zucken: im Mittel alle 2,6 s, stark schwankend
+    }, 2100, 450);    // im Mittel alle 2,6 s, stark schwankend
   })();
 
   const page = document.getElementById('page');
