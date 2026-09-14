@@ -140,7 +140,7 @@
       rgba(0,0,0,0.95) 0%, rgba(0,0,0,0.55) 16%, rgba(0,0,0,0.30) 34%,
       rgba(0,0,0,0.16) 54%, rgba(0,0,0,0.07) 76%, transparent 100%);
   }
-  .aura.on { opacity: 0.4; }
+  .aura.on { opacity: 0.54; }
 
 
   /* ---------- Drehunschaerfe ----------
@@ -355,6 +355,24 @@
     100%  { transform: translate3d(0, 0, 0); }
   }
 
+  /* ---------- Dithering ----------
+     Weit gezogene Verlaeufe (vor allem die Lichthoefe) haben in 8 Bit nur 256
+     Stufen. Ueber tausend Bildpunkte verteilt liegt dadurch alle paar Pixel
+     eine Stufe -- sichtbar als Ring. Gemessen: ohne Gegenmittel liegen 39 %
+     der Strecke in solchen Plateaus.
+     Das bewegte Korn verdeckt das zwar, aber nur scheinbar: es wechselt 24-mal
+     pro Sekunde und mittelt sich fuer das Auge weg, die Stufen kommen darunter
+     wieder zum Vorschein. Diese Lage steht deshalb still. Sie ist so schwach,
+     dass man sie nicht als Muster wahrnimmt -- sie bricht nur die Stufen. */
+  .dither {
+    position: fixed; inset: 0; z-index: 499; pointer-events: none;
+    background-image: var(--grain-dark-img);
+    background-repeat: repeat;
+    background-size: var(--grain-size) var(--grain-size);
+    mix-blend-mode: screen;
+    opacity: 0.045;
+  }
+
   /* ---------- Analoge Stoerungen ----------
      Seltene Erinnerungen an eine Filmvorfuehrung: ein senkrechter Kratzer, der
      kurz durchs Bild laeuft, und ab und zu ein Zucken in der Helligkeit.
@@ -535,7 +553,7 @@
     -webkit-mask-image: radial-gradient(closest-side, #000 4%, rgba(0,0,0,0.72) 24%, rgba(0,0,0,0.44) 48%, rgba(0,0,0,0.20) 72%, transparent 100%);
             mask-image: radial-gradient(closest-side, #000 4%, rgba(0,0,0,0.72) 24%, rgba(0,0,0,0.44) 48%, rgba(0,0,0,0.20) 72%, transparent 100%);
   }
-  .hero-aura.on { opacity: 0.36; }
+  .hero-aura.on { opacity: 0.48; }
 
   .hero-content {
     position: absolute; inset: 0; z-index: 507;
@@ -927,7 +945,7 @@
     .hero-content { animation: none; }
     /* Kein Durchlauf, keine Umschaltbewegung, kein Schaerfefeld. */
     .marquee-track { animation: none; }
-    .analog, .zucken { display: none; }
+    .analog, .zucken { display: none; }   /* .dither bleibt: es bewegt sich nicht */
     .hero-frame { transition: none; }
     .hero-video { display: none; }
     .focus { display: none; }
@@ -1082,6 +1100,7 @@
 <div class="focus focus-05" id="focus-05" aria-hidden="true"></div>
 <div class="focus focus-06" id="focus-06" aria-hidden="true"></div>
 <div class="focus focus-07" id="focus-07" aria-hidden="true"></div>
+<div class="dither" aria-hidden="true"></div>
 <div class="analog" id="analog" aria-hidden="true">
   <div class="kratzer" id="kratzer1"></div>
   <div class="kratzer" id="kratzer2"></div>
