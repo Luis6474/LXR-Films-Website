@@ -108,9 +108,13 @@ def process(path: Path, glows: dict) -> tuple[int, int]:
     with Image.open(path) as img:
         img = img.convert("RGB")
 
-        # Schluessel ist der Web-Pfad ohne "-<Breite>.<Endung>" -- so findet die
-        # Seite ihn unabhaengig davon, welche Breite der Browser gewaehlt hat.
-        glows[out_dir.relative_to(SRC_DIR.parent).as_posix() + "/" + slug] = glow_farbe(img)
+        # Schluessel ist der Web-Pfad ohne "-<Breite>.<Endung>", genau so, wie er
+        # im src-Attribut steht -- so findet die Seite ihn unabhaengig davon,
+        # welche Breite der Browser aus dem srcset gewaehlt hat. Bewusst aus den
+        # Ordnernamen zusammengesetzt statt aus OUT_DIR abgeleitet: sonst haengt
+        # der Schluessel daran, ob OUT_DIR absolut gesetzt ist.
+        unterordner = [slugify(teil) for teil in path.parent.relative_to(SRC_DIR).parts]
+        glows["/".join(["Images", "web"] + unterordner + [slug])] = glow_farbe(img)
 
         # Nie hochskalieren. Ist die Quelle schmaler als die groesste Zielbreite,
         # kommt zusaetzlich ihre native Breite dazu -- sonst haette z. B. ein
