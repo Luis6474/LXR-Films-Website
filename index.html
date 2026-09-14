@@ -792,10 +792,20 @@
   }
   .viewer-stage:hover .stage-ui,
   .stage-ui:focus-within { opacity: 1; }
+  /* Ohne Maus gibt es kein Ueberfahren. Auf Handy und Tablet blieb die Leiste
+     deshalb unsichtbar -- und damit liess sich der Ton eines Projektfilms dort
+     ueberhaupt nicht einschalten. Dort steht sie jetzt einfach da. */
+  @media (hover: none) {
+    .stage-ui { opacity: 1; }
+  }
   .stage-btn {
     background: rgba(0,0,0,0.35); border: 1px solid rgba(255,255,255,0.28);
     color: #fff; font: inherit; font-size: 0.72em;
     letter-spacing: 0.14em; text-transform: uppercase;
+    /* 44 px hoch: darunter wird das Treffen mit dem Finger unzuverlaessig,
+       vorher waren es 38. Die Schrift bleibt gleich, nur der Rahmen waechst. */
+    display: inline-flex; align-items: center; justify-content: center;
+    min-height: 44px;
     padding: 8px 16px; cursor: pointer;
     transition: border-color 0.4s var(--ease), background 0.4s var(--ease);
   }
