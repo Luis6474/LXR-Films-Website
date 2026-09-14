@@ -385,7 +385,15 @@
      Breite) und bleibt dort -- die Größe hängt NICHT am Scrollfortschritt. */
   .hero {
     position: relative;
-    height: 100vh; min-height: 480px;
+    /* 100vh meint auf dem iPhone die Hoehe OHNE Adressleiste -- beim Laden ist
+       der sichtbare Bereich also kleiner, und der Hero ragt unten darueber
+       hinaus. Der Titel saesse dadurch rund 45 px unter der optischen Mitte.
+       100svh ist genau die Hoehe, die beim Laden zu sehen ist. Die Zeile davor
+       bleibt als Rueckfall fuer aeltere Browser stehen; auf dem Schreibtisch
+       und auf dem iPad sind beide Werte ohnehin gleich. */
+    height: 100vh;
+    height: 100svh;
+    min-height: 480px;
     /* Der verkleinerte Film sitzt nicht in der Mitte des Hero, sondern ein
        Stueck tiefer. Grund: umgeschaltet wird erst, wenn jemand nach unten
        scrollt -- in diesem Moment ist der Hero bereits ein Stueck nach oben
@@ -859,7 +867,7 @@
     .hero { transition: height 820ms var(--ease-dock); }
     /* Hier faehrt der Hero selbst zusammen, der Film wandert dadurch schon
        nach oben ins Bild. Ein zusaetzlicher Versatz waere hier zu viel. */
-    .hero.is-docked { height: 62vh; min-height: 0; --dock-drop: 0px; }
+    .hero.is-docked { height: 62vh; height: 62svh; min-height: 0; --dock-drop: 0px; }
     .hero-aura { width: 100vw; height: min(150vh, 121vw); }
     .m-word { font-size: clamp(1.25em, 7vw, 2em); }
     .card-open { display: none; }
