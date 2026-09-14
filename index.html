@@ -119,12 +119,14 @@
        Angaben fuer rechts und unten werden dann ignoriert -- das Bild landete
        dadurch in voller Groesse im Textfluss. */
     position: absolute;
-    /* Weit gestreut statt eng gebuendelt: der Schein reicht rundum etwa eine
-       halbe Bildbreite hinaus und nimmt dabei gleichmaessig ab. */
-    left: -190%; top: -190%; width: 480%; height: 480%;
+    /* Sehr weit gestreut: der Schein reicht rundum etwa drei Bildbreiten
+       hinaus. Der Grossteil der Weichheit kommt dabei aus der Vergroesserung
+       selbst -- ein auf das Siebenfache gezogenes Bild ist von sich aus weich.
+       Das ist deutlich billiger zu rechnen als noch mehr Weichzeichnung. */
+    left: -320%; top: -320%; width: 740%; height: 740%;
     object-fit: cover;
     z-index: 0; pointer-events: none;
-    filter: blur(190px) saturate(2.5) brightness(1.45);
+    filter: blur(250px) saturate(2.6) brightness(1.5);
     opacity: 0; transition: opacity 1.8s var(--ease);
     /* Entscheidend ist nicht die Groesse allein, sondern dass die Maske schon in
        der MITTE gedeckelt ist: vorher war der Kern voll deckend, aussen kam
@@ -132,11 +134,13 @@
        Verlauf bei gut der Haelfte und laeuft ueber die ganze Flaeche aus.
        Dadurch verteilt sich dieselbe Lichtmenge weiter und wirkt schwaecher. */
     -webkit-mask-image: radial-gradient(closest-side,
-      rgba(0,0,0,0.80) 0%, rgba(0,0,0,0.58) 26%, rgba(0,0,0,0.32) 52%, rgba(0,0,0,0.12) 76%, transparent 100%);
+      rgba(0,0,0,0.95) 0%, rgba(0,0,0,0.55) 16%, rgba(0,0,0,0.30) 34%,
+      rgba(0,0,0,0.16) 54%, rgba(0,0,0,0.07) 76%, transparent 100%);
             mask-image: radial-gradient(closest-side,
-      rgba(0,0,0,0.80) 0%, rgba(0,0,0,0.58) 26%, rgba(0,0,0,0.32) 52%, rgba(0,0,0,0.12) 76%, transparent 100%);
+      rgba(0,0,0,0.95) 0%, rgba(0,0,0,0.55) 16%, rgba(0,0,0,0.30) 34%,
+      rgba(0,0,0,0.16) 54%, rgba(0,0,0,0.07) 76%, transparent 100%);
   }
-  .aura.on { opacity: 0.82; }
+  .aura.on { opacity: 0.4; }
 
 
   /* ---------- Drehunschaerfe ----------
@@ -517,21 +521,21 @@
     /* Deutlich groesser als das Video: der Schein soll sich weit verteilen und
        dabei nach aussen ruhig abnehmen, statt als heller Fleck am Rand zu
        sitzen. */
-    width: min(300vw, 546vh); height: min(169vw, 307vh);
+    width: min(460vw, 838vh); height: min(259vw, 471vh);
     /* z-index 0 statt 1: der Schein reicht jetzt unter den Hero hinaus und
        wuerde sonst ueber dem Text des naechsten Abschnitts liegen. Bei 0 liegt
        er in derselben Ebene wie die folgenden Abschnitte, aber davor in der
        Reihenfolge -- also dahinter. */
     z-index: 0;
-    filter: blur(196px) saturate(2.6) brightness(1.46);
+    filter: blur(260px) saturate(2.7) brightness(1.5);
     opacity: 0; transition: opacity 1400ms var(--ease);
     pointer-events: none;
     /* Der Verlauf beginnt fast in der Mitte abzunehmen: langes, weiches
        Auslaufen statt harter Kante am Rand des Scheins. */
-    -webkit-mask-image: radial-gradient(closest-side, #000 5%, rgba(0,0,0,0.62) 34%, rgba(0,0,0,0.28) 64%, transparent 100%);
-            mask-image: radial-gradient(closest-side, #000 5%, rgba(0,0,0,0.62) 34%, rgba(0,0,0,0.28) 64%, transparent 100%);
+    -webkit-mask-image: radial-gradient(closest-side, #000 4%, rgba(0,0,0,0.72) 24%, rgba(0,0,0,0.44) 48%, rgba(0,0,0,0.20) 72%, transparent 100%);
+            mask-image: radial-gradient(closest-side, #000 4%, rgba(0,0,0,0.72) 24%, rgba(0,0,0,0.44) 48%, rgba(0,0,0,0.20) 72%, transparent 100%);
   }
-  .hero-aura.on { opacity: 0.68; }
+  .hero-aura.on { opacity: 0.36; }
 
   .hero-content {
     position: absolute; inset: 0; z-index: 507;
@@ -866,7 +870,7 @@
        Bildschirm Leere. Die Hoehe faehrt deshalb in derselben Bewegung mit. */
     .hero { transition: height 820ms var(--ease-dock); }
     .hero.is-docked { height: 62vh; min-height: 0; }
-    .hero-aura { width: min(310vw, 552vh); height: min(174vw, 310vh); }
+    .hero-aura { width: min(470vw, 845vh); height: min(264vw, 475vh); }
     .m-word { font-size: clamp(1.25em, 7vw, 2em); }
     .card-open { display: none; }
     .card-preview { width: 96px; }
