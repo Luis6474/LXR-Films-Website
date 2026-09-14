@@ -779,7 +779,14 @@
      und dauerhaft bei jedem, der YouTube blockiert -- statt des Bildkaders
      stand dort ein schwarzes Rechteck. */
   .viewer-stage.has-video img { transition: opacity 0.8s var(--ease); }
-  .viewer-stage.is-playing img { opacity: 0; }
+  /* is-playing heisst "Player eingeblendet", is-proven heisst "der Film laeuft
+     nachweislich". Nur der Nachweis nimmt das Standbild weg.
+     Der Unterschied zaehlt fuer alle, die YouTube blockieren: dort meldet sich
+     der Player nie, und nach 14 Sekunden greift der Notnagel, der den Player
+     trotzdem einblendet. Frueher verschwand damit auch das Standbild und es
+     blieb ein schwarzes Rechteck. Jetzt bleibt der Bildkader stehen -- laeuft
+     der Film doch, deckt er ihn ohnehin zu, weil er darueber liegt. */
+  .viewer-stage.is-proven img { opacity: 0; }
   .viewer-stage iframe {
     position: absolute; top: 50%; left: 50%;
     transform: translate(-50%, -50%);
@@ -1639,13 +1646,14 @@
   function watchPlayer(frame, opts) {
     let baseTime = null;
     let shown = false;
+    let verbunden = false;
 
     function arm() { baseTime = null; shown = false; }
 
-    function show() {
+    function show(bewiesen) {
       if (shown) return;
       shown = true;
-      opts.onShow();
+      opts.onShow(bewiesen === true);
     }
 
     function hide() {
@@ -1659,6 +1667,9 @@
       if (e.source !== frame.contentWindow) return;
       let msg;
       try { msg = JSON.parse(e.data); } catch (err) { return; }
+      // Ab der ersten Rueckmeldung steht die Verbindung -- weiter zu rufen
+      // waere nur noch Leerlauf.
+      if (!verbunden) { verbunden = true; clearInterval(handshake); }
       const info = msg.info;
       if (!info || typeof info !== 'object') return;
 
@@ -1678,19 +1689,37 @@
       // muss deshalb getrennt ausgewertet werden.
       if (typeof info.currentTime === 'number') {
         if (baseTime === null) { baseTime = info.currentTime; return; }
-        if (info.currentTime - baseTime >= PLAY_PROOF_SECONDS) show();
+        if (info.currentTime - baseTime >= PLAY_PROOF_SECONDS) show(true);
       }
     }
 
     window.addEventListener('message', onMessage);
+    /* Der Ruf muss wiederholt werden, weil der Player beim Einhaengen noch
+       nicht zuhoert. Er lief aber bisher die ganze Zeit weiter -- fuenfmal je
+       Sekunde, solange jemand den Film ansieht, und erst recht bei allen, die
+       YouTube blockieren: dort kommt nie eine Antwort. Jetzt hoert er auf,
+       sobald der Player antwortet, spaetestens nach 15 Sekunden. */
+    let rufe = 0;
     const handshake = setInterval(function () {
       if (frame.contentWindow) {
         frame.contentWindow.postMessage('{"event":"listening"}', '*');
       }
+      if (++rufe >= 75) clearInterval(handshake);
     }, 200);
     // Notnagel: kommt gar keine Rueckmeldung, lieber den Film zeigen als
     // dauerhaft beim Standbild zu bleiben.
-    const fallback = setTimeout(show, PLAY_FALLBACK_MS);
+    /* Notnagel fuer den Fall, dass der Player zwar da ist, aber keine Laufzeit
+       meldet: dann trotzdem einblenden, das Standbild bleibt darunter stehen.
+
+       Aber nur, wenn sich der Player ueberhaupt je gemeldet hat. Ist YouTube
+       nicht erreichbar -- Trackingblocker, strenges Firmennetz, kein Netz --,
+       dann zeigt der Browser in dem Rahmen SEINE EIGENE Fehlerseite: eine
+       hellgraue Flaeche mit Papiersymbol, mitten in der Projektansicht.
+       Nachgemessen mit umgebogener Namensaufloesung. Deshalb bleibt der Rahmen
+       in diesem Fall unsichtbar und es steht schlicht der Bildkader da. */
+    const fallback = setTimeout(function () {
+      if (verbunden) show(false);
+    }, PLAY_FALLBACK_MS);
 
     return {
       replay: function () {
@@ -1729,10 +1758,13 @@
     stage.appendChild(frame);
     registerFit(stage, frame, 1.18);   // Kanalleiste des Players ausserhalb halten
     stage._player = watchPlayer(frame, {
-      onShow: function () { stage.classList.add('is-playing'); },
+      onShow: function (bewiesen) {
+        stage.classList.add('is-playing');
+        if (bewiesen) stage.classList.add('is-proven');
+      },
       onHide: function () {
         // Zurueck aufs Standbild -- so bleiben Abspann-Vorschlaege verdeckt.
-        stage.classList.remove('is-playing');
+        stage.classList.remove('is-playing', 'is-proven');
         if (stage._playBtn) stage._playBtn.textContent = 'Erneut abspielen';
       }
     });
