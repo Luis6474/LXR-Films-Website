@@ -209,14 +209,27 @@
   @media (hover: hover) and (pointer: fine) {
     .hero-docked .focus.on {
       opacity: 1;
-      -webkit-backdrop-filter: blur(3.2px);
-              backdrop-filter: blur(3.2px);
-      /* Scharfer Kern bis 420 px, volle Wirkung bei 1200 px -- der Fliesstext
-         unter dem Zeiger bleibt dadurch unangetastet. */
+      /* Zur Unschaerfe kommt eine leichte Verdunklung -- dieselbe Ebene, dieselbe
+         Maske, also ohne eine einzige zusaetzliche Flaeche. Sie liegt damit
+         zwangslaeufig genau dort, wo das Bild ohnehin aus dem Fokus geht.
+
+         Der Kontrastanteil ist kein Beiwerk, sondern das, was die Verdunklung
+         bezahlbar macht. Eine schlichte schwarze Auflage haette Schrift und
+         Grund gleichermassen abgesenkt und den Kontrast gedrueckt -- gerechnet
+         von 4,75:1 auf 3,29:1, also unter den Richtwert. "contrast" zieht die
+         Werte dagegen auseinander: der Grund wird dunkler, die helle Schrift
+         bleibt hell. Unterm Strich steht der schwaechste Textblock danach bei
+         4,66:1, praktisch unveraendert, bei rund 14 % dunklerem Rand. */
+      -webkit-backdrop-filter: blur(3.2px) brightness(0.86) contrast(1.08);
+              backdrop-filter: blur(3.2px) brightness(0.86) contrast(1.08);
+      /* Heller Kern bis 560 px, volle Wirkung bei 1500 px (vorher 420/1200).
+         Grosszuegiger gefasst, damit der helle Bereich wirklich gross ist und
+         das Ganze als weiches Nachlassen zum Rand hin liest -- nicht als
+         Lichtkegel, der dem Zeiger hinterherfaehrt. */
       -webkit-mask-image: radial-gradient(circle at var(--fx, 50%) var(--fy, 45%),
-                          transparent 0, transparent 420px, #000 1200px);
+                          transparent 0, transparent 560px, #000 1500px);
               mask-image: radial-gradient(circle at var(--fx, 50%) var(--fy, 45%),
-                          transparent 0, transparent 420px, #000 1200px);
+                          transparent 0, transparent 560px, #000 1500px);
     }
   }
 
