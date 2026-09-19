@@ -542,8 +542,19 @@
        zart -- Korn und Lichthof fressen die Haarstriche dort stellenweise auf.
        Bei 45 px traegt der leichte Schnitt dagegen muehelos. */
     font-weight: 300;
-    font-size: clamp(1.7em, 4.3vw, 2.5em);
-    letter-spacing: 0.1em;
+    /* Sperrung und Einzeiligkeit ziehen gegeneinander: mehr Sperrung heisst
+       laengere Zeile heisst frueherer Umbruch. Gemessen am Desktop (45 px):
+         0,10em ->  868 px Zeile, einzeilig bis 660 px Fensterbreite
+         0,14em ->  931 px Zeile, einzeilig bis 660 px
+         0,18em ->  994 px Zeile, einzeilig bis 760 px
+         0,22em -> 1057 px Zeile, einzeilig bis 900 px
+       0,18em ist die letzte Stufe, bei der die Zeile optisch zusammenhaelt --
+       darueber driften die Woerter auseinander. Der Umbruch bei 760 px liegt
+       weit unter jedem Laptop.
+       Der vw-Anteil sinkt mit steigender Sperrung mit (4,3 -> 3,9), sonst
+       frisst die laengere Zeile den einzeiligen Bereich auf. */
+    font-size: clamp(1.7em, 3.9vw, 2.5em);
+    letter-spacing: 0.18em;
     max-width: none;
     text-wrap: balance;
   }
@@ -588,7 +599,7 @@
        Titel (4em/3,2em, dann 3em/2,4em, jetzt 2,5em/2em); Schnitt und Groesse
        unterschiedlich zu lassen, faellt beim Umschalten auf. */
     font-size: clamp(1.2em, 2.8vw, 2em);
-    letter-spacing: 0.1em; line-height: 1.28; white-space: nowrap;
+    letter-spacing: 0.18em; line-height: 1.28; white-space: nowrap;
     color: #f2f5f7;
     /* Der weiche Hof (12 px) ist raus -- er war als dunkler Streifen hinter der
        Zeile zu sehen, vor allem dort, wo der Film dahinter hell wird.
