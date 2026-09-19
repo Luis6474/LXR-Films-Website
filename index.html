@@ -522,7 +522,11 @@
   .hero-content .eyebrow { display: block; margin-bottom: 22px; }
   .hero-content h1 {
     font-size: clamp(2.1em, 6.4vw, 4em);
-    letter-spacing: 0.08em;
+    /* Weiter gesperrt (vorher 0,08em) -- eine Titelzeile darf atmen.
+       Nach oben begrenzt das Handy: bei 0,18em fuellt die laengste Zeile dort
+       439 von 441 px, also praktisch randlos. Bei 0,14em sind es 410 px, und
+       der Titel bleibt auf allen Groessen zweizeilig. */
+    letter-spacing: 0.14em;
     text-wrap: balance;
   }
   /* Im kleinen Zustand übernimmt die Laufschrift. */
@@ -562,7 +566,9 @@
   .m-word {
     font-family: 'Fraunces', Georgia, serif; font-weight: 500;
     font-size: clamp(1.7em, 4.6vw, 3.2em);
-    letter-spacing: 0.09em; line-height: 1.28; white-space: nowrap;
+    /* Mitgezogen mit dem Titel: die Laufschrift ist dieselbe Zeile im
+       angedockten Zustand, unterschiedliche Sperrung faellt beim Umschalten auf. */
+    letter-spacing: 0.14em; line-height: 1.28; white-space: nowrap;
     color: #f2f5f7;
     /* Der weiche Hof (12 px) ist raus -- er war als dunkler Streifen hinter der
        Zeile zu sehen, vor allem dort, wo der Film dahinter hell wird.
