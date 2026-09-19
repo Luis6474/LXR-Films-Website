@@ -21,7 +21,7 @@
      sich einbinden laesst: derselbe Bauauftrag (volle Zeichenabdeckung
      statt Eleganz) und dieselbe Anmutung -- schlichter Gebrauchs-Serif,
      geringer Strichkontrast, stumpfe Serifen, grosse x-Hoehe. -->
-<link href="https://fonts.googleapis.com/css2?family=Noto+Serif:wght@400&family=Inter:wght@400;500&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif:wght@300;400&family=Inter:wght@400;500&display=swap" rel="stylesheet">
 <style>
   :root {
     /* Tiefer und blauer als zuvor (#0d1216 / #090d10). Grund: die Lichthoefe
@@ -533,12 +533,16 @@
        zwangslaeufig zweizeilig -- nicht wegen der Schriftgroesse, sondern
        wegen des 900-px-Kastens aus ".hero-content > *". Der ist hier
        aufgehoben, die Zeile darf so breit werden, wie sie braucht.
-       Gemessen bei 3em (54 px): die Zeile ist 1075 px breit und bleibt bis
-       hinunter zu rund 760 px Fensterbreite einzeilig. Darunter greift der
-       vw-Anteil, und ab etwa 600 px bricht sie zwangslaeufig um -- 35 Zeichen
-       auf einem Telefon in eine Zeile hiesse 19 px Schrift, also kleiner als
-       der Fliesstext. */
-    font-size: clamp(1.7em, 4.3vw, 3em);
+       Bei 2,5em (45 px) ist die Zeile rund 900 px breit. Kleiner heisst
+       hier laenger einzeilig -- der Umbruch rutscht nach unten. Ganz ohne
+       Umbruch geht es aber nicht: 35 Zeichen auf einem Telefon in eine Zeile
+       hiessen 19 px Schrift, also kleiner als der Fliesstext. */
+    /* Schnitt 300 nur hier, nicht fuer h1/h2/h3 allgemein: die
+       Abschnittsueberschriften stehen bei rund 24 px und waeren in 300 zu
+       zart -- Korn und Lichthof fressen die Haarstriche dort stellenweise auf.
+       Bei 45 px traegt der leichte Schnitt dagegen muehelos. */
+    font-weight: 300;
+    font-size: clamp(1.7em, 4.3vw, 2.5em);
     letter-spacing: 0.1em;
     max-width: none;
     text-wrap: balance;
@@ -578,12 +582,12 @@
   .hero.is-docked .marquee-track { animation-play-state: running; }
   .m-group { display: flex; align-items: center; }
   .m-word {
-    font-family: 'Noto Serif', Georgia, serif; font-weight: 400;
-    /* Mitgezogen mit dem Titel: die Laufschrift ist dieselbe Zeile im
+    font-family: 'Noto Serif', Georgia, serif; font-weight: 300;
+    /* Mitgezogen mit dem Hero-Titel: die Laufschrift ist dieselbe Zeile im
        angedockten Zustand. Sie behaelt ihr Verhaeltnis von 80 % zum grossen
-       Titel (vorher 3,2 zu 4em, jetzt 2,4 zu 3em); Groesse und Sperrung
+       Titel (4em/3,2em, dann 3em/2,4em, jetzt 2,5em/2em); Schnitt und Groesse
        unterschiedlich zu lassen, faellt beim Umschalten auf. */
-    font-size: clamp(1.4em, 3.4vw, 2.4em);
+    font-size: clamp(1.2em, 2.8vw, 2em);
     letter-spacing: 0.1em; line-height: 1.28; white-space: nowrap;
     color: #f2f5f7;
     /* Der weiche Hof (12 px) ist raus -- er war als dunkler Streifen hinter der
