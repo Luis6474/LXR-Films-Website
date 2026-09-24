@@ -21,7 +21,7 @@
      sich einbinden laesst: derselbe Bauauftrag (volle Zeichenabdeckung
      statt Eleganz) und dieselbe Anmutung -- schlichter Gebrauchs-Serif,
      geringer Strichkontrast, stumpfe Serifen, grosse x-Hoehe. -->
-<link href="https://fonts.googleapis.com/css2?family=Noto+Serif:wght@300;400&family=Inter:wght@400;500&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif:wght@300;400;600&family=Inter:wght@400;500&display=swap" rel="stylesheet">
 <style>
   :root {
     /* Tiefer und blauer als zuvor (#0d1216 / #090d10). Grund: die Lichthoefe
@@ -35,8 +35,14 @@
        ins Blaue. Genau das ist die Fläche, die hier ausserhalb der Lichthöfe
        steht -- Moos und Nadelgrün sind die Lichter des Bildes, nicht sein Grund.
        Vorher stand hier ein reines Dunkelblau (#071224). */
-    --bg: #0b1614;
-    --bg-deep: #060f0e;
+    /* Dunkler und ins Blaugruene verschoben. Vorher #0b1614 -- das war
+       gruendominant (22 Gruen zu 20 Blau). Jetzt fuehrt Blau (21 zu 15), und
+       die Helligkeit faellt von 17,7 auf 13,7, also rund ein Fuenftel.
+       Zusammen mit der entfernten Vignette ergibt das insgesamt einen
+       ruhigeren, tieferen Grund -- die Vignette hatte die Raender zwar
+       abgedunkelt, aber als Form, nicht als Ton. */
+    --bg: #050f15;
+    --bg-deep: #03080c;
     --text: #e6eae8;
     /* Angehoben von #8d9792. Der Schatten an den Buchstaben hat vorher den
        Grund unter jeder Zeile mit abgedunkelt und damit einen Teil des
@@ -75,7 +81,7 @@
   body::before {
     content: ""; position: fixed; inset: 0; z-index: -1;
     background:
-      radial-gradient(140% 90% at 50% 0%, #17241f 0%, var(--bg) 45%, var(--bg-deep) 100%);
+      radial-gradient(140% 90% at 50% 0%, #0d1a22 0%, var(--bg) 45%, var(--bg-deep) 100%);
   }
 
   /* Schnitt 400 statt 500. Noto Serif traegt bei grossen Graden auch im
@@ -241,6 +247,21 @@
     }
   }
 
+  /* ---------- Sternenhimmel ----------
+     Zwei Lagen mit unterschiedlich grossen Kacheln. Eine einzelne Kachel
+     wuerde sich alle paar hundert Bildpunkte sichtbar wiederholen; zwei Lagen
+     mit teilerfremden Kantenlaengen (600 und 437) decken sich erst nach rund
+     260 000 Bildpunkten wieder -- also nie auf einem Bildschirm.
+     Liegt wie das Korn unter dem Inhalt: Sterne gehoeren an den Himmel, nicht
+     auf die Fotos. */
+  .sterne {
+    position: fixed; inset: 0; z-index: -1; pointer-events: none;
+    background-image: var(--sterne-a), var(--sterne-b);
+    background-size: 600px 600px, 437px 437px;
+    background-position: 0 0, 137px 89px;
+    opacity: 0.5;
+  }
+
   /* ---------- Filmkorn ----------
      Eine einzige feine, monochrome Kachel. Bewegt wird ausschließlich per
      transform in diskreten Schritten -> läuft auf dem Compositor, kein
@@ -377,12 +398,6 @@
     88%  { opacity: 0.029; }
     94%  { opacity: 0.049; }
     100% { opacity: 0; }
-  }
-
-  /* ---------- Vignette ---------- */
-  .vignette {
-    position: fixed; inset: 0; z-index: 999; pointer-events: none;
-    background: radial-gradient(120% 85% at 50% 45%, transparent 42%, rgba(3,8,7,0.55) 100%);
   }
 
   /* ---------- Letterbox ---------- */
@@ -768,24 +783,29 @@
   .schau-bild.is-an { opacity: 1; }
   .schau-bild > img:not(.aura) { position: relative; z-index: 1; }
 
+  /* Unter dem Bild steht nur noch die Bedienung -- keine Beschriftung.
+     Die Filmtitel stehen ohnehin in den Aufnahmen selbst. */
   .schau-leiste {
-    display: flex; align-items: center; gap: 22px;
-    margin-top: 22px;
+    display: flex; align-items: center; gap: 10px;
+    margin-top: 18px;
   }
-  .schau-gattung { flex: 1; min-width: 0; color: var(--text-dim); }
-  .schau-steuer { display: flex; align-items: center; gap: 14px; flex-shrink: 0; }
+  .schau-steuer { display: flex; align-items: center; gap: 2px; }
 
-  /* 44 px in beiden Richtungen -- darunter wird die Flaeche mit dem Finger
-     unzuverlaessig, und das Publikum dieser Seite ist ueberwiegend 50+. */
+  /* Ohne Rahmen -- auf der ganzen Seite liegt sonst nirgends ein Kasten um
+     ein Bedienelement. Die 44 px bleiben als Tastflaeche erhalten, sie sind
+     nur nicht mehr zu sehen: die Flaeche traegt das Zeichen, nicht umgekehrt. */
   .schau-pfeil {
     width: 44px; height: 44px; flex-shrink: 0;
     display: flex; align-items: center; justify-content: center;
-    background: none; border: 1px solid var(--line); color: var(--text-dim);
-    font: inherit; font-size: 1em; line-height: 1; cursor: pointer;
-    transition: border-color 0.4s var(--ease), color 0.4s var(--ease);
+    background: none; border: none; padding: 0;
+    color: var(--text-dim); cursor: pointer;
+    transition: color 0.4s var(--ease), transform 0.4s var(--ease);
   }
-  .schau-pfeil:hover { border-color: var(--accent); color: var(--text); }
-  .schau-pfeil:focus-visible { outline: 1px solid var(--accent); outline-offset: 3px; }
+  .schau-pfeil svg { width: 17px; height: 17px; display: block; }
+  .schau-pfeil:hover { color: var(--text); }
+  .schau-pfeil[data-schritt="-1"]:hover { transform: translateX(-2px); }
+  .schau-pfeil[data-schritt="1"]:hover { transform: translateX(2px); }
+  .schau-pfeil:focus-visible { outline: 1px solid var(--accent); outline-offset: -8px; }
 
   .schau-punkte { display: flex; align-items: center; }
   /* Der Punkt bleibt 7 px klein, die Schaltflaeche darum ist 44 px gross.
@@ -795,28 +815,38 @@
     display: flex; align-items: center; justify-content: center;
     background: none; border: none; cursor: pointer;
   }
-  /* Striche statt Punkte: die Schaltflaeche muss 44 px breit sein, und ein
-     7-px-Punkt darin sieht verloren aus. Ein Strich fuellt die Breite
-     sinnvoll -- und liest sich wie eine Kapitelmarke. */
+  /* Zurueckgenommen: kuerzere, duennere Marken. */
   .schau-punkt::before {
-    content: ""; width: 20px; height: 2px;
+    content: ""; width: 14px; height: 1px;
     background: var(--line);
     transition: background 0.5s var(--ease), width 0.5s var(--ease);
   }
-  .schau-punkt.is-an::before { background: var(--accent); width: 30px; }
+  .schau-punkt.is-an::before { background: var(--accent); width: 24px; }
   .schau-punkt:focus-visible { outline: 1px solid var(--accent); outline-offset: -6px; }
 
+  /* Reiner Text in derselben gesperrten Versalschrift wie sonst auf der
+     Seite. Statt eines Rahmens traegt ein duenner Strich darunter -- er wird
+     beim Ueberfahren breiter und heller, die Flaeche bleibt 44 px hoch. */
   .schau-ansehen {
-    flex-shrink: 0;
-    background: rgba(0,0,0,0.25); border: 1px solid var(--line);
-    color: var(--text); font: inherit;
+    margin-left: auto; flex-shrink: 0;
+    display: inline-flex; align-items: center; gap: 9px;
+    background: none; border: none;
+    color: var(--text-dim); font: inherit;
     font-size: 0.72em; font-weight: 500;
     letter-spacing: 0.18em; text-transform: uppercase;
-    padding: 14px 24px; cursor: pointer;   /* ergibt 44 px Hoehe */
-    transition: border-color 0.4s var(--ease), background 0.4s var(--ease);
+    padding: 14px 2px; cursor: pointer;
+    position: relative;
+    transition: color 0.45s var(--ease);
   }
-  .schau-ansehen:hover { border-color: var(--accent); background: rgba(0,0,0,0.45); }
-  .schau-ansehen:focus-visible { outline: 1px solid var(--accent); outline-offset: 3px; }
+  .schau-ansehen::after {
+    content: ""; position: absolute; left: 2px; bottom: 11px;
+    width: 18px; height: 1px; background: currentColor;
+    transition: width 0.45s var(--ease);
+  }
+  .schau-ansehen svg { width: 13px; height: 13px; display: block; }
+  .schau-ansehen:hover { color: var(--text); }
+  .schau-ansehen:hover::after { width: calc(100% - 26px); }
+  .schau-ansehen:focus-visible { outline: 1px solid var(--accent); outline-offset: 2px; }
 
   /* Nur fuer Vorlesegeraete -- der Titel steht sichtbar im Bild. */
   .nur-vorlesen {
@@ -927,22 +957,34 @@
 
   .stage-ui {
     position: absolute; left: 0; right: 0; bottom: 0; z-index: 6;
-    display: flex; align-items: center; gap: 10px;
-    padding: 14px 16px;
+    display: flex; align-items: center; gap: 6px;
+    padding: 8px 10px;
     background: linear-gradient(to top, rgba(0,0,0,0.55), transparent);
     opacity: 0; transition: opacity 0.5s var(--ease);
   }
   .viewer-stage:hover .stage-ui,
   .stage-ui:focus-within,
   .stage-ui.sichtbar { opacity: 1; }
+  /* Ohne Kasten. Vorher stand hier dreimal ein gerahmtes Feld mit Versalien
+     -- auf einem laufenden Film die einzige Stelle der Seite, die nach
+     Bedienoberflaeche aussah. Jetzt nur noch die Zeichen selbst, die Flaeche
+     bleibt mit 44 px unveraendert gross.
+     Der Schatten ersetzt den Rahmen als Kontrastgeber: ein weisses Zeichen
+     auf einem hellen Einzelbild waere sonst nicht zu sehen. */
   .stage-btn {
-    background: rgba(0,0,0,0.35); border: 1px solid rgba(255,255,255,0.28);
-    color: #fff; font: inherit; font-size: 0.72em;
-    letter-spacing: 0.14em; text-transform: uppercase;
-    padding: 8px 16px; cursor: pointer;
-    transition: border-color 0.4s var(--ease), background 0.4s var(--ease);
+    width: 44px; height: 44px; padding: 0;
+    display: flex; align-items: center; justify-content: center;
+    background: none; border: none;
+    color: rgba(255,255,255,0.82); cursor: pointer;
+    filter: drop-shadow(0 1px 3px rgba(0,0,0,0.65));
+    transition: color 0.35s var(--ease), filter 0.35s var(--ease);
   }
-  .stage-btn:hover { border-color: var(--p-accent); background: rgba(0,0,0,0.55); }
+  .stage-btn svg { width: 19px; height: 19px; display: block; }
+  .stage-btn:hover {
+    color: #fff;
+    filter: drop-shadow(0 1px 3px rgba(0,0,0,0.65)) drop-shadow(0 0 7px rgba(255,255,255,0.45));
+  }
+  .stage-btn:focus-visible { outline: 1px solid rgba(255,255,255,0.6); outline-offset: -8px; }
 
   /* ---------- Vollbild ----------
      Der Uebergang ist bewusst derselbe wie beim Eintauchen in ein Projekt:
@@ -1014,7 +1056,13 @@
 
   .viewer-head { max-width: 64ch; margin: 44px auto 0; }
   .viewer-head .eyebrow { display: block; color: var(--p-accent); margin-bottom: 12px; }
-  .viewer-head h2 { font-size: clamp(1.5em, 4vw, 2.1em); letter-spacing: 0.06em; }
+  /* Groesser und fetter als der uebrige Satz: das ist der Titel des Films,
+     auf den man gerade geschaut hat, und er soll den Kopf der Seite tragen. */
+  .viewer-head h2 {
+    font-size: clamp(1.9em, 5vw, 2.8em);
+    font-weight: 600;
+    letter-spacing: 0.06em;
+  }
 
   .viewer-text { max-width: 64ch; margin: 26px auto 0; }
   .viewer-text p { font-size: 1.02em; line-height: 1.8; color: var(--text-dim); }
@@ -1064,9 +1112,7 @@
     .hero-aura { width: 100vw; height: min(150vh, 121vw); }
     .m-word { font-size: clamp(1.25em, 7vw, 2em); }
     .card-open { display: none; }
-    .schau-leiste { flex-wrap: wrap; gap: 16px; }
-    .schau-gattung { flex-basis: 100%; }
-    .schau-ansehen { margin-left: auto; }
+    .schau-leiste { gap: 6px; }
     .card-preview { width: 96px; }
     .card-head { gap: 14px; padding: 15px 0; }
     .card-titleline { display: block; }
@@ -1132,12 +1178,12 @@
 </head>
 <body>
 
+<div class="sterne" aria-hidden="true"></div>
 <div class="grain grain-mid" aria-hidden="true"></div>
 <div class="grain grain-dark" aria-hidden="true"></div>
 <div class="focus" id="focus" aria-hidden="true"></div>
 <div class="dither" aria-hidden="true"></div>
 <div class="zucken" id="zucken" aria-hidden="true"></div>
-<div class="vignette" aria-hidden="true"></div>
 <div class="lb-bar lb-top" aria-hidden="true"></div>
 <div class="lb-bar lb-bottom" aria-hidden="true"></div>
 
@@ -1237,17 +1283,23 @@
         </div>
 
         <div class="schau-leiste">
-          <span class="eyebrow schau-gattung" id="schau-gattung">Porträtfilm · Schottland</span>
           <div class="schau-steuer">
             <button class="schau-pfeil" type="button" data-schritt="-1"
-                    aria-label="Vorheriges Projekt">&#8249;</button>
+                    aria-label="Vorheriges Projekt"><svg viewBox="0 0 24 24" fill="none"
+              stroke="currentColor" stroke-width="1.3" stroke-linecap="round"
+              stroke-linejoin="round" aria-hidden="true"><path d="M15 4 7 12l8 8"/></svg></button>
             <div class="schau-punkte" id="schau-punkte"></div>
             <button class="schau-pfeil" type="button" data-schritt="1"
-                    aria-label="Nächstes Projekt">&#8250;</button>
+                    aria-label="Nächstes Projekt"><svg viewBox="0 0 24 24" fill="none"
+              stroke="currentColor" stroke-width="1.3" stroke-linecap="round"
+              stroke-linejoin="round" aria-hidden="true"><path d="M9 4l8 8-8 8"/></svg></button>
           </div>
           <button class="schau-ansehen" type="button" id="schau-ansehen"
                   data-viewer="v2" aria-haspopup="dialog">
             Ansehen<span class="nur-vorlesen">: The Same Gray</span>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.3"
+                 stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path
+                 d="M4 12h15M13 6l6 6-6 6"/></svg>
           </button>
         </div>
       </div>
@@ -1743,6 +1795,49 @@
       return 'url("' + klein.toDataURL('image/png') + '")';
     }
 
+    /* Sternenkachel. Jeder Stern wird neunmal gezeichnet -- einmal an seinem
+       Platz und achtmal um je eine Kachelbreite versetzt. Nur so laufen die
+       Sterne am Rand sauber in die Nachbarkachel weiter, statt dort abgeschnitten
+       zu werden.
+       Die Staerke ist stark rechtsschief verteilt (Potenz 2,6): sehr viele
+       schwache, wenige helle. Ein gleichverteilter Himmel sieht aus wie
+       hingestreut, ein schiefer wie gewachsen. */
+    function sternenkachel(kante, zahl) {
+      const c = document.createElement('canvas');
+      c.width = c.height = kante;
+      const x = c.getContext('2d');
+      for (let i = 0; i < zahl; i++) {
+        const px = Math.random() * kante;
+        const py = Math.random() * kante;
+        const st = Math.pow(Math.random(), 2.6);
+        const r = (0.45 + st * 1.5) * (kante / 600);
+        const a = 0.14 + st * 0.7;
+        for (let dy = -1; dy <= 1; dy++) {
+          for (let dx = -1; dx <= 1; dx++) {
+            const ax = px + dx * kante, ay = py + dy * kante;
+            if (ax < -6 || ay < -6 || ax > kante + 6 || ay > kante + 6) continue;
+            const g = x.createRadialGradient(ax, ay, 0, ax, ay, r * 3.4);
+            g.addColorStop(0, 'rgba(255,255,255,' + a.toFixed(3) + ')');
+            g.addColorStop(0.32, 'rgba(255,255,255,' + (a * 0.26).toFixed(3) + ')');
+            g.addColorStop(1, 'rgba(255,255,255,0)');
+            x.fillStyle = g;
+            x.beginPath();
+            x.arc(ax, ay, r * 3.4, 0, 6.2832);
+            x.fill();
+          }
+        }
+      }
+      return 'url("' + c.toDataURL('image/png') + '")';
+    }
+
+    try {
+      const wurzel2 = document.documentElement;
+      wurzel2.style.setProperty('--sterne-a', sternenkachel(600, 58));
+      wurzel2.style.setProperty('--sterne-b', sternenkachel(437, 34));
+    } catch (e) {
+      // Ohne Sterne ist der Himmel leer, aber nichts ist kaputt.
+    }
+
     try {
       /* Mitteltoene: um den neutralen Wert 128. Die Kennlinie laeuft sanft aus,
          erreicht die Grenzen also nie -- kein hartes Abschneiden. */
@@ -2016,7 +2111,8 @@
       setTimeout(function () {
         fitFrame(stage, frame, UEBERZOOM);
         wrap.classList.remove('fs-zu');
-        btn.textContent = drin() ? 'Vollbild aus' : 'Vollbild';
+        setzeZeichen(btn, drin() ? 'zurueck' : 'vollbild',
+                     drin() ? 'Vollbild verlassen (Taste F)' : 'Vollbild (Taste F)', false);
         btn.setAttribute('aria-pressed', drin() ? 'true' : 'false');
         laeuft = false;
       }, FS_HALTEN);
@@ -2079,6 +2175,40 @@
     };
   }
 
+  /* Zeichen fuer die Leiste im Player. Inline, damit kein weiterer Ladevorgang
+     noetig ist, und einfarbig ueber currentColor -- so folgt der Schweberzustand
+     der Schrift statt eigener Regeln. */
+  const ZEICHEN = {
+    pause:    'M9 5v14M15 5v14',
+    play:     'M7 4.5v15l13-7.5z',
+    ton:      'M4 9v6h4l5 4V5L8 9H4zM16.5 8.8a4.5 4.5 0 010 6.4M19.4 6a8.5 8.5 0 010 12',
+    stumm:    'M4 9v6h4l5 4V5L8 9H4zM17 9.5l4.5 5M21.5 9.5l-4.5 5',
+    vollbild: 'M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5',
+    zurueck:  'M9 4v5H4M15 4v5h5M9 20v-5H4M15 20v-5h5'
+  };
+  function zeichen(name, gefuellt) {
+    const s = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+    s.setAttribute('viewBox', '0 0 24 24');
+    s.setAttribute('aria-hidden', 'true');
+    s.setAttribute('fill', gefuellt ? 'currentColor' : 'none');
+    s.setAttribute('stroke', gefuellt ? 'none' : 'currentColor');
+    s.setAttribute('stroke-width', '1.6');
+    s.setAttribute('stroke-linecap', 'round');
+    s.setAttribute('stroke-linejoin', 'round');
+    const p = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+    p.setAttribute('d', ZEICHEN[name]);
+    s.appendChild(p);
+    return s;
+  }
+  /* Beschriftung bleibt erhalten -- sie ist jetzt nur nicht mehr zu sehen,
+     sondern steht als Name der Schaltflaeche fuer Vorlesegeraete da. */
+  function setzeZeichen(btn, name, text, gefuellt) {
+    btn.textContent = '';
+    btn.appendChild(zeichen(name, gefuellt));
+    btn.setAttribute('aria-label', text);
+    btn.title = text;
+  }
+
   function mountVideo(viewer) {
     const stage = viewer.querySelector('.viewer-stage');
     if (!stage) return;
@@ -2101,7 +2231,7 @@
       onHide: function () {
         // Zurueck aufs Standbild -- so bleiben Abspann-Vorschlaege verdeckt.
         stage.classList.remove('is-playing');
-        if (stage._playBtn) stage._playBtn.textContent = 'Erneut abspielen';
+        if (stage._playBtn) setzeZeichen(stage._playBtn, 'play', 'Erneut abspielen', true);
       }
     });
 
@@ -2110,18 +2240,17 @@
     const playBtn = document.createElement('button');
     playBtn.className = 'stage-btn';
     playBtn.type = 'button';
-    playBtn.textContent = 'Pause';
+    setzeZeichen(playBtn, 'pause', 'Pause (Leertaste)', false);
+
     const soundBtn = document.createElement('button');
     soundBtn.className = 'stage-btn';
     soundBtn.type = 'button';
-    soundBtn.textContent = 'Ton an';
+    setzeZeichen(soundBtn, 'stumm', 'Ton an', false);
 
     const fsBtn = document.createElement('button');
     fsBtn.className = 'stage-btn';
     fsBtn.type = 'button';
-    fsBtn.textContent = 'Vollbild';
-    fsBtn.title = 'Vollbild (Taste F)';
-    playBtn.title = 'Abspielen und Pause (Leertaste)';
+    setzeZeichen(fsBtn, 'vollbild', 'Vollbild (Taste F)', false);
 
     stage._playBtn = playBtn;
     let playing = true;
@@ -2130,12 +2259,13 @@
       if (!stage.classList.contains('is-playing') && stage._player) {
         stage._player.replay();
         playing = true;
-        playBtn.textContent = 'Pause';
+        setzeZeichen(playBtn, 'pause', 'Pause (Leertaste)', false);
         return;
       }
       playing = !playing;
       ytCommand(frame, playing ? 'playVideo' : 'pauseVideo');
-      playBtn.textContent = playing ? 'Pause' : 'Abspielen';
+      if (playing) setzeZeichen(playBtn, 'pause', 'Pause (Leertaste)', false);
+      else setzeZeichen(playBtn, 'play', 'Abspielen (Leertaste)', true);
     });
 
     let muted = true;
@@ -2143,7 +2273,8 @@
       muted = !muted;
       ytCommand(frame, muted ? 'mute' : 'unMute');
       if (!muted) ytCommand(frame, 'setVolume', [100]);
-      soundBtn.textContent = muted ? 'Ton an' : 'Ton aus';
+      setzeZeichen(soundBtn, muted ? 'stumm' : 'ton',
+                   muted ? 'Ton an' : 'Ton aus', false);
     });
 
     const laden = document.createElement('div');
@@ -2544,7 +2675,7 @@
      Bild wie vorher, nur muss dafuer nicht in jedem Einzelbild eine riesige
      Kopie weichgezeichnet werden. */
   function glowFarbe(img) {
-    const N = 12;
+    const N = 16;
     const c = document.createElement('canvas');
     c.width = c.height = N;
     const ctx = c.getContext('2d', { willReadFrequently: true });
@@ -2552,67 +2683,78 @@
     let d;
     try { d = ctx.getImageData(0, 0, N, N).data; } catch (e) { return null; }
 
-    /* NICHT der schlichte Mittelwert. Der war das eigentliche Problem: mittelt
-       man ein Bild, in dem ein sattes Blattgruen neben einer grauen Nebelwand
-       steht, kommt Grau heraus -- die Farbe ist im Durchschnitt untergegangen.
-       Deshalb geht jeder Bildpunkt jetzt mit seiner eigenen Buntheit als
-       Gewicht ein, zusaetzlich gedaempft nach Helligkeit, damit die dunklen
-       Ecken den Ton nicht bestimmen. Der Schein nimmt damit die Farbe, die im
-       Bild AUFFAELLT, statt der, die rechnerisch uebrig bleibt. */
-    let r = 0, g = 0, b = 0, w = 0;
-    let sr = 0, sg = 0, sb = 0, sn = 0;
+    /* Die Farbe wird aus dem Bild GENOMMEN, nicht aus ihm gemittelt.
+       Der Unterschied ist nicht akademisch. Das Titelbild zu "The South"
+       besteht aus fuenf senkrechten Streifen mit voellig verschiedenen
+       Motiven: blauer Himmel, Goldmosaik, tuerkiser Kanal, graue Felswand,
+       Ziegelrot. Gemittelt ergibt das Grau (147,147,142) -- und Grau wurde
+       anschliessend auf Zielhelligkeit hochgezogen, also fast Weiss
+       (229,233,224). Eine Farbe, die in dem Bild an keiner Stelle vorkommt,
+       und obendrein die hellste der ganzen Seite.
+       Jetzt werden die Bildpunkte nach Farbton in zwoelf Faecher sortiert,
+       gewichtet nach Buntheit und Helligkeit. Genommen wird das staerkste
+       Fach, gemittelt wird nur darin. Das Ergebnis liegt damit immer auf einer
+       Farbe, die im Bild tatsaechlich steht -- bei "The South" das Himmelblau
+       (108,164,210) statt Weiss. */
+    const FAECHER = 12;
+    const eimer = {};
     for (let i = 0; i < d.length; i += 4) {
       const R = d[i], G = d[i + 1], B = d[i + 2];
-      sr += R; sg += G; sb += B; sn++;
       const hoch = R > G ? (R > B ? R : B) : (G > B ? G : B);
-      const tief = R < G ? (R < B ? R : B) : (G < B ? G : B);
       if (!hoch) continue;
-      const gew = ((hoch - tief) / hoch) * (hoch / 255) + 0.22;
-      r += R * gew; g += G * gew; b += B * gew; w += gew;
-    }
-    if (w > 0.0001) { r /= w; g /= w; b /= w; }
-    else if (sn) { r = sr / sn; g = sg / sn; b = sb / sn; }
-    else return null;
+      const tief = R < G ? (R < B ? R : B) : (G < B ? G : B);
+      const s = (hoch - tief) / hoch;
+      /* Ein winziger Sockel (0,02), damit ein voellig unbuntes Bild nicht
+         ohne Fach dasteht -- dann traegt eben das graue Fach. */
+      const gew = Math.pow(s, 1.1) * (hoch / 255) + 0.02;
 
-    /* Saettigung anheben -- aber ohne die Kanaele einzeln zu begrenzen.
-       Genau daran krankte die vorige Fassung: sie hat gestreckt, aufgehellt
-       und dann bei 255 abgeschnitten. Abgeschnitten wird aber immer zuerst der
-       staerkste Kanal, und damit verschiebt sich der Farbton -- aus einem
-       satten Orange wurde auf dem Weg ein blasses Gelb.
-       Hier wird stattdessen gestreckt und danach als Ganzes skaliert, bis der
-       staerkste Kanal auf dem Zielwert sitzt. Der Farbton bleibt dabei exakt
-       erhalten, die Saettigung ebenso (sie ist von der Skalierung unabhaengig). */
-    const mitte = (r + g + b) / 3;
-    const KRAFT = 1.85;
-    let v = [r, g, b].map(function (x) {
-      const y = mitte + (x - mitte) * KRAFT;
+      // Farbton in Grad; unter 10 % Buntheit gilt der Punkt als unbunt.
+      let k = -1;
+      if (s >= 0.10) {
+        const sp = hoch - tief;
+        let h;
+        if (hoch === R) h = ((G - B) / sp + 6) % 6;
+        else if (hoch === G) h = (B - R) / sp + 2;
+        else h = (R - G) / sp + 4;
+        k = Math.floor(((h * 60) % 360) / (360 / FAECHER));
+      }
+      const e = eimer[k] || (eimer[k] = [0, 0, 0, 0]);
+      e[0] += R * gew; e[1] += G * gew; e[2] += B * gew; e[3] += gew;
+    }
+
+    let besterK = null;
+    for (const k in eimer) {
+      if (besterK === null || eimer[k][3] > eimer[besterK][3]) besterK = k;
+    }
+    if (besterK === null) return null;
+    const e = eimer[besterK];
+    let v = [e[0] / e[3], e[1] / e[3], e[2] / e[3]];
+
+    /* Nur noch leicht nachsaettigen. Frueher stand hier der Faktor 1,85 --
+       noetig, weil ein Mittelwert die Farbe verwaessert. Ein einzelnes Fach
+       ist von sich aus bunt genug; staerker zu ziehen hiesse wieder, Farbe zu
+       erfinden statt sie aufzugreifen. */
+    const mitte = (v[0] + v[1] + v[2]) / 3;
+    v = v.map(function (x) {
+      const y = mitte + (x - mitte) * 1.2;
       return y < 0 ? 0 : y;
     });
 
-    /* Deckel gegen Neon. Bei Motiven, die ohnehin schon sehr bunt sind -- das
-       sonnige Feld in "Track of Time" etwa -- zieht die Streckung den
-       schwaechsten Kanal fast auf null, und aus Wiesengruen wird Signalgruen.
-       Gemessen kam dieses eine Bild auf einen Buntanteil von 0,80, alle
-       anderen lagen zwischen 0,10 und 0,51.
-       Der Deckel hebt deshalb nur den schwaechsten Kanal wieder an, bis der
-       Buntanteil auf 0,58 liegt. Der Farbton bleibt dabei unveraendert, und
-       jedes Motiv unterhalb der Grenze wird gar nicht angefasst. */
-    const DECKEL = 0.58;
+    // Deckel gegen Neon -- unveraendert sinnvoll, greift jetzt aber selten.
+    const DECKEL = 0.62;
     let oben = Math.max(v[0], v[1], v[2]), unten = Math.min(v[0], v[1], v[2]);
     if (oben > 0 && oben > unten && (oben - unten) / oben > DECKEL) {
       const rest = (oben - oben * (1 - DECKEL)) / (oben - unten);
       v = v.map(function (x) { return oben - (oben - x) * rest; });
     }
 
-    /* Wie hell der Hof wird, haengt weiter am Bild: ein dunkles Motiv leuchtet
-       gedaempfter als ein helles. Nur nach unten gibt es eine Grenze, damit
-       kein Hof im Grund verschwindet. */
-    const rohHoch = Math.max(r, g, b);
-    const ziel = Math.max(168, Math.min(242, rohHoch * 1.6));
-    const hoch = Math.max(v[0], v[1], v[2]);
-    if (hoch > 0.0001) {
-      const f = ziel / hoch;
-      v = [v[0] * f, v[1] * f, v[2] * f];
+    /* Die Helligkeit kommt aus dem Fach selbst und wird nur massvoll
+       angehoben. Die alte Untergrenze von 168 hat dunkle Motive um mehr als
+       das Doppelte aufgehellt -- daher wirkten manche Lichthoefe zu hell. */
+    oben = Math.max(v[0], v[1], v[2]);
+    const ziel = Math.max(140, Math.min(210, oben * 1.45));
+    if (oben > 0.0001) {
+      v = [v[0] * ziel / oben, v[1] * ziel / oben, v[2] * ziel / oben];
     }
     return v.map(function (x) {
       return Math.round(x < 0 ? 0 : (x > 255 ? 255 : x));
@@ -2662,7 +2804,6 @@
     const bilder = Array.from(wurzel.querySelectorAll('.schau-bild'));
     if (bilder.length < 2) return;
 
-    const gattung = document.getElementById('schau-gattung');
     const ansehen = document.getElementById('schau-ansehen');
     const punkteBox = document.getElementById('schau-punkte');
     let i = bilder.findIndex(function (b) { return b.classList.contains('is-an'); });
@@ -2693,7 +2834,6 @@
         else p.removeAttribute('aria-current');
       });
       const b = bilder[i];
-      gattung.textContent = b.dataset.gattung || '';
       ansehen.dataset.viewer = b.dataset.viewer || '';
       // Ohne Film fuehrt "Ansehen" auf die Projektseite statt ins Vollbild.
       if (b.dataset.film === '0') delete ansehen.dataset.direkt;
