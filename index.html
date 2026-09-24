@@ -850,11 +850,12 @@
     height: calc(100dvh + var(--schritte, 3) * 84dvh);
   }
   .schau.ist-karussell .schau-halt {
+    --schau-h: min(calc((100vw - 32px) * 9 / 16), calc(100dvh - 118px));
     position: sticky; top: 0;
     height: 100dvh;
     display: flex; flex-direction: column;
     align-items: center; justify-content: center;
-    gap: 16px;
+    gap: 10px;
   }
   /* Ueber die ganze Fensterbreite, damit die seitlichen Bilder wirklich aus
      dem Bild laufen koennen. Der Ausschnitt besorgt ".page" mit overflow-x. */
@@ -865,7 +866,11 @@
     /* Die Hoehe fuehrt, die Breite folgt dem Format. Andersherum -- Breite
        setzen und die Hoehe abklemmen -- kippt das Format, weil eine gesetzte
        Breite vom Seitenverhaeltnis nicht mehr zurueckgerechnet wird. */
-    height: min(calc((100vw - 44px) * 9 / 16), calc(100dvh - 190px), 630px);
+    /* Groesser: vorher hoechstens 630 px hoch und 22 px Rand je Seite.
+       Jetzt 16 px Rand, oben und unten nur so viel Luft, wie die Zeile mit
+       "Ansehen" braucht, und keine feste Obergrenze mehr -- das Bild nimmt,
+       was das Fenster hergibt. */
+    height: var(--schau-h);
     width: auto;
   }
   .schau.ist-karussell .schau-platz {
@@ -879,7 +884,7 @@
   .schau.ist-karussell .schau-platz:not(.ist-vorn) { pointer-events: none; }
   .schau.ist-karussell .schau-leiste {
     display: flex; align-items: center;
-    width: min(var(--wide), calc(100vw - 44px));
+    width: calc(var(--schau-h) * 16 / 9);    /* buendig mit dem Bild */
   }
   .schau.ist-karussell .schau-knopf-reihe { display: none; }
 
@@ -1343,28 +1348,28 @@
              data-gattung="Porträtfilm · Schottland" data-film="0" aria-hidden="false">
           <img src="Images/web/thumbnails/thumbnailsamegrey-2400.webp"
                srcset="Images/web/thumbnails/thumbnailsamegrey-800.webp 800w, Images/web/thumbnails/thumbnailsamegrey-1600.webp 1600w, Images/web/thumbnails/thumbnailsamegrey-2400.webp 2400w"
-               sizes="(min-width: 1164px) 1120px, calc(100vw - 44px)"
+               sizes="calc(100vw - 32px)"
                alt="Titelbild „The Same Gray“: Porträt eines älteren Mannes vor nebligen Bergen" loading="lazy" decoding="async">
         </div>
         <div class="schau-platz aura-host" data-viewer="v3" data-titel="The Mountains"
              data-gattung="Reisefilm · Bayern &amp; Norditalien" data-film="1" aria-hidden="true">
           <img src="Images/web/thumbnails/thumbnailoesterreich25-1280.webp"
                srcset="Images/web/thumbnails/thumbnailoesterreich25-800.webp 800w, Images/web/thumbnails/thumbnailoesterreich25-1280.webp 1280w"
-               sizes="(min-width: 1164px) 1120px, calc(100vw - 44px)"
+               sizes="calc(100vw - 32px)"
                alt="Titelbild „The Mountains“: Boot auf einem See im Gegenlicht der aufgehenden Sonne" loading="lazy" decoding="async">
         </div>
         <div class="schau-platz aura-host" data-viewer="v4" data-titel="Track of Time"
              data-gattung="Kurzfilm · historische Eisenbahn" data-film="1" aria-hidden="true">
           <img src="Images/web/thumbnails/thumbnailtrackoftime-1280.webp"
                srcset="Images/web/thumbnails/thumbnailtrackoftime-800.webp 800w, Images/web/thumbnails/thumbnailtrackoftime-1280.webp 1280w"
-               sizes="(min-width: 1164px) 1120px, calc(100vw - 44px)"
+               sizes="calc(100vw - 32px)"
                alt="Titelbild „Track of Time“: Dampflokomotive zwischen Bäumen" loading="lazy" decoding="async">
         </div>
         <div class="schau-platz aura-host" data-viewer="v5" data-titel="The South"
              data-gattung="Reisefilm · Österreich, Italien, Bayern" data-film="1" aria-hidden="true">
           <img src="Images/web/thumbnails/thumbnail-oesterreich24-2400.webp"
                srcset="Images/web/thumbnails/thumbnail-oesterreich24-800.webp 800w, Images/web/thumbnails/thumbnail-oesterreich24-1600.webp 1600w, Images/web/thumbnails/thumbnail-oesterreich24-2400.webp 2400w"
-               sizes="(min-width: 1164px) 1120px, calc(100vw - 44px)"
+               sizes="calc(100vw - 32px)"
                alt="Titelbild „The South“: fünf Bildstreifen von Schloss, Mosaik, Kanal, Kirchturm und Venedig" loading="lazy" decoding="async">
         </div>
         </div>
@@ -3147,10 +3152,54 @@
       return Math.min(1, Math.max(0, -lauf.getBoundingClientRect().top / s));
     }
 
-    function stelle() {
+    function zielWinkel() {
       const roh = stand() * (N - 1);
       const seg = Math.min(N - 2, Math.floor(roh));
-      const winkel = (seg + rast(roh - seg)) * SCHRITT;
+      return (seg + rast(roh - seg)) * SCHRITT;
+    }
+
+    /* Gedaempft. Der Scrollstand legt nur fest, WOHIN das Karussell soll;
+       gezeichnet wird ein Winkel, der diesem Ziel wie an einer Feder
+       hinterherlaeuft. Ein Mausrad liefert keine Bewegung, sondern Stufen --
+       100 px, Pause, 100 px. Direkt gekoppelt hat das Karussell jede Stufe
+       mitgemacht, daher das Ruckeln.
+       Bewusst eine Feder mit kritischer Daempfung und kein einfaches
+       Hinterherziehen um einen festen Anteil: das haette bei jeder neuen
+       Stufe sofort mit voller Geschwindigkeit losgelegt -- wieder ein
+       kleiner Ruck, nur weicher. Die Feder dagegen beschleunigt an und
+       bremst ab, schwingt aber nicht ueber. Das ist die Bewegung eines
+       Kamerawagens, der geschoben wird: er setzt sich in Gang, er rollt aus.
+       Gerechnet nach verstrichener Zeit und in kleinen Teilschritten, damit
+       sie auf 60 Hz und 120 Hz gleich laeuft und bei einem ruckelnden Bild
+       nicht aus dem Tritt kommt. */
+    const FEDER = 4.6;          // Eigenfrequenz; rund 1 s bis zum Stillstand
+    let anzeige = null, tempo = 0, ziel = 0, faehrt = false, zuletzt = 0;
+    function schritt(jetzt) {
+      let dt = Math.min(0.064, (jetzt - zuletzt) / 1000);
+      zuletzt = jetzt;
+      while (dt > 0) {
+        const h = Math.min(dt, 0.008);
+        tempo += (FEDER * FEDER * (ziel - anzeige) - 2 * FEDER * tempo) * h;
+        anzeige += tempo * h;
+        dt -= h;
+      }
+      if (Math.abs(ziel - anzeige) < 0.0004 && Math.abs(tempo) < 0.002) {
+        anzeige = ziel; tempo = 0; faehrt = false; zeichne(anzeige); return;
+      }
+      zeichne(anzeige);
+      requestAnimationFrame(schritt);
+    }
+    function stelle() {
+      ziel = zielWinkel();
+      if (anzeige === null) { anzeige = ziel; zeichne(anzeige); return; }
+      if (!faehrt) {
+        faehrt = true;
+        zuletzt = performance.now();
+        requestAnimationFrame(schritt);
+      }
+    }
+
+    function zeichne(winkel) {
 
       /* Der Bahnradius haengt an der Fensterbreite, nicht am Bild: die
          seitlichen Bilder sollen auf jedem Bildschirm gleich weit aus dem
@@ -3165,11 +3214,16 @@
         const c = Math.cos(th);
         const s = (1 - NAEHE) / (1 - NAEHE * c);       // Perspektive
         const x = R * Math.sin(th) * s;
-        /* Tiefe ueber die Deckkraft: vorne 1, seitlich 0,5, genau hinten 0.
-           Das hintere Bild ist damit nicht zu sehen, so wie gewuenscht -- und
-           die dahinter liegenden verschwinden, statt durch das vordere
-           hindurchzuscheinen. */
-        const deck = (c + 1) / 2;
+        /* Immer nur ein Bild zu sehen. Sichtbar ist ein Platz nur noch in
+           einem Kegel von 60 Grad um die Frontstellung, weich ein- und
+           ausgeblendet; seitlich (90 Grad) und hinten ist er vollstaendig
+           weg. Im Stillstand steht damit genau ein Bild da. Nur in der Mitte
+           einer Drehung, wenn beide Bilder 45 Grad neben der Front stehen,
+           kreuzen sie sich kurz mit je knapp 40 % -- eine Ueberblendung,
+           wie ein Schnitt im Film. Ohne sie gaebe es an dieser Stelle einen
+           Moment lang gar kein Bild. */
+        const u = Math.max(0, Math.min(1, (c - 0.5) / 0.5));
+        const deck = u * u * (3 - 2 * u);
         const lage = 'translate3d(' + x.toFixed(1) + 'px,0,0) scale(' + s.toFixed(4) + ')';
         const el = plaetze[k];
         el.style.transform = lage;
@@ -3219,7 +3273,11 @@
       ruhe = setTimeout(nachziehen, 170);
     }
     window.addEventListener('scroll', anstossen, { passive: true });
-    window.addEventListener('resize', function () { clearTimeout(ruhe); stelle(); });
+    window.addEventListener('resize', function () {
+      clearTimeout(ruhe);
+      if (anzeige !== null) zeichne(anzeige);
+      stelle();
+    });
 
     /* Mit der Tastatur einen Film weiter, solange der Fokus in der Schau
        steht. Ohne Pfeile und Striche waere das sonst die einzige Bedienung,
