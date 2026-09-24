@@ -22,10 +22,10 @@
      statt Eleganz) und dieselbe Anmutung -- schlichter Gebrauchs-Serif,
      geringer Strichkontrast, stumpfe Serifen, grosse x-Hoehe. -->
 <!-- Boldonse und Libre Caslon Display gibt es jeweils nur im Schnitt 400.
-     Beide sind so gebaut, dass sie ihn nicht brauchen: Boldonse traegt von
-     sich aus Gewicht, Libre Caslon Display ist ein Lesegrad. Ein erzwungenes
+     Beide sind so gebaut, dass sie ihn nicht brauchen: Belleza ist eine
+     humanistische Versalschrift, Libre Caslon Display ein Lesegrad. Ein erzwungenes
      font-weight wuerde der Browser nur nachbilden und dabei verschmieren. -->
-<link href="https://fonts.googleapis.com/css2?family=Boldonse&family=Libre+Caslon+Display&family=Noto+Serif:wght@400;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Belleza&family=Libre+Caslon+Display&family=Noto+Serif:wght@400;600&display=swap" rel="stylesheet">
 <style>
   :root {
     /* Tiefer und blauer als zuvor (#0d1216 / #090d10). Grund: die Lichthoefe
@@ -179,7 +179,12 @@
     /* 640 % statt 1000 %: als Verlauf kostet die Flaeche keine Weichzeichnung
        mehr, aber sie muss weiterhin gefuellt werden. 640 % sind rund 2850 px
        Reichweite -- mehr als genug und nicht einmal halb so viel Flaeche. */
-    left: -270%; top: -270%; width: 640%; height: 640%;
+    /* Reichweite zurueckgenommen: 640 % -> 400 % (also gut ein Drittel
+       weniger in jeder Richtung, knapp zwei Drittel weniger Flaeche). Vorher
+       hat ein einziger Hof den Himmel bis weit ueber den Bildschirmrand
+       hinaus angehoben, und weil die Sterne an der oertlichen Helligkeit
+       haengen, blieben sie nur noch ganz oben und ganz unten stehen. */
+    left: -150%; top: -150%; width: 400%; height: 400%;
     /* z-index -1 statt 0: damit liegt der Hof in derselben unteren Ebene wie
        Korn und Sterne -- und die Sterne koennen UEBER ihn gelegt werden.
        Nur so laesst sich ihre Sichtbarkeit an die oertliche Helligkeit
@@ -201,15 +206,17 @@
        leuchtet damit sichtbar aus dem Bild heraus, statt die ganze Seite
        flaechig anzuheben -- und der Waldton bleibt dort stehen, wo kein Bild
        in der Naehe ist. */
+    /* Zusaetzlich faellt der Verlauf frueher ab. Der Hof bleibt am Bild
+       genauso hell wie bisher -- er hoert nur eher auf. */
     background: radial-gradient(closest-side,
       rgba(var(--glow, 140,150,160), 1) 0%,
-      rgba(var(--glow, 140,150,160), 0.88) 8%,
-      rgba(var(--glow, 140,150,160), 0.68) 18%,
-      rgba(var(--glow, 140,150,160), 0.47) 30%,
-      rgba(var(--glow, 140,150,160), 0.29) 42%,
-      rgba(var(--glow, 140,150,160), 0.15) 56%,
-      rgba(var(--glow, 140,150,160), 0.06) 72%,
-      rgba(var(--glow, 140,150,160), 0.015) 86%,
+      rgba(var(--glow, 140,150,160), 0.85) 8%,
+      rgba(var(--glow, 140,150,160), 0.60) 18%,
+      rgba(var(--glow, 140,150,160), 0.36) 30%,
+      rgba(var(--glow, 140,150,160), 0.19) 42%,
+      rgba(var(--glow, 140,150,160), 0.085) 56%,
+      rgba(var(--glow, 140,150,160), 0.028) 72%,
+      rgba(var(--glow, 140,150,160), 0.006) 86%,
       transparent 100%);
     opacity: 0; transition: opacity 1.8s var(--ease);
   }
@@ -562,7 +569,18 @@
   }
   .hero-content > * { max-width: 900px; }
   @keyframes heroIn { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: none; } }
-  .hero-content .eyebrow { display: block; margin-bottom: 22px; }
+  /* Im aufgeblendeten Hero steht die Wortmarke allein ueber der Zeile und
+     traegt den ersten Eindruck -- dort darf sie groesser sein als die
+     Versallabels im Fliessteil der Seite (0,72em). */
+  .hero-content .eyebrow {
+    display: block; margin-bottom: 22px;
+    font-size: clamp(0.95em, 1.5vw, 1.25em);
+    letter-spacing: 0.26em;
+    /* Heller als die uebrigen Versallabels. Sie steht hier nicht auf dem
+       dunklen Grund der Seite, sondern auf einem laufenden Film -- gegen ein
+       helles Einzelbild traegt das zurueckgenommene Grau nicht. */
+    color: var(--text);
+  }
   .hero-content h1 {
     /* Kleiner und einzeilig. Vorher 4em (72 px am Desktop) und dadurch
        zwangslaeufig zweizeilig -- nicht wegen der Schriftgroesse, sondern
@@ -576,9 +594,7 @@
        Abschnittsueberschriften stehen bei rund 24 px und waeren in 300 zu
        zart -- Korn und Lichthof fressen die Haarstriche dort stellenweise auf.
        Bei 45 px traegt der leichte Schnitt dagegen muehelos. */
-    /* Boldonse traegt das Gewicht selbst -- es gibt sie nur im Schnitt 400,
-       und sie ist trotzdem die schwerste Schrift auf der Seite. */
-    font-family: 'Boldonse', 'Noto Serif', Georgia, serif;
+    font-family: 'Belleza', 'Noto Serif', Georgia, serif;
     font-weight: 400;
     /* Sperrung und Einzeiligkeit ziehen gegeneinander: mehr Sperrung heisst
        laengere Zeile heisst frueherer Umbruch. Gemessen am Desktop (45 px):
@@ -591,15 +607,14 @@
        weit unter jedem Laptop.
        Der vw-Anteil sinkt mit steigender Sperrung mit (4,3 -> 3,9), sonst
        frisst die laengere Zeile den einzeiligen Bereich auf. */
-    /* Groesser: 2,5em -> 2,8em, am Desktop 45 px -> 50 px.
-       Boldonse laeuft deutlich breiter als die vorige Schrift -- gemessen
-       25,65 gegen 22,1 mal die Schriftgroesse. Bei 0,18em Sperrung passen
-       hoechstens 54 px in eine Zeile, 50 px lassen also noch Luft.
-       Der vw-Anteil muss mit: bei 3,9 waere die Zeile unterhalb von 1290 px
-       breiter als das Fenster. 3,6 haelt sie einzeilig, und die Untergrenze
-       faellt auf 1,4em, damit der Umbruch auf dem Handy nicht zu frueh
-       erzwungen wird. */
-    font-size: clamp(1.4em, 3.6vw, 2.8em);
+    /* Belleza laeuft deutlich schmaler als Boldonse: gemessen 19,83 gegen
+       25,65 mal die Schriftgroesse fuer dieselbe Zeile, also knapp ein
+       Viertel weniger. Derselbe Grad waere damit optisch kleiner geworden.
+       Die Werte gehen deshalb mit hoch -- 2,8em -> 3,6em und 3,6vw -> 4,6vw,
+       am Desktop also rund 66 px statt 51 px.
+       Nachgemessen bleibt die Zeile damit einzeilig bis hinunter zu 560 px
+       Fensterbreite; darunter greift ohnehin die eigene Regel fuers Handy. */
+    font-size: clamp(1.6em, 4.6vw, 3.6em);
     letter-spacing: 0.18em;
     max-width: none;
     text-wrap: balance;
@@ -639,7 +654,7 @@
   .hero.is-docked .marquee-track { animation-play-state: running; }
   .m-group { display: flex; align-items: center; }
   .m-word {
-    font-family: 'Boldonse', 'Noto Serif', Georgia, serif; font-weight: 400;
+    font-family: 'Belleza', 'Noto Serif', Georgia, serif; font-weight: 400;
     /* Mitgezogen mit dem Hero-Titel: die Laufschrift ist dieselbe Zeile im
        angedockten Zustand. Sie behaelt ihr Verhaeltnis von 80 % zum grossen
        Titel (4em/3,2em, dann 3em/2,4em, jetzt 2,5em/2em); Schnitt und Groesse
@@ -679,6 +694,13 @@
   }
   .band.lead-band { padding: 140px 0 124px; }
   .band-inner { position: relative; max-width: var(--wide); margin: 0 auto; padding: 0 22px; }
+
+  /* Die Schau fuellt den Bildschirm; ein zusaetzlicher Sektionsschein waere
+     dort eine grossflaechige Aufhellung ohne Anlass -- und genau die haelt
+     die Sterne klein. Den Schein liefern hier die Titelbilder selbst. */
+  .schau-band { padding: 0; }
+  .schau-band::before { display: none; }
+  .schau-band > .band-inner { max-width: none; padding: 0; }
 
   /* Asymmetrisch: Text sitzt links, rechts bleibt bewusst Luft (oder ein Bild). */
   .band-grid { display: grid; grid-template-columns: 1fr; gap: 44px; }
@@ -790,70 +812,82 @@
 
   footer { padding: 36px 0; text-align: center; font-size: 0.76em; letter-spacing: 0.14em; text-transform: uppercase; color: var(--text-dim); }
 
-  /* ---------- Projektschau ----------
-     Ein Projekt gross im Bild, dazwischen wird umgeschaltet.
-     Alle vier Aufnahmen liegen im Dokument und werden ueberblendet, statt die
-     Quelle eines einzigen Bildes zu tauschen: ein Quellenwechsel zeigt beim
-     ersten Betrachten eine Ladeluecke, eine Ueberblendung nie.
-     Die Filmtitel stehen in den Aufnahmen selbst -- deshalb steht daneben nur
-     die Gattung und die Schaltflaeche, kein zweiter Titel. */
+  /* ---------- Projektschau als Karussell ----------
+     Vier Titelbilder sitzen im Abstand von 90 Grad auf einer Kreisbahn, von
+     vorn betrachtet. Sie drehen sich NICHT mit, sondern stehen immer frontal
+     zum Betrachter -- sie wandern nur auf der Bahn. Deshalb wird hier auch
+     nicht mit perspective/rotateY gearbeitet: eine echte 3D-Drehung wuerde die
+     Bilder mitkippen, und man muesste jedes einzeln zurueckdrehen. Statt
+     dessen rechnet das Skript die Perspektive selbst aus und setzt nur
+     translate und scale -- beides laeuft auf der Grafikkarte.
+
+     Gefahren wird ueber die Scrollstrecke: ".schau-lauf" ist mehrere
+     Bildschirme hoch, ".schau-halt" bleibt darin kleben. Die Seite steht damit
+     scheinbar still, ohne dass dem Nutzer das Scrollen aus der Hand genommen
+     wird -- Rad, Trackpad, Wischen, Tastatur und Scrollbalken tun alle weiter
+     genau das, was sie sonst tun. Ein Abfangen der Radereignisse wuerde
+     dagegen auf jedem zweiten Geraet anders reagieren.
+
+     Grundzustand ist BEWUSST die einfache Liste untereinander. Erst das
+     Skript schaltet auf ".ist-karussell". Ohne Skript und bei reduzierter
+     Bewegung bleibt so etwas stehen, das funktioniert. */
   .schau { position: relative; }
-  .schau-buehne {
+
+  /* --- Grundzustand: Liste --- */
+  .schau-buehne { display: grid; gap: 30px; }
+  .schau-platz {
+    position: relative; aspect-ratio: 16 / 9;
+    transform-origin: 50% 50%;
+  }
+  .schau-platz > img:not(.aura) { position: relative; z-index: 1; }
+  .schau-leiste { display: none; }
+  .schau-knopf-reihe { margin-top: 12px; }
+
+  /* --- Karussell --- */
+  .schau.ist-karussell .schau-lauf {
     position: relative;
-    aspect-ratio: 16 / 9;          /* Format der gelieferten Titelbilder */
-    background: var(--bg-deep);
+    /* eine Bildschirmhoehe zum Stehenbleiben, dazu je Uebergang eine Strecke */
+    height: calc(100dvh + var(--schritte, 3) * 84dvh);
   }
-  /* Ueberschreibt die Vorgabe aus .aura-host (position: relative) -- die Bilder
-     liegen hier uebereinander, nicht nebeneinander. Der Lichthof braucht den
-     Kasten trotzdem als Bezug, und absolute Positionierung leistet das ebenso. */
-  .schau-bild {
+  .schau.ist-karussell .schau-halt {
+    position: sticky; top: 0;
+    height: 100dvh;
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    gap: 16px;
+  }
+  /* Ueber die ganze Fensterbreite, damit die seitlichen Bilder wirklich aus
+     dem Bild laufen koennen. Der Ausschnitt besorgt ".page" mit overflow-x. */
+  .schau.ist-karussell .schau-buehne {
+    display: block;
+    position: relative;
+    aspect-ratio: 16 / 9;
+    /* Die Hoehe fuehrt, die Breite folgt dem Format. Andersherum -- Breite
+       setzen und die Hoehe abklemmen -- kippt das Format, weil eine gesetzte
+       Breite vom Seitenverhaeltnis nicht mehr zurueckgerechnet wird. */
+    height: min(calc((100vw - 44px) * 9 / 16), calc(100dvh - 190px), 630px);
+    width: auto;
+  }
+  .schau.ist-karussell .schau-platz {
     position: absolute; inset: 0;
-    opacity: 0; pointer-events: none;
-    transition: opacity 1.1s var(--ease);
+    aspect-ratio: auto;
+    /* Keine CSS-Ueberblendung: Lage und Deckkraft haengen am Scrollstand,
+       eine Transition wuerde nur hinterherlaufen. */
+    will-change: transform, opacity;
+    backface-visibility: hidden;
   }
-  .schau-bild.is-an { opacity: 1; }
-  .schau-bild > img:not(.aura) { position: relative; z-index: 1; }
+  .schau.ist-karussell .schau-platz:not(.ist-vorn) { pointer-events: none; }
+  .schau.ist-karussell .schau-leiste {
+    display: flex; align-items: center;
+    width: min(var(--wide), calc(100vw - 44px));
+  }
+  .schau.ist-karussell .schau-knopf-reihe { display: none; }
 
-  /* Unter dem Bild steht nur noch die Bedienung -- keine Beschriftung.
-     Die Filmtitel stehen ohnehin in den Aufnahmen selbst. */
-  .schau-leiste {
-    display: flex; align-items: center; gap: 10px;
-    margin-top: 18px;
-  }
-  .schau-steuer { display: flex; align-items: center; gap: 2px; }
-
-  /* Ohne Rahmen -- auf der ganzen Seite liegt sonst nirgends ein Kasten um
-     ein Bedienelement. Die 44 px bleiben als Tastflaeche erhalten, sie sind
-     nur nicht mehr zu sehen: die Flaeche traegt das Zeichen, nicht umgekehrt. */
-  .schau-pfeil {
-    width: 44px; height: 44px; flex-shrink: 0;
-    display: flex; align-items: center; justify-content: center;
-    background: none; border: none; padding: 0;
-    color: var(--text-dim); cursor: pointer;
-    transition: color 0.4s var(--ease), transform 0.4s var(--ease);
-  }
-  .schau-pfeil svg { width: 17px; height: 17px; display: block; }
-  .schau-pfeil:hover { color: var(--text); }
-  .schau-pfeil[data-schritt="-1"]:hover { transform: translateX(-2px); }
-  .schau-pfeil[data-schritt="1"]:hover { transform: translateX(2px); }
-  .schau-pfeil:focus-visible { outline: 1px solid var(--accent); outline-offset: -8px; }
-
-  .schau-punkte { display: flex; align-items: center; }
-  /* Der Punkt bleibt 7 px klein, die Schaltflaeche darum ist 44 px gross.
-     Sichtbar aendert sich dadurch nichts, treffen laesst sie sich aber. */
-  .schau-punkt {
-    width: 44px; height: 44px; padding: 0;
-    display: flex; align-items: center; justify-content: center;
-    background: none; border: none; cursor: pointer;
-  }
-  /* Zurueckgenommen: kuerzere, duennere Marken. */
-  .schau-punkt::before {
-    content: ""; width: 14px; height: 1px;
-    background: var(--line);
-    transition: background 0.5s var(--ease), width 0.5s var(--ease);
-  }
-  .schau-punkt.is-an::before { background: var(--accent); width: 24px; }
-  .schau-punkt:focus-visible { outline: 1px solid var(--accent); outline-offset: -6px; }
+  /* Der Lichthof wandert mit, liegt aber nicht IM bewegten Kasten: ein
+     Element mit transform macht einen eigenen Zeichenkontext auf, und der
+     Hof kaeme damit ueber die Sternenebene zu liegen statt darunter. Das
+     Skript haengt ihn deshalb daneben und bewegt ihn gleich mit. */
+  .schau-buehne > .aura { transform-origin: 50% 50%; }
 
   /* Reiner Text in derselben gesperrten Versalschrift wie sonst auf der
      Seite. Statt eines Rahmens traegt ein duenner Strich darunter -- er wird
@@ -878,6 +912,7 @@
   .schau-ansehen:hover { color: var(--text); }
   .schau-ansehen:hover::after { width: calc(100% - 26px); }
   .schau-ansehen:focus-visible { outline: 1px solid var(--accent); outline-offset: 2px; }
+  .schau-knopf-reihe .schau-ansehen { margin-left: 0; }
 
   /* Nur fuer Vorlesegeraete -- der Titel steht sichtbar im Bild. */
   .nur-vorlesen {
@@ -1044,10 +1079,23 @@
     width: 100%; height: 100%;
     background: var(--p-bg, #07090b);
   }
+  /* Frueher stand hier "max-width: calc(100vh * var(--ar))" und
+     "max-height: 100vh". Beide Grenzen haengen an derselben Zahl -- faellt
+     100vh kleiner aus als die Flaeche, die das Vollbild wirklich hat, dann
+     schrumpft die Buehne in BEIDEN Richtungen im gleichen Verhaeltnis. Genau
+     so entsteht der umlaufend gleich breite schwarze Rand, der aussieht, als
+     waere der Film ein Stueck herausgezoomt.
+     Und genau das passiert auf dem Handy: vh meint dort die Hoehe des
+     Fensters, wie es beim Aufbau der Seite gemessen wurde -- nicht die des
+     Vollbilds, das gerade erst aufgegangen ist, und schon gar nicht die nach
+     einer Drehung ins Querformat.
+     Jetzt wird nur noch in Prozent des Elternkastens gerechnet. Der ist im
+     Vollbild die Flaeche selbst, also immer richtig, ohne Umweg ueber eine
+     Zahl, die von aussen kommt. */
   .stage-wrap:fullscreen .viewer-stage {
     width: 100%;
-    max-width: calc(100vh * var(--ar, 1.778));
-    max-height: 100vh;
+    max-width: 100%;
+    max-height: 100%;
   }
   /* Der Lichthof gehoert zur Seite, nicht ins Vollbild -- dort gibt es keine
      Flaeche mehr, in die er ausstrahlen koennte. */
@@ -1060,8 +1108,8 @@
   }
   .stage-wrap:-webkit-full-screen .viewer-stage {
     width: 100%;
-    max-width: calc(100vh * var(--ar, 1.778));
-    max-height: 100vh;
+    max-width: 100%;
+    max-height: 100%;
   }
   .stage-wrap:-webkit-full-screen .aura { display: none; }
 
@@ -1070,14 +1118,18 @@
      und der Film liegt hier in einem iframe. Sieht genauso aus, bleibt aber
      innerhalb der Seite. */
   .stage-wrap.fs-ersatz {
-    position: fixed; inset: 0; z-index: 960;
+    /* dvh: die Hoehe, die WIRKLICH sichtbar ist, mit ein- und ausgefahrener
+       Adressleiste. "inset: 0" allein reicht auf dem Handy nicht -- feste
+       Elemente bekommen dort je nach Browser die grosse Flaeche, unter die
+       Leiste geschoben. */
+    position: fixed; left: 0; top: 0; width: 100%; height: 100dvh; z-index: 960;
     display: flex; align-items: center; justify-content: center;
     background: var(--p-bg, #07090b);
   }
   .stage-wrap.fs-ersatz .viewer-stage {
     width: 100%;
-    max-width: calc(100vh * var(--ar, 1.778));
-    max-height: 100vh;
+    max-width: 100%;
+    max-height: 100%;
   }
   .stage-wrap.fs-ersatz .aura { display: none; }
   /* Im Vollbild ist die Steuerung die einzige Ausstiegsmoeglichkeit -- sie
@@ -1143,7 +1195,6 @@
     .hero-aura { width: 100vw; height: min(150vh, 121vw); }
     .m-word { font-size: clamp(1.25em, 7vw, 2em); }
     .card-open { display: none; }
-    .schau-leiste { gap: 6px; }
     .card-preview { width: 96px; }
     .card-head { gap: 14px; padding: 15px 0; }
     .card-titleline { display: block; }
@@ -1161,7 +1212,7 @@
      sonst wird die nächste Sektion angerissen. */
   @media (max-height: 520px) {
     .hero { min-height: 0; }
-    .hero-content h1 { font-size: clamp(1.4em, 5vw, 2.1em); }
+    .hero-content h1 { font-size: clamp(1.5em, 5.6vw, 2.4em); }
     .hero-content .eyebrow { margin-bottom: 12px; }
   }
 
@@ -1180,7 +1231,10 @@
   }
 
   @media (min-width: 760px) {
-    body { font-size: 18px; }
+    /* Am grossen Bildschirm eine Stufe groesser: 18 -> 19 px. Alles andere
+       auf der Seite ist in em gesetzt und waechst mit -- Fliesstext,
+       Ueberschriften, Versallabels und die Bedienung im Player. */
+    body { font-size: 19px; }
     :root { --bar-h: 44px; }
     .card-head { gap: 24px; padding: 24px 0; }
     .card-preview { width: 132px; }
@@ -1192,7 +1246,9 @@
     html { scroll-behavior: auto; }
     .grain { animation: none; }
     .page, .viewer, .viewer-inner, .lb-bar, .card-preview img { transition-duration: 0.01ms; }
-    .schau-bild { transition-duration: 0.01ms; }
+    /* Das Karussell wird vom Skript gar nicht erst eingeschaltet (siehe
+       dort) -- hier bleibt nur die Liste. */
+    .schau-platz { transform: none !important; opacity: 1 !important; }
     /* Inhalte sofort zeigen, statt sie an eine Scroll-Animation zu koppeln. */
     .js .reveal, .js .reveal-media { opacity: 1; transform: none; filter: none; transition: none; }
     .holds .standout { position: static; }
@@ -1267,7 +1323,7 @@
                  alt="Dreh mit Teleobjektiv auf einer Weide, im Hintergrund Highlandrinder"
                  loading="lazy" decoding="async">
           </div>
-          <figcaption>Teleaufnahmen für „The same gray“ in Schottland</figcaption>
+          <figcaption>Teleaufnahmen für „The Same Grey“ in Schottland</figcaption>
         </figure>
       </div>
     </div>
@@ -1278,30 +1334,33 @@
        neben der Liste weiter unten nicht zweimal "Projekte" heisst. -->
   <section class="band schau-band">
     <div class="band-inner">
-      <div class="schau reveal-media" id="schau" aria-roledescription="Projektschau">
-        <div class="schau-buehne">
-        <div class="schau-bild aura-host is-an" data-viewer="v2" data-titel="The Same Gray"
+      <div class="schau" id="schau" role="group"
+           aria-roledescription="Karussell" aria-label="Projekte">
+        <div class="schau-lauf" id="schau-lauf">
+          <div class="schau-halt" id="schau-halt">
+        <div class="schau-buehne" id="schau-buehne" data-hof-sammler>
+        <div class="schau-platz aura-host" data-viewer="v2" data-titel="The Same Gray"
              data-gattung="Porträtfilm · Schottland" data-film="0" aria-hidden="false">
           <img src="Images/web/thumbnails/thumbnailsamegrey-2400.webp"
                srcset="Images/web/thumbnails/thumbnailsamegrey-800.webp 800w, Images/web/thumbnails/thumbnailsamegrey-1600.webp 1600w, Images/web/thumbnails/thumbnailsamegrey-2400.webp 2400w"
                sizes="(min-width: 1164px) 1120px, calc(100vw - 44px)"
                alt="Titelbild „The Same Gray“: Porträt eines älteren Mannes vor nebligen Bergen" loading="lazy" decoding="async">
         </div>
-        <div class="schau-bild aura-host" data-viewer="v3" data-titel="The Mountains"
+        <div class="schau-platz aura-host" data-viewer="v3" data-titel="The Mountains"
              data-gattung="Reisefilm · Bayern &amp; Norditalien" data-film="1" aria-hidden="true">
           <img src="Images/web/thumbnails/thumbnailoesterreich25-1280.webp"
                srcset="Images/web/thumbnails/thumbnailoesterreich25-800.webp 800w, Images/web/thumbnails/thumbnailoesterreich25-1280.webp 1280w"
                sizes="(min-width: 1164px) 1120px, calc(100vw - 44px)"
                alt="Titelbild „The Mountains“: Boot auf einem See im Gegenlicht der aufgehenden Sonne" loading="lazy" decoding="async">
         </div>
-        <div class="schau-bild aura-host" data-viewer="v4" data-titel="Track of Time"
+        <div class="schau-platz aura-host" data-viewer="v4" data-titel="Track of Time"
              data-gattung="Kurzfilm · historische Eisenbahn" data-film="1" aria-hidden="true">
           <img src="Images/web/thumbnails/thumbnailtrackoftime-1280.webp"
                srcset="Images/web/thumbnails/thumbnailtrackoftime-800.webp 800w, Images/web/thumbnails/thumbnailtrackoftime-1280.webp 1280w"
                sizes="(min-width: 1164px) 1120px, calc(100vw - 44px)"
                alt="Titelbild „Track of Time“: Dampflokomotive zwischen Bäumen" loading="lazy" decoding="async">
         </div>
-        <div class="schau-bild aura-host" data-viewer="v5" data-titel="The South"
+        <div class="schau-platz aura-host" data-viewer="v5" data-titel="The South"
              data-gattung="Reisefilm · Österreich, Italien, Bayern" data-film="1" aria-hidden="true">
           <img src="Images/web/thumbnails/thumbnail-oesterreich24-2400.webp"
                srcset="Images/web/thumbnails/thumbnail-oesterreich24-800.webp 800w, Images/web/thumbnails/thumbnail-oesterreich24-1600.webp 1600w, Images/web/thumbnails/thumbnail-oesterreich24-2400.webp 2400w"
@@ -1311,17 +1370,6 @@
         </div>
 
         <div class="schau-leiste">
-          <div class="schau-steuer">
-            <button class="schau-pfeil" type="button" data-schritt="-1"
-                    aria-label="Vorheriges Projekt"><svg viewBox="0 0 24 24" fill="none"
-              stroke="currentColor" stroke-width="1.3" stroke-linecap="round"
-              stroke-linejoin="round" aria-hidden="true"><path d="M15 4 7 12l8 8"/></svg></button>
-            <div class="schau-punkte" id="schau-punkte"></div>
-            <button class="schau-pfeil" type="button" data-schritt="1"
-                    aria-label="Nächstes Projekt"><svg viewBox="0 0 24 24" fill="none"
-              stroke="currentColor" stroke-width="1.3" stroke-linecap="round"
-              stroke-linejoin="round" aria-hidden="true"><path d="M9 4l8 8-8 8"/></svg></button>
-          </div>
           <button class="schau-ansehen" type="button" id="schau-ansehen"
                   data-viewer="v2" aria-haspopup="dialog">
             Ansehen<span class="nur-vorlesen">: The Same Gray</span>
@@ -1329,6 +1377,8 @@
                  stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path
                  d="M4 12h15M13 6l6 6-6 6"/></svg>
           </button>
+        </div>
+          </div>
         </div>
       </div>
     </div>
@@ -1464,7 +1514,7 @@
                  alt="Nächtlicher Drehaufbau: Filmleuchte auf einem Stativ vor einem Cottage, warmes Licht im Fenster"
                  loading="lazy" decoding="async">
           </div>
-          <figcaption>Drehort für den Kurzfilm „The same gray“ in Auchindrain</figcaption>
+          <figcaption>Drehort für den Kurzfilm „The Same Grey“ in Auchindrain</figcaption>
         </figure>
       </div>
     </div>
@@ -1891,8 +1941,8 @@
          den hellen Stellen die Sterne; im Dunkeln soll es dafuer eine Spur
          voller werden -- aber nur eine Spur, sonst kippt der Himmel von
          gewachsen in gestreut. */
-      wurzel2.style.setProperty('--sterne-a', sternenkachel(600, 68));
-      wurzel2.style.setProperty('--sterne-b', sternenkachel(437, 40));
+      wurzel2.style.setProperty('--sterne-a', sternenkachel(600, 96));
+      wurzel2.style.setProperty('--sterne-b', sternenkachel(437, 56));
     } catch (e) {
       // Ohne Sterne ist der Himmel leer, aber nichts ist kaputt.
     }
@@ -2032,6 +2082,24 @@
      wurden vom Ueberzoom bisher mit weggeschnitten und sind jetzt zu sehen --
      dafuer steht der Bildausschnitt so, wie er im Schnitt angelegt wurde. */
   const UEBERZOOM = 1.02;
+
+  /* Die groesste Flaeche im Format des Films, die in den Vollbildkasten
+     passt. Bewusst ohne jede Bildschirmeinheit: gerechnet wird aus dem
+     Elternkasten, wie er in diesem Augenblick tatsaechlich ist.
+     Beschnitten wird nicht. Ein 16:9-Film auf einem Telefon im Querformat
+     (rund 2,2:1) laesst sich nur entweder seitlich einrahmen oder oben und
+     unten anschneiden -- und einen Film anzuschneiden heisst, den Bildrand
+     wegzunehmen, den jemand beim Schnitt gesetzt hat. */
+  function passeBuehne(wrap, stage, drin) {
+    if (!drin) { stage.style.width = ''; stage.style.height = ''; return; }
+    const W = wrap.clientWidth, H = wrap.clientHeight;
+    if (!W || !H) return;
+    const ar = parseFloat(getComputedStyle(stage).getPropertyValue('--ar')) || (16 / 9);
+    let w = W, h = W / ar;
+    if (h > H) { h = H; w = H * ar; }
+    stage.style.width = Math.round(w) + 'px';
+    stage.style.height = Math.round(h) + 'px';
+  }
   function fitFrame(box, frame, overscan) {
     const w = box.clientWidth;
     const h = box.clientHeight;
@@ -2166,8 +2234,10 @@
     function aufblenden() {
       /* Der Player wird neu eingepasst, SOLANGE die Blende noch zu ist. Danach
          waere der Sprung von der alten auf die neue Groesse sichtbar. */
+      passeBuehne(wrap, stage, drin());
       fitFrame(stage, frame, UEBERZOOM);
       setTimeout(function () {
+        passeBuehne(wrap, stage, drin());
         fitFrame(stage, frame, UEBERZOOM);
         wrap.classList.remove('fs-zu');
         setzeZeichen(btn, drin() ? 'zurueck' : 'vollbild',
@@ -2192,6 +2262,8 @@
         return;
       }
       if (document.fullscreenElement === wrap) {
+        try { if (screen.orientation && screen.orientation.unlock) screen.orientation.unlock(); }
+        catch (e) {}
         if (document.exitFullscreen) document.exitFullscreen();
         return;                       // weiter geht es in gewechselt()
       }
@@ -2205,6 +2277,19 @@
       let p = null;
       if (document.fullscreenEnabled && wrap.requestFullscreen) {
         try { p = wrap.requestFullscreen(); } catch (e) { p = null; }
+      }
+      /* Ein 16:9-Film auf einem hochkant gehaltenen Telefon kann hoechstens
+         ein Viertel der Flaeche fuellen -- der Rest ist zwangslaeufig schwarz.
+         Wo das Geraet es zulaesst, wird deshalb ins Querformat gedreht. Das
+         geht nur im Vollbild und nur auf Android; auf dem iPhone gibt es die
+         Sperre nicht, dort passiert schlicht nichts. */
+      if (p && p.then && screen.orientation && screen.orientation.lock) {
+        p.then(function () {
+          try {
+            const q = screen.orientation.lock('landscape');
+            if (q && q.catch) q.catch(function () {});
+          } catch (e) {}
+        });
       }
       if (p && p.catch) p.catch(function () { setTimeout(function () { ersatz(true); }, FS_DECKEN); });
       else if (!p) setTimeout(function () { ersatz(true); }, FS_DECKEN);
@@ -2221,12 +2306,30 @@
     document.addEventListener('webkitfullscreenchange', gewechselt);
     btn.addEventListener('click', umschalten);
 
+    /* Drehen des Geraets und das Ein- oder Ausfahren der Adressleiste aendern
+       die Flaeche, ohne dass ein Vollbildwechsel gemeldet wird. */
+    function neuMessen() {
+      if (!drin()) return;
+      passeBuehne(wrap, stage, true);
+      fitFrame(stage, frame, UEBERZOOM);
+    }
+    window.addEventListener('resize', neuMessen);
+    window.addEventListener('orientationchange', function () {
+      neuMessen();
+      setTimeout(neuMessen, 260);     // manche Geraete melden zu frueh
+    });
+    if (window.visualViewport) window.visualViewport.addEventListener('resize', neuMessen);
+    wrap._fsMess = neuMessen;
+
     // Damit Escape und das Schliessen des Projekts hier herankommen.
     wrap._fsUm = umschalten;
     wrap._fsAb = function () {
       document.removeEventListener('fullscreenchange', gewechselt);
       document.removeEventListener('webkitfullscreenchange', gewechselt);
+      window.removeEventListener('resize', wrap._fsMess);
+      if (window.visualViewport) window.visualViewport.removeEventListener('resize', wrap._fsMess);
       wrap.classList.remove('fs-zu', 'fs-ersatz');
+      stage.style.width = ''; stage.style.height = '';
       oben.remove();
       unten.remove();
       wrap._fsUm = null;
@@ -2921,7 +3024,18 @@
       const hell = (teile[0] + teile[1] + teile[2]) / 3;
       const ab = Math.max(0, Math.min(1, (hell - 120) / 110));
       aura.style.setProperty('--hof-deck', (0.8 - 0.26 * ab).toFixed(3));
-      host.insertBefore(aura, host.firstChild);
+      /* Wohin der Hof gehaengt wird. Normalerweise in den Kasten selbst.
+         Traegt ein Vorfahr "data-hof-sammler", dann dorthin: im Karussell
+         bekommt jeder Platz ein transform, und ein Element mit transform
+         macht einen eigenen Zeichenkontext auf -- der Hof laege damit ueber
+         der Sternenebene statt darunter, und die Kopplung von Sternen und
+         Helligkeit waere genau dort ausser Kraft, wo der hellste Schein der
+         Seite steht. Daneben gehaengt bleibt er in der unteren Ebene. */
+      const sammler = host.closest('[data-hof-sammler]');
+      const ziel = sammler || host;
+      ziel.insertBefore(aura, ziel.firstChild);
+      aura.dataset.grund = aura.style.getPropertyValue('--hof-deck') || '0.8';
+      host._hoefe = [aura];
 
       const lampe = lampenFarbe(src);
       let lampenLage = null;
@@ -2930,7 +3044,9 @@
         lampenLage.className = 'aura aura-lampe';
         lampenLage.setAttribute('aria-hidden', 'true');
         lampenLage.style.setProperty('--lampe', lampe);
-        host.insertBefore(lampenLage, host.firstChild);
+        lampenLage.dataset.grund = '0.34';
+        ziel.insertBefore(lampenLage, ziel.firstChild);
+        host._hoefe.push(lampenLage);
       }
 
       requestAnimationFrame(function () {
@@ -2944,87 +3060,180 @@
   }
   document.querySelectorAll('.page .aura-host').forEach(buildAura);
 
-  /* ---------- Projektschau ----------
-     Ein Titelbild gross, dazwischen wird umgeschaltet. Die Bilder liegen alle
-     im Dokument und werden ueberblendet (siehe CSS); hier wird nur die Klasse
-     gesetzt und die Leiste darunter nachgefuehrt. */
+  /* ---------- Projektschau: Karussell ----------
+     Vier Titelbilder auf einer Kreisbahn, im Abstand von 90 Grad, von vorne
+     gesehen. Sie stehen immer frontal und wandern nur auf der Bahn.
+
+     Gefahren wird ueber den Scrollstand, nicht ueber abgefangene
+     Radereignisse. Die Seite steht scheinbar still, weil die Buehne in einer
+     mehrere Bildschirme hohen Strecke klebt -- dem Nutzer wird das Scrollen
+     dabei nie aus der Hand genommen, und Rad, Trackpad, Wischen, Tastatur
+     und Scrollbalken verhalten sich alle weiter so, wie er es kennt. */
   (function schau() {
     const wurzel = document.getElementById('schau');
     if (!wurzel) return;
-    const bilder = Array.from(wurzel.querySelectorAll('.schau-bild'));
-    if (bilder.length < 2) return;
-
+    const lauf = document.getElementById('schau-lauf');
+    const halt = document.getElementById('schau-halt');
+    const buehne = document.getElementById('schau-buehne');
     const ansehen = document.getElementById('schau-ansehen');
-    const punkteBox = document.getElementById('schau-punkte');
-    let i = bilder.findIndex(function (b) { return b.classList.contains('is-an'); });
-    if (i < 0) i = 0;
+    const plaetze = Array.from(wurzel.querySelectorAll('.schau-platz'));
+    if (!lauf || !halt || !buehne || !ansehen || plaetze.length < 2) return;
+    const N = plaetze.length;
 
-    // Punkte aus den vorhandenen Bildern bauen -- so bleibt die Zahl der
-    // Punkte automatisch richtig, wenn ein Projekt dazukommt oder wegfaellt.
-    const punkte = bilder.map(function (b, k) {
-      const p = document.createElement('button');
-      p.type = 'button';
-      p.className = 'schau-punkt';
-      p.setAttribute('aria-label', b.dataset.titel || ('Projekt ' + (k + 1)));
-      p.addEventListener('click', function () { zeige(k); });
-      punkteBox.appendChild(p);
-      return p;
-    });
-
-    function zeige(n) {
-      i = (n + bilder.length) % bilder.length;
-      bilder.forEach(function (b, k) {
-        const an = k === i;
-        b.classList.toggle('is-an', an);
-        b.setAttribute('aria-hidden', an ? 'false' : 'true');
-      });
-      punkte.forEach(function (p, k) {
-        p.classList.toggle('is-an', k === i);
-        if (k === i) p.setAttribute('aria-current', 'true');
-        else p.removeAttribute('aria-current');
-      });
-      const b = bilder[i];
-      ansehen.dataset.viewer = b.dataset.viewer || '';
+    function knopfSetzen(knopf, platz) {
+      knopf.dataset.viewer = platz.dataset.viewer || '';
       // Ohne Film fuehrt "Ansehen" auf die Projektseite statt ins Vollbild.
-      if (b.dataset.film === '0') delete ansehen.dataset.direkt;
-      else ansehen.dataset.direkt = '1';
-      const marke = ansehen.querySelector('.nur-vorlesen');
-      if (marke) marke.textContent = ': ' + (b.dataset.titel || '');
+      if (platz.dataset.film === '0') delete knopf.dataset.direkt;
+      else knopf.dataset.direkt = '1';
+      const marke = knopf.querySelector('.nur-vorlesen');
+      if (marke) marke.textContent = ': ' + (platz.dataset.titel || '');
     }
 
-    wurzel.querySelectorAll('[data-schritt]').forEach(function (btn) {
-      btn.addEventListener('click', function () {
-        zeige(i + Number(btn.dataset.schritt));
+    /* Bei reduzierter Bewegung bleibt die Liste stehen. Eine Bewegung, die
+       am Scrollen haengt, ist genau die Art, die dort Beschwerden macht --
+       sie laeuft ungefragt los, sobald man die Seite bewegt. Jedes Projekt
+       bekommt dann seine eigene Schaltflaeche. */
+    if (reducedMotion) {
+      plaetze.forEach(function (platz) {
+        const reihe = document.createElement('div');
+        reihe.className = 'schau-knopf-reihe';
+        const knopf = ansehen.cloneNode(true);
+        knopf.removeAttribute('id');
+        knopfSetzen(knopf, platz);
+        reihe.appendChild(knopf);
+        platz.insertAdjacentElement('afterend', reihe);
       });
-    });
+      return;
+    }
 
-    /* Pfeiltasten, aber nur wenn der Fokus in der Schau steht -- sonst wuerde
-       die Schau das seitliche Blaettern der ganzen Seite an sich ziehen. */
-    wurzel.addEventListener('keydown', function (e) {
-      if (e.key === 'ArrowLeft') { e.preventDefault(); zeige(i - 1); }
-      else if (e.key === 'ArrowRight') { e.preventDefault(); zeige(i + 1); }
-    });
+    wurzel.classList.add('ist-karussell');
+    lauf.style.setProperty('--schritte', String(N - 1));
 
-    /* Wischen. Auf dem Handy ist das die naheliegende Geste, und ohne sie
-       wirkt eine solche Flaeche kaputt. Senkrechte Bewegungen bleiben beim
-       Scrollen -- deshalb wird erst ab einem klaren Uebergewicht zur Seite
-       umgeschaltet. */
-    const buehne = wurzel.querySelector('.schau-buehne');
-    let startX = null, startY = null;
-    buehne.addEventListener('pointerdown', function (e) {
-      if (e.pointerType === 'mouse') return;
-      startX = e.clientX; startY = e.clientY;
-    }, { passive: true });
-    buehne.addEventListener('pointerup', function (e) {
-      if (startX === null) return;
-      const dx = e.clientX - startX, dy = e.clientY - startY;
-      startX = startY = null;
-      if (Math.abs(dx) > 45 && Math.abs(dx) > Math.abs(dy) * 1.6) {
-        zeige(i + (dx < 0 ? 1 : -1));
+    /* Wie nah die Kamera steht, als Anteil des Bahnradius. 0,45 heisst: das
+       seitliche Bild erscheint auf 55 % der Groesse des vorderen, das
+       hintere auf 38 %. Groesser waere flacher, kleiner waere ein Fischauge. */
+    const NAEHE = 0.45;
+    const SCHRITT = 2 * Math.PI / N;
+
+    /* Einrasten, ohne das Scrollen anzufassen: innerhalb eines Abschnitts
+       steht das Karussell die ersten und letzten 20 % der Strecke still und
+       dreht nur dazwischen. Zusammen mit dem Nachziehen weiter unten steht
+       damit nie ein Bild halb vorne.
+       Dazwischen eine Kurve, die an beiden Enden waagerecht auslaeuft -- das
+       ist der Unterschied zwischen einer Kamerafahrt und einem Ruck. */
+    function rast(x) {
+      const RUHE = 0.20;
+      if (x <= RUHE) return 0;
+      if (x >= 1 - RUHE) return 1;
+      const u = (x - RUHE) / (1 - 2 * RUHE);
+      return u * u * u * (u * (u * 6 - 15) + 10);
+    }
+
+    let vorn = -1;
+    function uebernehmen() {
+      plaetze.forEach(function (p, k) {
+        const an = k === vorn;
+        p.classList.toggle('ist-vorn', an);
+        p.setAttribute('aria-hidden', an ? 'false' : 'true');
+      });
+      knopfSetzen(ansehen, plaetze[vorn]);
+    }
+
+    function strecke() { return lauf.offsetHeight - halt.offsetHeight; }
+
+    function stand() {
+      const s = strecke();
+      if (s <= 0) return 0;
+      return Math.min(1, Math.max(0, -lauf.getBoundingClientRect().top / s));
+    }
+
+    function stelle() {
+      const roh = stand() * (N - 1);
+      const seg = Math.min(N - 2, Math.floor(roh));
+      const winkel = (seg + rast(roh - seg)) * SCHRITT;
+
+      /* Der Bahnradius haengt an der Fensterbreite, nicht am Bild: die
+         seitlichen Bilder sollen auf jedem Bildschirm gleich weit aus dem
+         Rahmen laufen. 0,62 heisst, ihr Mittelpunkt liegt 62 % der halben
+         Fensterbreite neben der Mitte -- sie stehen damit zu ungefaehr zwei
+         Dritteln ausserhalb. */
+      const R = 0.62 * window.innerWidth / (1 - NAEHE);
+
+      let besterK = 0, bestesC = -2;
+      for (let k = 0; k < N; k++) {
+        const th = k * SCHRITT - winkel;
+        const c = Math.cos(th);
+        const s = (1 - NAEHE) / (1 - NAEHE * c);       // Perspektive
+        const x = R * Math.sin(th) * s;
+        /* Tiefe ueber die Deckkraft: vorne 1, seitlich 0,5, genau hinten 0.
+           Das hintere Bild ist damit nicht zu sehen, so wie gewuenscht -- und
+           die dahinter liegenden verschwinden, statt durch das vordere
+           hindurchzuscheinen. */
+        const deck = (c + 1) / 2;
+        const lage = 'translate3d(' + x.toFixed(1) + 'px,0,0) scale(' + s.toFixed(4) + ')';
+        const el = plaetze[k];
+        el.style.transform = lage;
+        el.style.opacity = deck.toFixed(3);
+        el.style.zIndex = String(120 + Math.round(c * 100));
+        if (el._hoefe) {
+          el._hoefe.forEach(function (h) {
+            h.style.transform = lage;
+            h.style.opacity = (deck * (parseFloat(h.dataset.grund) || 0.8)).toFixed(3);
+          });
+        }
+        if (c > bestesC) { bestesC = c; besterK = k; }
       }
-    }, { passive: true });
+      if (besterK !== vorn) { vorn = besterK; uebernehmen(); }
+    }
 
-    zeige(i);
+    /* Nachziehen. Bleibt jemand mitten in einem Uebergang stehen, wird auf
+       den naechsten Film nachgefahren -- aber erst, wenn das Scrollen
+       wirklich aufgehoert hat, sonst wuerde die Seite gegen die Hand
+       arbeiten. Waehrend der eigenen Fahrt ist es abgeschaltet. */
+    let eigen = false, ruhe = null;
+    function fahreZu(ziel) {
+      const s = strecke();
+      if (s <= 0) return;
+      const oben = lauf.getBoundingClientRect().top + window.scrollY;
+      eigen = true;
+      window.scrollTo({ top: Math.round(oben + s * ziel / (N - 1)), behavior: 'smooth' });
+      setTimeout(function () { eigen = false; }, 900);
+    }
+    function nachziehen() {
+      if (eigen) return;
+      const p = stand();
+      if (p <= 0.002 || p >= 0.998) return;      // ausserhalb: normal scrollen
+      const roh = p * (N - 1);
+      const ziel = Math.round(roh);
+      if (Math.abs(roh - ziel) < 0.01) return;
+      fahreZu(ziel);
+    }
+
+    let offen = false;
+    function anstossen() {
+      if (!offen) {
+        offen = true;
+        requestAnimationFrame(function () { offen = false; stelle(); });
+      }
+      clearTimeout(ruhe);
+      ruhe = setTimeout(nachziehen, 170);
+    }
+    window.addEventListener('scroll', anstossen, { passive: true });
+    window.addEventListener('resize', function () { clearTimeout(ruhe); stelle(); });
+
+    /* Mit der Tastatur einen Film weiter, solange der Fokus in der Schau
+       steht. Ohne Pfeile und Striche waere das sonst die einzige Bedienung,
+       die fehlt. */
+    wurzel.addEventListener('keydown', function (e) {
+      if (e.key !== 'ArrowLeft' && e.key !== 'ArrowRight') return;
+      e.preventDefault();
+      const roh = stand() * (N - 1);
+      fahreZu(Math.max(0, Math.min(N - 1,
+        Math.round(roh) + (e.key === 'ArrowRight' ? 1 : -1))));
+    });
+
+    stelle();
+    uebernehmen();
   })();
 
   // Bilder in der Projektansicht laufen gestaffelt auf -- wie nacheinander
