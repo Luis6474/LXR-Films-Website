@@ -21,7 +21,11 @@
      sich einbinden laesst: derselbe Bauauftrag (volle Zeichenabdeckung
      statt Eleganz) und dieselbe Anmutung -- schlichter Gebrauchs-Serif,
      geringer Strichkontrast, stumpfe Serifen, grosse x-Hoehe. -->
-<link href="https://fonts.googleapis.com/css2?family=Noto+Serif:wght@300;400;600&family=Inter:wght@400;500&display=swap" rel="stylesheet">
+<!-- Boldonse und Libre Caslon Display gibt es jeweils nur im Schnitt 400.
+     Beide sind so gebaut, dass sie ihn nicht brauchen: Boldonse traegt von
+     sich aus Gewicht, Libre Caslon Display ist ein Lesegrad. Ein erzwungenes
+     font-weight wuerde der Browser nur nachbilden und dabei verschmieren. -->
+<link href="https://fonts.googleapis.com/css2?family=Boldonse&family=Libre+Caslon+Display&family=Noto+Serif:wght@400;600&display=swap" rel="stylesheet">
 <style>
   :root {
     /* Tiefer und blauer als zuvor (#0d1216 / #090d10). Grund: die Lichthoefe
@@ -72,7 +76,7 @@
     margin: 0;
     background: var(--bg);
     color: var(--text);
-    font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    font-family: 'Libre Caslon Display', Georgia, serif;
     font-size: 17px;
     line-height: 1.65;
     -webkit-font-smoothing: antialiased;
@@ -93,7 +97,7 @@
   .wrap { max-width: var(--col); margin: 0 auto; padding: 0 22px; }
 
   .eyebrow {
-    font-family: 'Inter', sans-serif; font-size: 0.72em; font-weight: 500;
+    font-family: 'Libre Caslon Display', Georgia, serif; font-size: 0.72em; font-weight: 400;
     letter-spacing: 0.2em; text-transform: uppercase; color: var(--text-dim);
   }
 
@@ -169,7 +173,13 @@
        mehr, aber sie muss weiterhin gefuellt werden. 640 % sind rund 2850 px
        Reichweite -- mehr als genug und nicht einmal halb so viel Flaeche. */
     left: -270%; top: -270%; width: 640%; height: 640%;
-    z-index: 0; pointer-events: none;
+    /* z-index -1 statt 0: damit liegt der Hof in derselben unteren Ebene wie
+       Korn und Sterne -- und die Sterne koennen UEBER ihn gelegt werden.
+       Nur so laesst sich ihre Sichtbarkeit an die oertliche Helligkeit
+       koppeln (siehe .sterne). Sichtbar aendert das nichts: der Hof lag auch
+       vorher hinter Bild und Text, er liegt jetzt nur zusaetzlich hinter dem
+       Sektionsschein. */
+    z-index: -1; pointer-events: none;
     /* Die Flaeche bleibt bei 640 %. Weiter zu greifen bringt nichts, kostet
        aber Grafikspeicher -- und knapper Grafikspeicher war genau die Ursache
        des frueheren Flackerns.
@@ -204,9 +214,9 @@
   .aura.on { opacity: var(--hof-deck, 0.8); }
 
 
-  /* ---------- Schaerfefeld ----------
-     Ein grosszuegiger Bereich um den Zeiger bleibt scharf, nach aussen geht das
-     Bild leicht aus dem Fokus -- wie eine offene Blende.
+  /* ---------- Lichtfeld ----------
+     Ein grosszuegiger Bereich um den Zeiger bleibt hell, nach aussen nimmt das
+     Bild leicht ab.
 
      Bewusst eine einzige, gleichmaessige Unschaerfe. Die Vorgaenger-Fassungen
      haben die Drehung eines Kinoobjektivs nachgebildet, indem sie mehrere
@@ -234,8 +244,12 @@
          Werte dagegen auseinander: der Grund wird dunkler, die helle Schrift
          bleibt hell. Unterm Strich steht der schwaechste Textblock danach bei
          4,66:1, praktisch unveraendert, bei rund 14 % dunklerem Rand. */
-      -webkit-backdrop-filter: blur(3.2px) brightness(0.86) contrast(1.08);
-              backdrop-filter: blur(3.2px) brightness(0.86) contrast(1.08);
+      /* Die Unschaerfe ist raus. Geblieben ist die Verdunklung zum Rand hin,
+         die du separat gewollt hattest -- sie haengt an derselben Maske und
+         macht die Flaeche um den Zeiger heller als den Rest. Wenn auch die
+         weg soll, faellt die ganze Ebene weg. */
+      -webkit-backdrop-filter: brightness(0.86) contrast(1.08);
+              backdrop-filter: brightness(0.86) contrast(1.08);
       /* Heller Kern bis 560 px, volle Wirkung bei 1500 px (vorher 420/1200).
          Grosszuegiger gefasst, damit der helle Bereich wirklich gross ist und
          das Ganze als weiches Nachlassen zum Rand hin liest -- nicht als
@@ -254,12 +268,30 @@
      260 000 Bildpunkten wieder -- also nie auf einem Bildschirm.
      Liegt wie das Korn unter dem Inhalt: Sterne gehoeren an den Himmel, nicht
      auf die Fotos. */
+  /* Zwei getrennte Ebenen statt zweier Hintergrundbilder auf einer: die
+     Kacheln sind deckend, die obere wuerde die untere sonst vollstaendig
+     verdecken. Zwei Ebenen mit "lighten" ergeben dagegen den helleren von
+     allen dreien -- Grund, Kachel A, Kachel B.
+     Kantenlaengen 600 und 437 sind teilerfremd; das Muster wiederholt sich
+     erst nach rund 260 000 Bildpunkten, also nie auf einem Bildschirm. */
   .sterne {
     position: fixed; inset: 0; z-index: -1; pointer-events: none;
-    background-image: var(--sterne-a), var(--sterne-b);
-    background-size: 600px 600px, 437px 437px;
-    background-position: 0 0, 137px 89px;
-    opacity: 0.5;
+    background-repeat: repeat;
+    /* Nimmt je Bildpunkt den helleren von Stern und Grund. Wo ein Lichthof
+       liegt, ist der Grund heller als der Stern -- der Stern verschwindet
+       dort. Auf dunklem Grund gewinnt der Stern. Damit haengt die
+       Sichtbarkeit an der oertlichen Helligkeit, statt gleichmaessig ueber
+       die Flaeche zu liegen.
+       Die Ebenen stehen dafuer am Ende des Dokuments: unter gleichem z-index
+       entscheidet die Reihenfolge, und sie muessen nach den Lichthoefen
+       kommen -- sonst gibt es nichts, wogegen sie sich vergleichen koennten. */
+    mix-blend-mode: lighten;
+  }
+  .sterne-a { background-image: var(--sterne-a); background-size: 600px 600px; }
+  .sterne-b {
+    background-image: var(--sterne-b);
+    background-size: 437px 437px;
+    background-position: 137px 89px;
   }
 
   /* ---------- Filmkorn ----------
@@ -556,7 +588,10 @@
        Abschnittsueberschriften stehen bei rund 24 px und waeren in 300 zu
        zart -- Korn und Lichthof fressen die Haarstriche dort stellenweise auf.
        Bei 45 px traegt der leichte Schnitt dagegen muehelos. */
-    font-weight: 300;
+    /* Boldonse traegt das Gewicht selbst -- es gibt sie nur im Schnitt 400,
+       und sie ist trotzdem die schwerste Schrift auf der Seite. */
+    font-family: 'Boldonse', 'Noto Serif', Georgia, serif;
+    font-weight: 400;
     /* Sperrung und Einzeiligkeit ziehen gegeneinander: mehr Sperrung heisst
        laengere Zeile heisst frueherer Umbruch. Gemessen am Desktop (45 px):
          0,10em ->  868 px Zeile, einzeilig bis 660 px Fensterbreite
@@ -568,7 +603,15 @@
        weit unter jedem Laptop.
        Der vw-Anteil sinkt mit steigender Sperrung mit (4,3 -> 3,9), sonst
        frisst die laengere Zeile den einzeiligen Bereich auf. */
-    font-size: clamp(1.7em, 3.9vw, 2.5em);
+    /* Groesser: 2,5em -> 2,8em, am Desktop 45 px -> 50 px.
+       Boldonse laeuft deutlich breiter als die vorige Schrift -- gemessen
+       25,65 gegen 22,1 mal die Schriftgroesse. Bei 0,18em Sperrung passen
+       hoechstens 54 px in eine Zeile, 50 px lassen also noch Luft.
+       Der vw-Anteil muss mit: bei 3,9 waere die Zeile unterhalb von 1290 px
+       breiter als das Fenster. 3,6 haelt sie einzeilig, und die Untergrenze
+       faellt auf 1,4em, damit der Umbruch auf dem Handy nicht zu frueh
+       erzwungen wird. */
+    font-size: clamp(1.4em, 3.6vw, 2.8em);
     letter-spacing: 0.18em;
     max-width: none;
     text-wrap: balance;
@@ -608,12 +651,12 @@
   .hero.is-docked .marquee-track { animation-play-state: running; }
   .m-group { display: flex; align-items: center; }
   .m-word {
-    font-family: 'Noto Serif', Georgia, serif; font-weight: 300;
+    font-family: 'Boldonse', 'Noto Serif', Georgia, serif; font-weight: 400;
     /* Mitgezogen mit dem Hero-Titel: die Laufschrift ist dieselbe Zeile im
        angedockten Zustand. Sie behaelt ihr Verhaeltnis von 80 % zum grossen
        Titel (4em/3,2em, dann 3em/2,4em, jetzt 2,5em/2em); Schnitt und Groesse
        unterschiedlich zu lassen, faellt beim Umschalten auf. */
-    font-size: clamp(1.2em, 2.8vw, 2em);
+    font-size: clamp(1.2em, 2.8vw, 2.3em);
     letter-spacing: 0.18em; line-height: 1.28; white-space: nowrap;
     color: #f2f5f7;
     /* Der weiche Hof (12 px) ist raus -- er war als dunkler Streifen hinter der
@@ -1178,7 +1221,6 @@
 </head>
 <body>
 
-<div class="sterne" aria-hidden="true"></div>
 <div class="grain grain-mid" aria-hidden="true"></div>
 <div class="grain grain-dark" aria-hidden="true"></div>
 <div class="focus" id="focus" aria-hidden="true"></div>
@@ -1482,6 +1524,12 @@
   <footer>LXR Films</footer>
 
 </div><!-- /.page -->
+
+<!-- Muss nach der Seite stehen: die Sterne werden mit "lighten" ueber die
+     Lichthoefe gelegt, und unter gleichem z-index entscheidet die
+     Reihenfolge im Dokument. -->
+<div class="sterne sterne-a" aria-hidden="true"></div>
+<div class="sterne sterne-b" aria-hidden="true"></div>
 
 
 <!-- ================= Projektansichten ================= -->
@@ -1795,34 +1843,40 @@
       return 'url("' + klein.toDataURL('image/png') + '")';
     }
 
-    /* Sternenkachel. Jeder Stern wird neunmal gezeichnet -- einmal an seinem
-       Platz und achtmal um je eine Kachelbreite versetzt. Nur so laufen die
-       Sterne am Rand sauber in die Nachbarkachel weiter, statt dort abgeschnitten
-       zu werden.
+    /* Sternenkachel, deckend. Schwarzer Grund, graue Sterne -- siehe den
+       Mischmodus im CSS: der Grauwert eines Sterns ist zugleich die
+       Helligkeitsschwelle, ab der er verschwindet.
+       Jeder Stern wird neunmal gezeichnet, einmal an seinem Platz und
+       achtmal um je eine Kachelbreite versetzt. Nur so laeuft er am Rand
+       sauber in die Nachbarkachel weiter, statt dort abgeschnitten zu werden.
        Die Staerke ist stark rechtsschief verteilt (Potenz 2,6): sehr viele
        schwache, wenige helle. Ein gleichverteilter Himmel sieht aus wie
-       hingestreut, ein schiefer wie gewachsen. */
+       hingestreut, ein schiefer wie gewachsen -- und nur die wenigen hellen
+       ueberstehen einen Lichthof. */
     function sternenkachel(kante, zahl) {
       const c = document.createElement('canvas');
       c.width = c.height = kante;
       const x = c.getContext('2d');
+      x.fillStyle = '#000';
+      x.fillRect(0, 0, kante, kante);
+      x.globalCompositeOperation = 'lighter';   // Sterne addieren, nicht decken
       for (let i = 0; i < zahl; i++) {
         const px = Math.random() * kante;
         const py = Math.random() * kante;
         const st = Math.pow(Math.random(), 2.6);
-        const r = (0.45 + st * 1.5) * (kante / 600);
-        const a = 0.14 + st * 0.7;
+        const r = (0.5 + st * 1.7) * (kante / 600);
+        const w = Math.round(16 + st * 205);
         for (let dy = -1; dy <= 1; dy++) {
           for (let dx = -1; dx <= 1; dx++) {
             const ax = px + dx * kante, ay = py + dy * kante;
-            if (ax < -6 || ay < -6 || ax > kante + 6 || ay > kante + 6) continue;
-            const g = x.createRadialGradient(ax, ay, 0, ax, ay, r * 3.4);
-            g.addColorStop(0, 'rgba(255,255,255,' + a.toFixed(3) + ')');
-            g.addColorStop(0.32, 'rgba(255,255,255,' + (a * 0.26).toFixed(3) + ')');
-            g.addColorStop(1, 'rgba(255,255,255,0)');
+            if (ax < -8 || ay < -8 || ax > kante + 8 || ay > kante + 8) continue;
+            const g = x.createRadialGradient(ax, ay, 0, ax, ay, r * 3.2);
+            g.addColorStop(0, 'rgb(' + w + ',' + w + ',' + w + ')');
+            g.addColorStop(0.3, 'rgb(' + (w * 0.3 | 0) + ',' + (w * 0.3 | 0) + ',' + (w * 0.32 | 0) + ')');
+            g.addColorStop(1, 'rgb(0,0,0)');
             x.fillStyle = g;
             x.beginPath();
-            x.arc(ax, ay, r * 3.4, 0, 6.2832);
+            x.arc(ax, ay, r * 3.2, 0, 6.2832);
             x.fill();
           }
         }
@@ -2752,7 +2806,10 @@
        angehoben. Die alte Untergrenze von 168 hat dunkle Motive um mehr als
        das Doppelte aufgehellt -- daher wirkten manche Lichthoefe zu hell. */
     oben = Math.max(v[0], v[1], v[2]);
-    const ziel = Math.max(140, Math.min(210, oben * 1.45));
+    /* Insgesamt dunkler: Untergrenze 140 -> 118, Obergrenze 210 -> 178,
+       Anhebung 1,45 -> 1,20. Der Hof folgt damit noch enger der Helligkeit,
+       die im Bild selbst steht. */
+    const ziel = Math.max(118, Math.min(178, oben * 1.20));
     if (oben > 0.0001) {
       v = [v[0] * ziel / oben, v[1] * ziel / oben, v[2] * ziel / oben];
     }
