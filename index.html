@@ -179,12 +179,16 @@
     /* 640 % statt 1000 %: als Verlauf kostet die Flaeche keine Weichzeichnung
        mehr, aber sie muss weiterhin gefuellt werden. 640 % sind rund 2850 px
        Reichweite -- mehr als genug und nicht einmal halb so viel Flaeche. */
-    /* Reichweite zurueckgenommen: 640 % -> 400 % (also gut ein Drittel
-       weniger in jeder Richtung, knapp zwei Drittel weniger Flaeche). Vorher
-       hat ein einziger Hof den Himmel bis weit ueber den Bildschirmrand
-       hinaus angehoben, und weil die Sterne an der oertlichen Helligkeit
-       haengen, blieben sie nur noch ganz oben und ganz unten stehen. */
-    left: -150%; top: -150%; width: 400%; height: 400%;
+    /* Reichweite zurueckgenommen: 640 % -> 400 % -> 240 % (Ueberstand pro
+       Seite 150 % -> 70 % der Bildgroesse). Bei 400 % reichte der Hof neben
+       schmalen Bildern im Fliesstext (etwa 550 px breit) noch weit in den
+       Seitenrand hinein -- gemessen bei 1920 px Fensterbreite stand dort
+       ein Streifen mit Mittelwert 40-47 statt der ueblichen 10-15, sichtbar
+       als diffuser Schein, der die Sterne im ganzen Randbereich ertraenkt
+       hat ("Lichtverschmutzung"). Die Verhaeltnisse innerhalb des Hofs
+       bleiben gleich -- er ist am Bild unveraendert hell, er hoert nur
+       naeher dran auf. */
+    left: -70%; top: -70%; width: 240%; height: 240%;
     /* z-index -1 statt 0: damit liegt der Hof in derselben unteren Ebene wie
        Korn und Sterne -- und die Sterne koennen UEBER ihn gelegt werden.
        Nur so laesst sich ihre Sichtbarkeit an die oertliche Helligkeit
@@ -850,7 +854,10 @@
     height: calc(100dvh + var(--schritte, 3) * 84dvh);
   }
   .schau.ist-karussell .schau-halt {
-    --schau-h: min(calc((100vw - 32px) * 9 / 16), calc(100dvh - 118px));
+    /* Kleiner: mal 0,8. Vorher fuellte das Bild fast die ganze Breite und
+       stand damit zu prominent im Vordergrund -- das Karussell soll ein
+       Element auf der Seite sein, keine eigene Buehne. */
+    --schau-h: calc(0.8 * min(calc((100vw - 32px) * 9 / 16), calc(100dvh - 118px)));
     position: sticky; top: 0;
     height: 100dvh;
     display: flex; flex-direction: column;
@@ -3172,7 +3179,9 @@
        Gerechnet nach verstrichener Zeit und in kleinen Teilschritten, damit
        sie auf 60 Hz und 120 Hz gleich laeuft und bei einem ruckelnden Bild
        nicht aus dem Tritt kommt. */
-    const FEDER = 4.6;          // Eigenfrequenz; rund 1 s bis zum Stillstand
+    /* Langsamer: 4,6 -> 2,8. Rund 1,8 s bis zum Stillstand statt 1 s -- eine
+       ruhigere, foermlichere Fahrt, weniger ein Wischen als ein Schwenk. */
+    const FEDER = 2.8;           // Eigenfrequenz; rund 1,8 s bis zum Stillstand
     let anzeige = null, tempo = 0, ziel = 0, faehrt = false, zuletzt = 0;
     function schritt(jetzt) {
       let dt = Math.min(0.064, (jetzt - zuletzt) / 1000);
