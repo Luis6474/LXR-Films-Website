@@ -84,8 +84,15 @@
   /* Tiefe statt flacher Fläche */
   body::before {
     content: ""; position: fixed; inset: 0; z-index: -1;
+    /* Der aeussere Halt steht jetzt auf reinem Schwarz statt auf dem
+       Dunkelblau #03080c. Betroffen ist nur das Ende des Verlaufs -- oben
+       bleibt es #0d1a22, in der Mitte der Grundton. Die Ecken und der untere
+       Rand laufen also wirklich aus, statt auf einem blauen Sockel stehen zu
+       bleiben. Die Sterne liegen darueber und bleiben sichtbar: gegen Schwarz
+       setzt sich selbst der schwaechste noch ab.
+       --bg-deep bleibt unveraendert, es traegt weiter die Projektseiten. */
     background:
-      radial-gradient(140% 90% at 50% 0%, #0d1a22 0%, var(--bg) 45%, var(--bg-deep) 100%);
+      radial-gradient(140% 90% at 50% 0%, #0d1a22 0%, var(--bg) 45%, #000 100%);
   }
 
   /* Schnitt 400 statt 500. Noto Serif traegt bei grossen Graden auch im
@@ -213,53 +220,34 @@
      hin. */
   .aura.on { opacity: var(--hof-deck, 0.8); }
 
-
-  /* ---------- Lichtfeld ----------
-     Ein grosszuegiger Bereich um den Zeiger bleibt hell, nach aussen nimmt das
-     Bild leicht ab.
-
-     Bewusst eine einzige, gleichmaessige Unschaerfe. Die Vorgaenger-Fassungen
-     haben die Drehung eines Kinoobjektivs nachgebildet, indem sie mehrere
-     gerichtete Unschaerfen ueberlagert haben. Das sah runder aus, brauchte aber
-     je nach Ausbaustufe zwei bis acht bildschirmfuellende Ebenen -- und in der
-     teuersten Fassung eine Faltung mit 169 Texturzugriffen je Bildpunkt, also
-     1,4 Milliarden pro Einzelbild. Genau das hat die Grafikkarte ueberlastet.
-     Eine Ebene mit CSS-Unschaerfe braucht keinen SVG-Filter, kopiert den
-     Bildschirminhalt nur einmal und ist damit am sparsamsten. */
-  .focus {
-    position: fixed; inset: 0; z-index: 490; pointer-events: none;
-    opacity: 0; transition: opacity 1s var(--ease);
+  /* Eine zweite, kleinere Lage ueber dem oberen Bildrand. Sie kommt nur dann
+     dazu, wenn im oberen Bildteil wirklich eine Lichtquelle steht -- bei
+     "The Mountains" die Schiffslampe. Ein Bild leuchtet nicht in einem Ton;
+     der Schein ueber der Lampe ist warm, waehrend der Rest des Hofes kuehl
+     bleibt.
+     Der Mittelpunkt liegt bei 42 % der Hoehe: der Kasten ist 640 % hoch und
+     sitzt 270 % ueber dem Bild, 270/640 ist genau die obere Bildkante. Der
+     Schein steht damit auf der Kante und laeuft nach oben aus. */
+  .aura-lampe {
+    background: radial-gradient(40% 34% at 50% 42%,
+      rgba(var(--lampe, 240,220,170), 0.85) 0%,
+      rgba(var(--lampe, 240,220,170), 0.52) 20%,
+      rgba(var(--lampe, 240,220,170), 0.26) 40%,
+      rgba(var(--lampe, 240,220,170), 0.10) 62%,
+      rgba(var(--lampe, 240,220,170), 0.03) 80%,
+      transparent 100%);
   }
-  @media (hover: hover) and (pointer: fine) {
-    .hero-docked .focus.on {
-      opacity: 1;
-      /* Zur Unschaerfe kommt eine leichte Verdunklung -- dieselbe Ebene, dieselbe
-         Maske, also ohne eine einzige zusaetzliche Flaeche. Sie liegt damit
-         zwangslaeufig genau dort, wo das Bild ohnehin aus dem Fokus geht.
+  .aura-lampe.on { opacity: var(--lampe-deck, 0.34); }
 
-         Der Kontrastanteil ist kein Beiwerk, sondern das, was die Verdunklung
-         bezahlbar macht. Eine schlichte schwarze Auflage haette Schrift und
-         Grund gleichermassen abgesenkt und den Kontrast gedrueckt -- gerechnet
-         von 4,75:1 auf 3,29:1, also unter den Richtwert. "contrast" zieht die
-         Werte dagegen auseinander: der Grund wird dunkler, die helle Schrift
-         bleibt hell. Unterm Strich steht der schwaechste Textblock danach bei
-         4,66:1, praktisch unveraendert, bei rund 14 % dunklerem Rand. */
-      /* Die Unschaerfe ist raus. Geblieben ist die Verdunklung zum Rand hin,
-         die du separat gewollt hattest -- sie haengt an derselben Maske und
-         macht die Flaeche um den Zeiger heller als den Rest. Wenn auch die
-         weg soll, faellt die ganze Ebene weg. */
-      -webkit-backdrop-filter: brightness(0.86) contrast(1.08);
-              backdrop-filter: brightness(0.86) contrast(1.08);
-      /* Heller Kern bis 560 px, volle Wirkung bei 1500 px (vorher 420/1200).
-         Grosszuegiger gefasst, damit der helle Bereich wirklich gross ist und
-         das Ganze als weiches Nachlassen zum Rand hin liest -- nicht als
-         Lichtkegel, der dem Zeiger hinterherfaehrt. */
-      -webkit-mask-image: radial-gradient(circle at var(--fx, 50%) var(--fy, 45%),
-                          transparent 0, transparent 560px, #000 1500px);
-              mask-image: radial-gradient(circle at var(--fx, 50%) var(--fy, 45%),
-                          transparent 0, transparent 560px, #000 1500px);
-    }
-  }
+
+  /* Das Lichtfeld an der Maus ist entfernt. Es war die letzte Stelle, an
+     der die Helligkeit des Grundes von etwas anderem abhing als vom Bild:
+     eine Maske um den Zeiger, die den Rest der Flaeche um 14 % abgesenkt hat.
+     Jetzt kommt alles Licht im Hintergrund aus den Lichthoefen der Bilder --
+     je weiter weg ein Punkt liegt, desto dunkler wird er, bis hin zum
+     schwarzen Rand des Verlaufs. Die Sterne leuchten nur ihre eigene Flaeche
+     aus und heben nichts an. Mit der Ebene entfallen auch die Zeigerspur im
+     Skript und eine bildschirmfuellende backdrop-filter-Kopie je Einzelbild. */
 
   /* ---------- Sternenhimmel ----------
      Zwei Lagen mit unterschiedlich grossen Kacheln. Eine einzelne Kachel
@@ -1209,12 +1197,11 @@
     .js .reveal, .js .reveal-media { opacity: 1; transform: none; filter: none; transition: none; }
     .holds .standout { position: static; }
     .hero-content { animation: none; }
-    /* Kein Durchlauf, keine Umschaltbewegung, kein Schaerfefeld. */
+    /* Kein Durchlauf, keine Umschaltbewegung. */
     .marquee-track { animation: none; }
     .zucken { display: none; }            /* .dither bleibt: es bewegt sich nicht */
     .hero-frame { transition: none; }
     .hero-video { display: none; }
-    .focus { display: none; }
     .aura { transition: none; }
   }
 </style>
@@ -1223,7 +1210,6 @@
 
 <div class="grain grain-mid" aria-hidden="true"></div>
 <div class="grain grain-dark" aria-hidden="true"></div>
-<div class="focus" id="focus" aria-hidden="true"></div>
 <div class="dither" aria-hidden="true"></div>
 <div class="zucken" id="zucken" aria-hidden="true"></div>
 <div class="lb-bar lb-top" aria-hidden="true"></div>
@@ -1863,9 +1849,24 @@
       for (let i = 0; i < zahl; i++) {
         const px = Math.random() * kante;
         const py = Math.random() * kante;
-        const st = Math.pow(Math.random(), 2.6);
+        /* Die Staerke entscheidet ueber die Dichte, nicht ueber den Glanz.
+           Weil die Ebene mit "lighten" rechnet, ist der Grauwert eines Sterns
+           zugleich die Grundhelligkeit, ab der er verschwindet. Die Obergrenze
+           ist deshalb kein Geschmackswert, sondern eine Messung: der freie
+           Himmel erreicht an seinen hellsten Stellen -- dicht an den
+           Lichthoefen -- rund 90 von 255. Eine Obergrenze von 88 heisst also,
+           dass dort kein einziger Stern mehr durchkommt.
+           Vorher stand hier 221. Damit blieben ueber dem hellsten Grund noch
+           rund 40 % aller Sterne stehen, und der Himmel war praktisch
+           gleichmaessig besetzt.
+           Die Potenz 3,2 (vorher 2,6) staffelt die Staerken staerker nach
+           unten. Gerechnet ueber die gemessenen Grundhelligkeiten bleiben
+           uebrig: 100 % im Dunkeln, rund 55 % bei mittlerem Grund, 9 % bei 68,
+           3 % bei 85 und null ab 88. Das ist der Verlauf von voll ueber
+           vereinzelt nach leer. */
+        const st = Math.pow(Math.random(), 3.2);
         const r = (0.5 + st * 1.7) * (kante / 600);
-        const w = Math.round(16 + st * 205);
+        const w = Math.round(13 + st * 75);
         for (let dy = -1; dy <= 1; dy++) {
           for (let dx = -1; dx <= 1; dx++) {
             const ax = px + dx * kante, ay = py + dy * kante;
@@ -1886,8 +1887,12 @@
 
     try {
       const wurzel2 = document.documentElement;
-      wurzel2.style.setProperty('--sterne-a', sternenkachel(600, 58));
-      wurzel2.style.setProperty('--sterne-b', sternenkachel(437, 34));
+      /* Leicht mehr Sterne (58/34 -> 68/40). Die gedeckelte Staerke nimmt
+         den hellen Stellen die Sterne; im Dunkeln soll es dafuer eine Spur
+         voller werden -- aber nur eine Spur, sonst kippt der Himmel von
+         gewachsen in gestreut. */
+      wurzel2.style.setProperty('--sterne-a', sternenkachel(600, 68));
+      wurzel2.style.setProperty('--sterne-b', sternenkachel(437, 40));
     } catch (e) {
       // Ohne Sterne ist der Himmel leer, aber nichts ist kaputt.
     }
@@ -2579,8 +2584,6 @@
     docked = true;
     heroFrame.classList.add('is-docked');
     heroSection.classList.add('is-docked');
-    // Schaltet das Schaerfefeld frei (siehe ".hero-docked .focus.on").
-    document.documentElement.classList.add('hero-docked');
     if (heroAura) heroAura.classList.add('on');
     window.removeEventListener('scroll', onFirstScroll);
     window.removeEventListener('wheel', dockHero);
@@ -2776,12 +2779,44 @@
       e[0] += R * gew; e[1] += G * gew; e[2] += B * gew; e[3] += gew;
     }
 
-    let besterK = null;
-    for (const k in eimer) {
-      if (besterK === null || eimer[k][3] > eimer[besterK][3]) besterK = k;
+    /* Genommen wird nicht das staerkste Fach, sondern das staerkste
+       Dreierfenster -- ein Fach mit seinen beiden Nachbarn, im Kreis
+       gerechnet. Der Grund ist ein Zaehlfehler, den das Einzelfach nicht
+       bemerken kann: eine breite Farbe wird an einer Fachgrenze zerschnitten
+       und verliert dann gegen eine schmalere, die zufaellig ganz in ein Fach
+       faellt.
+       Genau das ist bei "The South" passiert. Die warmen Toene -- Ziegel,
+       Mosaikgold, Stein -- liegen dort zu 30 % im Fach Rot und zu 20 % im
+       Fach Orange, zusammen also die halbe Bildflaeche. Der Himmel liegt
+       geschlossen im Fach Cyan und kam damit auf 35 %. Das Einzelfach hat
+       deshalb den Himmel gewaehlt und einen blauen Schein gesetzt, obwohl das
+       Bild im Ganzen warm ist. Ueber das Fenster gerechnet stehen 51 % warm
+       gegen 38 % kuehl, und der Schein wird ockerfarben.
+       Bei den anderen drei Bildern aendert das Verfahren die Wahl nicht, es
+       schaerft sie nur: die Nachbarfaecher ziehen den Ton dorthin, wo die
+       Masse wirklich liegt. */
+    const fach = [];
+    for (let k = 0; k < FAECHER; k++) fach.push(eimer[k] || null);
+    let besterK = -1, besteSumme = -1;
+    for (let k = 0; k < FAECHER; k++) {
+      let s = 0;
+      for (let dk = -1; dk <= 1; dk++) {
+        const f = fach[(k + dk + FAECHER) % FAECHER];
+        if (f) s += f[3];
+      }
+      if (s > besteSumme) { besteSumme = s; besterK = k; }
     }
-    if (besterK === null) return null;
-    const e = eimer[besterK];
+    let e = [0, 0, 0, 0];
+    if (besteSumme > 0) {
+      for (let dk = -1; dk <= 1; dk++) {
+        const f = fach[(besterK + dk + FAECHER) % FAECHER];
+        if (f) for (let i = 0; i < 4; i++) e[i] += f[i];
+      }
+    } else if (eimer[-1]) {
+      e = eimer[-1];                       // voellig unbuntes Bild
+    } else {
+      return null;
+    }
     let v = [e[0] / e[3], e[1] / e[3], e[2] / e[3]];
 
     /* Nur noch leicht nachsaettigen. Frueher stand hier der Faktor 1,85 --
@@ -2818,6 +2853,50 @@
     }).join(',');
   }
 
+  /* Steht im oberen Bildteil eine Lichtquelle -- eine Lampe, die Sonne --,
+     dann hat sie einen eigenen Ton, den der Gesamtschein nie trifft: sie ist
+     zu klein, um ein Farbfach zu gewinnen. Gemessen wird deshalb nicht die
+     Flaeche, sondern die Spitze: die hellsten 5 % der oberen Bildhaelfte.
+     Ein Ergebnis zaehlt nur, wenn es wirklich leuchtet (Helligkeit ab 190)
+     und dabei bunt genug ist (ab 0,22). Das trennt sauber: die Schiffslampe
+     bei "The Mountains" kommt auf 0,27, der helle Himmel bei "The South" auf
+     0,01 und der Dunst bei "Track of Time" auf 0,16 -- dort bleibt es also
+     bei der einen Lage. */
+  function lampenFarbe(img) {
+    const N = 32;
+    const c = document.createElement('canvas');
+    c.width = c.height = N;
+    const ctx = c.getContext('2d', { willReadFrequently: true });
+    let d;
+    try {
+      ctx.drawImage(img, 0, 0, N, N);
+      d = ctx.getImageData(0, 0, N, N / 2).data;    // nur die obere Haelfte
+    } catch (e) { return null; }
+
+    const punkte = [];
+    for (let i = 0; i < d.length; i += 4) {
+      punkte.push([d[i], d[i + 1], d[i + 2], d[i] + d[i + 1] + d[i + 2]]);
+    }
+    punkte.sort(function (a, b) { return b[3] - a[3]; });
+    const n = Math.max(1, Math.round(punkte.length * 0.05));
+    let v = [0, 0, 0];
+    for (let i = 0; i < n; i++) {
+      v[0] += punkte[i][0]; v[1] += punkte[i][1]; v[2] += punkte[i][2];
+    }
+    v = v.map(function (x) { return x / n; });
+
+    const hoch = Math.max(v[0], v[1], v[2]), tief = Math.min(v[0], v[1], v[2]);
+    if (!hoch) return null;
+    if ((v[0] + v[1] + v[2]) / 3 < 190) return null;    // leuchtet nicht
+    if ((hoch - tief) / hoch < 0.22) return null;       // zu unbunt
+
+    /* Auf ein ruhiges Mass herunterziehen. Die gemessenen Werte liegen bei
+       ueber 230 -- als Schein waere das der hellste Fleck der Seite. */
+    return v.map(function (x) {
+      return Math.round(Math.min(255, Math.max(0, x * 168 / hoch)));
+    }).join(',');
+  }
+
   function buildAura(host) {
     if (!host || host.dataset.aura) return;
     const src = host.querySelector('img:not(.aura)');
@@ -2843,7 +2922,21 @@
       const ab = Math.max(0, Math.min(1, (hell - 120) / 110));
       aura.style.setProperty('--hof-deck', (0.8 - 0.26 * ab).toFixed(3));
       host.insertBefore(aura, host.firstChild);
-      requestAnimationFrame(function () { aura.classList.add('on'); });
+
+      const lampe = lampenFarbe(src);
+      let lampenLage = null;
+      if (lampe) {
+        lampenLage = document.createElement('div');
+        lampenLage.className = 'aura aura-lampe';
+        lampenLage.setAttribute('aria-hidden', 'true');
+        lampenLage.style.setProperty('--lampe', lampe);
+        host.insertBefore(lampenLage, host.firstChild);
+      }
+
+      requestAnimationFrame(function () {
+        aura.classList.add('on');
+        if (lampenLage) lampenLage.classList.add('on');
+      });
     }
 
     if (src.complete && src.naturalWidth) anlegen();
@@ -2933,43 +3026,6 @@
 
     zeige(i);
   })();
-
-  /* ---------- Schaerfefeld ----------
-     Folgt dem Zeiger mit leichter Verzoegerung, damit es sich wie eine
-     nachziehende Schaerfe anfuehlt und nicht wie ein angehefteter Kreis.
-     Nur bei echtem Zeigergeraet -- auf dem Handy gaebe es nichts zu folgen. */
-  const focusLayers = Array.from(document.querySelectorAll('.focus'));
-  const finePointer = window.matchMedia('(hover: hover) and (pointer: fine)').matches;
-  if (focusLayers.length && finePointer && !reducedMotion) {
-    let tx = window.innerWidth / 2, ty = window.innerHeight * 0.45;
-    let cx = tx, cy = ty, raf = null, live = false;
-
-    // Der Mittelpunkt liegt an der Wurzel -- beide Lagen erben ihn von dort.
-    const wurzel = document.documentElement;
-    function place() {
-      wurzel.style.setProperty('--fx', cx.toFixed(1) + 'px');
-      wurzel.style.setProperty('--fy', cy.toFixed(1) + 'px');
-    }
-    function tick() {
-      cx += (tx - cx) * 0.14;
-      cy += (ty - cy) * 0.14;
-      place();
-      raf = (Math.abs(tx - cx) > 0.4 || Math.abs(ty - cy) > 0.4)
-            ? requestAnimationFrame(tick) : null;
-    }
-    place();
-    document.addEventListener('pointermove', function (e) {
-      if (e.pointerType && e.pointerType !== 'mouse') return;
-      tx = e.clientX; ty = e.clientY;
-      if (!live) { live = true; cx = tx; cy = ty; place();
-                   focusLayers.forEach(function (l) { l.classList.add('on'); }); }
-      if (!raf) raf = requestAnimationFrame(tick);
-    }, { passive: true });
-    document.addEventListener('mouseleave', function () {
-      focusLayers.forEach(function (l) { l.classList.remove('on'); });
-      live = false;
-    });
-  }
 
   // Bilder in der Projektansicht laufen gestaffelt auf -- wie nacheinander
   // gesetzte Einstellungen, nicht als Block.
