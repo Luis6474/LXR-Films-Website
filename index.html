@@ -744,6 +744,86 @@
 
   footer { padding: 36px 0; text-align: center; font-size: 0.76em; letter-spacing: 0.14em; text-transform: uppercase; color: var(--text-dim); }
 
+  /* ---------- Projektschau ----------
+     Ein Projekt gross im Bild, dazwischen wird umgeschaltet.
+     Alle vier Aufnahmen liegen im Dokument und werden ueberblendet, statt die
+     Quelle eines einzigen Bildes zu tauschen: ein Quellenwechsel zeigt beim
+     ersten Betrachten eine Ladeluecke, eine Ueberblendung nie.
+     Die Filmtitel stehen in den Aufnahmen selbst -- deshalb steht daneben nur
+     die Gattung und die Schaltflaeche, kein zweiter Titel. */
+  .schau { position: relative; }
+  .schau-buehne {
+    position: relative;
+    aspect-ratio: 16 / 9;          /* Format der gelieferten Titelbilder */
+    background: var(--bg-deep);
+  }
+  /* Ueberschreibt die Vorgabe aus .aura-host (position: relative) -- die Bilder
+     liegen hier uebereinander, nicht nebeneinander. Der Lichthof braucht den
+     Kasten trotzdem als Bezug, und absolute Positionierung leistet das ebenso. */
+  .schau-bild {
+    position: absolute; inset: 0;
+    opacity: 0; pointer-events: none;
+    transition: opacity 1.1s var(--ease);
+  }
+  .schau-bild.is-an { opacity: 1; }
+  .schau-bild > img:not(.aura) { position: relative; z-index: 1; }
+
+  .schau-leiste {
+    display: flex; align-items: center; gap: 22px;
+    margin-top: 22px;
+  }
+  .schau-gattung { flex: 1; min-width: 0; color: var(--text-dim); }
+  .schau-steuer { display: flex; align-items: center; gap: 14px; flex-shrink: 0; }
+
+  /* 44 px in beiden Richtungen -- darunter wird die Flaeche mit dem Finger
+     unzuverlaessig, und das Publikum dieser Seite ist ueberwiegend 50+. */
+  .schau-pfeil {
+    width: 44px; height: 44px; flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center;
+    background: none; border: 1px solid var(--line); color: var(--text-dim);
+    font: inherit; font-size: 1em; line-height: 1; cursor: pointer;
+    transition: border-color 0.4s var(--ease), color 0.4s var(--ease);
+  }
+  .schau-pfeil:hover { border-color: var(--accent); color: var(--text); }
+  .schau-pfeil:focus-visible { outline: 1px solid var(--accent); outline-offset: 3px; }
+
+  .schau-punkte { display: flex; align-items: center; }
+  /* Der Punkt bleibt 7 px klein, die Schaltflaeche darum ist 44 px gross.
+     Sichtbar aendert sich dadurch nichts, treffen laesst sie sich aber. */
+  .schau-punkt {
+    width: 44px; height: 44px; padding: 0;
+    display: flex; align-items: center; justify-content: center;
+    background: none; border: none; cursor: pointer;
+  }
+  /* Striche statt Punkte: die Schaltflaeche muss 44 px breit sein, und ein
+     7-px-Punkt darin sieht verloren aus. Ein Strich fuellt die Breite
+     sinnvoll -- und liest sich wie eine Kapitelmarke. */
+  .schau-punkt::before {
+    content: ""; width: 20px; height: 2px;
+    background: var(--line);
+    transition: background 0.5s var(--ease), width 0.5s var(--ease);
+  }
+  .schau-punkt.is-an::before { background: var(--accent); width: 30px; }
+  .schau-punkt:focus-visible { outline: 1px solid var(--accent); outline-offset: -6px; }
+
+  .schau-ansehen {
+    flex-shrink: 0;
+    background: rgba(0,0,0,0.25); border: 1px solid var(--line);
+    color: var(--text); font: inherit;
+    font-size: 0.72em; font-weight: 500;
+    letter-spacing: 0.18em; text-transform: uppercase;
+    padding: 14px 24px; cursor: pointer;   /* ergibt 44 px Hoehe */
+    transition: border-color 0.4s var(--ease), background 0.4s var(--ease);
+  }
+  .schau-ansehen:hover { border-color: var(--accent); background: rgba(0,0,0,0.45); }
+  .schau-ansehen:focus-visible { outline: 1px solid var(--accent); outline-offset: 3px; }
+
+  /* Nur fuer Vorlesegeraete -- der Titel steht sichtbar im Bild. */
+  .nur-vorlesen {
+    position: absolute; width: 1px; height: 1px; overflow: hidden;
+    clip-path: inset(50%); white-space: nowrap;
+  }
+
   /* ---------- Projektansicht (Eintauchen) ---------- */
   .viewer {
     position: fixed; inset: 0; z-index: 900;
@@ -984,6 +1064,9 @@
     .hero-aura { width: 100vw; height: min(150vh, 121vw); }
     .m-word { font-size: clamp(1.25em, 7vw, 2em); }
     .card-open { display: none; }
+    .schau-leiste { flex-wrap: wrap; gap: 16px; }
+    .schau-gattung { flex-basis: 100%; }
+    .schau-ansehen { margin-left: auto; }
     .card-preview { width: 96px; }
     .card-head { gap: 14px; padding: 15px 0; }
     .card-titleline { display: block; }
@@ -1032,6 +1115,7 @@
     html { scroll-behavior: auto; }
     .grain { animation: none; }
     .page, .viewer, .viewer-inner, .lb-bar, .card-preview img { transition-duration: 0.01ms; }
+    .schau-bild { transition-duration: 0.01ms; }
     /* Inhalte sofort zeigen, statt sie an eine Scroll-Animation zu koppeln. */
     .js .reveal, .js .reveal-media { opacity: 1; transform: none; filter: none; transition: none; }
     .holds .standout { position: static; }
@@ -1111,6 +1195,61 @@
           </div>
           <figcaption>Teleaufnahmen für „The same gray“ in Schottland</figcaption>
         </figure>
+      </div>
+    </div>
+  </section>
+
+  <!-- Projektschau: ein Titelbild gross, dazwischen wird umgeschaltet.
+       Reihenfolge wie vorgegeben. Bewusst ohne eigene Ueberschrift, damit es
+       neben der Liste weiter unten nicht zweimal "Projekte" heisst. -->
+  <section class="band schau-band">
+    <div class="band-inner">
+      <div class="schau reveal-media" id="schau" aria-roledescription="Projektschau">
+        <div class="schau-buehne">
+        <div class="schau-bild aura-host is-an" data-viewer="v2" data-titel="The Same Gray"
+             data-gattung="Porträtfilm · Schottland" data-film="0" aria-hidden="false">
+          <img src="Images/web/thumbnails/thumbnailsamegrey-2400.webp"
+               srcset="Images/web/thumbnails/thumbnailsamegrey-800.webp 800w, Images/web/thumbnails/thumbnailsamegrey-1600.webp 1600w, Images/web/thumbnails/thumbnailsamegrey-2400.webp 2400w"
+               sizes="(min-width: 1164px) 1120px, calc(100vw - 44px)"
+               alt="Titelbild „The Same Gray“: Porträt eines älteren Mannes vor nebligen Bergen" loading="lazy" decoding="async">
+        </div>
+        <div class="schau-bild aura-host" data-viewer="v3" data-titel="The Mountains"
+             data-gattung="Reisefilm · Bayern &amp; Norditalien" data-film="1" aria-hidden="true">
+          <img src="Images/web/thumbnails/thumbnailoesterreich25-1280.webp"
+               srcset="Images/web/thumbnails/thumbnailoesterreich25-800.webp 800w, Images/web/thumbnails/thumbnailoesterreich25-1280.webp 1280w"
+               sizes="(min-width: 1164px) 1120px, calc(100vw - 44px)"
+               alt="Titelbild „The Mountains“: Boot auf einem See im Gegenlicht der aufgehenden Sonne" loading="lazy" decoding="async">
+        </div>
+        <div class="schau-bild aura-host" data-viewer="v4" data-titel="Track of Time"
+             data-gattung="Kurzfilm · historische Eisenbahn" data-film="1" aria-hidden="true">
+          <img src="Images/web/thumbnails/thumbnailtrackoftime-1280.webp"
+               srcset="Images/web/thumbnails/thumbnailtrackoftime-800.webp 800w, Images/web/thumbnails/thumbnailtrackoftime-1280.webp 1280w"
+               sizes="(min-width: 1164px) 1120px, calc(100vw - 44px)"
+               alt="Titelbild „Track of Time“: Dampflokomotive zwischen Bäumen" loading="lazy" decoding="async">
+        </div>
+        <div class="schau-bild aura-host" data-viewer="v5" data-titel="The South"
+             data-gattung="Reisefilm · Österreich, Italien, Bayern" data-film="1" aria-hidden="true">
+          <img src="Images/web/thumbnails/thumbnail-oesterreich24-2400.webp"
+               srcset="Images/web/thumbnails/thumbnail-oesterreich24-800.webp 800w, Images/web/thumbnails/thumbnail-oesterreich24-1600.webp 1600w, Images/web/thumbnails/thumbnail-oesterreich24-2400.webp 2400w"
+               sizes="(min-width: 1164px) 1120px, calc(100vw - 44px)"
+               alt="Titelbild „The South“: fünf Bildstreifen von Schloss, Mosaik, Kanal, Kirchturm und Venedig" loading="lazy" decoding="async">
+        </div>
+        </div>
+
+        <div class="schau-leiste">
+          <span class="eyebrow schau-gattung" id="schau-gattung">Porträtfilm · Schottland</span>
+          <div class="schau-steuer">
+            <button class="schau-pfeil" type="button" data-schritt="-1"
+                    aria-label="Vorheriges Projekt">&#8249;</button>
+            <div class="schau-punkte" id="schau-punkte"></div>
+            <button class="schau-pfeil" type="button" data-schritt="1"
+                    aria-label="Nächstes Projekt">&#8250;</button>
+          </div>
+          <button class="schau-ansehen" type="button" id="schau-ansehen"
+                  data-viewer="v2" aria-haspopup="dialog">
+            Ansehen<span class="nur-vorlesen">: The Same Gray</span>
+          </button>
+        </div>
       </div>
     </div>
   </section>
@@ -2044,6 +2183,11 @@
     if (busy) return;
     const viewer = document.getElementById(trigger.dataset.viewer);
     if (!viewer) return;
+    /* "direkt" kommt von der Projektschau: von dort aus fuehrt "Ansehen"
+       nicht auf die Projektseite, sondern gleich ins Vollbild des Films.
+       Die Projektseite wird trotzdem ganz normal geoeffnet -- sie liegt dann
+       hinter dem Vollbild, und genau dort landet man beim Verlassen. */
+    const direkt = trigger.dataset.direkt === '1';
     busy = true;
     current = viewer;
 
@@ -2078,6 +2222,24 @@
 
       viewer.querySelectorAll('.aura-host').forEach(buildAura);
       viewer.querySelector('.viewer-scroll').scrollTop = 0;
+
+      /* Jetzt, hinter der gerade aufgehenden Blende, ins Vollbild. Der Film
+         haengt schon seit dem Klick drin, die Buehne hat also eine Groesse
+         und laesst sich einpassen.
+         Der Aufruf liegt rund 900 ms nach dem Klick. Das ist noch innerhalb
+         der Zeitspanne, in der ein Browser eine Vollbildanfrage als vom
+         Nutzer ausgeloest anerkennt; wird sie dennoch abgelehnt, faengt der
+         Ersatz aus vollbild() das ab und es sieht gleich aus.
+         Ohne Film (Schottland hat noch keine Video-Kennung) bleibt es bei der
+         Projektseite -- ein Vollbild ohne Inhalt waere eine schwarze Flaeche. */
+      if (direkt) {
+        const wrap = viewer.querySelector('.stage-wrap');
+        const stage = viewer.querySelector('.viewer-stage');
+        if (wrap && wrap._fsUm && stage && stage.classList.contains('has-video')) {
+          wrap._fsUm();
+        }
+      }
+
       setTimeout(function () {
         busy = false;
         const closeBtn = viewer.querySelector('.viewer-close');
@@ -2489,6 +2651,91 @@
     else src.addEventListener('load', anlegen, { once: true });
   }
   document.querySelectorAll('.page .aura-host').forEach(buildAura);
+
+  /* ---------- Projektschau ----------
+     Ein Titelbild gross, dazwischen wird umgeschaltet. Die Bilder liegen alle
+     im Dokument und werden ueberblendet (siehe CSS); hier wird nur die Klasse
+     gesetzt und die Leiste darunter nachgefuehrt. */
+  (function schau() {
+    const wurzel = document.getElementById('schau');
+    if (!wurzel) return;
+    const bilder = Array.from(wurzel.querySelectorAll('.schau-bild'));
+    if (bilder.length < 2) return;
+
+    const gattung = document.getElementById('schau-gattung');
+    const ansehen = document.getElementById('schau-ansehen');
+    const punkteBox = document.getElementById('schau-punkte');
+    let i = bilder.findIndex(function (b) { return b.classList.contains('is-an'); });
+    if (i < 0) i = 0;
+
+    // Punkte aus den vorhandenen Bildern bauen -- so bleibt die Zahl der
+    // Punkte automatisch richtig, wenn ein Projekt dazukommt oder wegfaellt.
+    const punkte = bilder.map(function (b, k) {
+      const p = document.createElement('button');
+      p.type = 'button';
+      p.className = 'schau-punkt';
+      p.setAttribute('aria-label', b.dataset.titel || ('Projekt ' + (k + 1)));
+      p.addEventListener('click', function () { zeige(k); });
+      punkteBox.appendChild(p);
+      return p;
+    });
+
+    function zeige(n) {
+      i = (n + bilder.length) % bilder.length;
+      bilder.forEach(function (b, k) {
+        const an = k === i;
+        b.classList.toggle('is-an', an);
+        b.setAttribute('aria-hidden', an ? 'false' : 'true');
+      });
+      punkte.forEach(function (p, k) {
+        p.classList.toggle('is-an', k === i);
+        if (k === i) p.setAttribute('aria-current', 'true');
+        else p.removeAttribute('aria-current');
+      });
+      const b = bilder[i];
+      gattung.textContent = b.dataset.gattung || '';
+      ansehen.dataset.viewer = b.dataset.viewer || '';
+      // Ohne Film fuehrt "Ansehen" auf die Projektseite statt ins Vollbild.
+      if (b.dataset.film === '0') delete ansehen.dataset.direkt;
+      else ansehen.dataset.direkt = '1';
+      const marke = ansehen.querySelector('.nur-vorlesen');
+      if (marke) marke.textContent = ': ' + (b.dataset.titel || '');
+    }
+
+    wurzel.querySelectorAll('[data-schritt]').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        zeige(i + Number(btn.dataset.schritt));
+      });
+    });
+
+    /* Pfeiltasten, aber nur wenn der Fokus in der Schau steht -- sonst wuerde
+       die Schau das seitliche Blaettern der ganzen Seite an sich ziehen. */
+    wurzel.addEventListener('keydown', function (e) {
+      if (e.key === 'ArrowLeft') { e.preventDefault(); zeige(i - 1); }
+      else if (e.key === 'ArrowRight') { e.preventDefault(); zeige(i + 1); }
+    });
+
+    /* Wischen. Auf dem Handy ist das die naheliegende Geste, und ohne sie
+       wirkt eine solche Flaeche kaputt. Senkrechte Bewegungen bleiben beim
+       Scrollen -- deshalb wird erst ab einem klaren Uebergewicht zur Seite
+       umgeschaltet. */
+    const buehne = wurzel.querySelector('.schau-buehne');
+    let startX = null, startY = null;
+    buehne.addEventListener('pointerdown', function (e) {
+      if (e.pointerType === 'mouse') return;
+      startX = e.clientX; startY = e.clientY;
+    }, { passive: true });
+    buehne.addEventListener('pointerup', function (e) {
+      if (startX === null) return;
+      const dx = e.clientX - startX, dy = e.clientY - startY;
+      startX = startY = null;
+      if (Math.abs(dx) > 45 && Math.abs(dx) > Math.abs(dy) * 1.6) {
+        zeige(i + (dx < 0 ? 1 : -1));
+      }
+    }, { passive: true });
+
+    zeige(i);
+  })();
 
   /* ---------- Schaerfefeld ----------
      Folgt dem Zeiger mit leichter Verzoegerung, damit es sich wie eine
