@@ -2014,8 +2014,16 @@
        Millisekunden; teuer war allein das Kodieren, und das laeuft jetzt im
        Hintergrund. */
     try {
-      sternenkachel(600, 96, setze('--sterne-a'));
-      sternenkachel(437, 56, setze('--sterne-b'));
+      /* Mehr Sterne, auf dem Handy deutlich mehr. Die Kacheln sind in
+         CSS-Pixeln bemessen, die Dichte je Flaeche ist also auf jedem Geraet
+         gleich -- aber auf dem kleinen Schirm stehen die Bilder ueber die
+         ganze Breite, ihre Hoefe decken dort anteilig mehr Himmel ab, und
+         was frei bleibt, ist schmal. PC: 96/56 -> 124/72 (+30 %),
+         Handy: 330/192 -- gezaehlt rund 1,7-mal so viele sichtbare Sterne
+         je Flaeche wie am PC. */
+      const handy = window.matchMedia('(max-width: 700px)').matches;
+      sternenkachel(600, handy ? 330 : 124, setze('--sterne-a'));
+      sternenkachel(437, handy ? 192 : 72, setze('--sterne-b'));
     } catch (e) { /* ohne Sterne ist der Himmel leer, aber nichts kaputt */ }
 
     // Das Korn: jeder Schritt eine eigene Aufgabe, dazwischen darf der
