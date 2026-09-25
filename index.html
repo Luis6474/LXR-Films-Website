@@ -851,13 +851,21 @@
   .schau.ist-karussell .schau-lauf {
     position: relative;
     /* eine Bildschirmhoehe zum Stehenbleiben, dazu je Uebergang eine Strecke */
-    height: calc(100dvh + var(--schritte, 3) * 84dvh);
+    /* 84dvh -> 30dvh je Film. Ein Radschritt ist rund 100 px; vorher
+       brauchte ein Wechsel sieben bis acht davon, jetzt zwei bis drei --
+       und schon der erste setzt die Drehung in Gang (siehe Nachziehen). */
+    height: calc(100dvh + var(--schritte, 3) * 30dvh);
   }
   .schau.ist-karussell .schau-halt {
     /* Kleiner: mal 0,8. Vorher fuellte das Bild fast die ganze Breite und
        stand damit zu prominent im Vordergrund -- das Karussell soll ein
        Element auf der Seite sein, keine eigene Buehne. */
-    --schau-h: calc(0.8 * min(calc((100vw - 32px) * 9 / 16), calc(100dvh - 118px)));
+    /* Noch einmal kleiner -- aber nur dort, wo Platz ist. Die Grenze haengt
+       jetzt an der Fensterhoehe (55 %), nicht mehr als Faktor an allem: ein
+       Faktor hatte auch das Handy mitgeschrumpft, wo ohnehin schon die
+       Breite begrenzt (229 px breit auf einem 390er Telefon). So bleibt es
+       dort formatfuellend, und am PC steht das Bild bei rund 55 % der Hoehe. */
+    --schau-h: min(calc((100vw - 32px) * 9 / 16), calc(0.55 * 100dvh));
     position: sticky; top: 0;
     height: 100dvh;
     display: flex; flex-direction: column;
@@ -3134,7 +3142,7 @@
        Dazwischen eine Kurve, die an beiden Enden waagerecht auslaeuft -- das
        ist der Unterschied zwischen einer Kamerafahrt und einem Ruck. */
     function rast(x) {
-      const RUHE = 0.20;
+      const RUHE = 0.08;          // kurze Ruhezonen: frueh ansprechen
       if (x <= RUHE) return 0;
       if (x >= 1 - RUHE) return 1;
       const u = (x - RUHE) / (1 - 2 * RUHE);
@@ -3253,23 +3261,64 @@
        den naechsten Film nachgefahren -- aber erst, wenn das Scrollen
        wirklich aufgehoert hat, sonst wuerde die Seite gegen die Hand
        arbeiten. Waehrend der eigenen Fahrt ist es abgeschaltet. */
-    let eigen = false, ruhe = null;
+    /* Nachziehen, jetzt weich und in Scrollrichtung.
+       Vorher: 170 ms nach dem letzten Radschritt zog der Browser die Seite
+       mit seinem eigenen "smooth" zum NAECHSTGELEGENEN Film -- schnell,
+       nicht abstimmbar, und nach einem einzelnen Radschritt zurueck zum
+       alten Film. Das fuehlte sich an wie ein Gummiband.
+       Jetzt: die Richtung des letzten Scrollens entscheidet. Wer auch nur
+       ein Stueck weiter gedreht hat, kommt beim naechsten Film an; wer ein
+       Stueck zurueck gedreht hat, beim vorigen. Gefahren wird mit einer
+       eigenen, langsamen Kurve (0,9 s, weich an- und auslaufend), dieselbe
+       Art Bewegung wie die Einblendungen auf dem Rest der Seite. Greift der
+       Nutzer waehrenddessen wieder ein -- Rad, Finger, Taste --, bricht die
+       Fahrt sofort ab und gibt ihm die Seite zurueck. */
+    let eigen = false, ruhe = null, fahrt = null, richtung = 1, letztesY = window.scrollY;
+    /* "drinnen" heisst: das Karussell stand zuletzt auf einem Film. Nur dann
+       bedeutet ein Stueck Scrollen "zum naechsten". Kommt man von aussen
+       herein, ist der erste Schritt nur das Ankommen -- sonst wuerde beim
+       Hineinscrollen von oben "The Same Gray" uebersprungen. */
+    let drinnen = false;
+    function rohStand() {
+      const s = strecke();
+      return s > 0 ? -lauf.getBoundingClientRect().top / s : 0;
+    }
+    function glatt(x) { return x < 0.5 ? 4 * x * x * x : 1 - Math.pow(-2 * x + 2, 3) / 2; }
+    function abbrechen() {
+      if (fahrt) { cancelAnimationFrame(fahrt); fahrt = null; eigen = false; }
+    }
+    ['wheel', 'touchstart', 'keydown', 'mousedown'].forEach(function (typ) {
+      window.addEventListener(typ, abbrechen, { passive: true, capture: true });  // Erfassen: vor dem Tastengriff der Schau, sonst braeche er seine eigene Fahrt ab
+    });
     function fahreZu(ziel) {
       const s = strecke();
       if (s <= 0) return;
+      abbrechen();
       const oben = lauf.getBoundingClientRect().top + window.scrollY;
+      const von = window.scrollY;
+      const nach = Math.round(oben + s * ziel / (N - 1));
+      const weg = nach - von;
+      if (Math.abs(weg) < 1) return;
+      const dauer = 900;
+      const t0 = performance.now();
       eigen = true;
-      window.scrollTo({ top: Math.round(oben + s * ziel / (N - 1)), behavior: 'smooth' });
-      setTimeout(function () { eigen = false; }, 900);
+      (function schritt(jetzt) {
+        const x = Math.min(1, (jetzt - t0) / dauer);
+        window.scrollTo({ top: von + weg * glatt(x), behavior: 'instant' });
+        if (x < 1) fahrt = requestAnimationFrame(schritt);
+        else { fahrt = null; drinnen = true; setTimeout(function () { eigen = false; }, 60); }
+      })(t0);
     }
     function nachziehen() {
       if (eigen) return;
-      const p = stand();
-      if (p <= 0.002 || p >= 0.998) return;      // ausserhalb: normal scrollen
-      const roh = p * (N - 1);
-      const ziel = Math.round(roh);
-      if (Math.abs(roh - ziel) < 0.01) return;
-      fahreZu(ziel);
+      const r = rohStand();
+      if (r < -0.001 || r > 1.001) return;        // ausserhalb: normal scrollen
+      if (r <= 0.002 || r >= 0.998) { drinnen = true; return; }   // steht am Rand-Film
+      const roh = r * (N - 1);
+      const unten = Math.floor(roh), rest = roh - unten;
+      if (rest < 0.01 || rest > 0.99) { drinnen = true; return; }
+      if (drinnen) fahreZu(richtung > 0 ? unten + 1 : unten);
+      else fahreZu(richtung > 0 ? unten : unten + 1);    // erst ankommen
     }
 
     let offen = false;
@@ -3278,8 +3327,13 @@
         offen = true;
         requestAnimationFrame(function () { offen = false; stelle(); });
       }
+      const y = window.scrollY;
+      if (!eigen && y !== letztesY) richtung = y > letztesY ? 1 : -1;
+      const r = rohStand();
+      if (r < -0.001 || r > 1.001) drinnen = false;
+      letztesY = y;
       clearTimeout(ruhe);
-      ruhe = setTimeout(nachziehen, 170);
+      ruhe = setTimeout(nachziehen, 140);
     }
     window.addEventListener('scroll', anstossen, { passive: true });
     window.addEventListener('resize', function () {
