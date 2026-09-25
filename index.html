@@ -865,7 +865,9 @@
        Faktor hatte auch das Handy mitgeschrumpft, wo ohnehin schon die
        Breite begrenzt (229 px breit auf einem 390er Telefon). So bleibt es
        dort formatfuellend, und am PC steht das Bild bei rund 55 % der Hoehe. */
-    --schau-h: min(calc((100vw - 32px) * 9 / 16), calc(0.55 * 100dvh));
+    /* Kleiner: 55 % -> 45 % der Fensterhoehe am PC, auf dem Handy 88 % der
+       Breite statt der vollen. */
+    --schau-h: min(calc((100vw - 32px) * 0.88 * 9 / 16), calc(0.45 * 100dvh));
     position: sticky; top: 0;
     height: 100dvh;
     display: flex; flex-direction: column;
@@ -3273,14 +3275,16 @@
       }
     }
 
+    let breite = buehne.offsetWidth;
     function zeichne(winkel) {
 
-      /* Der Bahnradius haengt an der Fensterbreite, nicht am Bild: die
-         seitlichen Bilder sollen auf jedem Bildschirm gleich weit aus dem
-         Rahmen laufen. 0,62 heisst, ihr Mittelpunkt liegt 62 % der halben
-         Fensterbreite neben der Mitte -- sie stehen damit zu ungefaehr zwei
-         Dritteln ausserhalb. */
-      const R = 0.62 * window.innerWidth / (1 - NAEHE);
+      /* Engere Bahn: der Radius haengt jetzt an der Bildbreite statt an der
+         Fensterbreite. Seit immer nur ein Bild sichtbar ist, muessen die
+         seitlichen nicht mehr aus dem Rahmen laufen -- zu sehen ist nur
+         noch, wie weit das alte Bild beim Wechsel zur Seite wandert. In der
+         Mitte der Ueberblendung sind das jetzt gut 60 % der Bildbreite
+         statt rund 120 %. */
+      const R = 1.1 * breite;
 
       let besterK = 0, bestesC = -2;
       for (let k = 0; k < N; k++) {
@@ -3394,6 +3398,7 @@
     }
     window.addEventListener('scroll', anstossen, { passive: true });
     window.addEventListener('resize', function () {
+      breite = buehne.offsetWidth;
       clearTimeout(ruhe);
       if (anzeige !== null) zeichne(anzeige);
       stelle();
