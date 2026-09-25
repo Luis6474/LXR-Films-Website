@@ -1817,38 +1817,69 @@
       GLOCKE[i] = (s - 3) / 0.7071;      // Mittelwert 0, Standardabweichung 1
     }
 
-    /* Ein Durchgang Weichzeichnung, umlaufend gerechnet, damit die Kachel
-       nahtlos bleibt. Zwei Durchgaenge ergeben runde Koerner statt Einzelpunkte. */
-    function weich(src, K) {
+    /* Leistung, ohne am Ergebnis etwas zu aendern. Gemessen auf einem Handy
+       mit vierfach gedrosseltem Prozessor lag hier eine einzige Aufgabe von
+       rund 370 ms, die den Seitenaufbau blockiert hat. Vier Aenderungen:
+       1. Weichzeichnung in einem Durchgang je Richtung mit dem Kern
+          1-4-6-4-1 statt zweimal 1-2-1. Das ist rechnerisch dasselbe (der
+          eine Kern IST die zweimalige Anwendung des anderen), nur halb so
+          viele Durchlaeufe.
+       2. Die Kennlinie (Tangens hyperbolicus) wird einmal als Tabelle
+          vorgerechnet statt fuer jeden der rund zwei Millionen Bildpunkte neu.
+          Die Tabelle ist so fein, dass hoechstens vereinzelte Punkte um eine
+          von 256 Stufen abweichen.
+       3. Ein schneller Zufallsgenerator (mulberry32) statt Math.random fuer
+          die Million Auslosungen je Kachel -- gleiche Gleichverteilung.
+       4. Das PNG wird mit toBlob im Hintergrund kodiert statt mit toDataURL
+          auf dem Hauptfaden, und jeder Arbeitsschritt laeuft als eigene
+          Aufgabe erst nach dem ersten Bild. Die Seite steht damit, bevor
+          gerechnet wird; das Korn liegt ohnehin unter dem Hero-Film. */
+    let saat = 0;                 // wird erst beim ersten Rauschfeld gesetzt
+    function zufall() {
+      saat = (saat + 0x6D2B79F5) | 0;
+      let z = Math.imul(saat ^ (saat >>> 15), 1 | saat);
+      z = (z + Math.imul(z ^ (z >>> 7), 61 | z)) ^ z;
+      return ((z ^ (z >>> 14)) >>> 0) / 4294967296;
+    }
+
+    function gewuerfelt(n) {
+      const f = new Float32Array(n);
+      for (let i = 0; i < n; i++) f[i] = GLOCKE[(zufall() * 8192) | 0];
+      return f;
+    }
+
+    /* 1-4-6-4-1 je Richtung, umlaufend, damit die Kachel nahtlos bleibt.
+       Ergibt runde Koerner statt Einzelpunkte. Die beiden Richtungen sind
+       getrennte Funktionen, damit sie als getrennte Aufgaben laufen koennen. */
+    function weichQuer(src, K) {
       const tmp = new Float32Array(K * K);
-      const out = new Float32Array(K * K);
       for (let y = 0; y < K; y++) {
         const z = y * K;
         for (let x = 0; x < K; x++) {
-          tmp[z + x] = 0.25 * src[z + (x ? x - 1 : K - 1)]
-                     + 0.5  * src[z + x]
-                     + 0.25 * src[z + (x + 1 === K ? 0 : x + 1)];
+          const l2 = x > 1 ? x - 2 : x + K - 2, l1 = x ? x - 1 : K - 1;
+          const r1 = x + 1 < K ? x + 1 : x + 1 - K, r2 = x + 2 < K ? x + 2 : x + 2 - K;
+          tmp[z + x] = (src[z + l2] + src[z + r2]
+                      + 4 * (src[z + l1] + src[z + r1]) + 6 * src[z + x]) * 0.0625;
         }
       }
+      return tmp;
+    }
+    function weichHoch(tmp, K) {
+      const out = new Float32Array(K * K);
       for (let y = 0; y < K; y++) {
-        const o = (y ? y - 1 : K - 1) * K;
-        const u = (y + 1 === K ? 0 : y + 1) * K;
+        const o2 = (y > 1 ? y - 2 : y + K - 2) * K, o1 = (y ? y - 1 : K - 1) * K;
+        const u1 = (y + 1 < K ? y + 1 : y + 1 - K) * K, u2 = (y + 2 < K ? y + 2 : y + 2 - K) * K;
         const z = y * K;
         for (let x = 0; x < K; x++) {
-          out[z + x] = 0.25 * tmp[o + x] + 0.5 * tmp[z + x] + 0.25 * tmp[u + x];
+          out[z + x] = (tmp[o2 + x] + tmp[u2 + x]
+                      + 4 * (tmp[o1 + x] + tmp[u1 + x]) + 6 * tmp[z + x]) * 0.0625;
         }
       }
       return out;
     }
 
-    function gewuerfelt(n) {
-      const f = new Float32Array(n);
-      for (let i = 0; i < n; i++) f[i] = GLOCKE[(Math.random() * 8192) | 0];
-      return f;
-    }
-
     // Auf die tatsaechliche Streuung normieren statt auf einen geschaetzten
-    // Faktor -- die haengt von der Zahl der Durchgaenge ab.
+    // Faktor.
     function norm(f) {
       let s2 = 0;
       for (let i = 0; i < f.length; i++) s2 += f[i] * f[i];
@@ -1857,35 +1888,43 @@
       return f;
     }
 
-    /* EINE feine Lage -- nach einem Umweg wieder.
-       Zwischendurch lagen hier drei Groessenordnungen uebereinander
-       (Einzelkorn, Klumpen, und die Zonen, in denen die Klumpen dichter
-       stehen). Als Nachbildung echten Filmkorns war das richtig, in
-       Originalgroesse aber schlicht zu grob: auf dem ruhigen Grund standen
-       wolkige Flecken, die dem Bild Kontrast genommen statt Struktur gegeben
-       haben.
-       Nachgemessen war der Umweg auch gar nicht noetig. Der Eindruck von
-       "digitalem Sensorrauschen" kam zum groessten Teil nicht vom Korn selbst,
-       sondern davon, dass es auf den FOTOS lag -- dort sogar in zwei Lagen
-       uebereinander. Auf Bildern liegt jetzt gar keines mehr (siehe z-index
-       der Kornschicht), und damit traegt die feine Lage allein.
-       Gemessen: Korngroesse 0,96 px. Eine zusaetzliche grobe Lage mit 8 bis
-       15 % Anteil haette daran nichts geaendert -- ebenfalls 0,96 px -- und
-       waere reine Rechenzeit beim Seitenaufbau gewesen. */
-    function rauschfeld() {
-      return norm(weich(weich(gewuerfelt(S * S), S), S));
+    // Eine feine Lage. Gemessen: Korngroesse 0,96 px.
+    function wuerfeln() {
+      if (!saat) saat = ((Math.random() * 4294967296) >>> 0) || 1;
+      return gewuerfelt(S * S);
     }
 
-    function tile(feld, abbild) {
+    function alsUrl(canvas, fertig) {
+      if (canvas.toBlob) {
+        canvas.toBlob(function (b) {
+          fertig('url("' + (b ? URL.createObjectURL(b) : canvas.toDataURL('image/png')) + '")');
+        }, 'image/png');
+      } else {
+        fertig('url("' + canvas.toDataURL('image/png') + '")');
+      }
+    }
+
+    // Tabelle fuer die Kennlinie: 1/1024 Schritt ueber -8 .. +8.
+    const TAB_N = 16384, TAB_S = 1024, TAB_M = 8;
+    const kleinEndig = new Uint8Array(new Uint32Array([1]).buffer)[0] === 1;
+
+    function tile(feld, abbild, fertig) {
+      const tab = new Uint32Array(TAB_N);
+      for (let i = 0; i < TAB_N; i++) {
+        const v = abbild((i + 0.5) / TAB_S - TAB_M);
+        const g = v < 0 ? 0 : (v > 255 ? 255 : v) | 0;
+        tab[i] = kleinEndig ? (0xFF000000 | (g << 16) | (g << 8) | g) >>> 0
+                            : ((g << 24) | (g << 16) | (g << 8) | 0xFF) >>> 0;
+      }
       const gross = document.createElement('canvas');
       gross.width = gross.height = S;
       const gctx = gross.getContext('2d');
       const im = gctx.createImageData(S, S);
-      const d = im.data;
-      for (let i = 0, p = 0; i < d.length; i += 4, p++) {
-        const v = abbild(feld[p]);
-        d[i] = d[i + 1] = d[i + 2] = v < 0 ? 0 : (v > 255 ? 255 : v) | 0;
-        d[i + 3] = 255;
+      const px = new Uint32Array(im.data.buffer);
+      for (let p = 0; p < px.length; p++) {
+        let i = ((feld[p] + TAB_M) * TAB_S) | 0;
+        if (i < 0) i = 0; else if (i >= TAB_N) i = TAB_N - 1;
+        px[p] = tab[i];
       }
       gctx.putImageData(im, 0, 0);
 
@@ -1896,7 +1935,7 @@
       kctx.imageSmoothingEnabled = true;
       kctx.imageSmoothingQuality = 'high';
       kctx.drawImage(gross, 0, 0, ZIEL, ZIEL);
-      return 'url("' + klein.toDataURL('image/png') + '")';
+      alsUrl(klein, fertig);
     }
 
     /* Sternenkachel, deckend. Schwarzer Grund, graue Sterne -- siehe den
@@ -1909,7 +1948,7 @@
        schwache, wenige helle. Ein gleichverteilter Himmel sieht aus wie
        hingestreut, ein schiefer wie gewachsen -- und nur die wenigen hellen
        ueberstehen einen Lichthof. */
-    function sternenkachel(kante, zahl) {
+    function sternenkachel(kante, zahl, fertig) {
       const c = document.createElement('canvas');
       c.width = c.height = kante;
       const x = c.getContext('2d');
@@ -1952,47 +1991,55 @@
           }
         }
       }
-      return 'url("' + c.toDataURL('image/png') + '")';
+      alsUrl(c, fertig);
     }
 
-    try {
-      const wurzel2 = document.documentElement;
-      /* Leicht mehr Sterne (58/34 -> 68/40). Die gedeckelte Staerke nimmt
-         den hellen Stellen die Sterne; im Dunkeln soll es dafuer eine Spur
-         voller werden -- aber nur eine Spur, sonst kippt der Himmel von
-         gewachsen in gestreut. */
-      wurzel2.style.setProperty('--sterne-a', sternenkachel(600, 96));
-      wurzel2.style.setProperty('--sterne-b', sternenkachel(437, 56));
-    } catch (e) {
-      // Ohne Sterne ist der Himmel leer, aber nichts ist kaputt.
-    }
+    const root = document.documentElement;
+    // Kachel genau im Raster der Bildpunkte anzeigen -- kein Umrechnen.
+    root.style.setProperty('--grain-size', (ZIEL / DPR) + 'px');
 
-    try {
-      /* Mitteltoene: um den neutralen Wert 128. Die Kennlinie laeuft sanft aus,
-         erreicht die Grenzen also nie -- kein hartes Abschneiden. */
-      const mitte = tile(rauschfeld(), function (n) {
-        /* Leicht unsymmetrisch. Ein Silberkorn setzt Dichte, es nimmt keine
-           weg -- die Verteilung einer Filmschicht ist deshalb zur hellen Seite
-           hin etwas laenger gezogen als zur dunklen. Ein exakt symmetrisches
-           Rauschen ist dagegen das Erkennungszeichen eines Sensors. */
-        return 128 + 62 * Math.tanh(n * (n > 0 ? 0.70 : 0.55));
-      });
-      /* Tiefen: der Betrag der Abweichung, damit JEDER Bildpunkt Korn traegt
-         und nicht nur jeder sechste. Auch hier weich auslaufend. */
-      /* Diese Kachel liegt nicht nur im bewegten Korn, sondern auch in der
-         stillstehenden Dither-Schicht (siehe CSS) -- und was stillsteht,
-         wiederholt sich sichtbar. Umso wichtiger, dass sie fein bleibt. */
-      const tiefen = tile(rauschfeld(), function (n) {
-        return 77 * Math.tanh((n < 0 ? -n : n) * 0.72);
-      });
-      const root = document.documentElement;
-      root.style.setProperty('--grain-mid-img', mitte);
-      root.style.setProperty('--grain-dark-img', tiefen);
-      // Kachel genau im Raster der Bildpunkte anzeigen -- kein Umrechnen.
-      root.style.setProperty('--grain-size', (ZIEL / DPR) + 'px');
-    } catch (e) {
-      // Ohne Korn sieht die Seite ruhiger aus, aber nichts ist kaputt.
+    /* Mitteltoene: um den neutralen Wert 128, leicht unsymmetrisch. Ein
+       Silberkorn setzt Dichte, es nimmt keine weg -- die Verteilung einer
+       Filmschicht ist zur hellen Seite hin etwas laenger gezogen. Ein exakt
+       symmetrisches Rauschen ist das Erkennungszeichen eines Sensors. */
+    function mitteAbbild(n) { return 128 + 62 * Math.tanh(n * (n > 0 ? 0.70 : 0.55)); }
+    /* Tiefen: der Betrag der Abweichung, damit JEDER Bildpunkt Korn traegt.
+       Diese Kachel liegt auch in der stillstehenden Dither-Schicht. */
+    function tiefenAbbild(n) { return 77 * Math.tanh((n < 0 ? -n : n) * 0.72); }
+
+    function setze(name) {
+      return function (url) { root.style.setProperty(name, url); };
     }
+    /* Die Sterne werden sofort gezeichnet -- das kostet nur wenige
+       Millisekunden; teuer war allein das Kodieren, und das laeuft jetzt im
+       Hintergrund. */
+    try {
+      sternenkachel(600, 96, setze('--sterne-a'));
+      sternenkachel(437, 56, setze('--sterne-b'));
+    } catch (e) { /* ohne Sterne ist der Himmel leer, aber nichts kaputt */ }
+
+    // Das Korn: jeder Schritt eine eigene Aufgabe, dazwischen darf der
+    // Browser zeichnen.
+    let feld = null;
+    /* Je Kachel vier Schritte, jeder auch auf einem gedrosselten Handy
+       unter 50 ms -- ab dieser Dauer gilt eine Aufgabe als blockierend. */
+    function kachel(abbild, name) {
+      return [
+        function () { feld = wuerfeln(); },
+        function () { feld = weichQuer(feld, S); },
+        function () { feld = norm(weichHoch(feld, S)); },
+        function () { tile(feld, abbild, setze(name)); feld = null; }
+      ];
+    }
+    const schritte = kachel(mitteAbbild, '--grain-mid-img')
+      .concat(kachel(tiefenAbbild, '--grain-dark-img'));
+    function weiter() {
+      const s = schritte.shift();
+      if (!s) return;
+      try { s(); } catch (e) { /* ohne Korn oder Sterne: ruhiger, nichts kaputt */ }
+      setTimeout(weiter, 0);
+    }
+    requestAnimationFrame(function () { setTimeout(weiter, 0); });
   })();
 
   /* ---------- Teelicht ----------
@@ -3025,9 +3072,9 @@
     const src = host.querySelector('img:not(.aura)');
     if (!src) return;
 
-    function anlegen() {
+    function anlegen(quelle) {
       if (host.dataset.aura) return;
-      const farbe = glowFarbe(src);
+      const farbe = glowFarbe(quelle);
       if (!farbe) return;
       host.dataset.aura = '1';
       const aura = document.createElement('div');
@@ -3057,7 +3104,7 @@
       aura.dataset.grund = aura.style.getPropertyValue('--hof-deck') || '0.8';
       host._hoefe = [aura];
 
-      const lampe = lampenFarbe(src);
+      const lampe = lampenFarbe(quelle);
       let lampenLage = null;
       if (lampe) {
         lampenLage = document.createElement('div');
@@ -3072,11 +3119,13 @@
       requestAnimationFrame(function () {
         aura.classList.add('on');
         if (lampenLage) lampenLage.classList.add('on');
+        // Das Karussell setzt die Deckkraft seiner Hoefe selbst -- melden.
+        host.dispatchEvent(new Event('hofda', { bubbles: true }));
       });
     }
 
-    if (src.complete && src.naturalWidth) anlegen();
-    else src.addEventListener('load', anlegen, { once: true });
+    if (src.complete && src.naturalWidth) anlegen(src);
+    else src.addEventListener('load', function () { anlegen(src); }, { once: true });
   }
   document.querySelectorAll('.page .aura-host').forEach(buildAura);
 
@@ -3353,6 +3402,9 @@
         Math.round(roh) + (e.key === 'ArrowRight' ? 1 : -1))));
     });
 
+    /* Ein Titelbild, das erst nach dem letzten Zeichnen fertig laedt, bekam
+       sonst die Standard-Deckkraft seines Hofs -- auch hinten, unsichtbar. */
+    buehne.addEventListener('hofda', function () { if (anzeige !== null) zeichne(anzeige); });
     stelle();
     uebernehmen();
   })();
