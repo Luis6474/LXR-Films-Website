@@ -1203,6 +1203,108 @@
   .viewer-text p + p { margin-top: 20px; }
   .viewer-text .lead { color: var(--text); }
 
+  /* ---------- Reisekarte (The Same Gray) ----------
+     Eine Strecke, die beim Scrollen stehen bleibt, wie beim Karussell: die
+     Buehne klebt, und der Scrollstand ist die Zeitachse vom 17. bis zum
+     27. Juli. Volle Fensterbreite, oben und unten weich in den Grund der
+     Projektseite verlaufen -- keine Kachel mit Kante. */
+  .karte {
+    position: relative;
+    width: 100vw; margin: 64px 0 0 calc(50% - 50vw);
+  }
+  .karte-lauf { position: relative; height: calc(100dvh + var(--einheiten, 12) * 55dvh); }
+  .karte-halt {
+    /* Klebt an der Oberkante des Fensters, nicht an der Innenkante des
+       Scrollbereichs: der hat oben einen Innenabstand, und an dem wuerde
+       ein Element mit top: 0 haengen bleiben. */
+    position: sticky; top: calc(-1 * (var(--bar-h) + 46px)); height: 100dvh; overflow: hidden;
+    background: var(--p-bg);
+  }
+  /* Doppelte Klasse: das Stylesheet von MapLibre setzt .maplibregl-map auf
+     position: relative und laedt spaeter -- bei gleichem Gewicht gewaenne
+     es, und der Kasten haette keine Hoehe mehr. */
+  .karte-halt .karte-map {
+    position: absolute; inset: 0;
+    opacity: 0; transition: opacity 1.6s var(--ease);
+  }
+  .karte.ist-bereit .karte-map { opacity: 1; }
+  .karte-map canvas { outline: none; }
+  /* Vignette und Verlauf in den Grund der Seite. */
+  .karte-schleier {
+    position: absolute; inset: 0; pointer-events: none;
+    background:
+      linear-gradient(to bottom, var(--p-bg) 0%, transparent 16%, transparent 78%, var(--p-bg) 100%),
+      radial-gradient(130% 95% at 50% 55%, transparent 55%, rgba(4,7,8,0.55) 100%);
+  }
+  .karte-korn {
+    position: absolute; pointer-events: none;
+    top: calc(-1 * var(--grain-size)); left: calc(-1 * var(--grain-size));
+    width: calc(100% + 2 * var(--grain-size)); height: calc(100% + 2 * var(--grain-size));
+    background-repeat: repeat; background-size: var(--grain-size) var(--grain-size);
+    animation: grainShift var(--grain-rate) steps(1) infinite;
+  }
+
+  /* Bilder einer Station. Nur sichtbar, wenn die Kamera angekommen ist;
+     Deckkraft und ein kleines Aufgehen kommen vom Skript. */
+  .karte-bilder { position: absolute; inset: 0; pointer-events: none; }
+  .karte-bild {
+    position: absolute; aspect-ratio: 3 / 2;
+    display: flex; align-items: center; justify-content: center;
+    background: rgba(16, 22, 24, 0.82);
+    border: 1px solid rgba(200, 214, 214, 0.14);
+    box-shadow: 0 30px 80px rgba(0, 0, 0, 0.45);
+    opacity: 0;
+    will-change: opacity, transform;
+  }
+  .karte-bild span {
+    font-family: 'Libre Caslon Display', Georgia, serif;
+    font-size: 0.72em; letter-spacing: 0.2em; text-transform: uppercase;
+    color: rgba(184, 192, 187, 0.55);
+  }
+  .karte-bild-a { width: min(78vw, 420px); left: 50%; top: 13%; margin-left: calc(-0.5 * min(78vw, 420px)); }
+  .karte-bild-b { display: none; }
+
+  /* Das Datum: die Zeitachse der ganzen Sequenz. Zwei Lagen uebereinander,
+     damit ein Tageswechsel weich ueberblendet statt umzuspringen. */
+  .karte-datum {
+    position: absolute; left: 0; right: 0; bottom: max(44px, 7dvh);
+    height: 1.4em; text-align: center; pointer-events: none;
+    font-family: 'Belleza', 'Noto Serif', Georgia, serif;
+    font-size: clamp(1.05em, 1.7vw, 1.4em); letter-spacing: 0.22em;
+    color: var(--text);
+  }
+  .karte-datum span {
+    position: absolute; left: 0; right: 0; top: 0;
+    opacity: 0; transition: opacity 0.7s var(--ease);
+  }
+  .karte-datum span.ist-an { opacity: 0.9; }
+  /* Elf Striche, einer je Tag: wo man in der Reise steht. */
+  .karte-zeit {
+    position: absolute; left: 50%; bottom: calc(max(44px, 7dvh) + 2.6em);
+    transform: translateX(-50%);
+    display: flex; gap: 9px; pointer-events: none;
+  }
+  .karte-zeit i {
+    display: block; width: 1px; height: 7px;
+    background: var(--text); opacity: 0.18;
+    transition: opacity 0.7s var(--ease), transform 0.7s var(--ease);
+  }
+  .karte-zeit i.ist-an { opacity: 0.8; transform: scaleY(1.7); }
+  .karte-quelle {
+    position: absolute; right: 12px; bottom: 8px; margin: 0;
+    font-size: 9px; letter-spacing: 0.02em; color: var(--text-dim); opacity: 0.32;
+    pointer-events: none;
+  }
+
+  /* Ohne Bewegung: nur die Uebersicht, keine Scrollstrecke. */
+  .karte.ist-still .karte-lauf { height: auto; }
+  .karte.ist-still .karte-halt { position: relative; height: 80dvh; }
+
+  @media (min-width: 900px) {
+    .karte-bild-a { width: min(30vw, 480px); left: auto; right: 7vw; top: 16%; margin-left: 0; }
+    .karte-bild-b { display: flex; width: min(19vw, 300px); right: calc(7vw + min(30vw, 480px) - min(12vw, 190px)); top: calc(16% + min(20vw, 320px) - 20px); }
+  }
+
   .viewer-grid { display: grid; grid-template-columns: 1fr; gap: 12px; margin: 52px 0; }
   /* 2:1 statt 16:10 -- die Filmkader sind breit (bis 2,13:1). Bei 16:10
      schnitt der Rahmen links und rechts rund ein Viertel des Bildes weg. */
@@ -1683,6 +1785,24 @@
         <p class="lead">[2–4 Sätze zum Film: worum es geht, wie der Kontakt zustande kam, was der Ausgangspunkt war.]</p>
         <p>[Der Text zu diesem Projekt fehlt mir noch. Die Bilder sind bereits final eingebunden.]</p>
       </div>
+      <!-- Reisekarte. ENTWURF: Orte aus dem Screenshot, Reihenfolge und
+           Tage sind vorlaeufig (siehe REISE im Skript). -->
+      <section class="karte" id="karte" aria-label="Karte der Reise durch Schottland, 17. bis 27. Juli 2026">
+        <div class="karte-lauf" id="karte-lauf">
+          <div class="karte-halt" id="karte-halt">
+            <div class="karte-map" id="karte-map" aria-hidden="true"></div>
+            <div class="karte-korn grain-mid" aria-hidden="true"></div>
+            <div class="karte-schleier" aria-hidden="true"></div>
+            <div class="karte-bilder" aria-hidden="true">
+              <div class="karte-bild karte-bild-a"><span>Bild folgt</span></div>
+              <div class="karte-bild karte-bild-b"><span>Bild folgt</span></div>
+            </div>
+            <div class="karte-zeit" id="karte-zeit" aria-hidden="true"></div>
+            <div class="karte-datum" id="karte-datum" aria-hidden="true"><span></span><span></span></div>
+            <p class="karte-quelle">Höhendaten: Mapzen/AWS Terrain Tiles · SRTM, ETOPO1 · OS © Crown copyright</p>
+          </div>
+        </div>
+      </section>
       <div class="viewer-grid">
         <div><img src="Images/web/nahaufnahme-stephen-1600.webp" srcset="Images/web/nahaufnahme-stephen-800.webp 800w, Images/web/nahaufnahme-stephen-1600.webp 1600w" sizes="(min-width: 760px) 550px, 100vw" alt="Nahaufnahme des Porträtierten" loading="lazy" decoding="async"></div>
         <div><img src="Images/web/aufnahme-stephen-im-cottage-1600.webp" srcset="Images/web/aufnahme-stephen-im-cottage-800.webp 800w, Images/web/aufnahme-stephen-im-cottage-1600.webp 1600w" sizes="(min-width: 760px) 550px, 100vw" alt="Der Porträtierte in seinem Cottage" loading="lazy" decoding="async"></div>
@@ -3497,6 +3617,429 @@
     buehne.addEventListener('hofda', function () { if (anzeige !== null) zeichne(anzeige); });
     stelle();
     uebernehmen();
+  })();
+
+  /* ---------- Reisekarte (The Same Gray) ----------
+     Scrollen ist Zeit: die Strecke laeuft vom 17. bis zum 27. Juli, und die
+     Kamera ist immer dort, wo die Reise an diesem Tag war. Zwischen zwei
+     Orten fliegt sie die Route entlang; erst wenn sie steht, kommen die
+     Bilder der Station.
+
+     Technik: MapLibre (frei, ohne Schluessel) mit den offenen Hoehendaten
+     "Terrain Tiles" auf AWS. Bewusst OHNE Strassen- oder Ortsdaten -- die
+     Karte besteht nur aus Relief, Kueste und Meer, eingefaerbt in der
+     Farbwelt des Films. Bibliothek und Daten werden erst geladen, wenn die
+     Projektseite aufgeht; die Startseite traegt davon nichts. */
+  (function reisekarte() {
+    const wurzel = document.getElementById('karte');
+    if (!wurzel) return;
+    const viewer = wurzel.closest('.viewer');
+    const scroller = wurzel.closest('.viewer-scroll');
+    const lauf = document.getElementById('karte-lauf');
+    const halt = document.getElementById('karte-halt');
+    const kasten = document.getElementById('karte-map');
+    const datum = document.getElementById('karte-datum');
+    const zeit = document.getElementById('karte-zeit');
+    const bilder = Array.from(wurzel.querySelectorAll('.karte-bild'));
+
+    /* ENTWURF. Die Orte stammen aus dem Screenshot (die rot markierten
+       Stellen), Reihenfolge und Tage sind vorlaeufig angenommen, bis der
+       echte Ablauf da ist. Tag 0 = 17. Juli, Tag 10 = 27. Juli. */
+    const REISE = [
+      { ort: 'Auchindrain',          lngLat: [-5.056, 56.188], von: 0, bis: 1 },
+      { ort: 'Ardnamurchan',         lngLat: [-6.160, 56.738], von: 2, bis: 3 },
+      { ort: 'Portree',              lngLat: [-6.194, 57.413], von: 4, bis: 4 },
+      { ort: 'Neist Point',          lngLat: [-6.788, 57.423], von: 5, bis: 5 },
+      { ort: 'Staffin',              lngLat: [-6.170, 57.612], von: 6, bis: 7 },
+      { ort: 'oestlich Lochcarron',  lngLat: [-5.390, 57.470], von: 8, bis: 9 }
+    ];
+    const TAGE = 11;
+    const MONAT = ' Juli 2026';
+
+    // Striche der Zeitleiste
+    for (let i = 0; i < TAGE; i++) zeit.appendChild(document.createElement('i'));
+    const striche = Array.from(zeit.children);
+
+    /* ---- Datum: weich ueberblendet ---- */
+    const lagen = Array.from(datum.children);
+    let tagJetzt = -1, lageJetzt = 0;
+    function zeigeTag(tag) {
+      if (tag === tagJetzt) return;
+      tagJetzt = tag;
+      lageJetzt = 1 - lageJetzt;
+      lagen[lageJetzt].textContent = (17 + tag) + '.' + MONAT;
+      lagen[lageJetzt].classList.add('ist-an');
+      lagen[1 - lageJetzt].classList.remove('ist-an');
+      striche.forEach(function (s, k) { s.classList.toggle('ist-an', k === tag); });
+    }
+    zeigeTag(0);
+
+    if (reducedMotion) {
+      wurzel.classList.add('ist-still');
+      datum.firstElementChild.textContent = '17.–27.' + MONAT;
+    }
+
+    /* ---- Ablauf: Einstieg, dann je Station Fahrt + Aufenthalt, dann
+       zurueck in die Uebersicht. "laenge" ist Scrollstrecke in Einheiten
+       von 55 % der Fensterhoehe. ---- */
+    const phasen = [{ art: 'start', laenge: 0.8 }];
+    REISE.forEach(function (st, i) {
+      phasen.push({ art: 'fahrt', von: i - 1, nach: i,
+                    tagA: i ? REISE[i - 1].bis : 0, tagB: st.von, laenge: i ? 1.4 : 1.2 });
+      phasen.push({ art: 'halt', station: i, tagA: st.von, tagB: st.bis,
+                    laenge: 1.0 + 0.6 * (st.bis - st.von) });
+    });
+    phasen.push({ art: 'fahrt', von: REISE.length - 1, nach: -1,
+                  tagA: REISE[REISE.length - 1].bis, tagB: TAGE - 1, laenge: 1.3 });
+    phasen.push({ art: 'ende', laenge: 0.6 });
+    let summe = 0;
+    phasen.forEach(function (p) { p.ab = summe; summe += p.laenge; });
+    const EINHEITEN = summe;
+    if (!reducedMotion) lauf.style.setProperty('--einheiten', EINHEITEN.toFixed(2));
+
+    function glatt(x) { x = Math.max(0, Math.min(1, x)); return x * x * x * (x * (x * 6 - 15) + 10); }
+    function stufe(a, b, x) { const u = Math.max(0, Math.min(1, (x - a) / (b - a))); return u * u * (3 - 2 * u); }
+    function mix(a, b, f) { return a + (b - a) * f; }
+    function winkelMix(a, b, f) { let d = ((b - a + 540) % 360) - 180; return a + d * f; }
+
+    /* ---- Route: weiche Kurve durch alle Orte (Catmull-Rom), in einer
+       lokal flachen Ebene gerechnet (Laenge mal cos(Breite)). ---- */
+    const KOS = Math.cos(57 * Math.PI / 180);
+    const P = REISE.map(function (s) { return [s.lngLat[0] * KOS, s.lngLat[1]]; });
+    const route = [], stationIndex = [];
+    for (let i = 0; i < P.length - 1; i++) {
+      const p0 = P[Math.max(0, i - 1)], p1 = P[i], p2 = P[i + 1], p3 = P[Math.min(P.length - 1, i + 2)];
+      stationIndex[i] = route.length;
+      for (let k = 0; k < 48; k++) {
+        const u = k / 48, u2 = u * u, u3 = u2 * u;
+        route.push([0, 1].map(function (d) {
+          return 0.5 * ((2 * p1[d]) + (-p0[d] + p2[d]) * u + (2 * p0[d] - 5 * p1[d] + 4 * p2[d] - p3[d]) * u2
+                 + (-p0[d] + 3 * p1[d] - 3 * p2[d] + p3[d]) * u3);
+        }));
+      }
+    }
+    stationIndex[P.length - 1] = route.length;
+    route.push(P[P.length - 1]);
+    const laengen = [0];
+    for (let i = 1; i < route.length; i++) {
+      laengen.push(laengen[i - 1] + Math.hypot(route[i][0] - route[i - 1][0], route[i][1] - route[i - 1][1]));
+    }
+    const GESAMT = laengen[laengen.length - 1];
+    const stationL = stationIndex.map(function (k) { return laengen[k]; });
+    function punktBei(L) {
+      let k = 1;
+      while (k < laengen.length - 1 && laengen[k] < L) k++;
+      const f = (L - laengen[k - 1]) / ((laengen[k] - laengen[k - 1]) || 1);
+      const x = mix(route[k - 1][0], route[k][0], f), y = mix(route[k - 1][1], route[k][1], f);
+      return [x / KOS, y];
+    }
+    function kurs(a, b) {               // Kompasskurs von a nach b in Grad
+      const dx = (b[0] - a[0]) * KOS, dy = b[1] - a[1];
+      return Math.atan2(dx, dy) * 180 / Math.PI;
+    }
+    const routeLngLat = route.map(function (p) { return [p[0] / KOS, p[1]]; });
+
+    /* Blickrichtung je Station: in Fahrtrichtung der Ankunft, fuer die
+       erste in Richtung der weiteren Reise. Waehrend des Aufenthalts dreht
+       die Kamera um 8 Grad weiter -- ein langsamer Schwenk statt Standbild. */
+    const blick = REISE.map(function (s, i) {
+      return (i ? kurs(REISE[i - 1].lngLat, s.lngLat) : kurs(s.lngLat, REISE[1].lngLat)) + 4;
+    });
+    const NAH = { zoom: 10.3, pitch: 62 };
+    let uebersicht = { center: [-5.9, 56.9], zoom: 6.6, pitch: 34, bearing: -6 };
+
+    /* ---- Kamera fuer einen Stand auf der Zeitachse ---- */
+    function kamera(u) {
+      let i = 0;
+      while (i < phasen.length - 1 && u >= phasen[i].ab + phasen[i].laenge) i++;
+      const ph = phasen[i];
+      const f = Math.max(0, Math.min(1, (u - ph.ab) / ph.laenge));
+      const erg = { tag: 0, sicht: 0, station: -1, fahrt: 0 };
+      if (ph.art === 'start') {
+        Object.assign(erg, uebersicht, { bearing: uebersicht.bearing + 3 * f });
+      } else if (ph.art === 'ende') {
+        Object.assign(erg, uebersicht, { tag: TAGE - 1, fahrt: GESAMT });
+      } else if (ph.art === 'halt') {
+        const st = REISE[ph.station], n = ph.tagB - ph.tagA + 1;
+        erg.center = st.lngLat;
+        erg.zoom = NAH.zoom + 0.25 * f;
+        erg.pitch = NAH.pitch;
+        erg.bearing = blick[ph.station] + (f - 0.5) * 8;
+        erg.tag = ph.tagA + Math.min(n - 1, Math.floor(f * n));
+        erg.sicht = stufe(0.1, 0.24, f) * (1 - stufe(0.8, 0.94, f));
+        erg.station = ph.station;
+        erg.fahrt = stationL[ph.station];
+      } else {
+        const e = glatt(f);
+        erg.tag = Math.round(mix(ph.tagA, ph.tagB, f));
+        if (ph.von < 0) {                                   // aus der Uebersicht herein
+          const ziel = REISE[ph.nach].lngLat;
+          erg.center = [mix(uebersicht.center[0], ziel[0], e), mix(uebersicht.center[1], ziel[1], e)];
+          erg.zoom = mix(uebersicht.zoom, NAH.zoom, e);
+          erg.pitch = mix(uebersicht.pitch, NAH.pitch, e);
+          erg.bearing = winkelMix(uebersicht.bearing + 3, blick[ph.nach] - 4, e);
+          erg.fahrt = 0;
+        } else if (ph.nach < 0) {                           // hinaus in die Uebersicht
+          const von = REISE[ph.von].lngLat;
+          erg.center = [mix(von[0], uebersicht.center[0], e), mix(von[1], uebersicht.center[1], e)];
+          erg.zoom = mix(NAH.zoom + 0.25, uebersicht.zoom, e);
+          erg.pitch = mix(NAH.pitch, uebersicht.pitch, e);
+          erg.bearing = winkelMix(blick[ph.von] + 4, uebersicht.bearing, e);
+          erg.fahrt = GESAMT;
+        } else {                                            // von Ort zu Ort
+          const LA = stationL[ph.von], LB = stationL[ph.nach];
+          const L = mix(LA, LB, e);
+          erg.center = punktBei(L);
+          // Unterwegs etwas hoeher und flacher -- wie ein Kran, der beim
+          // Fahren aufsteigt und vor dem Ziel wieder absenkt.
+          const km = (LB - LA) * 111;
+          const hub = Math.max(0.3, Math.min(2.0, Math.log2(km / 12)));
+          const bogen = Math.sin(Math.PI * e);
+          erg.zoom = mix(NAH.zoom + 0.25, NAH.zoom, e) - hub * bogen;
+          erg.pitch = NAH.pitch - 12 * bogen;
+          erg.bearing = winkelMix(blick[ph.von] + 4, blick[ph.nach] - 4, stufe(0, 0.55, f));
+          erg.fahrt = L;
+        }
+      }
+      return erg;
+    }
+
+    /* ---- Anzeige ---- */
+    let karte = null, bereit = false, hellZuletzt = [];
+    const HELL = 'rgba(214, 226, 224, 0.85)', DUNKEL = 'rgba(160, 178, 178, 0.16)';
+    function zeichne(u) {
+      const k = kamera(u);
+      zeigeTag(k.tag);
+      bilder.forEach(function (b, j) {
+        const s = Math.max(0, Math.min(1, k.sicht * 1.15 - j * 0.15));
+        b.style.opacity = s.toFixed(3);
+        b.style.transform = 'translateY(' + ((1 - s) * 14).toFixed(1) + 'px) scale(' + (0.985 + 0.015 * s).toFixed(4) + ')';
+      });
+      if (!bereit) return;
+      karte.jumpTo({ center: k.center, zoom: k.zoom, pitch: k.pitch, bearing: k.bearing });
+      // Gefahrener Teil der Route hell, der Rest kaum sichtbar.
+      const p = Math.max(0.0001, Math.min(0.9998, k.fahrt / GESAMT));
+      karte.setPaintProperty('route', 'line-gradient',
+        ['interpolate', ['linear'], ['line-progress'], 0, HELL, p, HELL, p + 0.0001, DUNKEL, 1, DUNKEL]);
+      REISE.forEach(function (st, i) {
+        const h = i === k.station ? k.sicht : 0;
+        if (Math.abs((hellZuletzt[i] || 0) - h) > 0.01 || (h === 0 && hellZuletzt[i])) {
+          hellZuletzt[i] = h;
+          karte.setFeatureState({ source: 'orte', id: i }, { hell: h });
+        }
+      });
+    }
+
+    /* ---- Gedaempft: der Scrollstand legt nur das Ziel fest, die Anzeige
+       laeuft ihm mit einer kritisch gedaempften Feder hinterher (wie das
+       Karussell). Mausradstufen werden so zu einer Fahrt. ---- */
+    const FEDER = 2.6;
+    let ziel = 0, stand = 0, tempo = 0, laeuft = false, zuletzt = 0;
+    function zielAusScroll() {
+      const s = lauf.offsetHeight - halt.offsetHeight;
+      if (s <= 0) return 0;
+      const oben = lauf.getBoundingClientRect().top - scroller.getBoundingClientRect().top;
+      return Math.max(0, Math.min(1, -oben / s)) * EINHEITEN;
+    }
+    function schritt(jetzt) {
+      const dt = Math.min(0.05, (jetzt - zuletzt) / 1000);
+      zuletzt = jetzt;
+      const a = FEDER * FEDER * (ziel - stand) - 2 * FEDER * tempo;
+      tempo += a * dt;
+      stand += tempo * dt;
+      if (Math.abs(ziel - stand) < 0.0005 && Math.abs(tempo) < 0.001) {
+        stand = ziel; tempo = 0; laeuft = false; zeichne(stand); return;
+      }
+      zeichne(stand);
+      requestAnimationFrame(schritt);
+    }
+    function anstossen() {
+      ziel = zielAusScroll();
+      if (!laeuft) { laeuft = true; zuletzt = performance.now(); requestAnimationFrame(schritt); }
+    }
+    if (!reducedMotion) scroller.addEventListener('scroll', anstossen, { passive: true });
+
+    /* ---- Karte laden, sobald die Projektseite aufgeht ---- */
+    let geladen = false;
+    function laden() {
+      if (geladen) { if (karte) karte.resize(); return; }
+      geladen = true;
+      const css = document.createElement('link');
+      css.rel = 'stylesheet';
+      css.href = 'https://cdn.jsdelivr.net/npm/maplibre-gl@5.24.0/dist/maplibre-gl.css';
+      document.head.appendChild(css);
+      const js = document.createElement('script');
+      js.src = 'https://cdn.jsdelivr.net/npm/maplibre-gl@5.24.0/dist/maplibre-gl.js';
+      js.onload = starten;
+      js.onerror = function () { wurzel.hidden = true; };
+      document.head.appendChild(js);
+    }
+
+    function starten() {
+      const ml = window.maplibregl;
+      if (!ml) { wurzel.hidden = true; return; }
+      /* Die offenen Hoehendaten haben einzelne Fehlpunkte -- gemessen etwa
+         1884 m bei Auchindrain und 1767 m auf Ardnamurchan, wo nichts ueber
+         600 m hoch ist. Im Relief stehen die als Nadeln in der Landschaft.
+         Jede Kachel geht deshalb einmal durch einen Filter: ein Punkt, der
+         mehr als 150 m ueber ALLEN vier Nachbarn liegt, wird auf den
+         hoechsten Nachbarn gesetzt. Echte Gipfel ueberstehen das, weil ihr
+         Hang mitsteigt. */
+      ml.addProtocol('gelaende', function (params) {
+        const url = 'https://s3.amazonaws.com/elevation-tiles-prod/terrarium/' +
+                    params.url.replace('gelaende://', '') + '.png';
+        return fetch(url).then(function (r) {
+          if (!r.ok) throw new Error('Kachel ' + r.status);
+          return r.blob();
+        }).then(function (blob) {
+          return createImageBitmap(blob, { premultiplyAlpha: 'none', colorSpaceConversion: 'none' });
+        }).then(function (bild) {
+          const K = bild.width;
+          const c = document.createElement('canvas');
+          c.width = c.height = K;
+          const ctx = c.getContext('2d', { willReadFrequently: true, colorSpace: 'srgb' });
+          ctx.drawImage(bild, 0, 0);
+          const im = ctx.getImageData(0, 0, K, K), d = im.data;
+          const h = new Float32Array(K * K);
+          for (let i = 0; i < K * K; i++) h[i] = d[4 * i] * 256 + d[4 * i + 1] + d[4 * i + 2] / 256;
+          for (let y = 0; y < K; y++) {
+            for (let x = 0; x < K; x++) {
+              const i = y * K + x;
+              const n = Math.max(h[y ? i - K : i + K], h[y < K - 1 ? i + K : i - K],
+                                 h[x ? i - 1 : i + 1], h[x < K - 1 ? i + 1 : i - 1]);
+              if (h[i] - n > 150) {
+                const v = n;
+                d[4 * i] = Math.floor(v / 256);
+                d[4 * i + 1] = Math.floor(v) % 256;
+                d[4 * i + 2] = Math.floor((v % 1) * 256);
+              }
+            }
+          }
+          ctx.putImageData(im, 0, 0);
+          return new Promise(function (fertig) { c.toBlob(fertig, 'image/png'); });
+        }).then(function (png) {
+          return png.arrayBuffer();
+        }).then(function (daten) {
+          return { data: daten };
+        });
+      });
+      const DEM = {
+        type: 'raster-dem', encoding: 'terrarium', tileSize: 256, maxzoom: 10,
+        tiles: ['gelaende://{z}/{x}/{y}']
+      };
+      const orte = {
+        type: 'FeatureCollection',
+        features: REISE.map(function (s, i) {
+          return { type: 'Feature', id: i, properties: {}, geometry: { type: 'Point', coordinates: s.lngLat } };
+        })
+      };
+      try {
+        karte = new ml.Map({
+          container: kasten,
+          interactive: false,
+          attributionControl: false,
+          pixelRatio: Math.min(2, window.devicePixelRatio || 1),
+          maxPitch: 75,
+          fadeDuration: 0,
+          center: uebersicht.center, zoom: uebersicht.zoom, pitch: uebersicht.pitch, bearing: uebersicht.bearing,
+          style: {
+            version: 8,
+            /* Kein Himmel in Blau: der Horizont verschwindet im Dunst, in
+               den Toenen des Films -- kuehles Grau-Blau. */
+            sky: {
+              'sky-color': '#0b1113',
+              'horizon-color': '#2a3538',
+              'fog-color': '#162023',
+              'fog-ground-blend': 0.35,
+              'horizon-fog-blend': 0.7,
+              'sky-horizon-blend': 0.8,
+              'atmosphere-blend': 0
+            },
+            sources: {
+              relief: DEM,
+              gelaende: DEM,
+              route: { type: 'geojson', lineMetrics: true,
+                       data: { type: 'Feature', properties: {}, geometry: { type: 'LineString', coordinates: routeLngLat } } },
+              orte: { type: 'geojson', data: orte }
+            },
+            terrain: { source: 'gelaende', exaggeration: 1.5 },
+            layers: [
+              { id: 'grund', type: 'background', paint: { 'background-color': '#080d0f' } },
+              /* Meer und Land allein aus den Hoehendaten: unter null ein
+                 fast schwarzes Blau, darueber Grau-Blau, das mit der Hoehe
+                 heller wird -- wie Nebel, der auf den Kuppen liegt. */
+              { id: 'farbe', type: 'color-relief', source: 'relief', paint: {
+                  'color-relief-color': ['interpolate', ['linear'], ['elevation'],
+                    -400, '#060a0c', -30, '#0a1114', -2, '#0d1518',
+                    /* Weicher Uebergang an der Kueste: die Hoehendaten schwanken
+                       dort um null, eine harte Stufe gaebe einen gepunkteten Rand. */
+                    12, '#1a2327', 120, '#212c30', 400, '#344145', 750, '#56636a', 1100, '#8a979a'],
+                  'color-relief-opacity': 1 } },
+              { id: 'schatten', type: 'hillshade', source: 'relief', paint: {
+                  'hillshade-shadow-color': 'rgba(0, 0, 0, 0.7)',
+                  'hillshade-highlight-color': 'rgba(196, 214, 218, 0.22)',
+                  'hillshade-accent-color': 'rgba(10, 16, 18, 0.5)',
+                  'hillshade-exaggeration': 0.55,
+                  'hillshade-illumination-direction': 315 } },
+              { id: 'route', type: 'line', source: 'route',
+                layout: { 'line-cap': 'round', 'line-join': 'round' },
+                paint: { 'line-width': 1.4, 'line-blur': 0.4,
+                         'line-gradient': ['interpolate', ['linear'], ['line-progress'], 0, DUNKEL, 1, DUNKEL] } },
+              { id: 'orte-schein', type: 'circle', source: 'orte', paint: {
+                  'circle-pitch-alignment': 'map',
+                  'circle-radius': ['interpolate', ['linear'], ['coalesce', ['feature-state', 'hell'], 0], 0, 6, 1, 26],
+                  'circle-blur': 1,
+                  'circle-color': '#cfdcda',
+                  'circle-opacity': ['interpolate', ['linear'], ['coalesce', ['feature-state', 'hell'], 0], 0, 0.06, 1, 0.28] } },
+              { id: 'orte', type: 'circle', source: 'orte', paint: {
+                  'circle-pitch-alignment': 'map',
+                  'circle-radius': ['interpolate', ['linear'], ['coalesce', ['feature-state', 'hell'], 0], 0, 2.2, 1, 3.6],
+                  'circle-color': '#e6eae8',
+                  'circle-opacity': ['interpolate', ['linear'], ['coalesce', ['feature-state', 'hell'], 0], 0, 0.45, 1, 0.95] } }
+            ]
+          }
+        });
+      } catch (e) { wurzel.hidden = true; return; }
+
+      /* Uebersicht: alle Orte im Bild, mit Luft fuer das Datum unten. Reine
+         Rechnung, braucht keine geladenen Daten. Mitte ist die Mitte der
+         Route -- die Schraegsicht verschiebt den Blick sonst nach oben. */
+      function uebersichtRechnen() {
+        const b = new ml.LngLatBounds();
+        REISE.forEach(function (s) { b.extend(s.lngLat); });
+        // Selbst gerechnet (Mercator, 512 px Welt bei Zoom 0) statt
+        // cameraForBounds -- das lieferte hier je nach Zeitpunkt nichts.
+        function y(lat) { const s = Math.sin(lat * Math.PI / 180); return 0.5 - Math.log((1 + s) / (1 - s)) / (4 * Math.PI); }
+        const breite = (b.getEast() - b.getWest()) / 360;
+        const hoehe = y(b.getSouth()) - y(b.getNorth());
+        const w = Math.max(200, kasten.clientWidth - 160), h = Math.max(200, kasten.clientHeight - 250);
+        const zoom = Math.log2(Math.min(w / (512 * breite), h / (512 * hoehe)));
+        const m = b.getCenter();
+        uebersicht = { center: [m.lng, m.lat - 0.05], zoom: Math.min(8.2, zoom),
+                       pitch: uebersicht.pitch, bearing: uebersicht.bearing };
+      }
+      uebersichtRechnen();
+      karte._neuRechnen = uebersichtRechnen;
+
+      // Zeichnen geht, sobald der Stil steht; eingeblendet wird, wenn die
+      // ersten Kacheln da sind -- spaetestens nach drei Sekunden.
+      function einblenden() { wurzel.classList.add('ist-bereit'); }
+      karte.once('style.load', function () { bereit = true; zeichne(stand); });
+      karte.once('load', function () { setTimeout(einblenden, 120); });
+      setTimeout(einblenden, 3000);
+    }
+
+    // Aufgehen der Projektseite abwarten
+    new MutationObserver(function () {
+      if (viewer.classList.contains('is-active')) {
+        laden();
+        ziel = stand = zielAusScroll(); tempo = 0;
+        zeichne(stand);
+      }
+    }).observe(viewer, { attributes: true, attributeFilter: ['class'] });
+    window.addEventListener('resize', function () {
+      if (karte) { karte._neuRechnen(); anstossen(); zeichne(stand); }
+    });
   })();
 
   // Bilder in der Projektansicht laufen gestaffelt auf -- wie nacheinander
