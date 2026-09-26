@@ -693,24 +693,32 @@
      Jede Sektion trägt einen weichen Lichtschein auf der Textseite -- das gibt
      der Fläche Tiefe, statt sie flach dunkel stehen zu lassen. */
   .band { position: relative; padding: 124px 0; }
-  .band::before {
-    content: ""; position: absolute; inset: 0; pointer-events: none;
-    /* Echte Kreise mit fester Reichweite statt Ellipsen, deren Radien an
-       Breite bzw. Hoehe der jeweiligen Sektion haengen. Genau das war der
-       Fehler: eine 1425 px breite, aber nur 796 px hohe Sektion bekam einen
-       waagerechten Radius von 940 px gegen einen senkrechten von 462 px.
-       Gemessen fiel der Schein waagerecht ueber 680 px nur von 32 auf 25 --
-       praktisch flach --, senkrecht ueber dieselbe Strecke von 32 auf 5,
-       also fast bis auf null. Der ganze Streifen links und rechts vom Text
-       stand dadurch gleichmaessig hell, und die Sterne gingen darin unter.
-       Ein Kreis faellt in jede Richtung gleich weit.
-       Dazu insgesamt schwaecher (0,13/0,08 -> 0,065/0,045) und mit echtem
-       Ende bei 100 % statt einem vorzeitigen Abbruch bei 70/72 %, der noch
-       einen kaum sichtbaren, aber messbaren Schleier daneben stehen liess. */
-    background:
-      radial-gradient(circle clamp(220px, 30vw, 420px) at 20% 40%, rgba(134,178,152,0.065), transparent 100%),
-      radial-gradient(circle clamp(200px, 26vw, 380px) at 82% 62%, rgba(112,152,142,0.045), transparent 100%);
+  /* Der Schein haengt am Textblock, nicht an der Sektion. Vorher sass er bei
+     20 % bzw. 82 % der SEKTIONSbreite -- also der Fensterbreite --, der Text
+     aber in einer mittig gesetzten Spalte von hoechstens var(--wide). Auf
+     einem breiten Bildschirm lag der Hof damit links neben dem Text im
+     Leeren. Jetzt steht die Mitte jedes Kreises auf einer festen Stelle des
+     Textes, auf jedem Bildschirm.
+     z-index -1 innerhalb von .band-text (das dort einen eigenen Zeichen-
+     kontext hat): unter der Schrift, sonst unveraendert. */
+  .band-text::before, .band-text::after {
+    content: ""; position: absolute; pointer-events: none; z-index: -1;
+    border-radius: 50%;
+    transform: translate(-50%, -50%);
   }
+  .band-text::before {
+    --r: clamp(220px, 30vw, 420px);
+    left: 42%; top: 40%; width: calc(2 * var(--r)); height: calc(2 * var(--r));
+    background: radial-gradient(closest-side, rgba(134,178,152,0.065), transparent 100%);
+  }
+  .band-text::after {
+    --r: clamp(200px, 26vw, 380px);
+    left: 78%; top: 72%; width: calc(2 * var(--r)); height: calc(2 * var(--r));
+    background: radial-gradient(closest-side, rgba(112,152,142,0.045), transparent 100%);
+  }
+  /* Weiterhin echte Kreise mit fester Reichweite (keine Ellipsen, die an
+     Breite und Hoehe der Sektion haengen und waagerecht kaum abfallen), mit
+     Ende bei 100 % und in der Staerke 0,065/0,045 wie zuvor. */
   .band.lead-band { padding: 140px 0 124px; }
   .band-inner { position: relative; max-width: var(--wide); margin: 0 auto; padding: 0 22px; }
 
@@ -1330,9 +1338,9 @@
       <div class="hero-media">
         <video class="hero-video" id="heroVideo"
                muted loop playsinline preload="auto"
-               poster="Images/web/hero-v2-poster-1280.jpg"
-               data-hd="video/web/hero-v3-1080.mp4"
-               data-sd="video/web/hero-v2-720.mp4"
+               poster="Images/web/hero-v4-poster-1280.jpg"
+               data-hd="video/web/hero-v4-1080.mp4"
+               data-sd="video/web/hero-v4-720.mp4"
                aria-hidden="true" tabindex="-1"></video>
         <div class="hero-scrim" aria-hidden="true"></div>
       </div>
@@ -2781,8 +2789,28 @@
 
   if (heroVideo) {
     // Auf schmalen Fenstern die kleinere Fassung -- spart Daten, sieht dort gleich aus.
-    const wide = window.innerWidth >= 900;
+    const netz = navigator.connection || {};
+    const wide = window.innerWidth >= 900 && !netz.saveData;
     heroVideo.src = wide ? heroVideo.dataset.hd : heroVideo.dataset.sd;
+    /* Die grosse Fassung braucht rund 12 Mbit/s. Reicht die Leitung dafuer
+       nicht und der Film bleibt zum Nachladen stehen, wird nach 1,5 s an
+       derselben Stelle auf die kleine Fassung gewechselt -- einmal, danach
+       bleibt es dabei. Ein ruckelnder Film waere schlimmer als ein etwas
+       weicherer. */
+    if (wide) {
+      let haenger = null;
+      heroVideo.addEventListener('waiting', function () {
+        clearTimeout(haenger);
+        haenger = setTimeout(function () {
+          if (heroVideo.currentSrc.indexOf(heroVideo.dataset.hd) < 0) return;
+          const t = heroVideo.currentTime;
+          heroVideo.src = heroVideo.dataset.sd;
+          heroVideo.currentTime = t;
+          if (!reducedMotion) heroVideo.play().catch(function () {});
+        }, 1500);
+      });
+      heroVideo.addEventListener('playing', function () { clearTimeout(haenger); });
+    }
     if (!reducedMotion) {
       heroVideo.autoplay = true;
       const go = heroVideo.play();
