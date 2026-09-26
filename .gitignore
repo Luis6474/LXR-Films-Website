@@ -1,0 +1,4 @@
+# Rohschnitte gehoeren nicht ins Repository: die Seite nutzt nur die
+# Web-Fassungen in video/web/, und GitHub lehnt Dateien ueber 100 MB ab.
+*.mov
+*.MOV
