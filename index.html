@@ -188,7 +188,10 @@
        hat ("Lichtverschmutzung"). Die Verhaeltnisse innerhalb des Hofs
        bleiben gleich -- er ist am Bild unveraendert hell, er hoert nur
        naeher dran auf. */
-    left: -70%; top: -70%; width: 240%; height: 240%;
+    /* Im Gegenzug zum schwaecheren Textschein ein Stueck grosszuegiger:
+       70 % -> 90 % Ueberstand je Seite. Noch klar unter den 150 %, die
+       urspruenglich die Randbereiche zugedunstet haben. */
+    left: -90%; top: -90%; width: 280%; height: 280%;
     /* z-index -1 statt 0: damit liegt der Hof in derselben unteren Ebene wie
        Korn und Sterne -- und die Sterne koennen UEBER ihn gelegt werden.
        Nur so laesst sich ihre Sichtbarkeit an die oertliche Helligkeit
@@ -692,9 +695,21 @@
   .band { position: relative; padding: 124px 0; }
   .band::before {
     content: ""; position: absolute; inset: 0; pointer-events: none;
+    /* Echte Kreise mit fester Reichweite statt Ellipsen, deren Radien an
+       Breite bzw. Hoehe der jeweiligen Sektion haengen. Genau das war der
+       Fehler: eine 1425 px breite, aber nur 796 px hohe Sektion bekam einen
+       waagerechten Radius von 940 px gegen einen senkrechten von 462 px.
+       Gemessen fiel der Schein waagerecht ueber 680 px nur von 32 auf 25 --
+       praktisch flach --, senkrecht ueber dieselbe Strecke von 32 auf 5,
+       also fast bis auf null. Der ganze Streifen links und rechts vom Text
+       stand dadurch gleichmaessig hell, und die Sterne gingen darin unter.
+       Ein Kreis faellt in jede Richtung gleich weit.
+       Dazu insgesamt schwaecher (0,13/0,08 -> 0,065/0,045) und mit echtem
+       Ende bei 100 % statt einem vorzeitigen Abbruch bei 70/72 %, der noch
+       einen kaum sichtbaren, aber messbaren Schleier daneben stehen liess. */
     background:
-      radial-gradient(66% 58% at 20% 40%, rgba(134,178,152,0.13), transparent 70%),
-      radial-gradient(58% 54% at 82% 62%, rgba(112,152,142,0.08), transparent 72%);
+      radial-gradient(circle clamp(220px, 30vw, 420px) at 20% 40%, rgba(134,178,152,0.065), transparent 100%),
+      radial-gradient(circle clamp(200px, 26vw, 380px) at 82% 62%, rgba(112,152,142,0.045), transparent 100%);
   }
   .band.lead-band { padding: 140px 0 124px; }
   .band-inner { position: relative; max-width: var(--wide); margin: 0 auto; padding: 0 22px; }
@@ -854,7 +869,13 @@
     /* 84dvh -> 30dvh je Film. Ein Radschritt ist rund 100 px; vorher
        brauchte ein Wechsel sieben bis acht davon, jetzt zwei bis drei --
        und schon der erste setzt die Drehung in Gang (siehe Nachziehen). */
-    height: calc(100dvh + var(--schritte, 3) * 30dvh);
+    /* Zusaetzlich eine Ruhezone von 0,45 Segmentlaengen (--puffer) hinter dem
+       letzten Film. Ohne sie endete die Fahrt genau dort, wo das letzte
+       Titelbild sein Ziel erreicht -- und weil das Bild ueber eine gedaempfte
+       Feder nachzieht statt dem Scrollen sofort zu folgen, war der Bereich
+       zu Ende, bevor es sichtbar zur Ruhe gekommen war: die Seite scrollte
+       schon weiter, waehrend das Bild noch von der Seite hereinkam. */
+    height: calc(100dvh + (var(--schritte, 3) + var(--puffer, 0.45)) * 30dvh);
   }
   .schau.ist-karussell .schau-halt {
     /* Kleiner: mal 0,8. Vorher fuellte das Bild fast die ganze Breite und
@@ -1951,15 +1972,25 @@
        hingestreut, ein schiefer wie gewachsen -- und nur die wenigen hellen
        ueberstehen einen Lichthof. */
     function sternenkachel(kante, zahl, fertig) {
+      /* Bislang deckte sich die Aufloesung der Kachel mit ihrer Groesse in
+         CSS-Pixeln (background-size steht in .sterne-a/.sterne-b fest auf
+         600px/437px). Auf jedem Bildschirm mit mehr als einem Geraetepixel
+         je CSS-Pixel -- praktisch jedes moderne Handy -- hat der Browser das
+         Bild beim Anzeigen deshalb hochskaliert und dabei weichgezeichnet:
+         genau das war der Grund fuer "unscharfe" Sterne. Jetzt wird, wie
+         beim Korn, in Geraetepixeln gezeichnet (gedeckelt bei 2x -- mehr
+         braeuchte kein Auge), bei gleicher CSS-Groesse. */
+      const SKAL = Math.min(2, DPR);
+      const K = Math.round(kante * SKAL);
       const c = document.createElement('canvas');
-      c.width = c.height = kante;
+      c.width = c.height = K;
       const x = c.getContext('2d');
       x.fillStyle = '#000';
-      x.fillRect(0, 0, kante, kante);
+      x.fillRect(0, 0, K, K);
       x.globalCompositeOperation = 'lighter';   // Sterne addieren, nicht decken
       for (let i = 0; i < zahl; i++) {
-        const px = Math.random() * kante;
-        const py = Math.random() * kante;
+        const px = Math.random() * K;
+        const py = Math.random() * K;
         /* Die Staerke entscheidet ueber die Dichte, nicht ueber den Glanz.
            Weil die Ebene mit "lighten" rechnet, ist der Grauwert eines Sterns
            zugleich die Grundhelligkeit, ab der er verschwindet. Die Obergrenze
@@ -1976,19 +2007,25 @@
            3 % bei 85 und null ab 88. Das ist der Verlauf von voll ueber
            vereinzelt nach leer. */
         const st = Math.pow(Math.random(), 3.2);
-        const r = (0.5 + st * 1.7) * (kante / 600);
+        const r = (0.5 + st * 1.7) * (kante / 600) * SKAL;
         const w = Math.round(13 + st * 75);
+        /* Kuerzere Reichweite (3,2 -> 1,7 mal der Kernradius) und ein Kern,
+           der bis zur Haelfte des Radius voll hell bleibt statt gleich ab
+           dem Mittelpunkt zu verblassen -- ein harter, klar umrissener
+           Punkt statt einer weichen Wolke. */
+        const REICHWEITE = 1.7;
         for (let dy = -1; dy <= 1; dy++) {
           for (let dx = -1; dx <= 1; dx++) {
-            const ax = px + dx * kante, ay = py + dy * kante;
-            if (ax < -8 || ay < -8 || ax > kante + 8 || ay > kante + 8) continue;
-            const g = x.createRadialGradient(ax, ay, 0, ax, ay, r * 3.2);
+            const ax = px + dx * K, ay = py + dy * K;
+            const rand = 8 * SKAL;
+            if (ax < -rand || ay < -rand || ax > K + rand || ay > K + rand) continue;
+            const g = x.createRadialGradient(ax, ay, 0, ax, ay, r * REICHWEITE);
             g.addColorStop(0, 'rgb(' + w + ',' + w + ',' + w + ')');
-            g.addColorStop(0.3, 'rgb(' + (w * 0.3 | 0) + ',' + (w * 0.3 | 0) + ',' + (w * 0.32 | 0) + ')');
+            g.addColorStop(0.55, 'rgb(' + w + ',' + w + ',' + w + ')');
             g.addColorStop(1, 'rgb(0,0,0)');
             x.fillStyle = g;
             x.beginPath();
-            x.arc(ax, ay, r * 3.2, 0, 6.2832);
+            x.arc(ax, ay, r * REICHWEITE, 0, 6.2832);
             x.fill();
           }
         }
@@ -2024,8 +2061,10 @@
          Handy: 330/192 -- gezaehlt rund 1,7-mal so viele sichtbare Sterne
          je Flaeche wie am PC. */
       const handy = window.matchMedia('(max-width: 700px)').matches;
-      sternenkachel(600, handy ? 330 : 124, setze('--sterne-a'));
-      sternenkachel(437, handy ? 192 : 72, setze('--sterne-b'));
+      /* Noch etwas mehr: PC 124/72 -> 155/90, Handy 330/192 -> 410/240
+         (Verhaeltnis Handy zu PC bleibt bei rund 2,65). */
+      sternenkachel(600, handy ? 410 : 155, setze('--sterne-a'));
+      sternenkachel(437, handy ? 240 : 90, setze('--sterne-b'));
     } catch (e) { /* ohne Sterne ist der Himmel leer, aber nichts kaputt */ }
 
     // Das Korn: jeder Schritt eine eigene Aufgabe, dazwischen darf der
@@ -3186,7 +3225,11 @@
     }
 
     wurzel.classList.add('ist-karussell');
+    /* Siehe CSS: dieselbe Zahl bestimmt, wie viel zusaetzliche Scrollstrecke
+       hinter dem letzten Film liegt, in der nur noch die Feder auslaeuft. */
+    const PUFFER = 0.45;
     lauf.style.setProperty('--schritte', String(N - 1));
+    lauf.style.setProperty('--puffer', String(PUFFER));
 
     /* Wie nah die Kamera steht, als Anteil des Bahnradius. 0,45 heisst: das
        seitliche Bild erscheint auf 55 % der Groesse des vorderen, das
@@ -3220,14 +3263,24 @@
 
     function strecke() { return lauf.offsetHeight - halt.offsetHeight; }
 
-    function stand() {
+    /* Laenge eines einzelnen Films auf der Scrollstrecke, in Bildpunkten.
+       strecke() deckt (N-1) Filme plus den Puffer ab -- deshalb wird hier
+       durch (N-1+PUFFER) geteilt, nicht durch (N-1). */
+    function segmentPx() {
       const s = strecke();
-      if (s <= 0) return 0;
-      return Math.min(1, Math.max(0, -lauf.getBoundingClientRect().top / s));
+      return s > 0 ? s / (N - 1 + PUFFER) : 0;
+    }
+
+    /* Fortschritt in "Filmen": 0 auf dem ersten, N-1 auf dem letzten.
+       Bewusst NICHT auf [0, N-1] geklemmt -- ausserhalb dieser Spanne (davor
+       oder im Puffer danach) steht die Zahl noch, welche Richtung das ist. */
+    function rohStand() {
+      const sp = segmentPx();
+      return sp > 0 ? -lauf.getBoundingClientRect().top / sp : 0;
     }
 
     function zielWinkel() {
-      const roh = stand() * (N - 1);
+      const roh = Math.min(N - 1, Math.max(0, rohStand()));
       const seg = Math.min(N - 2, Math.floor(roh));
       return (seg + rast(roh - seg)) * SCHRITT;
     }
@@ -3340,10 +3393,6 @@
        herein, ist der erste Schritt nur das Ankommen -- sonst wuerde beim
        Hineinscrollen von oben "The Same Gray" uebersprungen. */
     let drinnen = false;
-    function rohStand() {
-      const s = strecke();
-      return s > 0 ? -lauf.getBoundingClientRect().top / s : 0;
-    }
     function glatt(x) { return x < 0.5 ? 4 * x * x * x : 1 - Math.pow(-2 * x + 2, 3) / 2; }
     function abbrechen() {
       if (fahrt) { cancelAnimationFrame(fahrt); fahrt = null; eigen = false; }
@@ -3352,12 +3401,12 @@
       window.addEventListener(typ, abbrechen, { passive: true, capture: true });  // Erfassen: vor dem Tastengriff der Schau, sonst braeche er seine eigene Fahrt ab
     });
     function fahreZu(ziel) {
-      const s = strecke();
-      if (s <= 0) return;
+      const sp = segmentPx();
+      if (sp <= 0) return;
       abbrechen();
       const oben = lauf.getBoundingClientRect().top + window.scrollY;
       const von = window.scrollY;
-      const nach = Math.round(oben + s * ziel / (N - 1));
+      const nach = Math.round(oben + sp * ziel);
       const weg = nach - von;
       if (Math.abs(weg) < 1) return;
       const dauer = 900;
@@ -3373,10 +3422,10 @@
     function nachziehen() {
       if (eigen) return;
       const r = rohStand();
-      if (r < -0.001 || r > 1.001) return;        // ausserhalb: normal scrollen
-      if (r <= 0.002 || r >= 0.998) { drinnen = true; return; }   // steht am Rand-Film
-      const roh = r * (N - 1);
-      const unten = Math.floor(roh), rest = roh - unten;
+      if (r < -0.001 || r > N - 1 + PUFFER + 0.001) return;   // ausserhalb: normal scrollen
+      // Am ersten Film oder im Puffer hinter dem letzten: schon am Ziel.
+      if (r <= 0.002 || r >= N - 1 - 0.002) { drinnen = true; return; }
+      const unten = Math.floor(r), rest = r - unten;
       if (rest < 0.01 || rest > 0.99) { drinnen = true; return; }
       if (drinnen) fahreZu(richtung > 0 ? unten + 1 : unten);
       else fahreZu(richtung > 0 ? unten : unten + 1);    // erst ankommen
@@ -3391,7 +3440,7 @@
       const y = window.scrollY;
       if (!eigen && y !== letztesY) richtung = y > letztesY ? 1 : -1;
       const r = rohStand();
-      if (r < -0.001 || r > 1.001) drinnen = false;
+      if (r < -0.001 || r > N - 1 + PUFFER + 0.001) drinnen = false;
       letztesY = y;
       clearTimeout(ruhe);
       ruhe = setTimeout(nachziehen, 140);
@@ -3410,7 +3459,7 @@
     wurzel.addEventListener('keydown', function (e) {
       if (e.key !== 'ArrowLeft' && e.key !== 'ArrowRight') return;
       e.preventDefault();
-      const roh = stand() * (N - 1);
+      const roh = Math.min(N - 1, Math.max(0, rohStand()));
       fahreZu(Math.max(0, Math.min(N - 1,
         Math.round(roh) + (e.key === 'ArrowRight' ? 1 : -1))));
     });
