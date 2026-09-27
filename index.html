@@ -1289,6 +1289,20 @@
     transition: opacity 0.7s var(--ease), transform 0.7s var(--ease);
   }
   .karte-zeit i.ist-an { opacity: 0.8; transform: scaleY(1.7); }
+  /* Karte ueberspringen: klein oben rechts, im Ton der Versallabels. */
+  .karte-weiter {
+    position: absolute; top: max(22px, 3dvh); right: 16px;
+    font-family: 'Libre Caslon Display', Georgia, serif;
+    font-size: 0.68em; letter-spacing: 0.2em; text-transform: uppercase;
+    color: var(--text-dim); background: rgba(8, 14, 16, 0.35);
+    border: 1px solid rgba(200, 214, 214, 0.18); border-radius: 999px;
+    padding: 9px 16px 8px; cursor: pointer;
+    opacity: 0; transition: opacity 0.8s var(--ease), color 0.4s var(--ease), border-color 0.4s var(--ease);
+  }
+  .karte.ist-bereit .karte-weiter { opacity: 1; }
+  .karte-weiter:hover, .karte-weiter:focus-visible { color: var(--text); border-color: rgba(220, 230, 230, 0.4); }
+  .karte.ist-still .karte-weiter { display: none; }
+  @media (min-width: 900px) { .karte-weiter { right: 28px; top: 28px; } }
   .karte-quelle {
     position: absolute; right: 12px; bottom: 8px; margin: 0;
     font-size: 9px; letter-spacing: 0.02em; color: var(--text-dim); opacity: 0.3;
@@ -1800,6 +1814,7 @@
             </div>
             <div class="karte-zeit" id="karte-zeit" aria-hidden="true"></div>
             <div class="karte-datum" id="karte-datum" aria-hidden="true"><span></span><span></span></div>
+            <button type="button" class="karte-weiter" id="karte-weiter">Karte überspringen <span aria-hidden="true">↓</span></button>
             <p class="karte-quelle">Relief nach SRTM/ETOPO1 (Mapzen) · Routen © OpenStreetMap-Mitwirkende</p>
           </div>
         </div>
@@ -3706,7 +3721,7 @@
 
     let D = null;                       // Daten nach dem Laden
     let phasen = [], EINHEITEN = 12;
-    let wege = [], wegAb = [], GESAMT = 0, orte = [], blick = [], mitte = [0, 0], halb = [100, 100];
+    let kurse = [], wege = [], wegAb = [], GESAMT = 0, orte = [], blick = [], mitte = [0, 0], halb = [100, 100];
     let uebersicht = null, gross = null;
     const NAH = { dist: 24, pitch: 56 };
 
@@ -3749,6 +3764,16 @@
       return kurs(q[0] - p[0], q[1] - p[1]);
     }
 
+    // Mittelwert ueber ein langes Stueck Weg: die Kurven verschwinden.
+    function ruhig(w, l) {
+      const b = Math.min(w.len * 0.3, 45), s = [0, 0, 0];
+      for (let j = -6; j <= 6; j++) {
+        const p = punkt(w, l + b * j / 6);
+        s[0] += p[0] / 13; s[1] += p[1] / 13; s[2] += p[2] / 13;
+      }
+      return s;
+    }
+
     function einpassen(punkte, pitch, bearing, extra, W, H) {
       let x0 = 1e9, x1 = -1e9, y0 = 1e9, y1 = -1e9;
       punkte.forEach(function (p) {
@@ -3777,9 +3802,14 @@
       // Blickrichtung je Ort: in Fahrtrichtung der Ankunft, fuer den ersten
       // in Richtung der Abfahrt. Waehrend des Aufenthalts schwenkt die
       // Kamera um 6 Grad weiter -- ein langsamer Schwenk statt Standbild.
-      blick = orte.map(function (o, i) {
-        return (i ? richtung(wege[i - 1], wege[i - 1].len) : richtung(wege[0], 0)) + 3;
+      // Blickrichtung je Weg: die Richtung der GANZEN Fahrt (Start zum Ziel),
+      // nicht die der einzelnen Kurve -- die Kamera dreht sich einmal in die
+      // Reiserichtung und haelt sie dann.
+      kurse = wege.map(function (w) {
+        const a = w.p[0], b = w.p[w.p.length - 1];
+        return kurs(b[0] - a[0], b[1] - a[1]);
       });
+      blick = orte.map(function (o, i) { return (i ? kurse[i - 1] : kurse[0]) + 3; });
 
       const alle = orte.slice();
       wege.forEach(function (w) { alle.push.apply(alle, w.p); });
@@ -3836,15 +3866,20 @@
                 dist: logMix(uebersicht.dist, NAH.dist, e), pitch: mix(uebersicht.pitch, NAH.pitch, e),
                 bearing: winkelMix(uebersicht.bearing + 3, blick[0] - 3, e) });
       } else if (ph.art === 'fahrt') {                          // von Ort zu Ort
+        /* Ruhig, nicht hektisch: unterwegs steigt die Kamera hoch auf --
+           in der Mitte so weit, dass die ganze Fahrt im Bild ist -- und
+           folgt einer stark geglaetteten Linie statt jeder Kurve der
+           Strasse. Die Route selbst wird mit allen Kurven gezeichnet; nur
+           die Kamera nimmt sie nicht mit. */
         const e = glatt(f), w = wege[ph.von];
-        const l = w.len * e, p = punkt(w, l);
-        // Unterwegs hoeher und flacher, wie ein Kran, der beim Fahren
-        // aufsteigt und vor dem Ziel wieder absenkt.
-        const hub = Math.max(0.4, Math.min(2.2, w.len / 60)), bogen = Math.sin(Math.PI * e);
-        const b0 = blick[ph.von] + 3;
-        setze({ x: p[0], y: p[1], z: p[2], dist: NAH.dist * 0.94 * (1 - e) + NAH.dist * e + NAH.dist * hub * bogen,
-                pitch: NAH.pitch - 14 * bogen,
-                bearing: winkelMix(b0, richtung(w, l), stufe(0, 0.3, f)) });
+        const l = w.len * e, bogen = Math.sin(Math.PI * e);
+        const genau = punkt(w, l), weich = ruhig(w, l);
+        const g = Math.min(1, 3 * Math.min(e, 1 - e));   // an den Orten exakt
+        const hoch = Math.max(NAH.dist * 2, w.len * 0.85);
+        setze({ x: mix(genau[0], weich[0], g), y: mix(genau[1], weich[1], g), z: mix(genau[2], weich[2], g),
+                dist: NAH.dist * mix(0.94, 1, e) * Math.pow(hoch / NAH.dist, bogen),
+                pitch: NAH.pitch - (NAH.pitch - 30) * bogen,
+                bearing: winkelMix(blick[ph.von] + 3, kurse[ph.von], stufe(0, 0.4, f)) });
         k.tag = Math.round(mix(ph.tagA, ph.tagB, f));
         k.weg = ph.von; k.wegL = l;
       } else if (ph.art === 'weit') {                           // ins grosse Bild
@@ -3867,7 +3902,8 @@
 
     /* ---- WebGL: die Landschaft ---- */
     let gl = null, prog = null, loc = {}, puf = {}, W = 1, H = 1, PR = 1, ctx2 = null;
-    const GRUND = [0.055, 0.075, 0.078];
+    // Meer und Dunst: ein tiefes Petrol statt Grau.
+    const GRUND = [0.035, 0.072, 0.088];
 
     function glStarten() {
       const opt = { antialias: true, alpha: false, depth: true, powerPreference: 'high-performance' };
@@ -3930,10 +3966,15 @@
       if (gl) gl.viewport(0, 0, glc.width, glc.height);
     }
 
-    // Farbe je Schicht: von einem tiefen Grau-Blau zu Nebelgrau.
+    /* Farbe je Schicht, wie ein Farbgrading: tief im Tal ein dunkles
+       Petrol, an den Haengen ein gedecktes Blaugruen, oben kuehler Nebel
+       bis fast Weiss. Dazu steht die Route als warme Lichtspur -- der
+       klassische Gegensatz von kaltem Bild und warmem Licht. */
+    const FARBEN = [[0.06, 0.15, 0.17], [0.13, 0.27, 0.29], [0.28, 0.42, 0.44], [0.62, 0.72, 0.74]];
     function schichtFarbe(i, n) {
-      const t = Math.pow(i / (n - 1), 0.85);
-      return [mix(0.085, 0.35, t), mix(0.11, 0.395, t), mix(0.12, 0.415, t)];
+      const t = Math.pow(i / (n - 1), 0.9) * (FARBEN.length - 1);
+      const k = Math.min(FARBEN.length - 2, Math.floor(t)), f = t - k;
+      return [0, 1, 2].map(function (c) { return mix(FARBEN[k][c], FARBEN[k + 1][c], f); });
     }
 
     function kamera(k) {
@@ -3967,7 +4008,7 @@
         gl.disable(gl.POLYGON_OFFSET_FILL);
         // Kante: die Kueste deutlicher, die Hoehenlinien zart.
         gl.enable(gl.BLEND); gl.depthMask(false);
-        gl.uniform3f(loc.uF, 0.80, 0.86, 0.86);
+        gl.uniform3f(loc.uF, 0.72, 0.9, 0.92);
         gl.uniform1f(loc.uA, i === 0 ? 0.42 : 0.2);
         gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, puf.l);
         gl.drawElements(gl.LINES, s.l[1] - s.l[0], gl.UNSIGNED_SHORT, s.l[0] * 2);
@@ -4010,11 +4051,11 @@
          laesst, zerfaellt in einzelne Koerner, die etwas verwehen und
          verblassen. Stehen bleibt eine sandige Spur der Reise. */
       const kopf = GESAMT * (1 - k.sand);                // bis hier noch Linie
-      ctx2.strokeStyle = 'rgba(200, 214, 214,' + (0.28 * (1 - k.sand)).toFixed(3) + ')';
+      ctx2.strokeStyle = 'rgba(240, 200, 150,' + (0.26 * (1 - k.sand)).toFixed(3) + ')';
       ctx2.lineWidth = 1;
       if (k.sand < 1) wege.forEach(function (w) { linie(M, w, 1e9); });
-      ctx2.strokeStyle = 'rgba(228, 236, 234, 0.88)'; ctx2.lineWidth = 1.6;
-      ctx2.shadowColor = 'rgba(200, 222, 222, 0.55)'; ctx2.shadowBlur = 7;
+      ctx2.strokeStyle = 'rgba(255, 222, 178, 0.92)'; ctx2.lineWidth = 1.7;
+      ctx2.shadowColor = 'rgba(255, 170, 90, 0.7)'; ctx2.shadowBlur = 9;
       for (let i = 0; i <= k.weg && i < wege.length; i++) {
         const bis = Math.min(i < k.weg ? 1e9 : k.wegL, kopf - wegAb[i]);
         if (bis > 0) linie(M, wege[i], bis);
@@ -4034,7 +4075,7 @@
             if (!s) continue;
             const weit = 0.3 + 2.2 * alt + 1.2 * k.weh;
             const a = 0.85 - 0.3 * alt;
-            ctx2.fillStyle = 'rgba(226, 234, 232,' + a.toFixed(3) + ')';
+            ctx2.fillStyle = 'rgba(250, 214, 168,' + a.toFixed(3) + ')';
             ctx2.fillRect(s[0] + (zufall(i, 2) - 0.5) * 2 * weit, s[1] + (zufall(i, 4) - 0.5) * 2 * weit,
                           0.9 + zufall(i, 3) * 0.9, 0.9 + zufall(i, 5) * 0.9);
           }
@@ -4048,15 +4089,15 @@
         const h = Math.max(i === k.ort ? k.sicht : 0, k.alleHell * 0.55);
         if (h > 0.01) {
           const g = ctx2.createRadialGradient(s[0], s[1], 0, s[0], s[1], 26);
-          g.addColorStop(0, 'rgba(214, 228, 226,' + (0.32 * h).toFixed(3) + ')');
-          g.addColorStop(1, 'rgba(214, 228, 226, 0)');
+          g.addColorStop(0, 'rgba(255, 196, 130,' + (0.38 * h).toFixed(3) + ')');
+          g.addColorStop(1, 'rgba(255, 196, 130, 0)');
           ctx2.fillStyle = g;
           ctx2.beginPath(); ctx2.arc(s[0], s[1], 26, 0, 2 * Math.PI); ctx2.fill();
-          ctx2.strokeStyle = 'rgba(226, 236, 234,' + (0.45 * h).toFixed(3) + ')';
+          ctx2.strokeStyle = 'rgba(255, 226, 190,' + (0.5 * h).toFixed(3) + ')';
           ctx2.lineWidth = 1;
           ctx2.beginPath(); ctx2.arc(s[0], s[1], 4 + 5 * h, 0, 2 * Math.PI); ctx2.stroke();
         }
-        ctx2.fillStyle = 'rgba(232, 238, 236,' + (0.5 + 0.5 * h).toFixed(3) + ')';
+        ctx2.fillStyle = 'rgba(255, 236, 212,' + (0.55 + 0.45 * h).toFixed(3) + ')';
         ctx2.beginPath(); ctx2.arc(s[0], s[1], 2 + 1.2 * h, 0, 2 * Math.PI); ctx2.fill();
       });
     }
@@ -4178,6 +4219,17 @@
         requestAnimationFrame(function () { wurzel.classList.add('ist-bereit'); });
       }).catch(function () { wurzel.hidden = true; });
     }
+
+    /* Ueberspringen: sofort ans Ende der Karte, ohne die ganze Reise im
+       Schnelldurchlauf abzuspielen -- die Anzeige springt mit, statt der
+       Feder hinterherzurasen. */
+    const weiter = document.getElementById('karte-weiter');
+    if (weiter) weiter.addEventListener('click', function () {
+      const oben = lauf.getBoundingClientRect().top - scroller.getBoundingClientRect().top + scroller.scrollTop;
+      scroller.scrollTo({ top: oben + lauf.offsetHeight, behavior: 'instant' });
+      ziel = stand = EINHEITEN; tempo = 0;
+      zeichne(stand);
+    });
 
     new MutationObserver(function () {
       if (viewer.classList.contains('is-active')) laden();
