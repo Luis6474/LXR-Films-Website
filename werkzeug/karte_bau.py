@@ -18,7 +18,8 @@ S = os.path.dirname(os.path.abspath(__file__))
 CACHE = os.path.join(tempfile.gettempdir(), "lxr_dem_cache"); os.makedirs(CACHE, exist_ok=True)
 Z = 9
 W_LON, E_LON, S_LAT, N_LAT = -7.35, -3.95, 55.75, 58.25
-LEVELS = [0, 45, 110, 190, 280, 380, 490, 610, 740, 880, 1030]
+# Unter null: Tiefenlinien im Meer, wie auf einer Seekarte.
+LEVELS = [-150, -100, -60, -30, -10, 0, 45, 110, 190, 280, 380, 490, 610, 740, 880, 1030]
 C = 40075.0 * math.cos(math.radians(57.0))       # km je Mercator-Einheit
 
 
@@ -58,7 +59,7 @@ print("Raster", h.shape)
 
 # Fehlpunkte weg (Median), Meer flach, dann weich -- kuenstlerisch, nicht exakt
 h = ndimage.median_filter(h, size=3)
-h = np.clip(h, -50, 1340)
+h = np.clip(h, -400, 1340)
 h = ndimage.gaussian_filter(h, 1.6)
 
 
@@ -98,7 +99,7 @@ for li, lev in enumerate(LEVELS):
             poly = Polygon(rings[0], rings[1:])
         except Exception:
             continue
-        if poly.area < (6 if li == 0 else 4):
+        if poly.area < (6 if lev <= 0 else 4):
             continue
         poly = poly.simplify(TOL, preserve_topology=True)
         poly = make_valid(poly)
@@ -140,7 +141,7 @@ def schicht_bei(wx, wy):
     lev = 0
     for L in LEVELS:
         if v >= L + 0.5: lev = L
-    return lev
+    return max(0, lev)
 
 
 # ---------- Routen ----------

@@ -3836,7 +3836,7 @@
 
     let D = null;                       // Daten nach dem Laden
     let phasen = [], EINHEITEN = 12;
-    let kurse = [], wege = [], wegAb = [], GESAMT = 0, orte = [], blick = [], mitte = [0, 0], halb = [100, 100];
+    let fluege = [], kurse = [], wege = [], wegAb = [], GESAMT = 0, orte = [], blick = [], mitte = [0, 0], halb = [100, 100];
     let uebersicht = null, gross = null;
     const NAH = { dist: 24, pitch: 56 };
 
@@ -3879,14 +3879,28 @@
       return kurs(q[0] - p[0], q[1] - p[1]);
     }
 
-    // Mittelwert ueber ein langes Stueck Weg: die Kurven verschwinden.
-    function ruhig(w, l) {
-      const b = Math.min(w.len * 0.3, 45), s = [0, 0, 0];
-      for (let j = -6; j <= 6; j++) {
-        const p = punkt(w, l + b * j / 6);
-        s[0] += p[0] / 13; s[1] += p[1] / 13; s[2] += p[2] / 13;
+    /* Flugbahn nach van Wijk & Nuij, "Smooth and efficient zooming and
+       panning" (2003). w ist die sichtbare Breite, u der Weg am Boden. */
+    const RHO = 1.6;
+    const BREITE = 2 * Math.tan(FOV / 2);             // sichtbare Hoehe je km Abstand
+    function flugBauen(A, B, w0, w1) {
+      const u1 = Math.hypot(B[0] - A[0], B[1] - A[1]), r2 = RHO * RHO;
+      if (u1 < 0.01) {
+        const S = Math.abs(Math.log(w1 / w0)) / RHO || 0.001;
+        return { S: S, u1: 0, wMax: Math.max(w0, w1), u: function () { return 0; },
+                 w: function (s) { return w0 * Math.exp(Math.log(w1 / w0) * s / S); } };
       }
-      return s;
+      const b0 = (w1 * w1 - w0 * w0 + r2 * r2 * u1 * u1) / (2 * w0 * r2 * u1);
+      const b1 = (w1 * w1 - w0 * w0 - r2 * r2 * u1 * u1) / (2 * w1 * r2 * u1);
+      const r0 = Math.log(Math.sqrt(b0 * b0 + 1) - b0), r1 = Math.log(Math.sqrt(b1 * b1 + 1) - b1);
+      const fl = {
+        S: (r1 - r0) / RHO, u1: u1,
+        w: function (s) { return w0 * Math.cosh(r0) / Math.cosh(RHO * s + r0); },
+        u: function (s) { return w0 / r2 * (Math.cosh(r0) * Math.tanh(RHO * s + r0) - Math.sinh(r0)); }
+      };
+      fl.wMax = 0;
+      for (let j = 0; j <= 40; j++) fl.wMax = Math.max(fl.wMax, fl.w(fl.S * j / 40));
+      return fl;
     }
 
     function einpassen(punkte, pitch, bearing, extra, W, H) {
@@ -3942,12 +3956,16 @@
       /* Ablauf. "laenge" ist Scrollstrecke in Einheiten von 32 % der
          Fensterhoehe. Lange Fahrten bekommen etwas mehr Weg, aber nur
          logarithmisch -- 260 km sollen nicht fuenfmal so lang dauern wie 50. */
+      fluege = orte.slice(1).map(function (o, i) {
+        return flugBauen(orte[i], o, NAH.dist * BREITE, NAH.dist * BREITE);
+      });
+      /* Scrollweg je Fahrt nach der Laenge der Flugbahn (S): so bleibt die
+         Bewegung je Radschritt bei jeder Fahrt gleich ruhig. */
       phasen = [{ art: 'start', laenge: 0.5 }];
       orte.forEach(function (o, i) {
         const tg = TAGE_JE_ORT[i];
-        const km = i ? wege[i - 1].len : 60;
         phasen.push({ art: 'fahrt', von: i - 1, nach: i, tagA: i ? TAGE_JE_ORT[i - 1][1] : 0, tagB: tg[0],
-                      laenge: 0.8 + 0.25 * Math.log2(1 + km / 50) });
+                      laenge: i ? 0.5 + 0.32 * fluege[i - 1].S : 1.2 });
         phasen.push({ art: 'halt', ort: i, tagA: tg[0], tagB: tg[1], laenge: 0.75 + 0.35 * (tg[1] - tg[0]) });
       });
       phasen.push({ art: 'weit', tagA: TAGE_JE_ORT[orte.length - 1][1], tagB: TAGE - 1, laenge: 1.5 });
@@ -3971,7 +3989,7 @@
         setze(uebersicht); k.bearing += 3 * f;
       } else if (ph.art === 'halt') {
         const o = orte[ph.ort], n = ph.tagB - ph.tagA + 1;
-        setze({ x: o[0], y: o[1], z: o[2], dist: NAH.dist * (1 - 0.06 * f), pitch: NAH.pitch,
+        setze({ x: o[0], y: o[1], z: o[2], dist: NAH.dist, pitch: NAH.pitch,
                 bearing: blick[ph.ort] - 3 + 6 * f });
         k.tag = ph.tagA + Math.min(n - 1, Math.floor(f * n));
         k.sicht = stufe(0.1, 0.26, f) * (1 - stufe(0.8, 0.95, f));
@@ -3982,26 +4000,30 @@
                 dist: logMix(uebersicht.dist, NAH.dist, e), pitch: mix(uebersicht.pitch, NAH.pitch, e),
                 bearing: winkelMix(uebersicht.bearing + 3, blick[0] - 3, e) });
       } else if (ph.art === 'fahrt') {                          // von Ort zu Ort
-        /* Ruhig, nicht hektisch: unterwegs steigt die Kamera hoch auf --
-           in der Mitte so weit, dass die ganze Fahrt im Bild ist -- und
-           folgt einer stark geglaetteten Linie statt jeder Kurve der
-           Strasse. Die Route selbst wird mit allen Kurven gezeichnet; nur
-           die Kamera nimmt sie nicht mit. */
-        const e = glatt(f), w = wege[ph.von];
-        const l = w.len * e, bogen = Math.sin(Math.PI * e);
-        const genau = punkt(w, l), weich = ruhig(w, l);
-        const g = Math.min(1, 3 * Math.min(e, 1 - e));   // an den Orten exakt
-        const hoch = Math.max(NAH.dist * 2, w.len * 0.85);
-        setze({ x: mix(genau[0], weich[0], g), y: mix(genau[1], weich[1], g), z: mix(genau[2], weich[2], g),
-                dist: NAH.dist * mix(0.94, 1, e) * Math.pow(hoch / NAH.dist, bogen),
-                pitch: NAH.pitch - (NAH.pitch - 30) * bogen,
-                bearing: winkelMix(blick[ph.von] + 3, kurse[ph.von], stufe(0, 0.4, f)) });
-        k.tag = Math.round(mix(ph.tagA, ph.tagB, f));
-        k.weg = ph.von; k.wegL = l;
+        /* Ein Kartenflug nach van Wijk & Nuij -- dieselbe Bahn, die grosse
+           Kartendienste fuer ihr "Hinfliegen" nehmen: erst steigt die Kamera
+           ueber dem Startort auf, dann zieht sie hoch oben hinueber, zuletzt
+           senkt sie sich ueber dem Ziel. Die Formel haelt die GEFUEHLTE
+           Geschwindigkeit ueberall gleich: nah am Boden bewegt sich die
+           Kamera kaum, oben legt sie weite Strecken zurueck, und im Bild
+           sieht beides gleich ruhig aus. Vorher zog sie in mittlerer Hoehe
+           die Strasse entlang -- viel Bewegung dicht ueber dem Gelaende, das
+           wirkte wie eine Achterbahn. Oben blickt sie fast senkrecht herab,
+           gedreht wird nur dort, wo die Drehung kaum auffaellt. */
+        const w = wege[ph.von], A = orte[ph.von], B = orte[ph.nach], fl = fluege[ph.von];
+        const s = fl.S * glatt(f);
+        const anteil = fl.u1 > 0 ? fl.u(s) / fl.u1 : glatt(f);
+        const dist = fl.w(s) / BREITE;
+        const oben = Math.max(0, Math.min(1, (dist - NAH.dist) / Math.max(1, fl.wMax / BREITE - NAH.dist)));
+        setze({ x: mix(A[0], B[0], anteil), y: mix(A[1], B[1], anteil), z: mix(A[2], B[2], anteil),
+                dist: dist, pitch: mix(NAH.pitch, 22, glatt(Math.min(1, oben * 1.3))),
+                bearing: winkelMix(blick[ph.von] + 3, blick[ph.nach] - 3, stufe(0.2, 0.8, anteil)) });
+        k.tag = Math.round(mix(ph.tagA, ph.tagB, anteil));
+        k.weg = ph.von; k.wegL = w.len * anteil;
       } else if (ph.art === 'weit') {                           // ins grosse Bild
         const e = glatt(Math.min(1, f / 0.6)), o = orte[orte.length - 1];
         setze({ x: mix(o[0], gross.x, e), y: mix(o[1], gross.y, e), z: mix(o[2], 0, e),
-                dist: logMix(NAH.dist * 0.94, gross.dist, e), pitch: mix(NAH.pitch, gross.pitch, e),
+                dist: logMix(NAH.dist, gross.dist, e), pitch: mix(NAH.pitch, gross.pitch, e),
                 bearing: winkelMix(blick[orte.length - 1] + 3, gross.bearing, e) });
         k.tag = Math.round(mix(ph.tagA, ph.tagB, Math.min(1, f * 1.4)));
         k.weg = wege.length - 1; k.wegL = 1e9;
@@ -4019,7 +4041,7 @@
     /* ---- WebGL: die Landschaft ---- */
     let gl = null, prog = null, loc = {}, puf = {}, W = 1, H = 1, PR = 1, ctx2 = null;
     // Meer und Dunst: ein tiefes Petrol statt Grau.
-    const GRUND = [0.035, 0.072, 0.088];
+    const GRUND = [0.016, 0.03, 0.05];
 
     function glStarten() {
       const opt = { antialias: true, alpha: false, depth: true, powerPreference: 'high-performance' };
@@ -4082,15 +4104,23 @@
       if (gl) gl.viewport(0, 0, glc.width, glc.height);
     }
 
-    /* Farbe je Schicht, wie ein Farbgrading: tief im Tal ein dunkles
-       Petrol, an den Haengen ein gedecktes Blaugruen, oben kuehler Nebel
-       bis fast Weiss. Dazu steht die Route als warme Lichtspur -- der
-       klassische Gegensatz von kaltem Bild und warmem Licht. */
-    const FARBEN = [[0.06, 0.15, 0.17], [0.13, 0.27, 0.29], [0.28, 0.42, 0.44], [0.62, 0.72, 0.74]];
-    function schichtFarbe(i, n) {
-      const t = Math.pow(i / (n - 1), 0.9) * (FARBEN.length - 1);
-      const k = Math.min(FARBEN.length - 2, Math.floor(t)), f = t - k;
-      return [0, 1, 2].map(function (c) { return mix(FARBEN[k][c], FARBEN[k + 1][c], f); });
+    /* Farbe je Schicht, wie ein Farbgrading: tiefes Nachtblau im Tal,
+       Schieferblau an den Haengen, oben kuehles Nebelgrau. Dunkler und
+       blauer als zuvor (das war ein Tuerkis). Dazu die Route als warme
+       Lichtspur -- kaltes Bild, warmes Licht.
+       Das Meer bekommt Tiefenschichten wie eine Seekarte: je tiefer, desto
+       dunkler, mit ganz feinen Linien an jeder Stufe. So ist es nicht mehr
+       leer, sondern hat Grund. */
+    const LAND = [[0.08, 0.105, 0.14], [0.11, 0.145, 0.195], [0.17, 0.215, 0.28], [0.45, 0.5, 0.57]];
+    const MEER_FLACH = [0.032, 0.054, 0.084];
+    function schichtFarbe(lev, hoechste) {
+      if (lev < 0) {
+        const t = Math.min(1, -lev / 150);
+        return [0, 1, 2].map(function (c) { return mix(MEER_FLACH[c], GRUND[c] * 1.15, Math.pow(t, 0.7)); });
+      }
+      const t = Math.pow(lev / hoechste, 0.9) * (LAND.length - 1);
+      const k = Math.min(LAND.length - 2, Math.floor(t)), f = t - k;
+      return [0, 1, 2].map(function (c) { return mix(LAND[k][c], LAND[k + 1][c], f); });
     }
 
     function kamera(k) {
@@ -4111,9 +4141,10 @@
       gl.uniform2f(loc.uMitte, mitte[0], mitte[1]);
       const S = D.kopf.schichten, n = S.length;
       S.forEach(function (s, i) {
-        const z = s.lev / 1000 * UEBERHOEHUNG;
+        // Meeresschichten liegen flach knapp unter null, nur zum Stapeln.
+        const z = s.lev >= 0 ? s.lev / 1000 * UEBERHOEHUNG : s.lev / 1000 * 0.2;
         gl.uniform1f(loc.uZ, z);
-        gl.uniform3fv(loc.uF, schichtFarbe(i, n));
+        gl.uniform3fv(loc.uF, schichtFarbe(s.lev, S[n - 1].lev));
         gl.uniform1f(loc.uA, 1);
         // Jede Schicht zaehlt ihre Punkte ab dem eigenen ersten: 16 Bit reichen.
         gl.bindBuffer(gl.ARRAY_BUFFER, puf.v);
@@ -4124,8 +4155,9 @@
         gl.disable(gl.POLYGON_OFFSET_FILL);
         // Kante: die Kueste deutlicher, die Hoehenlinien zart.
         gl.enable(gl.BLEND); gl.depthMask(false);
-        gl.uniform3f(loc.uF, 0.72, 0.9, 0.92);
-        gl.uniform1f(loc.uA, i === 0 ? 0.42 : 0.2);
+        if (s.lev < 0) { gl.uniform3f(loc.uF, 0.36, 0.5, 0.68); gl.uniform1f(loc.uA, 0.085); }
+        else if (s.lev === 0) { gl.uniform3f(loc.uF, 0.72, 0.82, 0.92); gl.uniform1f(loc.uA, 0.5); }
+        else { gl.uniform3f(loc.uF, 0.62, 0.72, 0.84); gl.uniform1f(loc.uA, 0.16); }
         gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, puf.l);
         gl.drawElements(gl.LINES, s.l[1] - s.l[0], gl.UNSIGNED_SHORT, s.l[0] * 2);
       });
