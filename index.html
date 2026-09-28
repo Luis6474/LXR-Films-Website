@@ -1303,21 +1303,33 @@
     transition: opacity 0.7s var(--ease), transform 0.7s var(--ease);
   }
   .karte-zeit i.ist-an { opacity: 0.8; transform: scaleY(1.7); }
-  /* Karte ueberspringen: klein oben rechts, im Ton der Versallabels. */
+  /* Karte ueberspringen: gut sichtbar, im warmen Ton der Route, mit einem
+     leisen Aufleuchten, wenn die Karte erscheint -- vorher war der Knopf so
+     zurueckgenommen, dass man ihn uebersah und sich ueber die Laenge der
+     Reise aergerte, obwohl man sie haette ueberspringen koennen. */
   .karte-weiter {
-    position: absolute; top: max(22px, 3dvh); right: 16px;
+    position: absolute; top: max(20px, 3dvh); right: 16px;
+    display: inline-flex; align-items: center; gap: 10px;
     font-family: 'Libre Caslon Display', Georgia, serif;
-    font-size: 0.68em; letter-spacing: 0.2em; text-transform: uppercase;
-    color: var(--text-dim); background: rgba(8, 14, 16, 0.35);
-    border: 1px solid rgba(200, 214, 214, 0.18); border-radius: 999px;
-    padding: 9px 16px 8px; cursor: pointer;
-    opacity: 0; transition: opacity 0.8s var(--ease), color 0.4s var(--ease), border-color 0.4s var(--ease);
+    font-size: 0.78em; letter-spacing: 0.18em; text-transform: uppercase;
+    color: #f3e6cf; background: rgba(28, 22, 15, 0.6);
+    -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px);
+    border: 1px solid rgba(255, 214, 160, 0.55); border-radius: 999px;
+    padding: 12px 20px 11px; cursor: pointer;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.35);
+    opacity: 0; transition: opacity 0.8s var(--ease), background-color 0.4s var(--ease), border-color 0.4s var(--ease);
   }
-  .karte.ist-bereit .karte-weiter { opacity: 1; }
-  .karte-weiter:focus-visible { color: var(--text); border-color: rgba(220, 230, 230, 0.4); }
-  @media (hover: hover) { .karte-weiter:hover { color: var(--text); border-color: rgba(220, 230, 230, 0.4); } }
+  .karte-weiter span { font-size: 1.25em; line-height: 1; letter-spacing: 0; }
+  .karte.ist-bereit .karte-weiter { opacity: 1; animation: weiterRuf 2.4s var(--ease) 1.4s 2; }
+  @keyframes weiterRuf {
+    0%, 100% { box-shadow: 0 0 0 0 rgba(255, 196, 130, 0), 0 10px 30px rgba(0, 0, 0, 0.35); }
+    50% { box-shadow: 0 0 0 9px rgba(255, 196, 130, 0.16), 0 10px 30px rgba(0, 0, 0, 0.35); }
+  }
+  .karte-weiter:focus-visible { background-color: rgba(64, 46, 26, 0.75); border-color: rgba(255, 224, 180, 0.9); outline: none; }
+  @media (hover: hover) { .karte-weiter:hover { background-color: rgba(64, 46, 26, 0.75); border-color: rgba(255, 224, 180, 0.9); } }
+  @media (prefers-reduced-motion: reduce) { .karte.ist-bereit .karte-weiter { animation: none; } }
   .karte.ist-still .karte-weiter { display: none; }
-  @media (min-width: 900px) { .karte-weiter { right: 28px; top: 28px; } }
+  @media (min-width: 900px) { .karte-weiter { right: 28px; top: 28px; font-size: 0.82em; } }
   .karte-quelle {
     position: absolute; right: 12px; bottom: 8px; margin: 0;
     font-size: 9px; letter-spacing: 0.02em; color: var(--text-dim); opacity: 0.3;
@@ -4446,19 +4458,18 @@
       linien(k, cam);
     }
 
-    /* ---- Majestaetisch statt hektisch ----
-       Vorher hing die Kamera ueber eine Feder direkt am Scrollen: ein
-       kraeftiger Radschwung oder Wisch hiess ein schneller Flug, und von
-       Ort zu Ort ging es in einem Ruck. Jetzt legt das Scrollen nur noch
-       fest, WOHIN die Reise geht. Die Kamera faehrt mit eigener, ruhiger
-       Hoechstgeschwindigkeit dorthin, setzt sich sanft in Bewegung und
-       bremst gleichmaessig ab -- wie ein Kamerakran, nicht wie ein Zeiger.
-       Ein Flug von Ort zu Ort dauert damit sieben bis neun Sekunden, auch
-       wenn man schnell scrollt; das Datum laeuft mit der Kamera, nicht mit
-       dem Finger. Wer nicht warten will, hat "Karte ueberspringen".
-       Solange die Karte zu sehen ist, laeuft die Zeichnung ohnehin weiter:
-       das Wasser bewegt sich. */
-    const VMAX = 0.26, BESCHL = 0.2;            // Einheiten je s, je s^2
+    /* ---- Gefuehrt, aber in der Hand ----
+       Die Kamera haengt wieder am Scrollen: scrollt man, faehrt sie, hoert
+       man auf, bremst sie weich und steht. Sie laeuft der Scrollposition
+       aber nicht beliebig schnell hinterher, sondern mit einer Obergrenze
+       und sanftem Anfahren und Bremsen (keine Feder, die bei jedem
+       Radschwung losschnellt). So bestimmt man Richtung und ungefaehres
+       Tempo selbst, die Fahrt bleibt trotzdem ruhig: ein Flug von Ort zu
+       Ort dauert mindestens rund drei Sekunden, auch bei wildem Scrollen.
+       Wer schneller weiter will, hat "Karte ueberspringen".
+       Solange die Karte zu sehen ist, laeuft die Zeichnung weiter: das
+       Wasser bewegt sich. */
+    const VMAX = 0.6, BESCHL = 1.0;             // Einheiten je s, je s^2
     let ziel = 0, stand = 0, tempo = 0, laeuft = false, zuletzt = 0, sichtbar = false;
     function zielAusScroll() {
       const s = lauf.offsetHeight - halt.offsetHeight;
