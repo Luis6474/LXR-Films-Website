@@ -4087,6 +4087,8 @@
       gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, puf.l);
       gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, D.lin, gl.STATIC_DRAW);
 
+      meerStarten(shader);
+      gl.useProgram(prog);
       gl.uniform1f(loc.uQ, D.kopf.q);
       gl.uniform3fv(loc.uGrund, GRUND);
       gl.clearColor(GRUND[0], GRUND[1], GRUND[2], 1);
@@ -4095,6 +4097,102 @@
       gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
       gl.polygonOffset(1, 1);
       return true;
+    }
+
+    /* ---- Das Wasser lebt ----
+       Wie auf den Seekarten des 18. Jahrhunderts liegen um jede Kueste feine
+       Wasserlinien, eine neben der anderen, nach aussen immer schwaecher.
+       Hier bewegen sie sich: ganz langsam wandern sie von der Kueste weg,
+       wie eine Duenung -- eine Linie braucht rund 14 Sekunden fuer ihren
+       Abstand. Darunter ziehen grosse, weiche Flecken sehr langsam ueber
+       das Meer, als wuerde Licht auf dem Wasser wandern.
+       Gezeichnet wird das auf einer einzigen Flaeche ueber dem Meeresgrund;
+       wie weit ein Punkt von der Kueste entfernt ist, steht in einem kleinen
+       Graustufenbild, das mit der Karte geladen wird. Werden die Linien auf
+       dem Bildschirm zu dicht (weit weg), blenden sie aus, statt zu flimmern. */
+    let meer = null;
+    function meerStarten(shader) {
+      const zwei = typeof WebGL2RenderingContext !== 'undefined' && gl instanceof WebGL2RenderingContext;
+      if (!zwei && !gl.getExtension('OES_standard_derivatives')) return;
+      const kopfV = zwei ? '#version 300 es\n' : '';
+      const kopfF = zwei ? '#version 300 es\n' : '#extension GL_OES_standard_derivatives : enable\n';
+      const ein = zwei ? 'in' : 'attribute', raus = zwei ? 'out' : 'varying', rein = zwei ? 'in' : 'varying';
+      const vs = kopfV + ein + ' vec2 aW; uniform mat4 uM; ' + raus + ' vec3 vW;' +
+        'void main(){ vW = vec3(aW, -0.001); gl_Position = uM * vec4(vW, 1.0); }';
+      const fs = kopfF + 'precision highp float;' +
+        'uniform sampler2D uAbst; uniform vec2 uGroesse; uniform float uKm; uniform float uT;' +
+        'uniform vec3 uAuge; uniform vec2 uNebel; uniform vec2 uHalb; uniform vec2 uMitte;' +
+        rein + ' vec3 vW;' + (zwei ? 'out vec4 aus;' : '') +
+        'float linie(float p){ float w = fwidth(p); float a = abs(fract(p + 0.5) - 0.5);' +
+        '  return (1.0 - smoothstep(0.0, 0.02 + w * 1.3, a)) * (1.0 - smoothstep(0.1, 0.28, w)); }' +
+        'float zuf(vec2 i){ return fract(sin(dot(i, vec2(127.1, 311.7))) * 43758.5453); }' +
+        'float rausch(vec2 p){ vec2 i = floor(p), f = fract(p); f = f * f * (3.0 - 2.0 * f);' +
+        '  return mix(mix(zuf(i), zuf(i + vec2(1.0, 0.0)), f.x), mix(zuf(i + vec2(0.0, 1.0)), zuf(i + vec2(1.0, 1.0)), f.x), f.y); }' +
+        'void main(){' +
+        '  vec2 uv = vec2(vW.x / uGroesse.x + 0.5, 0.5 - vW.y / uGroesse.y);' +
+        '  float d = ' + (zwei ? 'texture' : 'texture2D') + '(uAbst, uv).r * uKm;' +
+        '  if (d < 0.06) discard;' +
+        '  float fein = linie(d / 0.7 - uT * 0.071) * exp(-d / 2.6);' +
+        '  float grob = linie(d / 3.2 - uT * 0.022) * exp(-d / 8.0);' +
+        '  float n = rausch(vW.xy * 0.03 + vec2(uT * 0.018, uT * 0.011));' +
+        '  float n2 = rausch(vW.xy * 0.09 - vec2(uT * 0.025, -uT * 0.02));' +
+        '  float leben = 0.55 + 0.6 * n + 0.25 * n2;' +
+        '  float weg = 1.0 - max(smoothstep(uNebel.x, uNebel.y, length(vW - uAuge)),' +
+        '                        smoothstep(0.55, 1.0, length((vW.xy - uMitte) / uHalb)));' +
+        '  float a = ((0.22 * fein + 0.15 * grob) * leben + 0.035 * n * n) * weg;' +
+        '  ' + (zwei ? 'aus' : 'gl_FragColor') + ' = vec4(0.84, 0.82, 0.74, a);' +
+        '}';
+      try {
+        const pr = gl.createProgram();
+        gl.attachShader(pr, shader(gl.VERTEX_SHADER, vs));
+        gl.attachShader(pr, shader(gl.FRAGMENT_SHADER, fs));
+        gl.linkProgram(pr);
+        if (!gl.getProgramParameter(pr, gl.LINK_STATUS)) return;
+        const m = { prog: pr, loc: {} };
+        ['uM', 'uAbst', 'uGroesse', 'uKm', 'uT', 'uAuge', 'uNebel', 'uHalb', 'uMitte'].forEach(function (n) {
+          m.loc[n] = gl.getUniformLocation(pr, n);
+        });
+        m.aW = gl.getAttribLocation(pr, 'aW');
+        const gx = D.kopf.groesse[0] / 2, gy = D.kopf.groesse[1] / 2;
+        m.puf = gl.createBuffer();
+        gl.bindBuffer(gl.ARRAY_BUFFER, m.puf);
+        gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-gx, -gy, gx, -gy, -gx, gy, gx, gy]), gl.STATIC_DRAW);
+        m.tex = gl.createTexture();
+        gl.bindTexture(gl.TEXTURE_2D, m.tex);
+        gl.pixelStorei(gl.UNPACK_ALIGNMENT, 1);
+        gl.texImage2D(gl.TEXTURE_2D, 0, gl.LUMINANCE, D.kopf.tex[0], D.kopf.tex[1], 0, gl.LUMINANCE, gl.UNSIGNED_BYTE, D.tex);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+        gl.useProgram(pr);
+        gl.uniform1i(m.loc.uAbst, 0);
+        gl.uniform2f(m.loc.uGroesse, D.kopf.groesse[0], D.kopf.groesse[1]);
+        gl.uniform1f(m.loc.uKm, D.kopf.texKm);
+        meer = m;
+      } catch (e) { meer = null; }
+    }
+
+    function wasser(k, cam, zeitS) {
+      if (!meer) return;
+      gl.useProgram(meer.prog);
+      gl.uniformMatrix4fv(meer.loc.uM, false, new Float32Array(cam.M));
+      gl.uniform1f(meer.loc.uT, zeitS);
+      gl.uniform3fv(meer.loc.uAuge, cam.auge);
+      gl.uniform2f(meer.loc.uNebel, k.dist * 1.3, k.dist * 3.4);
+      gl.uniform2f(meer.loc.uHalb, halb[0], halb[1]);
+      gl.uniform2f(meer.loc.uMitte, mitte[0], mitte[1]);
+      gl.activeTexture(gl.TEXTURE0);
+      gl.bindTexture(gl.TEXTURE_2D, meer.tex);
+      gl.bindBuffer(gl.ARRAY_BUFFER, meer.puf);
+      gl.enableVertexAttribArray(meer.aW);
+      gl.vertexAttribPointer(meer.aW, 2, gl.FLOAT, false, 0, 0);
+      gl.disable(gl.DEPTH_TEST); gl.enable(gl.BLEND); gl.depthMask(false);
+      gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
+      gl.enable(gl.DEPTH_TEST); gl.depthMask(true);
+      if (meer.aW !== loc.aP) gl.disableVertexAttribArray(meer.aW);
+      gl.useProgram(prog);
+      gl.enableVertexAttribArray(loc.aP);
     }
 
     function groesse() {
@@ -4132,7 +4230,7 @@
       return { M: mal(P, V), auge: auge };
     }
 
-    function landschaft(k, cam) {
+    function landschaft(k, cam, zeitS) {
       gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
       gl.uniformMatrix4fv(loc.uM, false, new Float32Array(cam.M));
       gl.uniform3fv(loc.uAuge, cam.auge);
@@ -4141,6 +4239,8 @@
       gl.uniform2f(loc.uMitte, mitte[0], mitte[1]);
       const S = D.kopf.schichten, n = S.length;
       S.forEach(function (s, i) {
+        // Zwischen Meeresgrund und Land: das bewegte Wasser.
+        if (s.lev === 0) wasser(k, cam, zeitS);
         // Meeresschichten liegen flach knapp unter null, nur zum Stapeln.
         const z = s.lev >= 0 ? s.lev / 1000 * UEBERHOEHUNG : s.lev / 1000 * 0.2;
         gl.uniform1f(loc.uZ, z);
@@ -4155,9 +4255,10 @@
         gl.disable(gl.POLYGON_OFFSET_FILL);
         // Kante: die Kueste deutlicher, die Hoehenlinien zart.
         gl.enable(gl.BLEND); gl.depthMask(false);
-        if (s.lev < 0) { gl.uniform3f(loc.uF, 0.36, 0.5, 0.68); gl.uniform1f(loc.uA, 0.085); }
-        else if (s.lev === 0) { gl.uniform3f(loc.uF, 0.72, 0.82, 0.92); gl.uniform1f(loc.uA, 0.5); }
-        else { gl.uniform3f(loc.uF, 0.62, 0.72, 0.84); gl.uniform1f(loc.uA, 0.16); }
+        // Linien im Ton alter Tusche: ein warmes Elfenbein auf dem Nachtblau.
+        if (s.lev < 0) { gl.uniform3f(loc.uF, 0.56, 0.6, 0.62); gl.uniform1f(loc.uA, 0.07); }
+        else if (s.lev === 0) { gl.uniform3f(loc.uF, 0.88, 0.84, 0.74); gl.uniform1f(loc.uA, 0.55); }
+        else { gl.uniform3f(loc.uF, 0.74, 0.73, 0.67); gl.uniform1f(loc.uA, 0.13); }
         gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, puf.l);
         gl.drawElements(gl.LINES, s.l[1] - s.l[0], gl.UNSIGNED_SHORT, s.l[0] * 2);
       });
@@ -4188,11 +4289,90 @@
     // Feste Zufallswerte je Korn, damit der Sand beim Scrollen nicht flimmert.
     function zufall(i, s) { const v = Math.sin(i * 127.1 + s * 311.7) * 43758.5453; return v - Math.floor(v); }
 
+    /* ---- Seekarte ----
+       Zwei Zeichen alter Seekarten, abstrakt gehalten, ohne Schnoerkel:
+       ein zartes Gradnetz (jeder halbe Grad) und ein Stern aus Kompass-
+       linien, die aus einem Punkt im Meer westlich von Skye ueber die Karte
+       laufen -- so haben Navigatoren Kurse abgelesen. Beides sehr leise, zum
+       Rand hin ausgeblendet wie die Karte selbst. */
+    function geo(lon, lat) {
+      const s = Math.sin(lat * Math.PI / 180);
+      const y = 0.5 - Math.log((1 + s) / (1 - s)) / (4 * Math.PI);
+      return [(lon + 180) / 360 * D.kopf.c - D.kopf.ursprung[0], -y * D.kopf.c - D.kopf.ursprung[1], 0];
+    }
+    function randWeg(p) {
+      const q = Math.hypot((p[0] - mitte[0]) / halb[0], (p[1] - mitte[1]) / halb[1]);
+      return 1 - stufe(0.5, 1.0, q);
+    }
+    /* Eine Linie in Stuecken, jedes mit eigener Deckkraft (Ausblenden zum
+       Rand). Die Stuecke werden nach Deckkraft in acht Toepfe sortiert und
+       je Topf mit EINEM Strich gezeichnet -- statt rund 1300 einzelner
+       Striche je Bild nur noch acht. */
+    const TOEPFE = 8;
+    let topf = [];
+    function kartenLinie(M, a, b, n, deck) {
+      let vor = projizieren(M, a), vp = a;
+      for (let i = 1; i <= n; i++) {
+        const f = i / n, p = [mix(a[0], b[0], f), mix(a[1], b[1], f), 0];
+        const s = projizieren(M, p);
+        if (s && vor) {
+          const al = deck * randWeg([(p[0] + vp[0]) / 2, (p[1] + vp[1]) / 2]);
+          if (al > 0.004) {
+            const k = Math.min(TOEPFE - 1, Math.floor(al / 0.1 * TOEPFE));
+            topf[k].push(vor[0], vor[1], s[0], s[1]);
+          }
+        }
+        vor = s; vp = p;
+      }
+    }
+    function toepfeZeichnen() {
+      for (let k = 0; k < TOEPFE; k++) {
+        const z = topf[k];
+        if (!z.length) continue;
+        ctx2.strokeStyle = 'rgba(226, 216, 190,' + ((k + 0.5) / TOEPFE * 0.1).toFixed(4) + ')';
+        ctx2.beginPath();
+        for (let i = 0; i < z.length; i += 4) { ctx2.moveTo(z[i], z[i + 1]); ctx2.lineTo(z[i + 2], z[i + 3]); }
+        ctx2.stroke();
+      }
+    }
+    let kompass = null;
+    function seekarte(M) {
+      ctx2.lineWidth = 0.6;
+      topf = [];
+      for (let k = 0; k < TOEPFE; k++) topf.push([]);
+      for (let lon = -8.5; lon <= -3; lon += 0.5) kartenLinie(M, geo(lon, 55.4), geo(lon, 58.6), 24, 0.075);
+      for (let lat = 55.5; lat <= 58.5; lat += 0.5) {
+        for (let lon = -8.5; lon < -3; lon += 0.5) kartenLinie(M, geo(lon, lat), geo(lon + 0.5, lat), 3, 0.075);
+      }
+      if (!kompass) kompass = geo(-7.05, 57.02);
+      const K = kompass;
+      for (let j = 0; j < 32; j++) {
+        const a = j / 32 * 2 * Math.PI, haupt = j % 4 === 0;
+        const L = haupt ? 320 : 230;
+        kartenLinie(M, [K[0] + Math.sin(a) * 6, K[1] + Math.cos(a) * 6, 0],
+                       [K[0] + Math.sin(a) * L, K[1] + Math.cos(a) * L, 0], 26, haupt ? 0.085 : 0.045);
+      }
+      toepfeZeichnen();
+      // kleiner Ring im Ursprung der Linien
+      ctx2.lineWidth = 0.8;
+      ctx2.beginPath();
+      let ok = false;
+      for (let j = 0; j <= 48; j++) {
+        const a = j / 48 * 2 * Math.PI;
+        const s = projizieren(M, [K[0] + Math.sin(a) * 6, K[1] + Math.cos(a) * 6, 0]);
+        if (!s) { ok = false; continue; }
+        if (ok) ctx2.lineTo(s[0], s[1]); else { ctx2.moveTo(s[0], s[1]); ok = true; }
+      }
+      ctx2.strokeStyle = 'rgba(226, 216, 190,' + (0.16 * randWeg(K)).toFixed(3) + ')';
+      ctx2.stroke();
+    }
+
     function linien(k, cam) {
       const M = cam.M;
       ctx2.setTransform(PR, 0, 0, PR, 0, 0);
       ctx2.clearRect(0, 0, W, H);
       ctx2.lineCap = 'round'; ctx2.lineJoin = 'round';
+      seekarte(M);
       /* Route. Solange sie nicht zuruecklaeuft: ganz kaum sichtbar, der
          gefahrene Teil hell mit leichtem Schein. Am Ende laeuft die helle
          Linie vom letzten Ort her zurueck zum ersten; was sie hinter sich
@@ -4251,8 +4431,9 @@
     }
 
     let bereit = false;
-    function zeichne(u) {
+    function zeichne(u, zeitS) {
       if (!bereit) return;
+      if (zeitS === undefined) zeitS = reducedMotion ? 0 : (performance.now() / 1000) % 100000;
       const k = zustand(u);
       zeigeTag(k.tag);
       bilder.forEach(function (b, j) {
@@ -4261,39 +4442,68 @@
         b.style.transform = 'translateY(' + ((1 - s) * 14).toFixed(1) + 'px) scale(' + (0.985 + 0.015 * s).toFixed(4) + ')';
       });
       const cam = kamera(k);
-      landschaft(k, cam);
+      landschaft(k, cam, zeitS);
       linien(k, cam);
     }
 
-    /* ---- Gedaempft: der Scrollstand legt nur das Ziel fest, die Anzeige
-       laeuft ihm mit einer kritisch gedaempften Feder hinterher (wie das
-       Karussell). Etwas straffer als dort, damit jeder Radschritt sofort
-       sichtbar etwas bewegt. ---- */
-    const FEDER = 3.4;
-    let ziel = 0, stand = 0, tempo = 0, laeuft = false, zuletzt = 0;
+    /* ---- Majestaetisch statt hektisch ----
+       Vorher hing die Kamera ueber eine Feder direkt am Scrollen: ein
+       kraeftiger Radschwung oder Wisch hiess ein schneller Flug, und von
+       Ort zu Ort ging es in einem Ruck. Jetzt legt das Scrollen nur noch
+       fest, WOHIN die Reise geht. Die Kamera faehrt mit eigener, ruhiger
+       Hoechstgeschwindigkeit dorthin, setzt sich sanft in Bewegung und
+       bremst gleichmaessig ab -- wie ein Kamerakran, nicht wie ein Zeiger.
+       Ein Flug von Ort zu Ort dauert damit sieben bis neun Sekunden, auch
+       wenn man schnell scrollt; das Datum laeuft mit der Kamera, nicht mit
+       dem Finger. Wer nicht warten will, hat "Karte ueberspringen".
+       Solange die Karte zu sehen ist, laeuft die Zeichnung ohnehin weiter:
+       das Wasser bewegt sich. */
+    const VMAX = 0.26, BESCHL = 0.2;            // Einheiten je s, je s^2
+    let ziel = 0, stand = 0, tempo = 0, laeuft = false, zuletzt = 0, sichtbar = false;
     function zielAusScroll() {
       const s = lauf.offsetHeight - halt.offsetHeight;
       if (s <= 0) return 0;
       const oben = lauf.getBoundingClientRect().top - scroller.getBoundingClientRect().top;
       return Math.max(0, Math.min(1, -oben / s)) * EINHEITEN;
     }
-    function schritt(jetzt) {
+    function folgen(dt) {
+      const rest = ziel - stand, betrag = Math.abs(rest);
+      // Soll-Tempo: hoechstens VMAX, und nur so schnell, dass gleichmaessiges
+      // Bremsen noch genau am Ziel zum Stehen kommt.
+      const soll = Math.sign(rest) * Math.min(VMAX, Math.sqrt(2 * BESCHL * betrag) * 0.95);
+      const d = soll - tempo, grenze = BESCHL * dt;
+      tempo += Math.max(-grenze, Math.min(grenze, d));
+      stand += tempo * dt;
+      if (betrag < 0.0015 && Math.abs(tempo) < 0.01) { stand = ziel; tempo = 0; }
+    }
+    function schleife(jetzt) {
+      if (!bereit || !sichtbar || !viewer.classList.contains('is-active') || document.hidden) {
+        laeuft = false; return;
+      }
       const dt = Math.min(0.05, (jetzt - zuletzt) / 1000);
       zuletzt = jetzt;
-      const a = FEDER * FEDER * (ziel - stand) - 2 * FEDER * tempo;
-      tempo += a * dt;
-      stand += tempo * dt;
-      if (Math.abs(ziel - stand) < 0.0005 && Math.abs(tempo) < 0.001) {
-        stand = ziel; tempo = 0; laeuft = false; zeichne(stand); return;
-      }
-      zeichne(stand);
-      requestAnimationFrame(schritt);
+      folgen(dt);
+      zeichne(stand, (jetzt / 1000) % 100000);
+      requestAnimationFrame(schleife);
+    }
+    function anlaufen() {
+      if (laeuft || !bereit || reducedMotion) return;
+      laeuft = true; zuletzt = performance.now();
+      requestAnimationFrame(schleife);
     }
     function anstossen() {
       if (!bereit || reducedMotion) return;
       ziel = zielAusScroll();
-      if (!laeuft) { laeuft = true; zuletzt = performance.now(); requestAnimationFrame(schritt); }
+      anlaufen();
     }
+    // Gezeichnet wird nur, solange die Karte im Bild ist.
+    if ('IntersectionObserver' in window) {
+      new IntersectionObserver(function (e) {
+        sichtbar = e[e.length - 1].isIntersecting;
+        if (sichtbar) anlaufen();
+      }, { root: scroller }).observe(lauf);
+    } else { sichtbar = true; }
+    document.addEventListener('visibilitychange', function () { if (!document.hidden) anlaufen(); });
     scroller.addEventListener('scroll', anstossen, { passive: true });
 
     /* ---- Laden, sobald die Projektseite aufgeht ---- */
@@ -4315,7 +4525,8 @@
       let o = 16 + kl;
       const pos = new Int16Array(buf, o, nv * 2); o += nv * 4;
       const tri = new Uint16Array(buf, o, nt); o += nt * 2 + (nt % 2 ? 2 : 0);
-      const ringe = new Uint32Array(buf, o, nr);
+      const ringe = new Uint32Array(buf, o, nr); o += nr * 4;
+      const tex = new Uint8Array(buf, o, kopf.tex[0] * kopf.tex[1]);
       // Punkte stehen als Schritt zum vorigen Punkt ihres Rings.
       let s = 0;
       for (let r = 0; r < nr; r++) {
@@ -4339,7 +4550,7 @@
         }
         sch.l = [l0, z];
       });
-      return { kopf: kopf, pos: pos, tri: tri, lin: lin, orte: kopf.orte, wege: kopf.wege };
+      return { kopf: kopf, pos: pos, tri: tri, lin: lin, tex: tex, orte: kopf.orte, wege: kopf.wege };
     }
     function laden() {
       if (geladen) { if (bereit) { groesse(); zeichne(stand); } return; }
@@ -4363,6 +4574,7 @@
         } else {
           stand = ziel = zielAusScroll();
           zeichne(stand);
+          anlaufen();
         }
         requestAnimationFrame(function () { wurzel.classList.add('ist-bereit'); });
       }).catch(function () { wurzel.hidden = true; });
@@ -4377,6 +4589,7 @@
       scroller.scrollTo({ top: oben + lauf.offsetHeight, behavior: 'instant' });
       ziel = stand = EINHEITEN; tempo = 0;
       zeichne(stand);
+      anlaufen();
     });
 
     glc.addEventListener('webglcontextlost', function (e) { e.preventDefault(); bereit = false; }, false);

@@ -175,11 +175,20 @@ for o in REISE["orte"]:
     wx, wy = welt(*o["lngLat"])
     orte.append([round(wx - ox, 3), round(wy - oy, 3), round(schicht_bei(wx, wy) / 1000, 3)])
 
+# ---------- Abstand zur Kueste (fuer die Wasserlinien) ----------
+# Fuer jeden Meerespunkt die Entfernung zum naechsten Land, in km, als
+# kleines Graustufenbild (halbe Aufloesung, 0..255 fuer 0..TEX_KM km).
+# Daraus zeichnet der Browser die Wasserlinien um die Kuesten.
+TEX_KM = 14.0
+px_km = (pix2welt(h.shape[1], 0)[0] - pix2welt(0, 0)[0]) / h.shape[1]
+abst = ndimage.distance_transform_edt(h <= 0.5) * px_km
+tex = np.clip(abst[::2, ::2] / TEX_KM * 255 + 0.5, 0, 255).astype(np.uint8)
+
 kopf = {
     "q": Q, "ursprung": [ox, oy], "c": C, "stufen": LEVELS, "schichten": layers,
     "groesse": [round((pix2welt(h.shape[1], 0)[0] - pix2welt(0, 0)[0]), 2),
                 round((pix2welt(0, 0)[1] - pix2welt(0, h.shape[0])[1]), 2)],
-    "orte": orte, "wege": legs
+    "orte": orte, "wege": legs, "tex": [int(tex.shape[1]), int(tex.shape[0])], "texKm": TEX_KM
 }
 kj = json.dumps(kopf, separators=(",", ":")).encode("utf-8")
 kj += b" " * ((4 - len(kj) % 4) % 4)
@@ -199,6 +208,7 @@ roh.write(dx.astype("<i2").tobytes())            # 4 Bytes je Punkt: bleibt ausg
 roh.write(np.array(tris, dtype="<u2").tobytes())
 if len(tris) % 2: roh.write(b"\0\0")
 roh.write(np.array(ringe, dtype="<u4").tobytes())
+roh.write(tex.tobytes())
 ziel = sys.argv[1]
 with open(ziel, "wb") as f:
     f.write(gzip.compress(roh.getvalue(), 9, mtime=0))
