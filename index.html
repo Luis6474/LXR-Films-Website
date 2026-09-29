@@ -272,10 +272,9 @@
      260 000 Bildpunkten wieder -- also nie auf einem Bildschirm.
      Liegt wie das Korn unter dem Inhalt: Sterne gehoeren an den Himmel, nicht
      auf die Fotos. */
-  /* Zwei getrennte Ebenen statt zweier Hintergrundbilder auf einer: die
-     Kacheln sind deckend, die obere wuerde die untere sonst vollstaendig
-     verdecken. Zwei Ebenen mit "lighten" ergeben dagegen den helleren von
-     allen dreien -- Grund, Kachel A, Kachel B.
+  /* Die Kacheln sind deckend -- einfach uebereinandergelegt wuerde die obere
+     die untere verdecken. Mit "lighten" ergibt sich dagegen der hellere von
+     allen dreien: Grund, Kachel A, Kachel B.
      Kantenlaengen 600 und 437 sind teilerfremd; das Muster wiederholt sich
      erst nach rund 260 000 Bildpunkten, also nie auf einem Bildschirm. */
   .sterne {
@@ -290,12 +289,16 @@
        entscheidet die Reihenfolge, und sie muessen nach den Lichthoefen
        kommen -- sonst gibt es nichts, wogegen sie sich vergleichen koennten. */
     mix-blend-mode: lighten;
-  }
-  .sterne-a { background-image: var(--sterne-a); background-size: 600px 600px; }
-  .sterne-b {
-    background-image: var(--sterne-b);
-    background-size: 437px 437px;
-    background-position: 137px 89px;
+    /* Beide Kacheln auf EINER Ebene: sie verrechnen sich schon beim Malen
+       untereinander mit "lighten" (background-blend-mode), die Ebene dann
+       mit dem Grund. max(Grund, max(A, B)) ist dasselbe wie vorher
+       max(max(Grund, A), B) mit zwei Ebenen -- nur muss die Grafikkarte
+       beim Scrollen jetzt einen Mischschritt ueber den ganzen Schirm
+       weniger rechnen. */
+    background-image: var(--sterne-a, none), var(--sterne-b, none);
+    background-size: 600px 600px, 437px 437px;
+    background-position: 0 0, 137px 89px;
+    background-blend-mode: lighten;
   }
 
   /* ---------- Filmkorn ----------
@@ -458,6 +461,13 @@
      aufzumachen; das haengende Zitat bleibt dadurch klebend. */
   .page { transition: opacity 0.6s var(--ease); overflow-x: clip; }
   .page.is-hidden { opacity: 0; pointer-events: none; }
+  /* Ist eine Projektseite ganz aufgegangen, liegt sie deckend ueber allem.
+     Korn, Sterne und Dither der Startseite liefen darunter weiter und
+     kosteten in jedem Bild ihre Mischschritte ueber den ganzen Schirm, ohne
+     dass man etwas davon sah. Sie ruhen jetzt, bis die Projektseite wieder
+     schliesst. Gesetzt wird das erst, wenn sie voll deckt, aufgehoben,
+     bevor sie ausblendet -- zu sehen ist davon nichts. */
+  body.bg-ruht .grain, body.bg-ruht .dither, body.bg-ruht .sterne { display: none; }
   body.is-viewing { overflow: hidden; }
 
   /* ---------- Hero ----------
@@ -957,7 +967,12 @@
      Element mit transform macht einen eigenen Zeichenkontext auf, und der
      Hof kaeme damit ueber die Sternenebene zu liegen statt darunter. Das
      Skript haengt ihn deshalb daneben und bewegt ihn gleich mit. */
-  .schau-buehne > .aura { transform-origin: 50% 50%; }
+  /* Eigene Ebene fuer den wandernden Hof: Lage und Deckkraft aendern sich
+     beim Drehen in jedem Bild. Ohne eigene Ebene musste der Browser dafuer
+     jedes Mal die ganze Flaeche dahinter neu malen -- ein Verlauf von gut
+     zweieinhalbfacher Bildgroesse. So verschiebt ihn nur noch die
+     Grafikkarte. */
+  .schau-buehne > .aura { transform-origin: 50% 50%; will-change: transform, opacity; }
 
   /* Reiner Text in derselben gesperrten Versalschrift wie sonst auf der
      Seite. Statt eines Rahmens traegt ein duenner Strich darunter -- er wird
@@ -1259,6 +1274,8 @@
       linear-gradient(to bottom, var(--p-bg) 0%, transparent 16%, transparent 78%, var(--p-bg) 100%),
       radial-gradient(140% 110% at 50% 55%, transparent 70%, rgba(4,7,8,0.3) 100%);
   }
+  /* Die Karte deckt den Schirm: das Korn der Projektseite darunter ruht (siehe Skript). */
+  .viewer.karte-deckt .viewer-grain { display: none; }
   .karte-korn {
     position: absolute; pointer-events: none;
     top: calc(-1 * var(--grain-size)); left: calc(-1 * var(--grain-size));
@@ -1806,8 +1823,7 @@
 <!-- Muss nach der Seite stehen: die Sterne werden mit "lighten" ueber die
      Lichthoefe gelegt, und unter gleichem z-index entscheidet die
      Reihenfolge im Dokument. -->
-<div class="sterne sterne-a" aria-hidden="true"></div>
-<div class="sterne sterne-b" aria-hidden="true"></div>
+<div class="sterne" aria-hidden="true"></div>
 
 
 <!-- ================= Projektansichten ================= -->
@@ -2297,7 +2313,7 @@
        ueberstehen einen Lichthof. */
     function sternenkachel(kante, zahl, fertig) {
       /* Bislang deckte sich die Aufloesung der Kachel mit ihrer Groesse in
-         CSS-Pixeln (background-size steht in .sterne-a/.sterne-b fest auf
+         CSS-Pixeln (background-size steht in .sterne fest auf
          600px/437px). Auf jedem Bildschirm mit mehr als einem Geraetepixel
          je CSS-Pixel -- praktisch jedes moderne Handy -- hat der Browser das
          Bild beim Anzeigen deshalb hochskaliert und dabei weichgezeichnet:
@@ -2452,8 +2468,9 @@
     function planen(fn, mittel, minimum) {
       setTimeout(function () {
         // Im Hintergrundtab passiert nichts -- das spart Rechenzeit und
-        // verhindert, dass sich beim Zurueckkommen etwas staut.
-        if (!document.hidden) fn();
+        // verhindert, dass sich beim Zurueckkommen etwas staut. Ebenso nicht
+        // unter einer offenen Projektseite, die das Licht ohnehin verdeckt.
+        if (!document.hidden && !document.body.classList.contains('bg-ruht')) fn();
         planen(fn, mittel, minimum);
       }, abstand(mittel, minimum));
     }
@@ -2477,6 +2494,7 @@
 
   let current = null;
   let busy = false;
+  let ruheZeit = null, heroPausiert = false;
 
   /* ---------- Video ----------
      YouTube, aber ohne sichtbare YouTube-Oberfläche: nocookie-Domain, alle
@@ -2952,6 +2970,16 @@
       void viewer.offsetWidth;               // Reflow erzwingen, damit die Transition greift
       viewer.classList.add('is-active');
 
+      /* Sobald die Projektseite voll deckt (nach ihrer Blende von 0,7 s),
+         ruht die Startseite darunter: Korn, Sterne und Dither (siehe CSS)
+         und der Hero-Film, der sonst unsichtbar weiterliefe. */
+      clearTimeout(ruheZeit);
+      ruheZeit = setTimeout(function () {
+        if (current !== viewer) return;
+        body.classList.add('bg-ruht');
+        if (heroVideo && !heroVideo.paused) { heroVideo.pause(); heroPausiert = true; }
+      }, 800);
+
       // 3) Blende oeffnet nur bis zum schmalen Rahmen und bleibt dort stehen
       body.classList.remove('lb-shut');
       body.classList.add('lb-framed');
@@ -2993,6 +3021,15 @@
       document.exitFullscreen().catch(function () {});
     }
     busy = true;
+
+    // Die Startseite wacht auf, bevor die Projektseite auszublenden beginnt.
+    clearTimeout(ruheZeit);
+    body.classList.remove('bg-ruht');
+    if (heroPausiert) {
+      heroPausiert = false;
+      const p = heroVideo.play();
+      if (p && p.catch) p.catch(function () {});
+    }
 
     // Blende wieder zu ...
     unmountVideo(viewer);   // Ton darf nicht weiterlaufen
@@ -3947,8 +3984,9 @@
      bis 0,9 MB), gebaut von werkzeug/karte_bau.py aus freien Hoehendaten,
      Strassenrouten und Seen aus OpenStreetMap; die Einstellungen je Karte
      stehen in werkzeug/karten/. Geladen wird erst, wenn die Projektseite
-     aufgeht. Gezeichnet wird mit WebGL ohne Bibliothek; Route, Punkte und
-     Seekarten-Linien liegen auf einer 2D-Ebene darueber.
+     aufgeht. Gezeichnet wird mit WebGL ohne Bibliothek, auch Route, Punkte,
+     Sand und Seekarten-Linien; nur die Ortsnamen stehen auf einer 2D-Ebene
+     darueber.
 
      Orte und Reihenfolge folgen den Aufnahmeorten und -zeiten der Fotos
      (GPS und Zeitstempel in den Dateien). Orte ohne Foto (Portree, bei
@@ -4324,6 +4362,7 @@
       phasen.forEach(function (p) { p.ab = s; s += p.laenge; });
       EINHEITEN = s;
       if (!reducedMotion) lauf.style.setProperty('--einheiten', EINHEITEN.toFixed(2));
+      ueberGeo = null; ueberNeu = true;
 
     }
 
@@ -4444,6 +4483,7 @@
       gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, D.lin, gl.STATIC_DRAW);
 
       meerStarten(shader);
+      ueberStarten(shader);
       gl.useProgram(prog);
       gl.uniform1f(loc.uQ, D.kopf.q);
       gl.uniform3fv(loc.uGrund, GRUND);
@@ -4572,6 +4612,7 @@
       PR = Math.min(2, window.devicePixelRatio || 1);
       W = halt.clientWidth || 1; H = halt.clientHeight || 1;
       [glc, linc].forEach(function (c) { c.width = Math.round(W * PR); c.height = Math.round(H * PR); });
+      schildSchluessel = '';
       if (gl) gl.viewport(0, 0, glc.width, glc.height);
     }
 
@@ -4616,17 +4657,13 @@
          der Naehe die feinen Terrassen, aus der Ferne ein ruhiges Relief.
          Kuesten und Seeufer bleiben immer klar. */
       const fern = Math.max(0.1, Math.min(1, NAH.dist * 2.2 / k.dist));
-      let gewaessert = false;
-      S.forEach(function (s, i) {
-        // Zwischen Meeresgrund und Land: das bewegte Wasser (grosse Karten
-        // haben mehrere Teile je Hoehe -- das Wasser nur einmal).
-        if (s.lev === 0 && !gewaessert) { gewaessert = true; wasser(k, cam, zeitS); }
-        // Meeresschichten liegen flach knapp unter null, nur zum Stapeln.
-        // Meeresschichten deutlich unter dem Land (2 m je Meter Tiefe): mit nur
-        // ein, zwei Metern Abstand konnte die Grafikkarte sie aus grosser Hoehe
-        // nicht mehr trennen, und das Meer blitzte in Dreiecken durchs Land.
-        const z = s.lev >= 0 ? s.lev / 1000 * UEBERHOEHUNG : s.lev / 1000 * 2.0;
-        gl.uniform1f(loc.uZ, z);
+      // Meeresschichten liegen flach knapp unter null, nur zum Stapeln.
+      // Meeresschichten deutlich unter dem Land (2 m je Meter Tiefe): mit nur
+      // ein, zwei Metern Abstand konnte die Grafikkarte sie aus grosser Hoehe
+      // nicht mehr trennen, und das Meer blitzte in Dreiecken durchs Land.
+      function hoehe(s) { return s.lev >= 0 ? s.lev / 1000 * UEBERHOEHUNG : s.lev / 1000 * 2.0; }
+      function flaeche(s) {
+        gl.uniform1f(loc.uZ, hoehe(s));
         // Aus der Ferne ruecken die Farbstufen des Landes zusammen: ein
         // ruhiges Relief statt vieler Flecken. Von nahem volle Terrassen.
         const fb = schichtFarbe(s.lev, S[n - 1].lev);
@@ -4642,6 +4679,11 @@
         gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, puf.t);
         gl.drawElements(gl.TRIANGLES, s.t[1] - s.t[0], gl.UNSIGNED_SHORT, s.t[0] * 2);
         gl.disable(gl.POLYGON_OFFSET_FILL);
+      }
+      function kante(s) {
+        gl.uniform1f(loc.uZ, hoehe(s));
+        gl.bindBuffer(gl.ARRAY_BUFFER, puf.v);
+        gl.vertexAttribPointer(loc.aP, 2, gl.SHORT, false, 0, s.v[0] * 4);
         // Kante: die Kueste deutlicher, die Hoehenlinien zart.
         gl.enable(gl.BLEND); gl.depthMask(false);
         // Linien im Ton alter Tusche: ein warmes Elfenbein auf dem Nachtblau.
@@ -4650,9 +4692,24 @@
         gl.uniform3f(loc.uF, li[0], li[1], li[2]); gl.uniform1f(loc.uA, li[3] * (li === CFG.linien.ufer ? 1 : fern));
         gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, puf.l);
         gl.drawElements(gl.LINES, s.l[1] - s.l[0], gl.UNSIGNED_SHORT, s.l[0] * 2);
-      });
+      }
+      // Der Meeresgrund wie gehabt von tief nach flach, je Stufe Flaeche und Kante.
+      let i = 0;
+      for (; i < n && S[i].lev < 0; i++) { flaeche(S[i]); kante(S[i]); }
+      // Zwischen Meeresgrund und Land: das bewegte Wasser.
+      if (i < n && S[i].lev === 0) wasser(k, cam, zeitS);
+      /* Das Land dagegen von OBEN nach unten. Jede Stufe deckt alles, was
+         tiefer liegt; von unten nach oben gezeichnet hat die Grafikkarte in
+         den Alpen jeden Bildpunkt bis zu dreizehnmal gefuellt, nur damit die
+         naechste Stufe ihn wieder uebermalt. Von oben nach unten erkennt sie
+         an der Tiefe, dass ein Punkt schon bedeckt ist, und ueberspringt ihn.
+         Die Kanten kommen danach -- die Tiefe verdeckt sie genau dort, wo
+         vorher die naechste Stufe sie uebermalt hat. Das Bild bleibt gleich. */
+      for (let j = n - 1; j >= i; j--) flaeche(S[j]);
+      for (let j = i; j < n; j++) kante(S[j]);
       gl.depthMask(true);
       seenZeichnen(k, cam, zeitS);
+      if (ueber) ueberZeichnen(k, cam);
     }
 
     /* ---- Seen ----
@@ -4683,6 +4740,407 @@
         gl.drawElements(gl.LINES, s.l[1] - s.l[0], gl.UNSIGNED_SHORT, s.l[0] * 2);
         gl.depthMask(true);
       });
+    }
+
+    /* ---- Linien, Sand und Orte auf der Grafikkarte ----
+       Route, Gradnetz, Kompasslinien, Sand und Ortspunkte lagen bisher auf
+       einer 2D-Leinwand ueber der Karte. Gemessen war das der teuerste Teil
+       jedes Einzelbilds: lange, halbdurchsichtige Linien zeichnet der
+       Browser dort muehsam, bei 125 % Anzeigegroesse brauchte die Leinwand
+       rund doppelt so lange wie die ganze Landschaft. Jetzt rechnet sie die
+       Grafikkarte, im selben Aussehen: gleiche Staerken und Farben, runde
+       Enden, die Kantenglaettung je Bildpunkt ausgerechnet wie auf der
+       Leinwand, der Schein der Route als dieselbe Gaussglocke wie ihr
+       Schatten (shadowBlur 9 = Sigma 4,5 Bildpunkte).
+       Ueberlappen sich Stuecke einer halbdurchsichtigen Linie (in Kurven, an
+       den Gelenken), duerfen sie nicht doppelt decken -- die Leinwand fuellt
+       einen Pfad als Ganzes. Deshalb laufen die Linien erst in zwei eigene
+       Bilder, je Linienart ein Farbkanal, der den groessten Wert behaelt
+       (MAX). Verschiedene Etappen dagegen hat die Leinwand einzeln gezogen:
+       faehrt die Reise eine Strasse zweimal (hin und zurueck), leuchtet sie
+       dort doppelt. Das bleibt so -- drei aufeinanderfolgende Etappen liegen
+       in drei Kanaelen und addieren sich beim Uebereinanderlegen.
+       Ein letzter Schritt legt die Lagen in der alten Reihenfolge ueber die
+       Karte: Seekarte, leise Route, Schein, Route.
+       Auf der Leinwand bleiben nur die Ortsnamen, und bei Track of Time
+       Gleis, Dampf und das Uebrige der Route (dort ist die Strecke kurz).
+       Kann ein Geraet etwas davon nicht (sehr alte Grafik), bleibt alles
+       auf der Leinwand wie bisher. */
+    let ueber = null, ueberNeu = true, ueberGeo = null;
+    const UEBER_HOCH = 0.04;                    // wie projizieren(): knapp ueber dem Boden
+    function farbe(s) { return s.split(',').map(function (x) { return +x / 255; }); }
+    const GENAU = '#ifdef GL_FRAGMENT_PRECISION_HIGH\nprecision highp float;\n#else\nprecision mediump float;\n#endif\n';
+    /* Ein Linienstueck als Rechteck, auf dem Bildschirm um die halbe
+       Linienstaerke (plus Rand fuer Glaettung oder Schein) verbreitert.
+       Liegt ein Ende hinter der Kamera, wird das Stueck dort abgeschnitten;
+       "uBis" kuerzt die Route auf den gefahrenen Teil. */
+    const VS_BAND =
+      'attribute vec3 aP0; attribute vec3 aP1; attribute vec2 aEcke; attribute vec2 aL; attribute vec2 aArt;' +
+      'uniform mat4 uM; uniform vec2 uPx; uniform float uPR; uniform float uBreite; uniform float uRandPx; uniform float uBis; uniform float uHoch;' +
+      'varying vec2 vA; varying vec2 vB; varying vec2 vW0; varying vec2 vW1; varying vec2 vQ; varying vec2 vArt; varying float vH;' +
+      'void main(){' +
+      '  vec4 c0 = uM * vec4(aP0.xy, aP0.z + uHoch, 1.0), c1 = uM * vec4(aP1.xy, aP1.z + uHoch, 1.0);' +
+      '  float t0 = 0.0, t1 = 1.0;' +
+      '  if (uBis < aL.y) t1 = (uBis - aL.x) / max(aL.y - aL.x, 1e-6);' +
+      '  if (c0.w < 0.01 && c1.w < 0.01) t1 = -1.0;' +
+      '  else if (c0.w < 0.01) t0 = max(t0, (0.01 - c0.w) / (c1.w - c0.w));' +
+      '  else if (c1.w < 0.01) t1 = min(t1, (0.01 - c0.w) / (c1.w - c0.w));' +
+      '  if (t1 <= t0) { gl_Position = vec4(0.0, 0.0, 2.0, 1.0); return; }' +
+      '  vec4 d0 = mix(c0, c1, t0), d1 = mix(c0, c1, t1);' +
+      '  vec2 s0 = (d0.xy / d0.w * 0.5 + 0.5) * uPx, s1 = (d1.xy / d1.w * 0.5 + 0.5) * uPx;' +
+      '  vec2 r = s1 - s0; float l = length(r); r = l > 1e-4 ? r / l : vec2(1.0, 0.0);' +
+      '  vec2 n = vec2(-r.y, r.x);' +
+      '  float hw = (uBreite > 0.0 ? uBreite : aArt.y) * uPR * 0.5, ra = hw + uRandPx;' +
+      '  vec2 s = (aEcke.y < 0.5 ? s0 - r * ra : s1 + r * ra) + n * aEcke.x * ra;' +
+      '  gl_Position = vec4(s / uPx * 2.0 - 1.0, 0.0, 1.0);' +
+      '  vA = s0; vB = s1; vQ = vec2(1.0 / d0.w, 1.0 / d1.w);' +
+      '  vW0 = mix(aP0.xy, aP1.xy, t0); vW1 = mix(aP0.xy, aP1.xy, t1); vArt = aArt; vH = hw;' +
+      '}';
+    /* Deckung je Bildpunkt: Abstand zum Stueck (mit runden Enden), als
+       Anteil eines Bildpunkts, den die Linie bedeckt. Der Schein ist die
+       Linie, mit einer Gaussglocke weichgezeichnet. Die Seekarte blendet
+       zum Kartenrand hin aus, in denselben acht Stufen wie auf der Leinwand. */
+    const FS_BAND = GENAU +
+      'uniform float uModus; uniform float uSigma; uniform vec4 uKanal; uniform vec2 uRand;' +
+      'varying vec2 vA; varying vec2 vB; varying vec2 vW0; varying vec2 vW1; varying vec2 vQ; varying vec2 vArt; varying float vH;' +
+      'float fehler(float x){ float s = sign(x); x = abs(x); float t = 1.0 / (1.0 + 0.3275911 * x);' +
+      '  return s * (1.0 - (((((1.061405429 * t - 1.453152027) * t) + 1.421413741) * t - 0.284496736) * t + 0.254829592) * t * exp(-x * x)); }' +
+      'void main(){' +
+      '  vec2 p = gl_FragCoord.xy, ab = vB - vA;' +
+      '  float l2 = dot(ab, ab), t = l2 > 1e-6 ? clamp(dot(p - vA, ab) / l2, 0.0, 1.0) : 0.0;' +
+      '  float d = length(p - vA - ab * t), v;' +
+      '  if (uModus == 1.0) { float k = 0.70710678 / uSigma; v = 0.5 * (fehler((d + vH) * k) - fehler((d - vH) * k)); }' +
+      '  else v = clamp(min(d + 0.5, vH) - max(d - 0.5, -vH), 0.0, 1.0);' +
+      '  if (uModus == 2.0) {' +
+      '    vec2 w = mix(vW0, vW1, t * vQ.y / mix(vQ.x, vQ.y, t));' +
+      '    float a = -vArt.x;' +
+      '    if (vArt.x > 0.0) {' +
+      '      float al = vArt.x * (1.0 - smoothstep(0.88, 0.995, max(abs(w.x) / uRand.x, abs(w.y) / uRand.y)));' +
+      '      if (al <= 0.004) discard;' +
+      '      a = (min(7.0, floor(al / 0.1 * 8.0)) + 0.5) / 8.0 * 0.1;' +
+      '    }' +
+      '    v *= a;' +
+      '  }' +
+      '  gl_FragColor = uKanal * v;' +
+      '}';
+    /* Die Lagen in der Reihenfolge der Leinwand uebereinander. Bild A:
+       leise Route (drei Etappen-Kanaele) und Seekarte; Bild B: Schein (drei
+       Etappen-Kanaele) und die gefahrene Route. */
+    const VS_DECK = 'attribute vec2 aV; void main(){ gl_Position = vec4(aV, 0.0, 1.0); }';
+    const FS_DECK = GENAU +
+      'uniform sampler2D uBildA; uniform sampler2D uBildB; uniform vec2 uPx; uniform vec3 uFS; uniform vec3 uFL; uniform vec3 uFG; uniform vec3 uFH; uniform vec3 uDeck;' +
+      'vec4 drauf(vec4 o, vec3 f, float a){ return vec4(f * a, a) + o * (1.0 - a); }' +
+      'void main(){' +
+      '  vec2 q = gl_FragCoord.xy / uPx;' +
+      '  vec4 c = texture2D(uBildA, q), g = texture2D(uBildB, q);' +
+      '  vec4 o = vec4(uFS * c.a, c.a);' +
+      '  o = drauf(o, uFL, c.r * uDeck.x); o = drauf(o, uFL, c.g * uDeck.x); o = drauf(o, uFL, c.b * uDeck.x);' +
+      '  o = drauf(o, uFG, g.r * uDeck.y); o = drauf(o, uFG, g.g * uDeck.y); o = drauf(o, uFG, g.b * uDeck.y);' +
+      '  o = drauf(o, uFH, g.a * uDeck.z);' +
+      '  if (o.a < 0.001) discard;' +
+      '  gl_FragColor = o;' +
+      '}';
+    /* Sand: jedes Korn ein kleines Rechteck, genau wie fillRect auf der
+       Leinwand -- Lage, Groesse, Verwehen und Verblassen aus denselben
+       festen Zufallswerten, nur jetzt auf der Grafikkarte gerechnet. */
+    const VS_SAND =
+      'attribute vec3 aP; attribute vec4 aZ; attribute vec2 aZ2;' +
+      'uniform mat4 uM; uniform vec2 uPx; uniform float uPR; uniform float uKopf; uniform float uAltN; uniform float uWeh; uniform float uHoch;' +
+      'varying vec4 vRect; varying float vA;' +
+      'void main(){' +
+      '  float alt = min(1.0, (aZ.x - uKopf) / uAltN + 0.15 * uWeh);' +
+      '  vec4 c = uM * vec4(aP.xy, aP.z + uHoch, 1.0);' +
+      '  if (aZ.x < uKopf || aZ.y < 0.1 + 0.3 * alt || c.w <= 0.01) { gl_Position = vec4(0.0, 0.0, 2.0, 1.0); gl_PointSize = 1.0; vA = 0.0; vRect = vec4(0.0); return; }' +
+      '  vec2 s = vec2((c.x / c.w * 0.5 + 0.5) * uPx.x, (0.5 - c.y / c.w * 0.5) * uPx.y) / uPR;' +
+      '  float weit = 0.3 + 2.2 * alt + 1.2 * uWeh;' +
+      '  vec2 o = s + vec2((aZ.z - 0.5) * 2.0 * weit, (aZ2.x - 0.5) * 2.0 * weit);' +
+      '  vec2 g = vec2(0.9 + aZ.w * 0.9, 0.9 + aZ2.y * 0.9);' +
+      '  vec2 lo = vec2(o.x * uPR, uPx.y - (o.y + g.y) * uPR), hi = vec2((o.x + g.x) * uPR, uPx.y - o.y * uPR);' +
+      '  vRect = vec4(lo, hi); vA = 0.85 - 0.3 * alt;' +
+      '  gl_Position = vec4((lo + hi) / uPx - 1.0, 0.0, 1.0);' +
+      '  gl_PointSize = ceil(max(hi.x - lo.x, hi.y - lo.y)) + 2.0;' +
+      '}';
+    const FS_SAND = GENAU +
+      'uniform vec3 uFarbe; varying vec4 vRect; varying float vA;' +
+      'void main(){' +
+      '  vec2 p = gl_FragCoord.xy, ov = clamp(min(p + 0.5, vRect.zw) - max(p - 0.5, vRect.xy), 0.0, 1.0);' +
+      '  float a = vA * ov.x * ov.y;' +
+      '  if (a < 0.001) discard;' +
+      '  gl_FragColor = vec4(uFarbe * a, a);' +
+      '}';
+    // Ortspunkte: Schein (linearer Verlauf bis 26 px), Ring und Punkt.
+    const VS_ORT =
+      'attribute vec2 aM; attribute vec2 aE; attribute float aH; uniform vec2 uPx; uniform float uPR;' +
+      'varying vec2 vM; varying float vH;' +
+      'void main(){ vM = aM; vH = aH; gl_Position = vec4((aM + aE * 27.0 * uPR) / uPx * 2.0 - 1.0, 0.0, 1.0); }';
+    const FS_ORT = GENAU +
+      'uniform float uPR; uniform vec3 uOrt; uniform vec3 uRing; uniform vec3 uPunkt; varying vec2 vM; varying float vH;' +
+      'void main(){' +
+      '  float r = length(gl_FragCoord.xy - vM), a, d;' +
+      '  vec4 o = vec4(0.0);' +
+      '  if (vH > 0.01) {' +
+      '    a = 0.38 * vH * max(0.0, 1.0 - r / uPR / 26.0); o = vec4(uOrt * a, a);' +
+      '    d = abs(r - (4.0 + 5.0 * vH) * uPR);' +
+      '    a = 0.5 * vH * clamp(min(d + 0.5, 0.5 * uPR) - max(d - 0.5, -0.5 * uPR), 0.0, 1.0);' +
+      '    o = vec4(uRing * a, a) + o * (1.0 - a);' +
+      '  }' +
+      '  a = (0.55 + 0.45 * vH) * clamp((2.0 + 1.2 * vH) * uPR + 0.5 - r, 0.0, 1.0);' +
+      '  o = vec4(uPunkt * a, a) + o * (1.0 - a);' +
+      '  if (o.a < 0.001) discard;' +
+      '  gl_FragColor = o;' +
+      '}';
+
+    function ueberStarten(shader) {
+      ueber = null;
+      const zwei = typeof WebGL2RenderingContext !== 'undefined' && gl instanceof WebGL2RenderingContext;
+      const mm = zwei ? null : gl.getExtension('EXT_blend_minmax');
+      const hp = gl.getShaderPrecisionFormat(gl.FRAGMENT_SHADER, gl.HIGH_FLOAT);
+      if ((!zwei && !mm) || !hp || hp.precision < 23) return;
+      function programm(vs, fs, uni, att) {
+        const pr = gl.createProgram();
+        gl.attachShader(pr, shader(gl.VERTEX_SHADER, vs));
+        gl.attachShader(pr, shader(gl.FRAGMENT_SHADER, fs));
+        gl.linkProgram(pr);
+        if (!gl.getProgramParameter(pr, gl.LINK_STATUS)) throw new Error('Programm');
+        const p = { prog: pr, loc: {}, att: {} };
+        uni.forEach(function (n) { p.loc[n] = gl.getUniformLocation(pr, n); });
+        att.forEach(function (n) { p.att[n] = gl.getAttribLocation(pr, n); });
+        return p;
+      }
+      try {
+        const u = { max: zwei ? gl.MAX : mm.MAX_EXT, bw: 0, bh: 0 };
+        u.band = programm(VS_BAND, FS_BAND, ['uM', 'uPx', 'uPR', 'uBreite', 'uRandPx', 'uBis', 'uHoch', 'uModus', 'uSigma', 'uKanal', 'uRand'],
+                          ['aP0', 'aP1', 'aEcke', 'aL', 'aArt']);
+        u.deck = programm(VS_DECK, FS_DECK, ['uBildA', 'uBildB', 'uPx', 'uFS', 'uFL', 'uFG', 'uFH', 'uDeck'], ['aV']);
+        u.sand = programm(VS_SAND, FS_SAND, ['uM', 'uPx', 'uPR', 'uKopf', 'uAltN', 'uWeh', 'uHoch', 'uFarbe'], ['aP', 'aZ', 'aZ2']);
+        u.ort = programm(VS_ORT, FS_ORT, ['uPx', 'uPR', 'uOrt', 'uRing', 'uPunkt'], ['aM', 'aE', 'aH']);
+        // Groessere Punkte fuer den Sand kann (fast) jede Grafik; sonst Sand auf der Leinwand.
+        u.sandOk = gl.getParameter(gl.ALIASED_POINT_SIZE_RANGE)[1] >= 8;
+        u.attrMax = Math.min(16, gl.getParameter(gl.MAX_VERTEX_ATTRIBS));
+        u.puf = { see: gl.createBuffer(), weg: gl.createBuffer(), sand: gl.createBuffer(), ort: gl.createBuffer(), drei: gl.createBuffer() };
+        gl.bindBuffer(gl.ARRAY_BUFFER, u.puf.drei);
+        gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1, -1, 3, -1, -1, 3]), gl.STATIC_DRAW);
+        u.bilder = [gl.createTexture(), gl.createTexture()];
+        u.fbs = [gl.createFramebuffer(), gl.createFramebuffer()];
+        u.farben = {
+          tinte: farbe(CFG.tinte), leise: farbe(CFG.route.leise), schein: farbe(CFG.route.schein), hell: farbe(CFG.route.hell),
+          sand: farbe(CFG.route.sand), ort: farbe(CFG.route.ort), ring: farbe(CFG.route.ring), punkt: farbe(CFG.route.punkt)
+        };
+        ueber = u; ueberNeu = true;
+      } catch (e) { ueber = null; }
+    }
+
+    /* Die festen Formen fuer die Grafikkarte: je Linienstueck sechs Ecken
+       (zwei Dreiecke) mit beiden Enden, Seite, Weglaenge und Deckkraft.
+       Gebaut, sobald Wege und Masse feststehen. */
+    function ueberFormen() {
+      function stuecke(liste) {
+        const f = new Float32Array(liste.length * 6 * 12);
+        const E = [[-1, 0], [1, 0], [-1, 1], [1, 0], [1, 1], [-1, 1]];
+        let o = 0;
+        liste.forEach(function (s) {
+          for (let j = 0; j < 6; j++) {
+            f[o++] = s[0][0]; f[o++] = s[0][1]; f[o++] = s[0][2] || 0;
+            f[o++] = s[1][0]; f[o++] = s[1][1]; f[o++] = s[1][2] || 0;
+            f[o++] = E[j][0]; f[o++] = E[j][1];
+            f[o++] = s[2]; f[o++] = s[3];
+            f[o++] = s[4]; f[o++] = s[5];
+          }
+        });
+        return f;
+      }
+      // Seekarte: Gradnetz, Kompasslinien und der kleine Ring -- dieselben
+      // Linien wie in seekarte(). Deckkraft < 0: fest, ohne Ausblenden.
+      const sk = [];
+      const G = CFG.gradnetz, GS = CFG.gradnetzSchritt || 0.5;
+      for (let lon = G[0]; lon <= G[1] + 1e-6; lon += GS) sk.push([geo(lon, G[2] - GS / 5), geo(lon, G[3] + GS / 5), 0, 0, 0.075, 0.6]);
+      for (let lat = G[2]; lat <= G[3] + 1e-6; lat += GS) {
+        for (let lon = G[0]; lon < G[1] - 1e-6; lon += GS) sk.push([geo(lon, lat), geo(lon + GS, lat), 0, 0, 0.075, 0.6]);
+      }
+      const K = geo(CFG.kompass[0], CFG.kompass[1]), KR = CFG.kompassR || 6;
+      for (let j = 0; j < 32; j++) {
+        const a = j / 32 * 2 * Math.PI, haupt = j % 4 === 0;
+        const L = (haupt ? 1.0 : 0.72) * Math.max(halb[0], halb[1]) * 1.6;
+        sk.push([[K[0] + Math.sin(a) * KR, K[1] + Math.cos(a) * KR, 0], [K[0] + Math.sin(a) * L, K[1] + Math.cos(a) * L, 0],
+                 0, 0, haupt ? 0.085 : 0.045, 0.6]);
+      }
+      const ring = -0.16 * randWeg(K);
+      for (let j = 0; j < 48; j++) {
+        const a = j / 48 * 2 * Math.PI, b = (j + 1) / 48 * 2 * Math.PI;
+        sk.push([[K[0] + Math.sin(a) * KR, K[1] + Math.cos(a) * KR, 0], [K[0] + Math.sin(b) * KR, K[1] + Math.cos(b) * KR, 0], 0, 0, ring, 0.8]);
+      }
+      // Route: jedes Stueck mit der Weglaenge ab Reisebeginn.
+      const rt = [], ende = [];
+      wege.forEach(function (w, j) {
+        for (let i = 0; i < w.p.length - 1; i++) rt.push([w.p[i], w.p[i + 1], wegAb[j] + w.L[i], wegAb[j] + w.L[i + 1], 0, 0]);
+        ende.push(rt.length * 6);
+      });
+      // Sand: dieselben Koerner in derselben Reihenfolge wie auf der Leinwand.
+      const sd = [];
+      let i = 0;
+      wege.forEach(function (w, j) {
+        for (let l = 0; l < w.len; l += (CFG.sandSchritt || 0.5), i++) {
+          const p = punkt(w, l);
+          sd.push(p[0], p[1], p[2], wegAb[j] + l, zufall(i, 1), zufall(i, 2), zufall(i, 3), zufall(i, 4), zufall(i, 5));
+        }
+      });
+      ueberGeo = { see: stuecke(sk), weg: stuecke(rt), wegEnde: ende, sand: new Float32Array(sd) };
+      ueberNeu = true;
+    }
+
+    function ueberHochladen() {
+      const u = ueber, g = ueberGeo;
+      gl.bindBuffer(gl.ARRAY_BUFFER, u.puf.see); gl.bufferData(gl.ARRAY_BUFFER, g.see, gl.STATIC_DRAW);
+      gl.bindBuffer(gl.ARRAY_BUFFER, u.puf.weg); gl.bufferData(gl.ARRAY_BUFFER, g.weg, gl.STATIC_DRAW);
+      gl.bindBuffer(gl.ARRAY_BUFFER, u.puf.sand); gl.bufferData(gl.ARRAY_BUFFER, g.sand, gl.STATIC_DRAW);
+      u.nSee = g.see.length / 12; u.nWeg = g.weg.length / 12; u.wegEnde = g.wegEnde; u.nSand = g.sand.length / 9;
+      ueberNeu = false;
+    }
+
+    function attrAus() { for (let i = 0; i < ueber.attrMax; i++) gl.disableVertexAttribArray(i); }
+    function attrSetzen(p, liste, schritt) {
+      let o = 0;
+      liste.forEach(function (a) {
+        const at = p.att[a[0]];
+        if (at >= 0) { gl.enableVertexAttribArray(at); gl.vertexAttribPointer(at, a[1], gl.FLOAT, false, schritt, o); }
+        o += a[1] * 4;
+      });
+    }
+    // Wie projizieren(), aber in Bildpunkten des Zeichenpuffers, y nach oben.
+    function geraet(M, p) {
+      const x = p[0], y = p[1], z = p[2] + UEBER_HOCH;
+      const w = M[3] * x + M[7] * y + M[11] * z + M[15];
+      if (w <= 0.01) return null;
+      return [((M[0] * x + M[4] * y + M[8] * z + M[12]) / w * 0.5 + 0.5) * glc.width,
+              ((M[1] * x + M[5] * y + M[9] * z + M[13]) / w * 0.5 + 0.5) * glc.height];
+    }
+
+    function ueberZeichnen(k, cam) {
+      const u = ueber, M = new Float32Array(cam.M), BW = glc.width, BH = glc.height, F = u.farben;
+      if (ueberNeu) { if (!ueberGeo) ueberFormen(); ueberHochladen(); }
+      // Zwei eigene Bilder fuer die Linien, so gross wie der Zeichenpuffer.
+      if (u.bw !== BW || u.bh !== BH) {
+        let ok = true;
+        for (let j = 0; j < 2; j++) {
+          gl.bindTexture(gl.TEXTURE_2D, u.bilder[j]);
+          gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, BW, BH, 0, gl.RGBA, gl.UNSIGNED_BYTE, null);
+          gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
+          gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
+          gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+          gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+          gl.bindFramebuffer(gl.FRAMEBUFFER, u.fbs[j]);
+          gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, u.bilder[j], 0);
+          ok = ok && gl.checkFramebufferStatus(gl.FRAMEBUFFER) === gl.FRAMEBUFFER_COMPLETE;
+        }
+        gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+        if (!ok) { ueber = null; schildSchluessel = ''; return; }
+        u.bw = BW; u.bh = BH;
+      }
+      gl.disable(gl.DEPTH_TEST); gl.depthMask(false); gl.disable(gl.POLYGON_OFFSET_FILL);
+      attrAus();
+
+      // 1) Linien in die eigenen Bilder: je Art (und Etappe) ein Kanal, der den groessten Wert behaelt.
+      gl.clearColor(0, 0, 0, 0);
+      gl.bindFramebuffer(gl.FRAMEBUFFER, u.fbs[1]); gl.clear(gl.COLOR_BUFFER_BIT);
+      gl.bindFramebuffer(gl.FRAMEBUFFER, u.fbs[0]); gl.clear(gl.COLOR_BUFFER_BIT);
+      gl.enable(gl.BLEND); gl.blendEquation(u.max); gl.blendFunc(gl.ONE, gl.ONE);
+      const b = u.band;
+      gl.useProgram(b.prog);
+      gl.uniformMatrix4fv(b.loc.uM, false, M);
+      gl.uniform2f(b.loc.uPx, BW, BH); gl.uniform1f(b.loc.uPR, PR); gl.uniform1f(b.loc.uHoch, UEBER_HOCH);
+      gl.uniform2f(b.loc.uRand, D.kopf.groesse[0] / 2, D.kopf.groesse[1] / 2);
+      gl.uniform1f(b.loc.uSigma, 4.5);
+      function band(puf, von, bis0, breite, bis, modus, kanal) {
+        if (bis0 <= von) return;
+        gl.bindBuffer(gl.ARRAY_BUFFER, puf);
+        attrSetzen(b, [['aP0', 3], ['aP1', 3], ['aEcke', 2], ['aL', 2], ['aArt', 2]], 48);
+        gl.uniform1f(b.loc.uBreite, breite); gl.uniform1f(b.loc.uRandPx, modus === 1 ? 13.5 : 1);
+        gl.uniform1f(b.loc.uBis, bis); gl.uniform1f(b.loc.uModus, modus);
+        gl.uniform4fv(b.loc.uKanal, kanal);
+        gl.drawArrays(gl.TRIANGLES, von, bis0 - von);
+      }
+      function etappe(i) { return [i % 3 === 0 ? 1 : 0, i % 3 === 1 ? 1 : 0, i % 3 === 2 ? 1 : 0, 0]; }
+      function ab(i) { return i ? u.wegEnde[i - 1] : 0; }
+      band(u.puf.see, 0, u.nSee, 0, 1e9, 2, [0, 0, 0, 1]);            // Seekarte -> A.a
+      let leise = 0;
+      if (!CFG.bahn) {
+        const kopf = GESAMT * (1 - k.sand);
+        if (k.sand < 1) {                                                // leise Route -> A.rgb
+          leise = (0.26 + 0.34 * k.namen) * (1 - k.sand);
+          for (let i = 0; i < wege.length; i++) band(u.puf.weg, ab(i), u.wegEnde[i], 1 + 0.4 * k.namen, 1e9, 0, etappe(i));
+        }
+        if (k.weg >= 0) {                                                // Schein -> B.rgb, Route -> B.a
+          const j = Math.min(k.weg, wege.length - 1);
+          const bis = Math.min(kopf, wegAb[j] + k.wegL);
+          if (bis > 0) {
+            gl.bindFramebuffer(gl.FRAMEBUFFER, u.fbs[1]);
+            for (let i = 0; i <= j; i++) band(u.puf.weg, ab(i), u.wegEnde[i], 1.7, bis, 1, etappe(i));
+            band(u.puf.weg, 0, u.wegEnde[j], 1.7, bis, 0, [0, 0, 0, 1]);
+          }
+        }
+      }
+      attrAus();
+      gl.blendEquation(gl.FUNC_ADD);
+      gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+
+      // 2) Die Lagen ueber die Karte legen (vormultiplizierte Farben).
+      gl.blendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA);
+      const dk = u.deck;
+      gl.useProgram(dk.prog);
+      gl.activeTexture(gl.TEXTURE1); gl.bindTexture(gl.TEXTURE_2D, u.bilder[1]);
+      gl.activeTexture(gl.TEXTURE0); gl.bindTexture(gl.TEXTURE_2D, u.bilder[0]);
+      gl.uniform1i(dk.loc.uBildA, 0); gl.uniform1i(dk.loc.uBildB, 1); gl.uniform2f(dk.loc.uPx, BW, BH);
+      gl.uniform3fv(dk.loc.uFS, F.tinte); gl.uniform3fv(dk.loc.uFL, F.leise);
+      gl.uniform3fv(dk.loc.uFG, F.schein); gl.uniform3fv(dk.loc.uFH, F.hell);
+      gl.uniform3f(dk.loc.uDeck, leise, 0.7 * 0.92, 0.92);
+      gl.bindBuffer(gl.ARRAY_BUFFER, u.puf.drei);
+      attrSetzen(dk, [['aV', 2]], 8);
+      gl.drawArrays(gl.TRIANGLES, 0, 3);
+      attrAus();
+
+      if (!CFG.bahn) {
+        // 3) Sand
+        if (k.sand > 0 && u.nSand && u.sandOk) {
+          const s = u.sand;
+          gl.useProgram(s.prog);
+          gl.uniformMatrix4fv(s.loc.uM, false, M);
+          gl.uniform2f(s.loc.uPx, BW, BH); gl.uniform1f(s.loc.uPR, PR); gl.uniform1f(s.loc.uHoch, UEBER_HOCH);
+          gl.uniform1f(s.loc.uKopf, GESAMT * (1 - k.sand)); gl.uniform1f(s.loc.uAltN, GESAMT * 0.3);
+          gl.uniform1f(s.loc.uWeh, k.weh); gl.uniform3fv(s.loc.uFarbe, F.sand);
+          gl.bindBuffer(gl.ARRAY_BUFFER, u.puf.sand);
+          attrSetzen(s, [['aP', 3], ['aZ', 4], ['aZ2', 2]], 36);
+          gl.drawArrays(gl.POINTS, 0, u.nSand);
+          attrAus();
+        }
+        // 4) Orte: schlichte Punkte, der aktuelle mit Schein und feinem Ring.
+        const q = new Float32Array(orte.length * 30);
+        const E = [[-1, -1], [1, -1], [-1, 1], [1, -1], [1, 1], [-1, 1]];
+        let n = 0;
+        orte.forEach(function (o, i) {
+          const s = geraet(cam.M, o);
+          if (!s) return;
+          const h = Math.max(i === k.ort ? k.sicht : 0, k.alleHell * 0.55);
+          for (let j = 0; j < 6; j++) { q.set([s[0], s[1], E[j][0], E[j][1], h], n * 5); n++; }
+        });
+        if (n) {
+          const oe = u.ort;
+          gl.useProgram(oe.prog);
+          gl.uniform2f(oe.loc.uPx, BW, BH); gl.uniform1f(oe.loc.uPR, PR);
+          gl.uniform3fv(oe.loc.uOrt, F.ort); gl.uniform3fv(oe.loc.uRing, F.ring); gl.uniform3fv(oe.loc.uPunkt, F.punkt);
+          gl.bindBuffer(gl.ARRAY_BUFFER, u.puf.ort);
+          gl.bufferData(gl.ARRAY_BUFFER, q.subarray(0, n * 5), gl.DYNAMIC_DRAW);
+          attrSetzen(oe, [['aM', 2], ['aE', 2], ['aH', 1]], 20);
+          gl.drawArrays(gl.TRIANGLES, 0, n);
+          attrAus();
+        }
+      }
+
+      // Zustand zurueck fuer die Landschaft des naechsten Bildes.
+      gl.enableVertexAttribArray(loc.aP);
+      gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
+      gl.clearColor(GRUND[0], GRUND[1], GRUND[2], 1);
+      gl.enable(gl.DEPTH_TEST); gl.depthMask(true);
+      gl.useProgram(prog);
     }
 
     /* ---- 2D: Route, Orte, Sand ---- */
@@ -4861,35 +5319,47 @@
       }
     }
 
+    /* Die Leinwand ueber der Karte. Zeichnet die Grafikkarte die Linien,
+       stehen hier nur noch die Ortsnamen -- und die werden nur neu
+       geschrieben, wenn sich an ihnen etwas geaendert hat. */
+    let schildSchluessel = '';
     function linien(k, cam, zeitS) {
       const M = cam.M;
+      const route2d = !ueber || CFG.bahn, sand2d = route2d || !ueber.sandOk;
+      if (!route2d && !sand2d) {
+        const sl = M.join(',') + '|' + k.namen + '|' + k.sicht + '|' + k.ort + '|' + folge.length;
+        if (sl === schildSchluessel) return;
+        schildSchluessel = sl;
+      } else schildSchluessel = '';
       ctx2.setTransform(PR, 0, 0, PR, 0, 0);
       ctx2.clearRect(0, 0, W, H);
       ctx2.lineCap = 'round'; ctx2.lineJoin = 'round';
-      seekarte(M);
+      if (!ueber) seekarte(M);
       /* Route. Solange sie nicht zuruecklaeuft: ganz kaum sichtbar, der
          gefahrene Teil hell mit leichtem Schein. Am Ende laeuft die helle
          Linie vom letzten Ort her zurueck zum ersten; was sie hinter sich
          laesst, zerfaellt in einzelne Koerner, die etwas verwehen und
          verblassen. Stehen bleibt eine sandige Spur der Reise. */
       const kopf = GESAMT * (1 - k.sand);                // bis hier noch Linie
-      if (CFG.bahn) gleis(M, k.sand);
-      else {
-        // In der Uebersicht deutlicher, damit man den Reiseweg auf einen Blick sieht.
-        ctx2.strokeStyle = 'rgba(' + CFG.route.leise + ',' + ((0.26 + 0.34 * k.namen) * (1 - k.sand)).toFixed(3) + ')';
-        ctx2.lineWidth = 1 + 0.4 * k.namen;
-        if (k.sand < 1) wege.forEach(function (w) { linie(M, w, 1e9); });
+      if (route2d) {
+        if (CFG.bahn) gleis(M, k.sand);
+        else {
+          // In der Uebersicht deutlicher, damit man den Reiseweg auf einen Blick sieht.
+          ctx2.strokeStyle = 'rgba(' + CFG.route.leise + ',' + ((0.26 + 0.34 * k.namen) * (1 - k.sand)).toFixed(3) + ')';
+          ctx2.lineWidth = 1 + 0.4 * k.namen;
+          if (k.sand < 1) wege.forEach(function (w) { linie(M, w, 1e9); });
+        }
+        ctx2.strokeStyle = 'rgba(' + CFG.route.hell + ', 0.92)'; ctx2.lineWidth = 1.7;
+        ctx2.shadowColor = 'rgba(' + CFG.route.schein + ', 0.7)'; ctx2.shadowBlur = 9;
+        for (let i = 0; i <= k.weg && i < wege.length; i++) {
+          const bis = Math.min(i < k.weg ? 1e9 : k.wegL, kopf - wegAb[i]);
+          if (bis > 0) linie(M, wege[i], bis);
+        }
+        ctx2.shadowBlur = 0;
+        if (CFG.bahn && !k.sand) dampf(k, M, zeitS || 0);
       }
-      ctx2.strokeStyle = 'rgba(' + CFG.route.hell + ', 0.92)'; ctx2.lineWidth = 1.7;
-      ctx2.shadowColor = 'rgba(' + CFG.route.schein + ', 0.7)'; ctx2.shadowBlur = 9;
-      for (let i = 0; i <= k.weg && i < wege.length; i++) {
-        const bis = Math.min(i < k.weg ? 1e9 : k.wegL, kopf - wegAb[i]);
-        if (bis > 0) linie(M, wege[i], bis);
-      }
-      ctx2.shadowBlur = 0;
-      if (CFG.bahn && !k.sand) dampf(k, M, zeitS || 0);
 
-      if (k.sand > 0) {
+      if (sand2d && k.sand > 0) {
         let i = 0;
         wege.forEach(function (w, j) {
           for (let l = 0; l < w.len; l += (CFG.sandSchritt || 0.5), i++) {
@@ -4910,7 +5380,7 @@
       }
 
       // Orte: schlichte Punkte; der aktuelle mit Schein und feinem Ring.
-      orte.forEach(function (o, i) {
+      if (route2d) orte.forEach(function (o, i) {
         const s = projizieren(M, o);
         if (!s) return;
         const h = Math.max(i === k.ort ? k.sicht : 0, k.alleHell * 0.55);
@@ -5178,6 +5648,12 @@
       stand += tempo * dt;
       if (betrag < 0.0015 && Math.abs(tempo) < 0.01) { stand = ziel; tempo = 0; }
     }
+    /* Steht die Kamera, bewegt sich nur noch das Wasser -- eine Linie
+       braucht rund 14 Sekunden fuer ihren Abstand, das ist mit 30 Bildern je
+       Sekunde nicht von 60 zu unterscheiden. Im Stand wird deshalb nur jedes
+       zweite Bild gezeichnet: die Haelfte der Arbeit, und es bleibt Luft
+       fuer die Videos der Tafel. */
+    let gezeichnet = 0, standGezeichnet = -1;
     function schleife(jetzt) {
       if (!bereit || !sichtbar || !viewer.classList.contains('is-active') || document.hidden) {
         laeuft = false; return;
@@ -5185,7 +5661,10 @@
       const dt = Math.min(0.05, (jetzt - zuletzt) / 1000);
       zuletzt = jetzt;
       folgen(dt);
-      zeichne(stand, (jetzt / 1000) % 100000);
+      if (stand !== standGezeichnet || jetzt - gezeichnet > 28) {
+        zeichne(stand, (jetzt / 1000) % 100000);
+        gezeichnet = jetzt; standGezeichnet = stand;
+      }
       requestAnimationFrame(schleife);
     }
     function anlaufen() {
@@ -5198,15 +5677,25 @@
       ziel = zielAusScroll();
       anlaufen();
     }
+    /* Steht die Karte bildfuellend (die Buehne klebt), liegt das Korn der
+       Projektseite vollstaendig unter ihr. Es wird dann nicht gezeichnet --
+       sein Mischschritt ueber den ganzen Schirm faellt in jedem Bild weg,
+       zu sehen war es an dieser Stelle ohnehin nicht. */
+    function deckung() {
+      const r = halt.getBoundingClientRect();
+      viewer.classList.toggle('karte-deckt', sichtbar && r.top <= 0.5 && r.bottom >= viewer.clientHeight - 0.5);
+    }
     // Gezeichnet wird nur, solange die Karte im Bild ist.
     if ('IntersectionObserver' in window) {
       new IntersectionObserver(function (e) {
         sichtbar = e[e.length - 1].isIntersecting;
         if (sichtbar) anlaufen(); else medienAnhalten();
+        deckung();
       }, { root: scroller }).observe(lauf);
     } else { sichtbar = true; }
     document.addEventListener('visibilitychange', function () { if (!document.hidden) anlaufen(); else medienAnhalten(); });
     scroller.addEventListener('scroll', anstossen, { passive: true });
+    scroller.addEventListener('scroll', deckung, { passive: true });
 
     /* ---- Laden, sobald die Projektseite aufgeht ---- */
     let geladen = false;
@@ -5305,7 +5794,7 @@
     glc.addEventListener('webglcontextlost', function (e) { e.preventDefault(); bereit = false; }, false);
     glc.addEventListener('webglcontextrestored', function () {
       if (!D) return;
-      loc = {}; puf = {};
+      loc = {}; puf = {}; ueberNeu = true;
       if (glStarten()) { bereit = true; groesse(); zeichne(stand); }
     }, false);
 
