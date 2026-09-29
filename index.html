@@ -4923,7 +4923,13 @@
       return { kopf: kopf, pos: pos, tri: tri, lin: lin, tex: tex, orte: kopf.orte, wege: kopf.wege };
     }
     function laden() {
-      if (geladen) { if (bereit) { groesse(); zeichne(stand); } return; }
+      /* Erneut geoeffnet: die Seite steht wieder oben, also auch die Kamera
+         wieder dort, wo die Scrollposition ist -- sonst stand sie noch am
+         Ende des letzten Besuchs und flog die ganze Reise rueckwaerts. */
+      if (geladen) {
+        if (bereit) { groesse(); vorbereiten(W, H); stand = ziel = zielAusScroll(); tempo = 0; zeichne(stand); }
+        return;
+      }
       geladen = true;
       fetch(CFG.datei).then(function (r) {
         if (!r.ok) throw new Error('Karte ' + r.status);
@@ -4974,7 +4980,9 @@
       if (viewer.classList.contains('is-active')) laden();
     }).observe(viewer, { attributes: true, attributeFilter: ['class'] });
     window.addEventListener('resize', function () {
-      if (!bereit) return;
+      // Geschlossene Projektseite: nichts rechnen (sie haette keine Groesse);
+      // beim naechsten Oeffnen wird ohnehin neu vermessen.
+      if (!bereit || !viewer.classList.contains('is-active')) return;
       groesse();
       vorbereiten(W, H);
       ziel = stand = zielAusScroll();
