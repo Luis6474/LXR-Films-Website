@@ -765,7 +765,9 @@
   .figure-media { position: relative; aspect-ratio: var(--fig-ar, 4 / 3); }
   .figure-media > img:not(.aura) { position: relative; z-index: 1; }
   /* Zwei Bilder nebeneinander (Arbeitsweise): gleich breit, gleich hoch. */
-  .figure-paar { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+  .figure-paar { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+  /* Ein Titel in Anfuehrungszeichen bricht nie zwischen Zeichen und Titel. */
+  .zusammen { white-space: nowrap; }
   /* Grosses Bild ueber einem Abschnitt, mittig. Nie hoeher als 70 % des
      Fensters -- dominant, aber kein Vollbild. */
   .bild-trenner { width: min(100%, calc(70vh * 16 / 9)); margin: 0 auto 72px; }
@@ -1286,11 +1288,13 @@
   .karte-bild-b { display: none; }
   .karte-bild img, .karte-bild video { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
   .karte-bild.hat-medium { background: #0b1012; }
-  .karte-bild .karte-nr {
-    position: absolute; right: 10px; bottom: 8px; z-index: 2;
-    font-size: 0.66em; letter-spacing: 0.18em; color: rgba(255, 255, 255, 0.86);
-    text-shadow: 0 1px 6px rgba(0, 0, 0, 0.8);
+  /* Alle Bilder einer Station zugleich: die Tafel. Groesse und Lage der
+     einzelnen Bilder setzt das Skript (je zwei nebeneinander). */
+  .karte-tafel {
+    position: absolute; left: 4vw; right: 4vw; top: max(9%, 80px); max-width: 560px; margin: 0 auto;
+    opacity: 0; will-change: opacity, transform;
   }
+  .karte-tafel .karte-bild { opacity: 1; aspect-ratio: auto; will-change: auto; box-shadow: 0 24px 60px rgba(0, 0, 0, 0.45); }
   /* Ton an/aus bei Videos mit Ton: gross genug zum Antippen. */
   .karte-ton {
     position: absolute; left: 8px; bottom: 8px; z-index: 2; pointer-events: auto;
@@ -1300,7 +1304,6 @@
   }
   .karte-ton:focus-visible { outline: 1px solid var(--accent); outline-offset: 2px; }
   /* Hochkant-Video: schmaler, sonst waere es hoeher als das Bild. */
-  .karte-bild-a.ist-hoch { width: min(36vw, 180px); left: 6vw; margin-left: 0; }
 
   /* Das Datum: die Zeitachse der ganzen Sequenz. Zwei Lagen uebereinander,
      damit ein Tageswechsel weich ueberblendet statt umzuspringen. */
@@ -1336,25 +1339,25 @@
     position: absolute; top: max(20px, 3dvh); right: 16px;
     display: inline-flex; align-items: center; gap: 10px;
     font-family: 'Libre Caslon Display', Georgia, serif;
-    font-size: 0.78em; letter-spacing: 0.18em; text-transform: uppercase;
-    color: #f3e6cf; background: rgba(28, 22, 15, 0.6);
-    -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px);
-    border: 1px solid rgba(255, 214, 160, 0.55); border-radius: 999px;
-    padding: 12px 20px 11px; cursor: pointer;
-    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.35);
+    font-size: 0.86em; letter-spacing: 0.16em; text-transform: uppercase;
+    /* Gefuellt statt nur umrandet: hebt sich von jeder Karte ab. */
+    color: #1d150c; background: rgba(240, 206, 156, 0.96);
+    border: 1px solid rgba(255, 236, 206, 0.95); border-radius: 999px;
+    padding: 14px 24px 13px; cursor: pointer; font-weight: 600;
+    box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.25), 0 12px 34px rgba(0, 0, 0, 0.5);
     opacity: 0; transition: opacity 0.8s var(--ease), background-color 0.4s var(--ease), border-color 0.4s var(--ease);
   }
   .karte-weiter span { font-size: 1.25em; line-height: 1; letter-spacing: 0; }
-  .karte.ist-bereit .karte-weiter { opacity: 1; animation: weiterRuf 2.4s var(--ease) 1.4s 2; }
+  .karte.ist-bereit .karte-weiter { opacity: 1; animation: weiterRuf 2.6s var(--ease) 1.2s 3; }
   @keyframes weiterRuf {
-    0%, 100% { box-shadow: 0 0 0 0 rgba(255, 196, 130, 0), 0 10px 30px rgba(0, 0, 0, 0.35); }
-    50% { box-shadow: 0 0 0 9px rgba(255, 196, 130, 0.16), 0 10px 30px rgba(0, 0, 0, 0.35); }
+    0%, 100% { box-shadow: 0 0 0 0 rgba(255, 206, 150, 0), 0 12px 34px rgba(0, 0, 0, 0.5); }
+    50% { box-shadow: 0 0 0 12px rgba(255, 206, 150, 0.22), 0 12px 34px rgba(0, 0, 0, 0.5); }
   }
-  .karte-weiter:focus-visible { background-color: rgba(64, 46, 26, 0.75); border-color: rgba(255, 224, 180, 0.9); outline: none; }
-  @media (hover: hover) { .karte-weiter:hover { background-color: rgba(64, 46, 26, 0.75); border-color: rgba(255, 224, 180, 0.9); } }
+  .karte-weiter:focus-visible { background-color: #fff1dc; outline: 2px solid #fff1dc; outline-offset: 3px; }
+  @media (hover: hover) { .karte-weiter:hover { background-color: #fff1dc; } }
   @media (prefers-reduced-motion: reduce) { .karte.ist-bereit .karte-weiter { animation: none; } }
   .karte.ist-still .karte-weiter { display: none; }
-  @media (min-width: 900px) { .karte-weiter { right: 28px; top: 28px; font-size: 0.82em; } }
+  @media (min-width: 900px) { .karte-weiter { right: 28px; top: 28px; font-size: 0.92em; } }
   .karte-quelle {
     position: absolute; right: 12px; bottom: 8px; margin: 0;
     font-size: 9px; letter-spacing: 0.02em; color: var(--text-dim); opacity: 0.3;
@@ -1368,8 +1371,7 @@
   @media (min-width: 900px) {
     .karte-bild-a { width: min(30vw, 480px); left: auto; right: 7vw; top: 16%; margin-left: 0; }
     .karte-bild-b { display: flex; width: min(19vw, 300px); right: calc(7vw + min(30vw, 480px) - min(12vw, 190px)); top: calc(16% + min(20vw, 320px) - 20px); }
-    .karte-bild-a.ist-hoch { width: min(16vw, 250px); margin-left: 0; left: auto; right: 12vw; top: 19%; }
-    .karte-bild.ist-leer { display: none; }
+    .karte-tafel { left: auto; right: 5vw; top: max(15%, 118px); width: min(40vw, 660px); max-width: none; }
   }
 
   .viewer-grid { display: grid; grid-template-columns: 1fr; gap: 12px; margin: 52px 0; }
@@ -1443,7 +1445,8 @@
     /* Ein Abschnitt bekommt bewusst mehr Bild. Die Textspalte verliert dabei
        nichts Sichtbares -- die Zeilenlaenge ist auf 46 Zeichen gedeckelt. */
     .band-grid.text-right.bild-gross { grid-template-columns: minmax(0, 6fr) minmax(0, 5fr); }
-    .band-grid.text-right.bild-paar { grid-template-columns: minmax(0, 7fr) minmax(0, 5fr); }
+    .band-grid.text-right.bild-paar { grid-template-columns: minmax(0, 8fr) minmax(0, 5fr); gap: 60px; }
+    .bild-paar .band-figure { margin-left: calc(-1 * min(120px, max(0px, (100vw - var(--wide)) / 2 - 10px))); }
     .band-grid.text-right .band-text { grid-column: 2; }
     .band-grid.text-right .band-figure { grid-column: 1; grid-row: 1; }
     .band.alt::before {
@@ -1623,7 +1626,7 @@
                  alt="Am Strand: Luis zeigt Stephen Corrall eine Aufnahme auf dem Kameramonitor"
                  loading="lazy" decoding="async">
           </div>
-          <figcaption>Dreharbeiten am Sanna Beach auf Ardnamurchan mit Schauspieler <a class="in-link" href="https://app.spotlight.com/5813-0163-0340" target="_blank" rel="noopener">Stephen Corrall</a> für das Projekt „&#8288;<button type="button" class="in-link" data-viewer="v2">The Same Gray</button>“</figcaption>
+          <figcaption>Dreharbeiten am Sanna Beach auf Ardnamurchan mit Schauspieler <a class="in-link" href="https://app.spotlight.com/5813-0163-0340" target="_blank" rel="noopener">Stephen Corrall</a> für das Projekt <span class="zusammen">„<button type="button" class="in-link" data-viewer="v2">The Same Gray</button>“</span></figcaption>
         </figure>
       </div>
     </div>
@@ -1733,19 +1736,19 @@
             <div class="figure-media aura-host" style="--fig-ar: 2 / 3">
               <img src="Images/web/img-1773-schmal-800.webp"
                    srcset="Images/web/img-1773-schmal-800.webp 800w, Images/web/img-1773-schmal-1600.webp 1600w"
-                   sizes="(min-width: 900px) 28vw, 50vw"
+                   sizes="(min-width: 900px) 34vw, 50vw"
                    alt="Nächtlicher Drehaufbau: Filmleuchte auf einem Stativ vor einem Cottage, warmes Licht im Fenster"
                    loading="lazy" decoding="async">
             </div>
             <div class="figure-media aura-host" style="--fig-ar: 2 / 3">
               <img src="Images/web/img-4295-800.webp"
                    srcset="Images/web/img-4295-800.webp 800w, Images/web/img-4295-1600.webp 1600w"
-                   sizes="(min-width: 900px) 28vw, 50vw"
+                   sizes="(min-width: 900px) 34vw, 50vw"
                    alt="Dreh im Gewächshaus: Luis an der Kamera mit Softbox zwischen blühenden Balkonpflanzen"
                    loading="lazy" decoding="async">
             </div>
           </div>
-          <figcaption>Links: Drehort für den Kurzfilm „The Same Gray“ in Auchindrain · rechts: Dreh für „&#8288;<button type="button" class="in-link" data-viewer="v1">Gärtnerei Finder</button>“ in Hamburg-Sasel</figcaption>
+          <figcaption>Links: Drehort für den Kurzfilm „The Same Gray“ in Auchindrain · Rechts: Dreh für <span class="zusammen">„<button type="button" class="in-link" data-viewer="v1">Gärtnerei Finder</button>“</span> in Hamburg-Sasel</figcaption>
         </figure>
       </div>
     </div>
@@ -1755,14 +1758,13 @@
     <div class="band-inner">
       <!-- Grosses Bild ueber dem Text: trennt "Arbeitsweise" und "Equipment". -->
       <figure class="band-figure bild-trenner reveal-media">
-        <div class="figure-media aura-host" style="--fig-ar: 16 / 9">
-          <img src="Images/web/img-7145-1600.webp"
-               srcset="Images/web/img-7145-800.webp 800w, Images/web/img-7145-1600.webp 1600w, Images/web/img-7145-2400.webp 2400w"
+        <div class="figure-media aura-host" style="--fig-ar: 4096 / 1975">
+          <img src="Images/web/still-2026-09-29-192335-1600.webp"
+               srcset="Images/web/still-2026-09-29-192335-800.webp 800w, Images/web/still-2026-09-29-192335-1600.webp 1600w, Images/web/still-2026-09-29-192335-2400.webp 2400w"
                sizes="(min-width: 1120px) 1080px, 100vw"
-               alt="Dreh in einem alten Cottage: Luis filmt vom Stativ, Stephen Corrall sitzt am Tisch vor dem Fenster"
+               alt="Segelschiff auf stürmischer See im Abendlicht"
                loading="lazy" decoding="async">
         </div>
-        <figcaption>Dreharbeiten zu „<button type="button" class="in-link" data-viewer="v2">The Same Gray</button>“ in Auchindrain</figcaption>
       </figure>
       <div class="band-grid">
         <div class="band-text reveal">
@@ -1771,6 +1773,16 @@
           <p class="body">Ich filme mit der Lumix S5 II für einen sauberen, cineastischen Look und präzise Farben. Dazu setze ich lichtstarke Optiken ein, die vom weiten Überblick bis zur feinen Detailaufnahme alles abdecken. Ruhige Kamerafahrten und gezielt gesetztes Licht sorgen für Atmosphäre und ein hochwertiges Erscheinungsbild; der Ton wird genauso sorgfältig aufgenommen, damit Aussagen klar und nah klingen.</p>
           <p class="body">Wenn es die Geschichte verlangt, ergänze ich das durch Drohnenaufnahmen mit der DJI Mavic 3 Classic – für weite Establishing-Shots und fließende Übergänge von oben. Am Ende liefere ich flexibel nach Wunsch: in 24, 25 oder 30 fps und in HD, 4K oder 5K – oder genau in der Auflösung und Framerate, die benötigt wird.</p>
         </div>
+        <figure class="band-figure reveal-media">
+          <div class="figure-media aura-host" style="--fig-ar: 4 / 3">
+            <img src="Images/web/img-7145-1600.webp"
+                 srcset="Images/web/img-7145-800.webp 800w, Images/web/img-7145-1600.webp 1600w, Images/web/img-7145-2400.webp 2400w"
+                 sizes="(min-width: 900px) 42vw, 100vw"
+                 alt="Dreh in einem alten Cottage: Luis filmt vom Stativ, Stephen Corrall sitzt am Tisch vor dem Fenster"
+                 loading="lazy" decoding="async">
+          </div>
+          <figcaption>Dreharbeiten zu <span class="zusammen">„<button type="button" class="in-link" data-viewer="v2">The Same Gray</button>“</span> in Auchindrain</figcaption>
+        </figure>
       </div>
     </div>
   </section>
@@ -3943,11 +3955,9 @@
      Lochcarron, Hallstatt) stammen aus der ersten Ortsliste; ihre Tage
      bzw. ihre Lage in der Reihenfolge sind geschaetzt. */
   // Ein Bild der Karte: 800 und 1600 px breit, als WebP.
-  // "tag": Aufnahmetag (wie bei "tage") -- bleibt eine Station ueber mehrere
-  // Tage, zeigt das Datum den Tag des gerade gezeigten Bildes.
-  function kbild(basis, verhaeltnis, tag) {
+  function kbild(basis, verhaeltnis) {
     return { bild: basis + '-800.webp', srcset: basis + '-800.webp 800w, ' + basis + '-1600.webp 1600w',
-             verhaeltnis: verhaeltnis || '4 / 3', hoch: verhaeltnis === '3 / 4', tag: tag };
+             verhaeltnis: verhaeltnis || '4 / 3' };
   }
   const KSG = 'Images/web/karte-same-gray/', KMO = 'Images/web/karte-mountains/';
   const KARTEN = {
@@ -3961,12 +3971,10 @@
       /* Bilder je Station (Index wie bei namen), in der Reihenfolge der
          Aufnahme. Ohne Eintrag bleibt "Bild folgt". */
       medien: {
-        0: [kbild(KSG + 'img-1773', '3 / 4', 0), kbild(KSG + 'img-7140', 0, 1), kbild(KSG + 'img-7145', 0, 1),
-            kbild(KSG + 'img-7146', 0, 1), kbild(KSG + 'img-7151', 0, 1)],
-        1: [kbild(KSG + 'img-7182', 0, 1), kbild(KSG + 'img-7206', 0, 2)],
-        2: [kbild(KSG + 'img-7216'), kbild(KSG + 'img-7218'), kbild(KSG + 'img-7219'), kbild(KSG + 'img-7227')],
-        4: [{ video: 'video/web/karte-same-gray/brides-veil.mp4', poster: 'video/web/karte-same-gray/brides-veil-poster.jpg', verhaeltnis: '16 / 9' },
-            kbild(KSG + 'img-7291')],
+        0: [kbild(KSG + 'img-7140'), kbild(KSG + 'img-7146'), kbild(KSG + 'img-7151')],
+        1: [kbild(KSG + 'img-7182'), kbild(KSG + 'img-7206')],
+        2: [kbild(KSG + 'img-7216'), kbild(KSG + 'img-7219'), kbild(KSG + 'img-7227')],
+        4: [kbild(KSG + 'img-7291')],
         5: [kbild(KSG + 'img-7319'),
             { video: 'video/web/karte-same-gray/neist-point-720.mp4', poster: 'video/web/karte-same-gray/neist-point-poster.jpg', hoch: true, ton: true }],
         6: [kbild(KSG + 'img-7345')],
@@ -3989,21 +3997,27 @@
        Linien in kuehlem Silber. Die Route bleibt warm -- Sonne auf Schnee. */
     mountains: {
       datei: 'daten/mountains-karte.bin.gz',
-      zeitraum: '5.–29. August 2025',
-      // Reihenfolge nach den Aufnahmezeiten (5.-12. August, Sylt am 29.).
+      zeitraum: '5.–30. August 2025',
+      // Reihenfolge nach den Aufnahmezeiten (5.-15. August, Sylt am 29./30.).
       // Hallstatt hat kein Foto: hier nach der Geografie eingeordnet.
-      namen: ['Königssee', 'Reit im Winkl', 'Ramsau', 'Hallstatt', 'St. Johann in Ranui', 'Pragser Wildsee',
-              'Alta Badia', 'Seiser Alm', 'Karersee', 'Sylt'],
+      namen: ['Königssee', 'Reit im Winkl', 'Hintersee', 'Ramsau', 'Hallstatt', 'St. Johann in Ranui', 'Pragser Wildsee',
+              'Alta Badia', 'Seiser Alm', 'Karersee', 'Seceda', 'Wengen', 'Sylt'],
       medien: {
         0: [kbild(KMO + 'img-4485'), kbild(KMO + 'img-4495'), kbild(KMO + 'img-4496')],
         1: [kbild(KMO + 'img-4521')],
-        2: [kbild(KMO + 'img-4546')],
-        4: [kbild(KMO + 'img-4561')],
-        5: [kbild(KMO + 'img-4576')],
-        6: [kbild(KMO + 'img-4602')],
-        7: [kbild(KMO + 'img-4616')],
-        8: [kbild(KMO + 'img-4631', '16 / 9')],
-        9: [kbild(KMO + 'img-4737')]
+        2: [kbild(KMO + 'img-4533')],
+        3: [kbild(KMO + 'img-4546')],
+        5: [kbild(KMO + 'img-4559'), kbild(KMO + 'img-4561')],
+        6: [kbild(KMO + 'img-4576'), kbild(KMO + 'img-4588')],
+        7: [kbild(KMO + 'img-4602'), kbild(KMO + 'img-4605')],
+        8: [kbild(KMO + 'img-4616')],
+        9: [kbild(KMO + 'img-4631', '16 / 9'), kbild(KMO + 'img-4632')],
+        10: [kbild(KMO + 'img-4670'), kbild(KMO + 'img-4672'), kbild(KMO + 'img-4676')],
+        // Die Musikkapelle: Ton erst auf Knopfdruck, dann fuer genau einen Durchlauf.
+        11: [kbild(KMO + 'img-4688'), kbild(KMO + 'img-4690'),
+             { video: 'video/web/karte-mountains/musikkapelle.mp4', poster: 'video/web/karte-mountains/musikkapelle-poster.jpg',
+               verhaeltnis: '16 / 9', ton: 'einmal' }],
+        12: [kbild(KMO + 'img-4737'), kbild(KMO + 'img-4750')]
       },
       ueberhoehung: 1.35,
       grund: [0.018, 0.035, 0.038],
@@ -4299,11 +4313,10 @@
         const tg = JE[i];
         phasen.push({ art: 'fahrt', von: i - 1, nach: i, tagA: i ? JE[i - 1][1] : (TAGE ? 0 : -1), tagB: tg[0],
                       laenge: i ? 0.5 + 0.32 * fluege[i - 1].S : 1.2 });
-        // Jedes weitere Bild der Station verlaengert den Halt: die Bilder
-        // blenden beim Weiterscrollen ineinander.
+        // Hat eine Station Bilder, bleibt man etwas laenger -- Zeit zum Ansehen.
         const nb = CFG.medien && CFG.medien[i] ? CFG.medien[i].length : 0;
         phasen.push({ art: 'halt', ort: i, tagA: tg[0], tagB: tg[1],
-                      laenge: 0.75 + 0.35 * (tg[1] - tg[0]) + 0.6 * Math.max(0, nb - 1) });
+                      laenge: 0.75 + 0.35 * (tg[1] - tg[0]) + (nb ? 0.35 : 0) });
       });
       phasen.push({ art: 'weit', tagA: JE[orte.length - 1][1], tagB: TAGE ? ANZAHL - 1 : -1, laenge: 1.5 });
       phasen.push({ art: 'ende', laenge: 0.7 });
@@ -4320,7 +4333,7 @@
       while (i < phasen.length - 1 && u >= phasen[i].ab + phasen[i].laenge) i++;
       const ph = phasen[i];
       const f = Math.max(0, Math.min(1, (u - ph.ab) / ph.laenge));
-      const k = { bildQ: 0, namen: 0, dampf: 0, tag: TAGE ? 0 : -1, sicht: 0, ort: -1, weg: -1, wegL: 0, sand: 0, weh: 0, alleHell: 0 };
+      const k = { namen: 0, dampf: 0, tag: TAGE ? 0 : -1, sicht: 0, ort: -1, weg: -1, wegL: 0, sand: 0, weh: 0, alleHell: 0 };
       function setze(c) { k.x = c.x; k.y = c.y; k.z = c.z; k.dist = c.dist; k.pitch = c.pitch; k.bearing = c.bearing; }
       if (ph.art === 'start') {
         setze(uebersicht); k.bearing += 3 * f; k.namen = 1;
@@ -4331,13 +4344,6 @@
         k.tag = ph.tagA + Math.min(n - 1, Math.floor(f * n));
         k.sicht = stufe(0.1, 0.26, f) * (1 - stufe(0.8, 0.95, f));
         k.ort = ph.ort; k.weg = ph.ort - 1; k.wegL = 1e9; k.dampf = 0.4;
-        // Stand in der Bildfolge der Station (0 .. n-1)
-        const liste = CFG.medien && CFG.medien[ph.ort];
-        if (liste && liste.length > 1) {
-          k.bildQ = Math.max(0, Math.min(1, (f - 0.24) / 0.52)) * (liste.length - 1);
-          const tb = liste[Math.min(liste.length - 1, Math.round(k.bildQ))].tag;
-          if (TAGE && tb !== undefined) k.tag = tb;
-        }
       } else if (ph.art === 'fahrt' && ph.von < 0) {          // aus der Uebersicht herein
         const e = glatt(f), o = orte[0];
         setze({ x: mix(uebersicht.x, o[0], e), y: mix(uebersicht.y, o[1], e), z: mix(0, o[2], e),
@@ -4940,6 +4946,9 @@
                        [s[0] + 8, s[1] - 13], [s[0] + 8, s[1] + 13], [s[0] - 8 - b, s[1] - 13], [s[0] - 8 - b, s[1] + 13]];
         // Liegen Orte so dicht, dass kein Platz frei ist, faellt der Name in
         // der Uebersicht weg (am Halt steht der eigene Name immer).
+        // Rechts steht auf breiten Schirmen die Bildtafel: der Name des
+        // aktuellen Orts weicht dann nach links aus.
+        if (i === k.ort && k.sicht > 0.02 && folge.length && W > H) lagen.unshift(lagen.splice(1, 1)[0]);
         let wahl = i === k.ort && k.sicht > 0.02 ? lagen[0] : null;
         for (let j = 0; j < lagen.length; j++) {
           const x = lagen[j][0], y = lagen[j][1];
@@ -4958,15 +4967,20 @@
       if ('letterSpacing' in ctx2) ctx2.letterSpacing = '0px';
     }
 
-    /* Die Bilder der Station, an der die Kamera steht: EIN Rahmen, in dem
-       beim Weiterscrollen ein Bild ins naechste blendet (klein "2 / 5"
-       in der Ecke). Ohne Eintrag bleiben die Platzhalter "Bild folgt".
-       Ein Video beginnt von vorn, sobald es zu sehen ist, laeuft in voller
-       Laenge und dann in Schleife, und haelt an, sobald es verschwindet.
-       Videos mit "ton" laufen mit Ton, der mit dem Bild ein- und ausblendet
-       -- erlaubt der Browser Ton ohne Klick nicht, laufen sie stumm, und
-       der Knopf "Ton an" schaltet ihn zu. */
+    /* Die Bilder der Station, an der die Kamera steht -- alle zugleich,
+       je zwei nebeneinander (Zeilen im Blocksatz: jede Zeile fuellt die
+       Breite, jedes Bild behaelt sein Format). Ohne Eintrag bleiben die
+       Platzhalter "Bild folgt".
+       Videos beginnen von vorn, sobald die Station erscheint, laufen in
+       voller Laenge und dann in Schleife, und halten an, sobald sie
+       verschwindet. "ton: true": mit Ton (blendet mit dem Bild ein und
+       aus; erlaubt der Browser Ton ohne Klick nicht, stumm mit Knopf).
+       "ton: 'einmal'": stumm, der Knopf spielt es einmal ganz mit Ton ab,
+       danach laeuft es stumm weiter. */
     const halter = wurzel.querySelector('.karte-bilder');
+    const tafel = document.createElement('div');
+    tafel.className = 'karte-tafel';
+    halter.appendChild(tafel);
     let medienOrt = -2, folge = [], tonGewollt = true;
     function tonKnopfSetzen(f) {
       if (!f.knopf) return;
@@ -4974,21 +4988,22 @@
       f.knopf.textContent = an ? 'Ton aus' : 'Ton an';
       f.knopf.setAttribute('aria-pressed', an ? 'true' : 'false');
     }
+    function versuche(v) { const p = v.play(); if (p && p.catch) p.catch(function () {}); }
     function setzeMedien(ort) {
       if (ort === medienOrt) return;
       medienOrt = ort;
-      folge.forEach(function (f) { if (f.video) f.video.pause(); f.el.remove(); });
+      folge.forEach(function (f) { if (f.video) f.video.pause(); });
+      tafel.textContent = '';
       folge = [];
       const liste = (CFG.medien && CFG.medien[ort]) || null;
       bilder.forEach(function (b) { b.style.display = liste ? 'none' : ''; });
       halter.setAttribute('aria-hidden', liste ? 'false' : 'true');
       if (!liste) return;
-      liste.forEach(function (m, j) {
+      liste.forEach(function (m) {
         const b = document.createElement('div');
-        b.className = 'karte-bild karte-bild-a hat-medium' + (m.hoch ? ' ist-hoch' : '');
-        b.style.aspectRatio = m.hoch && m.video ? '9 / 16' : (m.verhaeltnis || '4 / 3');
-        b.style.opacity = '0';
-        const f = { el: b, video: null, ton: !!m.ton, lief: false };
+        b.className = 'karte-bild hat-medium';
+        const f = { el: b, video: null, ton: m.ton || false, lief: false, einmal: false,
+                    format: m.hoch && m.video ? 9 / 16 : (function (s) { const p = s.split('/'); return +p[0] / +p[1]; })(m.verhaeltnis || '4 / 3') };
         if (m.video) {
           const v = document.createElement('video');
           v.muted = true; v.loop = true; v.playsInline = true;
@@ -5002,12 +5017,31 @@
             const k = document.createElement('button');
             k.type = 'button'; k.className = 'karte-ton';
             k.addEventListener('click', function () {
-              tonGewollt = v.muted;
-              v.muted = !v.muted;
-              if (!v.muted) v.volume = 1;
-              if (v.paused) { const p = v.play(); if (p && p.catch) p.catch(function () {}); }
+              if (f.ton === 'einmal') {
+                if (v.muted) {
+                  // Einmal ganz mit Ton, von vorn
+                  f.einmal = true; v.loop = false; v.muted = false; v.volume = 1;
+                  try { v.currentTime = 0; } catch (e) {}
+                } else {
+                  f.einmal = false; v.loop = true; v.muted = true;
+                }
+              } else {
+                tonGewollt = v.muted;
+                v.muted = !v.muted;
+                if (!v.muted) v.volume = 1;
+              }
+              if (v.paused) versuche(v);
               tonKnopfSetzen(f);
             });
+            if (m.ton === 'einmal') {
+              v.addEventListener('ended', function () {
+                // Durchlauf mit Ton vorbei: stumm weiter in Schleife
+                f.einmal = false; v.muted = true; v.loop = true;
+                try { v.currentTime = 0; } catch (e) {}
+                versuche(v);
+                tonKnopfSetzen(f);
+              });
+            }
             b.appendChild(k);
             f.knopf = k;
             tonKnopfSetzen(f);
@@ -5015,38 +5049,69 @@
         } else {
           const el = document.createElement('img');
           el.decoding = 'async'; el.alt = '';
-          if (m.srcset) { el.srcset = m.srcset; el.sizes = m.hoch ? '(min-width: 900px) 16vw, 36vw' : '(min-width: 900px) 30vw, 78vw'; }
+          if (m.srcset) { el.srcset = m.srcset; el.sizes = '(min-width: 900px) 20vw, 46vw'; }
           el.src = m.bild;
           b.appendChild(el);
         }
-        if (liste.length > 1) {
-          const nr = document.createElement('span');
-          nr.className = 'karte-nr'; nr.textContent = (j + 1) + ' / ' + liste.length;
-          b.appendChild(nr);
-        }
-        halter.appendChild(b);
+        tafel.appendChild(b);
         folge.push(f);
       });
+      tafelSetzen();
     }
+    /* Je zwei Bilder in einer Zeile, gleich hoch, zusammen so breit wie die
+       Tafel. Wird es insgesamt zu hoch, schrumpft alles gleichmaessig. */
+    function tafelSetzen() {
+      if (!folge.length) return;
+      const B = tafel.clientWidth || 300, L = 10;
+      const hoechstens = (H || window.innerHeight) * (W > H * 1.1 ? 0.62 : 0.33);
+      const zeilen = [];
+      for (let i = 0; i < folge.length; i += 2) zeilen.push(folge.slice(i, i + 2));
+      let hs = zeilen.map(function (z) {
+        const summe = z.reduce(function (s, f) { return s + f.format; }, 0);
+        const h = (B - L * (z.length - 1)) / summe;
+        return z.length === 1 ? Math.min(h, B * 0.42) : h;
+      });
+      const gesamt = hs.reduce(function (s, h) { return s + h; }, 0) + L * (zeilen.length - 1);
+      const k = Math.min(1, hoechstens / gesamt);
+      hs = hs.map(function (h) { return h * k; });
+      let y = 0;
+      zeilen.forEach(function (z, zi) {
+        const breite = z.reduce(function (s, f) { return s + f.format * hs[zi]; }, 0) + L * (z.length - 1);
+        let x = (B - breite) / 2;
+        z.forEach(function (f) {
+          const w = f.format * hs[zi];
+          f.el.style.left = x.toFixed(1) + 'px'; f.el.style.top = y.toFixed(1) + 'px';
+          f.el.style.width = w.toFixed(1) + 'px'; f.el.style.height = hs[zi].toFixed(1) + 'px';
+          x += w + L;
+        });
+        y += hs[zi] + L;
+      });
+      tafel.style.height = (y - L).toFixed(1) + 'px';
+    }
+    window.addEventListener('resize', function () { if (folge.length) tafelSetzen(); });
     function spiele(f, an, staerke) {
       const v = f.video;
       if (!an) {
         if (!v.paused) v.pause();
+        if (f.lief && f.ton === 'einmal') { f.einmal = false; v.muted = true; v.loop = true; tonKnopfSetzen(f); }
         f.lief = false;
         return;
       }
-      if (f.ton && !v.muted) { try { v.volume = Math.max(0, Math.min(1, staerke)); } catch (e) {} }
+      if (f.ton === true && !v.muted) { try { v.volume = Math.max(0, Math.min(1, staerke)); } catch (e) {} }
       if (f.lief) return;
       f.lief = true;
       try { v.currentTime = 0; } catch (e) {}
       if (reducedMotion) return;
-      v.muted = !(f.ton && tonGewollt);
-      if (!v.muted) { try { v.volume = Math.max(0, Math.min(1, staerke)); } catch (e) {} }
+      if (f.ton === true) {
+        v.muted = !tonGewollt;
+        if (!v.muted) { try { v.volume = Math.max(0, Math.min(1, staerke)); } catch (e) {} }
+      }
       tonKnopfSetzen(f);
       const p = v.play();
-      if (p && p.catch) p.catch(function () {
-        // Ton ohne vorherigen Klick verweigert: stumm abspielen.
-        if (!v.muted) { v.muted = true; tonKnopfSetzen(f); const q = v.play(); if (q && q.catch) q.catch(function () {}); }
+      if (p && p.catch) p.catch(function (e) {
+        // Ton ohne vorherigen Klick verweigert: stumm abspielen. (Andere
+        // Fehler, etwa ein Anhalten mitten im Starten, aendern nichts.)
+        if (e && e.name === 'NotAllowedError' && !v.muted) { v.muted = true; tonKnopfSetzen(f); versuche(v); }
       });
     }
     function medienAnhalten() {
@@ -5055,6 +5120,7 @@
     function medienZeigen(k) {
       if (k.sicht > 0.01 && k.ort >= 0) setzeMedien(k.ort);
       if (!folge.length) {
+        tafel.style.opacity = '0';
         bilder.forEach(function (b, j) {
           const s = Math.max(0, Math.min(1, k.sicht * 1.15 - j * 0.15));
           b.style.opacity = s.toFixed(3);
@@ -5062,19 +5128,13 @@
         });
         return;
       }
-      // Stand in der Folge: 0 .. n-1. Jedes Bild steht eine Weile, dann
-      // eine weiche Blende ins naechste.
-      const n = folge.length;
-      const q = Math.min(n - 1, k.bildQ);
-      const i = Math.min(n - 1, Math.floor(q)), r = stufe(0.3, 0.7, q - i);
-      folge.forEach(function (f, j) {
-        const w = j === i ? 1 - r : (j === i + 1 ? r : 0);
-        const s = k.sicht * w;
-        f.el.style.opacity = s.toFixed(3);
-        f.el.style.visibility = s < 0.004 ? 'hidden' : '';
-        f.el.style.transform = 'translateY(' + ((1 - k.sicht) * 14).toFixed(1) + 'px) scale(' + (0.985 + 0.015 * k.sicht).toFixed(4) + ')';
-        if (f.video) spiele(f, s > 0.05, s);
-      });
+      // Die ganze Tafel blendet als Einheit ein und aus -- sonst schiene
+      // bei gestaffeltem Einblenden die Karte durch einzelne Bilder.
+      const s = Math.max(0, Math.min(1, k.sicht * 1.25));
+      tafel.style.opacity = s.toFixed(3);
+      tafel.style.visibility = s < 0.004 ? 'hidden' : '';
+      tafel.style.transform = 'translateY(' + ((1 - s) * 14).toFixed(1) + 'px)';
+      folge.forEach(function (f) { if (f.video) spiele(f, s > 0.05, s); });
     }
 
     let bereit = false;
