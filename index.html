@@ -191,7 +191,9 @@
     /* Im Gegenzug zum schwaecheren Textschein ein Stueck grosszuegiger:
        70 % -> 90 % Ueberstand je Seite. Noch klar unter den 150 %, die
        urspruenglich die Randbereiche zugedunstet haben. */
-    left: -90%; top: -90%; width: 280%; height: 280%;
+    /* Ueberstand je Seite in Prozent der Bildgroesse (Regler: hofUeber). */
+    left: calc(var(--hof-ueber, 90) * -1%); top: calc(var(--hof-ueber, 90) * -1%);
+    width: calc(100% + var(--hof-ueber, 90) * 2%); height: calc(100% + var(--hof-ueber, 90) * 2%);
     /* z-index -1 statt 0: damit liegt der Hof in derselben unteren Ebene wie
        Korn und Sterne -- und die Sterne koennen UEBER ihn gelegt werden.
        Nur so laesst sich ihre Sichtbarkeit an die oertliche Helligkeit
@@ -217,13 +219,13 @@
        genauso hell wie bisher -- er hoert nur eher auf. */
     background: radial-gradient(closest-side,
       rgba(var(--glow, 140,150,160), 1) 0%,
-      rgba(var(--glow, 140,150,160), 0.85) 8%,
-      rgba(var(--glow, 140,150,160), 0.60) 18%,
-      rgba(var(--glow, 140,150,160), 0.36) 30%,
-      rgba(var(--glow, 140,150,160), 0.19) 42%,
-      rgba(var(--glow, 140,150,160), 0.085) 56%,
-      rgba(var(--glow, 140,150,160), 0.028) 72%,
-      rgba(var(--glow, 140,150,160), 0.006) 86%,
+      rgba(var(--glow, 140,150,160), var(--hof-s1, 0.85)) 8%,
+      rgba(var(--glow, 140,150,160), var(--hof-s2, 0.60)) 18%,
+      rgba(var(--glow, 140,150,160), var(--hof-s3, 0.36)) 30%,
+      rgba(var(--glow, 140,150,160), var(--hof-s4, 0.19)) 42%,
+      rgba(var(--glow, 140,150,160), var(--hof-s5, 0.085)) 56%,
+      rgba(var(--glow, 140,150,160), var(--hof-s6, 0.028)) 72%,
+      rgba(var(--glow, 140,150,160), var(--hof-s7, 0.006)) 86%,
       transparent 100%);
     opacity: 0; transition: opacity 1.8s var(--ease);
   }
@@ -339,10 +341,10 @@
      Mass war im Hintergrund nicht zu sehen, das zweite zu aufdringlich. */
   /* 0,105 -- der Weg war 0,155 (Ausgangsfassung), dann 0,135, jetzt hierher.
      Das Korn soll auf dem Grund zu ahnen sein und nicht ins Bild treten. */
-  .grain-mid { background-image: var(--grain-mid-img); mix-blend-mode: overlay; opacity: 0.105; }
+  .grain-mid { background-image: var(--grain-mid-img); mix-blend-mode: overlay; opacity: var(--korn-mitte, 0.105); }
   .grain-dark {
     background-image: var(--grain-dark-img);
-    mix-blend-mode: screen; opacity: 0.07;
+    mix-blend-mode: screen; opacity: var(--korn-tiefe, 0.07);
     animation-delay: calc(var(--grain-rate) / -2);   /* versetzt, damit sich beide Lagen nicht decken */
   }
   /* Zwoelf Schritte je halber Sekunde: das Korn wechselt 24-mal pro Sekunde,
@@ -707,14 +709,14 @@
     transform: translate(-50%, -50%);
   }
   .band-text::before {
-    --r: clamp(220px, 30vw, 420px);
+    --r: clamp(220px, 30vw, calc(var(--textschein-ra, 420) * 1px));
     left: 42%; top: 40%; width: calc(2 * var(--r)); height: calc(2 * var(--r));
-    background: radial-gradient(closest-side, rgba(134,178,152,0.065), transparent 100%);
+    background: radial-gradient(closest-side, rgba(134,178,152,var(--textschein-a, 0.065)), transparent 100%);
   }
   .band-text::after {
-    --r: clamp(200px, 26vw, 380px);
+    --r: clamp(200px, 26vw, calc(var(--textschein-rb, 380) * 1px));
     left: 78%; top: 72%; width: calc(2 * var(--r)); height: calc(2 * var(--r));
-    background: radial-gradient(closest-side, rgba(112,152,142,0.045), transparent 100%);
+    background: radial-gradient(closest-side, rgba(112,152,142,var(--textschein-b, 0.045)), transparent 100%);
   }
   /* Weiterhin echte Kreise mit fester Reichweite (keine Ellipsen, die an
      Breite und Hoehe der Sektion haengen und waagerecht kaum abfallen), mit
@@ -2010,6 +2012,51 @@
 
 <script>
 (function () {
+  /* ---------- Einstellungen ----------
+     Die Werte, die das Aussehen von Lichthoefen, Sternen und Korn
+     bestimmen, an einer Stelle. Genau diese Namen und Zahlen zeigt das
+     Reglerfeld (Adresse mit ?regler aufrufen) -- was dort eingestellt wird,
+     laesst sich hier 1:1 eintragen. */
+  const EINST = {
+    // Lichthof: Staerke und Groesse
+    hofDeck: 0.8,        // Deckkraft des Hofs (Grundwert)
+    hofDeckAb: 0.26,     // so viel weniger Deckkraft bei sehr hellen Hoefen
+    hofUeber: 90,        // Ueberstand je Seite, % der Bildgroesse
+    // Lichthof: Farbe (aus dem Bild genommen, dann so bearbeitet)
+    hofSaett: 1.2,       // Nachsaettigung, Faktor
+    hofDeckel: 0.62,     // Obergrenze der Buntheit (gegen Neon), 0..1
+    hofAnheb: 1.2,       // Helligkeit: Anhebung, Faktor
+    hofMin: 118,         // Helligkeit: Untergrenze, 0..255
+    hofMax: 178,         // Helligkeit: Obergrenze, 0..255
+    // Lichthof: Verlauf -- Deckkraft bei 8, 18, 30, 42, 56, 72, 86 % des Radius
+    hofS1: 0.85, hofS2: 0.60, hofS3: 0.36, hofS4: 0.19, hofS5: 0.085, hofS6: 0.028, hofS7: 0.006,
+    // Lampenschein (zweite Lage ueber einer Lichtquelle im Bild)
+    lampeDeck: 0.34,     // Deckkraft
+    lampeHell: 168,      // Helligkeit, 0..255
+    // Textschein der Textsektionen
+    textA: 0.065, textB: 0.045,    // Deckkraft oben links / unten rechts
+    textRA: 420, textRB: 380,      // groesster Radius in px
+    // Sterne
+    sternA: 155, sternB: 90,       // Anzahl je Kachel (600 px / 437 px), PC
+    sternAH: 410, sternBH: 240,    // dasselbe auf dem Handy (bis 700 px Breite)
+    sternR0: 0.5,        // Radius des schwaechsten Sterns, px
+    sternRZ: 1.7,        // + so viel fuer den staerksten, px
+    sternPot: 3.2,       // Verteilung: je hoeher, desto mehr schwache Sterne
+    sternW0: 13,         // Helligkeit des schwaechsten Sterns, 0..255
+    sternWZ: 75,         // + so viel fuer den staerksten
+    sternReich: 1.7,     // Schein-Reichweite, mal Radius
+    sternKern: 0.55,     // voll heller Kern, Anteil der Reichweite
+    // Korn
+    kornMitte: 0.105,    // Deckkraft der Mittelton-Lage (overlay)
+    kornTiefe: 0.07      // Deckkraft der Tiefen-Lage (screen)
+  };
+  const STANDARD = Object.assign({}, EINST);
+  const REGLER = /[?&]regler\b/.test(location.search);
+  if (REGLER) {
+    try { Object.assign(EINST, JSON.parse(localStorage.getItem('lxr-regler') || '{}')); } catch (e) {}
+  }
+  const reglerHaken = {};
+
   /* ---------- Korn-Kacheln ----------
      Die Kacheln lagen bisher als verlustbehaftetes WebP in der Datei. Genau bei
      Rauschen erzeugt diese Kompression sichtbare 4x4-Bloecke -- daher der
@@ -2216,14 +2263,14 @@
            uebrig: 100 % im Dunkeln, rund 55 % bei mittlerem Grund, 9 % bei 68,
            3 % bei 85 und null ab 88. Das ist der Verlauf von voll ueber
            vereinzelt nach leer. */
-        const st = Math.pow(Math.random(), 3.2);
-        const r = (0.5 + st * 1.7) * (kante / 600) * SKAL;
-        const w = Math.round(13 + st * 75);
+        const st = Math.pow(Math.random(), EINST.sternPot);
+        const r = (EINST.sternR0 + st * EINST.sternRZ) * (kante / 600) * SKAL;
+        const w = Math.min(255, Math.round(EINST.sternW0 + st * EINST.sternWZ));
         /* Kuerzere Reichweite (3,2 -> 1,7 mal der Kernradius) und ein Kern,
            der bis zur Haelfte des Radius voll hell bleibt statt gleich ab
            dem Mittelpunkt zu verblassen -- ein harter, klar umrissener
            Punkt statt einer weichen Wolke. */
-        const REICHWEITE = 1.7;
+        const REICHWEITE = EINST.sternReich;
         for (let dy = -1; dy <= 1; dy++) {
           for (let dx = -1; dx <= 1; dx++) {
             const ax = px + dx * K, ay = py + dy * K;
@@ -2231,7 +2278,7 @@
             if (ax < -rand || ay < -rand || ax > K + rand || ay > K + rand) continue;
             const g = x.createRadialGradient(ax, ay, 0, ax, ay, r * REICHWEITE);
             g.addColorStop(0, 'rgb(' + w + ',' + w + ',' + w + ')');
-            g.addColorStop(0.55, 'rgb(' + w + ',' + w + ',' + w + ')');
+            g.addColorStop(EINST.sternKern, 'rgb(' + w + ',' + w + ',' + w + ')');
             g.addColorStop(1, 'rgb(0,0,0)');
             x.fillStyle = g;
             x.beginPath();
@@ -2273,8 +2320,11 @@
       const handy = window.matchMedia('(max-width: 700px)').matches;
       /* Noch etwas mehr: PC 124/72 -> 155/90, Handy 330/192 -> 410/240
          (Verhaeltnis Handy zu PC bleibt bei rund 2,65). */
-      sternenkachel(600, handy ? 410 : 155, setze('--sterne-a'));
-      sternenkachel(437, handy ? 240 : 90, setze('--sterne-b'));
+      reglerHaken.sterne = function () {
+        sternenkachel(600, Math.round(handy ? EINST.sternAH : EINST.sternA), setze('--sterne-a'));
+        sternenkachel(437, Math.round(handy ? EINST.sternBH : EINST.sternB), setze('--sterne-b'));
+      };
+      reglerHaken.sterne();
     } catch (e) { /* ohne Sterne ist der Himmel leer, aber nichts kaputt */ }
 
     // Das Korn: jeder Schritt eine eigene Aufgabe, dazwischen darf der
@@ -3274,12 +3324,12 @@
        erfinden statt sie aufzugreifen. */
     const mitte = (v[0] + v[1] + v[2]) / 3;
     v = v.map(function (x) {
-      const y = mitte + (x - mitte) * 1.2;
+      const y = mitte + (x - mitte) * EINST.hofSaett;
       return y < 0 ? 0 : y;
     });
 
     // Deckel gegen Neon -- unveraendert sinnvoll, greift jetzt aber selten.
-    const DECKEL = 0.62;
+    const DECKEL = EINST.hofDeckel;
     let oben = Math.max(v[0], v[1], v[2]), unten = Math.min(v[0], v[1], v[2]);
     if (oben > 0 && oben > unten && (oben - unten) / oben > DECKEL) {
       const rest = (oben - oben * (1 - DECKEL)) / (oben - unten);
@@ -3293,7 +3343,7 @@
     /* Insgesamt dunkler: Untergrenze 140 -> 118, Obergrenze 210 -> 178,
        Anhebung 1,45 -> 1,20. Der Hof folgt damit noch enger der Helligkeit,
        die im Bild selbst steht. */
-    const ziel = Math.max(118, Math.min(178, oben * 1.20));
+    const ziel = Math.max(EINST.hofMin, Math.min(EINST.hofMax, oben * EINST.hofAnheb));
     if (oben > 0.0001) {
       v = [v[0] * ziel / oben, v[1] * ziel / oben, v[2] * ziel / oben];
     }
@@ -3342,7 +3392,7 @@
     /* Auf ein ruhiges Mass herunterziehen. Die gemessenen Werte liegen bei
        ueber 230 -- als Schein waere das der hellste Fleck der Seite. */
     return v.map(function (x) {
-      return Math.round(Math.min(255, Math.max(0, x * 168 / hoch)));
+      return Math.round(Math.min(255, Math.max(0, x * EINST.lampeHell / hoch)));
     }).join(',');
   }
 
@@ -3369,7 +3419,7 @@
       const teile = farbe.split(',').map(Number);
       const hell = (teile[0] + teile[1] + teile[2]) / 3;
       const ab = Math.max(0, Math.min(1, (hell - 120) / 110));
-      aura.style.setProperty('--hof-deck', (0.8 - 0.26 * ab).toFixed(3));
+      aura.style.setProperty('--hof-deck', (EINST.hofDeck - EINST.hofDeckAb * ab).toFixed(3));
       /* Wohin der Hof gehaengt wird. Normalerweise in den Kasten selbst.
          Traegt ein Vorfahr "data-hof-sammler", dann dorthin: im Karussell
          bekommt jeder Platz ein transform, und ein Element mit transform
@@ -3380,7 +3430,7 @@
       const sammler = host.closest('[data-hof-sammler]');
       const ziel = sammler || host;
       ziel.insertBefore(aura, ziel.firstChild);
-      aura.dataset.grund = aura.style.getPropertyValue('--hof-deck') || '0.8';
+      aura.dataset.grund = aura.style.getPropertyValue('--hof-deck') || String(EINST.hofDeck);
       host._hoefe = [aura];
 
       const lampe = lampenFarbe(quelle);
@@ -3390,7 +3440,8 @@
         lampenLage.className = 'aura aura-lampe';
         lampenLage.setAttribute('aria-hidden', 'true');
         lampenLage.style.setProperty('--lampe', lampe);
-        lampenLage.dataset.grund = '0.34';
+        lampenLage.dataset.grund = String(EINST.lampeDeck);
+        lampenLage.style.setProperty('--lampe-deck', String(EINST.lampeDeck));
         ziel.insertBefore(lampenLage, ziel.firstChild);
         host._hoefe.push(lampenLage);
       }
@@ -3407,6 +3458,16 @@
     else src.addEventListener('load', function () { anlegen(src); }, { once: true });
   }
   document.querySelectorAll('.page .aura-host').forEach(buildAura);
+  // Fuer das Reglerfeld: alle schon gebauten Hoefe mit neuen Werten neu bauen.
+  reglerHaken.hoefe = function () {
+    document.querySelectorAll('.aura-host').forEach(function (host) {
+      if (!host.dataset.aura) return;
+      (host._hoefe || []).forEach(function (h) { h.remove(); });
+      host._hoefe = null;
+      delete host.dataset.aura;
+      buildAura(host);
+    });
+  };
 
   /* ---------- Projektschau: Karussell ----------
      Vier Titelbilder auf einer Kreisbahn, im Abstand von 90 Grad, von vorne
@@ -4806,6 +4867,196 @@
     el.dataset.hold = '220';   // Text folgt dem Bild
     io.observe(el);
   });
+
+  /* ---------- Reglerfeld ----------
+     Nur sichtbar, wenn die Adresse ?regler enthaelt -- fuer alle anderen
+     Besucher existiert es nicht. Jeder Regler zeigt den Wert in genau der
+     Einheit, in der er oben in EINST steht; "Geaenderte Werte kopieren"
+     legt eine Liste in die Zwischenablage, die sich 1:1 uebertragen laesst.
+     Die Einstellungen bleiben beim Neuladen erhalten (nur in diesem
+     Browser), bis "Alles zuruecksetzen" gedrueckt wird. */
+  if (REGLER) (function reglerfeld() {
+    const GRUPPEN = [
+      ['Lichthof – Stärke und Größe', [
+        ['hofDeck', 'Deckkraft (Grundwert)', 0, 1, 0.01],
+        ['hofDeckAb', 'Weniger Deckkraft bei sehr hellen Höfen', 0, 0.8, 0.01],
+        ['hofUeber', 'Größe: Überstand je Seite (% der Bildgröße)', 10, 300, 5]]],
+      ['Lichthof – Farbe', [
+        ['hofSaett', 'Nachsättigung (Faktor, 1 = Bildfarbe)', 0.5, 3, 0.05],
+        ['hofDeckel', 'Obergrenze der Buntheit (0–1)', 0.1, 1, 0.01],
+        ['hofAnheb', 'Helligkeit: Anhebung (Faktor)', 0.4, 2.5, 0.05],
+        ['hofMin', 'Helligkeit: Untergrenze (0–255)', 0, 255, 1],
+        ['hofMax', 'Helligkeit: Obergrenze (0–255)', 0, 255, 1]]],
+      ['Lichthof – Verlauf (Deckkraft an der Stelle)', [
+        ['hofS1', 'bei 8 % des Radius', 0, 1, 0.005],
+        ['hofS2', 'bei 18 %', 0, 1, 0.005],
+        ['hofS3', 'bei 30 %', 0, 1, 0.005],
+        ['hofS4', 'bei 42 %', 0, 1, 0.005],
+        ['hofS5', 'bei 56 %', 0, 1, 0.005],
+        ['hofS6', 'bei 72 %', 0, 1, 0.005],
+        ['hofS7', 'bei 86 %', 0, 1, 0.005]]],
+      ['Lampenschein', [
+        ['lampeDeck', 'Deckkraft', 0, 1, 0.01],
+        ['lampeHell', 'Helligkeit (0–255)', 0, 255, 1]]],
+      ['Textschein', [
+        ['textA', 'Deckkraft oben links', 0, 0.3, 0.005],
+        ['textB', 'Deckkraft unten rechts', 0, 0.3, 0.005],
+        ['textRA', 'Radius oben links, max. (px)', 100, 1000, 10],
+        ['textRB', 'Radius unten rechts, max. (px)', 100, 1000, 10]]],
+      ['Sterne', [
+        ['sternA', 'Anzahl Kachel A (PC)', 0, 1000, 5],
+        ['sternB', 'Anzahl Kachel B (PC)', 0, 800, 5],
+        ['sternAH', 'Anzahl Kachel A (Handy)', 0, 1500, 5],
+        ['sternBH', 'Anzahl Kachel B (Handy)', 0, 1200, 5],
+        ['sternR0', 'Radius schwächster Stern (px)', 0.1, 3, 0.05],
+        ['sternRZ', 'Radius: Zuwachs bis zum stärksten (px)', 0, 6, 0.05],
+        ['sternPot', 'Verteilung (höher = mehr schwache)', 0.5, 8, 0.1],
+        ['sternW0', 'Helligkeit schwächster Stern (0–255)', 0, 255, 1],
+        ['sternWZ', 'Helligkeit: Zuwachs (0–255)', 0, 255, 1],
+        ['sternReich', 'Schein-Reichweite (× Radius)', 1, 5, 0.05],
+        ['sternKern', 'Harter Kern (Anteil der Reichweite)', 0, 0.99, 0.01]]],
+      ['Korn (Rauschen)', [
+        ['kornMitte', 'Stärke Mitteltöne (Deckkraft)', 0, 0.5, 0.005],
+        ['kornTiefe', 'Stärke Tiefen (Deckkraft)', 0, 0.4, 0.005]]]
+    ];
+    // Welche Werte als CSS-Variable wirken -- die uebrigen brauchen ein Neuzeichnen.
+    const CSSVAR = {
+      hofUeber: '--hof-ueber', hofS1: '--hof-s1', hofS2: '--hof-s2', hofS3: '--hof-s3', hofS4: '--hof-s4',
+      hofS5: '--hof-s5', hofS6: '--hof-s6', hofS7: '--hof-s7', textA: '--textschein-a', textB: '--textschein-b',
+      textRA: '--textschein-ra', textRB: '--textschein-rb', kornMitte: '--korn-mitte', kornTiefe: '--korn-tiefe'
+    };
+    const root = document.documentElement;
+    function cssSetzen() {
+      Object.keys(CSSVAR).forEach(function (k) { root.style.setProperty(CSSVAR[k], String(EINST[k])); });
+    }
+    cssSetzen();
+    // Gespeicherte Werte gleich anwenden (Sterne sind schon mit ihnen gezeichnet).
+    if (reglerHaken.hoefe) reglerHaken.hoefe();
+
+    let warte = {};
+    function spaeter(name, fn) {
+      clearTimeout(warte[name]);
+      warte[name] = setTimeout(fn, 180);
+    }
+    function speichern() {
+      const geaendert = {};
+      Object.keys(STANDARD).forEach(function (k) { if (EINST[k] !== STANDARD[k]) geaendert[k] = EINST[k]; });
+      try { localStorage.setItem('lxr-regler', JSON.stringify(geaendert)); } catch (e) {}
+    }
+
+    const st = document.createElement('style');
+    st.textContent =
+      '#lxr-regler{position:fixed;top:12px;right:12px;z-index:99999;width:min(360px,calc(100vw - 24px));' +
+      'max-height:calc(100dvh - 24px);display:flex;flex-direction:column;background:rgba(10,13,15,.94);' +
+      'color:#e3e6e4;font:12px/1.35 system-ui,-apple-system,Segoe UI,sans-serif;border:1px solid rgba(255,255,255,.14);' +
+      'border-radius:10px;box-shadow:0 12px 40px rgba(0,0,0,.5);-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px)}' +
+      '#lxr-regler.zu{width:auto}#lxr-regler.zu .rg-inhalt,#lxr-regler.zu .rg-knoepfe{display:none}' +
+      '#lxr-regler .rg-kopf{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 12px;' +
+      'border-bottom:1px solid rgba(255,255,255,.1);font-weight:600;letter-spacing:.04em}' +
+      '#lxr-regler .rg-inhalt{overflow:auto;padding:4px 12px 8px}' +
+      '#lxr-regler details{border-bottom:1px solid rgba(255,255,255,.07);padding:6px 0}' +
+      '#lxr-regler summary{cursor:pointer;font-weight:600;color:#f1e3c8;padding:4px 0}' +
+      '#lxr-regler .rg-zeile{margin:8px 0 10px}' +
+      '#lxr-regler .rg-name{display:flex;justify-content:space-between;gap:8px;color:#c9cfcc}' +
+      '#lxr-regler .rg-name code{color:#8f9a96;font-size:11px}' +
+      '#lxr-regler .rg-wert{display:flex;align-items:center;gap:8px;margin-top:3px}' +
+      '#lxr-regler input[type=range]{flex:1;accent-color:#e8c48e}' +
+      '#lxr-regler input[type=number]{width:74px;background:#1a1f22;color:#fff;border:1px solid rgba(255,255,255,.18);' +
+      'border-radius:5px;padding:3px 5px;font:inherit}' +
+      '#lxr-regler .rg-std{font-size:11px;color:#7f8986}' +
+      '#lxr-regler .rg-zeile.geaendert .rg-name span{color:#f3c98b}' +
+      '#lxr-regler button{font:inherit;color:#f3e6cf;background:rgba(60,44,26,.7);border:1px solid rgba(255,214,160,.5);' +
+      'border-radius:6px;padding:6px 10px;cursor:pointer}' +
+      '#lxr-regler .rg-knoepfe{display:flex;gap:8px;flex-wrap:wrap;padding:10px 12px;border-top:1px solid rgba(255,255,255,.1)}' +
+      '#lxr-regler .rg-hinweis{font-size:11px;color:#8f9a96;padding:0 12px 10px}';
+    document.head.appendChild(st);
+
+    const feld = document.createElement('div');
+    feld.id = 'lxr-regler';
+    feld.innerHTML = '<div class="rg-kopf"><span>Regler</span><button type="button" class="rg-klapp">einklappen</button></div>' +
+      '<div class="rg-inhalt"></div>' +
+      '<div class="rg-knoepfe"><button type="button" class="rg-kopie">Geänderte Werte kopieren</button>' +
+      '<button type="button" class="rg-zurueck">Alles zurücksetzen</button></div>' +
+      '<div class="rg-hinweis rg-knoepfe" style="border:0;padding-top:0">Werte bleiben beim Neuladen erhalten (nur in diesem Browser). ' +
+      'Die Sternzahl für Handy wirkt erst auf dem Handy.</div>';
+    const inhalt = feld.querySelector('.rg-inhalt');
+    const zeilen = {};
+
+    function zeige(k) {
+      const z = zeilen[k];
+      z.bereich.value = EINST[k];
+      z.zahl.value = EINST[k];
+      z.el.classList.toggle('geaendert', EINST[k] !== STANDARD[k]);
+    }
+    function setze(k, v) {
+      if (!isFinite(v)) return;
+      EINST[k] = v;
+      zeige(k);
+      speichern();
+      if (CSSVAR[k]) cssSetzen();
+      else if (k.indexOf('stern') === 0) spaeter('sterne', function () { reglerHaken.sterne && reglerHaken.sterne(); });
+      else spaeter('hoefe', function () { reglerHaken.hoefe && reglerHaken.hoefe(); });
+    }
+
+    GRUPPEN.forEach(function (g, gi) {
+      const d = document.createElement('details');
+      if (gi < 2) d.open = true;
+      const s = document.createElement('summary');
+      s.textContent = g[0];
+      d.appendChild(s);
+      g[1].forEach(function (e) {
+        const k = e[0];
+        const z = document.createElement('div');
+        z.className = 'rg-zeile';
+        z.innerHTML = '<div class="rg-name"><span></span><code></code></div>' +
+          '<div class="rg-wert"><input type="range"><input type="number"></div>' +
+          '<div class="rg-std"></div>';
+        z.querySelector('.rg-name span').textContent = e[1];
+        z.querySelector('.rg-name code').textContent = k;
+        z.querySelector('.rg-std').textContent = 'bisher: ' + STANDARD[k];
+        const bereich = z.querySelector('input[type=range]'), zahl = z.querySelector('input[type=number]');
+        [bereich, zahl].forEach(function (i) { i.min = e[2]; i.max = e[3]; i.step = e[4]; });
+        bereich.addEventListener('input', function () { setze(k, parseFloat(bereich.value)); });
+        zahl.addEventListener('change', function () { setze(k, parseFloat(zahl.value)); });
+        zeilen[k] = { el: z, bereich: bereich, zahl: zahl, name: e[1], gruppe: g[0] };
+        d.appendChild(z);
+        zeige(k);
+      });
+      inhalt.appendChild(d);
+    });
+
+    feld.querySelector('.rg-klapp').addEventListener('click', function () {
+      feld.classList.toggle('zu');
+      this.textContent = feld.classList.contains('zu') ? 'aufklappen' : 'einklappen';
+    });
+    feld.querySelector('.rg-kopie').addEventListener('click', function () {
+      const zeilenText = [];
+      Object.keys(zeilen).forEach(function (k) {
+        if (EINST[k] !== STANDARD[k]) {
+          zeilenText.push(k + ': ' + STANDARD[k] + ' -> ' + EINST[k] + '   (' + zeilen[k].gruppe + ': ' + zeilen[k].name + ')');
+        }
+      });
+      const text = zeilenText.length ? 'Regler-Werte:\n' + zeilenText.join('\n') : 'Regler-Werte: nichts geändert';
+      const knopf = this;
+      function fertig(ok) {
+        knopf.textContent = ok ? 'Kopiert (' + zeilenText.length + ')' : 'Kopieren ging nicht – Text steht in der Konsole';
+        if (!ok) console.log(text);
+        setTimeout(function () { knopf.textContent = 'Geänderte Werte kopieren'; }, 2200);
+      }
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(text).then(function () { fertig(true); }, function () { fertig(false); });
+      } else { fertig(false); }
+    });
+    feld.querySelector('.rg-zurueck').addEventListener('click', function () {
+      Object.assign(EINST, STANDARD);
+      try { localStorage.removeItem('lxr-regler'); } catch (e) {}
+      Object.keys(zeilen).forEach(zeige);
+      cssSetzen();
+      if (reglerHaken.sterne) reglerHaken.sterne();
+      if (reglerHaken.hoefe) reglerHaken.hoefe();
+    });
+    document.body.appendChild(feld);
+  })();
 
 })();
 </script>
