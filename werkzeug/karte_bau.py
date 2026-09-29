@@ -82,6 +82,28 @@ Q = 100.0                                              # 1 Einheit = 10 m
 px_km = (pix2welt(h.shape[1], 0)[0] - pix2welt(0, 0)[0]) / h.shape[1]
 
 
+def overpass(q, art):
+    """OpenStreetMap abfragen; die Antwort wird zwischengespeichert, und ist
+    ein Server ueberlastet, wird der naechste gefragt."""
+    cf = os.path.join(CACHE, "%s_%s" % (art, os.path.basename(sys.argv[1])))
+    if not os.path.exists(cf) or os.path.getsize(cf) == 0:
+        antwort = None
+        for server in ("https://overpass-api.de/api/interpreter",
+                       "https://overpass.kumi.systems/api/interpreter",
+                       "https://maps.mail.ru/osm/tools/overpass/api/interpreter"):
+            try:
+                req = urllib.request.Request(server, data=urllib.parse.urlencode({"data": q}).encode(),
+                                             headers={"User-Agent": "lxr-films-karte/1.0"})
+                antwort = urllib.request.urlopen(req, timeout=300).read()
+                json.loads(antwort)            # nur gueltige Antworten merken
+                break
+            except Exception as e:
+                print(art, server, "->", e); antwort = None
+        if antwort is None: raise SystemExit("%s nicht abrufbar" % art)
+        open(cf, "wb").write(antwort)
+    return json.load(open(cf, encoding="utf-8"))
+
+
 # ---------- Seen (OpenStreetMap) ----------
 # Grosse Seen werden in die Hoehen "eingeebnet": flach auf ihrer Wasser-
 # hoehe, damit die Terrassen des Ufers nicht ueber sie wachsen. Ausserdem
@@ -95,23 +117,7 @@ if CFG.get("seen"):
     q = ('[out:json][timeout:240];(way["natural"="water"]["water"="lake"]["name"](%f,%f,%f,%f);'
          'relation["natural"="water"]["water"="lake"]["name"](%f,%f,%f,%f););out geom;'
          % (S_LAT, W_LON, N_LAT, E_LON, S_LAT, W_LON, N_LAT, E_LON))
-    cf = os.path.join(CACHE, "seen_%s" % os.path.basename(sys.argv[1]))
-    if not os.path.exists(cf) or os.path.getsize(cf) == 0:
-        antwort = None
-        for server in ("https://overpass-api.de/api/interpreter",
-                       "https://overpass.kumi.systems/api/interpreter",
-                       "https://maps.mail.ru/osm/tools/overpass/api/interpreter"):
-            try:
-                req = urllib.request.Request(server, data=urllib.parse.urlencode({"data": q}).encode(),
-                                             headers={"User-Agent": "lxr-films-karte/1.0"})
-                antwort = urllib.request.urlopen(req, timeout=300).read()
-                json.loads(antwort)            # nur gueltige Antworten merken
-                break
-            except Exception as e:
-                print("Seen:", server, "->", e); antwort = None
-        if antwort is None: raise SystemExit("Seen nicht abrufbar")
-        open(cf, "wb").write(antwort)
-    osm = json.load(open(cf, encoding="utf-8"))
+    osm = overpass(q, "seen")
     for el in osm["elements"]:
         if el["type"] == "way":
             ringe_ll = [[(p["lon"], p["lat"]) for p in el.get("geometry", [])]]
@@ -246,16 +252,69 @@ def osrm(pkte):
 
 def weg(coords):
     pts = [welt(c[0], c[1]) for c in coords]
-    ls = LineString(pts).simplify(0.06)
+    ls = LineString(pts).simplify(CFG.get("routeVereinfachung", 0.06))
     return [[round(x - ox, 3), round(y - oy, 3), round(schicht_bei(x, y) / 1000, 3)] for x, y in ls.coords]
 
 
 legs = []
-for a, b in zip(CFG["orte"][:-1], CFG["orte"][1:]):
-    pk = [a["lngLat"]] + b.get("ueber", []) + [b["lngLat"]]
-    co, km, modi = osrm(pk)
-    print("%s -> %s: %.0f km, %s" % (a["ort"], b["ort"], km, modi))
-    legs.append(weg(co))
+bahnhoefe = []
+if CFG.get("bahn"):
+    # Die Route folgt den Gleisen aus OpenStreetMap: aus allen Abschnitten
+    # wird ein Netz gebaut, und von Ort zu Ort der kuerzeste Weg darauf
+    # gesucht. Bahnhoefe und Halte, die direkt am Gleis liegen, werden mit
+    # gespeichert (die Karte setzt dort kleine Striche wie auf einem
+    # Streckenplan).
+    import heapq
+    B = CFG["bahn"]
+    osm = overpass('[out:json][timeout:180];(way%s(%f,%f,%f,%f);node["railway"~"station|halt"](%f,%f,%f,%f););out geom;'
+                   % (B["filter"], S_LAT, W_LON, N_LAT, E_LON, S_LAT, W_LON, N_LAT, E_LON), "bahn")
+    nb = {}
+    def kante(a, b):
+        wa, wb = welt(*a), welt(*b)
+        d = math.hypot(wa[0] - wb[0], wa[1] - wb[1])
+        nb.setdefault(a, []).append((b, d)); nb.setdefault(b, []).append((a, d))
+    gleise = [el for el in osm["elements"] if el["type"] == "way"]
+    for w in gleise:
+        g = [(round(p["lon"], 7), round(p["lat"], 7)) for p in w["geometry"]]
+        for a, b in zip(g[:-1], g[1:]): kante(a, b)
+    knoten = list(nb.keys())
+    def naechster(ll):
+        wx, wy = welt(*ll)
+        return min(knoten, key=lambda k: (welt(*k)[0] - wx) ** 2 + (welt(*k)[1] - wy) ** 2)
+    def kuerzester(a, b):
+        dist, vor, q = {a: 0.0}, {}, [(0.0, a)]
+        while q:
+            d, k = heapq.heappop(q)
+            if k == b: break
+            if d > dist.get(k, 1e18): continue
+            for m, l in nb[k]:
+                nd = d + l
+                if nd < dist.get(m, 1e18):
+                    dist[m] = nd; vor[m] = k; heapq.heappush(q, (nd, m))
+        pfad = [b]
+        while pfad[-1] != a: pfad.append(vor[pfad[-1]])
+        return pfad[::-1], dist[b]
+    for a, b in zip(CFG["orte"][:-1], CFG["orte"][1:]):
+        pfad, km = kuerzester(naechster(a["lngLat"]), naechster(b["lngLat"]))
+        print("%s -> %s: %.1f km auf den Gleisen" % (a["ort"], b["ort"], km))
+        legs.append(weg(pfad))
+    # Halte am Gleis (bis B["bahnhofM"] Meter entfernt), entlang der Route
+    gl = LineString([welt(*p) for leg in [[(p[0], p[1]) for p in kuerzester(naechster(CFG["orte"][0]["lngLat"]),
+                                                                              naechster(CFG["orte"][-1]["lngLat"]))[0]]] for p in leg])
+    for el in osm["elements"]:
+        if el["type"] != "node" or not el.get("tags", {}).get("name"): continue
+        wx, wy = welt(el["lon"], el["lat"])
+        from shapely.geometry import Point
+        if gl.distance(Point(wx, wy)) * 1000 <= B.get("bahnhofM", 80):
+            bahnhoefe.append([round(wx - ox, 3), round(wy - oy, 3), round(schicht_bei(wx, wy) / 1000, 3), el["tags"]["name"]])
+    bahnhoefe.sort(key=lambda b: gl.project(Point(b[0] + ox, b[1] + oy)))
+    print("Halte:", ", ".join(b[3] for b in bahnhoefe))
+else:
+    for a, b in zip(CFG["orte"][:-1], CFG["orte"][1:]):
+        pk = [a["lngLat"]] + b.get("ueber", []) + [b["lngLat"]]
+        co, km, modi = osrm(pk)
+        print("%s -> %s: %.0f km, %s" % (a["ort"], b["ort"], km, modi))
+        legs.append(weg(co))
 
 orte = []
 for o in CFG["orte"]:
@@ -275,7 +334,7 @@ kopf = {
     "q": Q, "ursprung": [ox, oy], "c": C, "stufen": LEVELS, "schichten": layers, "seen": see_kopf,
     "groesse": [round((pix2welt(h.shape[1], 0)[0] - pix2welt(0, 0)[0]), 2),
                 round((pix2welt(0, 0)[1] - pix2welt(0, h.shape[0])[1]), 2)],
-    "orte": orte, "wege": legs, "tex": [int(tex.shape[1]), int(tex.shape[0])], "texKm": TEX_KM
+    "orte": orte, "wege": legs, "bahnhoefe": bahnhoefe, "tex": [int(tex.shape[1]), int(tex.shape[0])], "texKm": TEX_KM
 }
 kj = json.dumps(kopf, separators=(",", ":"), ensure_ascii=False).encode("utf-8")
 kj += b" " * ((4 - len(kj) % 4) % 4)

@@ -1,0 +1,52 @@
+{
+ "titel": "Track of Time",
+ "ausschnitt": [
+  11.62,
+  12.02,
+  54.055,
+  54.2
+ ],
+ "zoom": 11,
+ "stufen": [
+  -16,
+  -10,
+  -6,
+  -3,
+  0,
+  8,
+  16,
+  26,
+  38,
+  52,
+  68,
+  85,
+  105,
+  125
+ ],
+ "glaettung": 1.4,
+ "vereinfachung": 0.9,
+ "seen": false,
+ "texKm": 3.0,
+ "texSchritt": 1,
+ "routeVereinfachung": 0.008,
+ "bahn": {
+  "filter": "[\"railway\"=\"narrow_gauge\"]",
+  "bahnhofM": 80
+ },
+ "orte": [
+  {
+   "ort": "Kühlungsborn",
+   "lngLat": [
+    11.7281,
+    54.1466
+   ]
+  },
+  {
+   "ort": "Bad Doberan",
+   "lngLat": [
+    11.905,
+    54.1
+   ]
+  }
+ ]
+}
