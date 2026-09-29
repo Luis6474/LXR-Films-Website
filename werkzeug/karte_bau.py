@@ -9,7 +9,7 @@ Jede Karte hat eine Einstellungsdatei in werkzeug/karten/:
 
 Aufruf:  python werkzeug/karte_bau.py werkzeug/karten/schottland.json daten/schottland-karte.bin.gz
 Braucht: numpy pillow scipy contourpy shapely mapbox_earcut"""
-import gzip, io, json, math, os, struct, sys, tempfile, urllib.parse, urllib.request
+import gzip, io, json, math, os, struct, sys, tempfile, time, urllib.parse, urllib.request
 import numpy as np
 from PIL import Image, ImageDraw
 from scipy import ndimage
@@ -89,8 +89,10 @@ def overpass(q, art):
     if not os.path.exists(cf) or os.path.getsize(cf) == 0:
         antwort = None
         for server in ("https://overpass-api.de/api/interpreter",
-                       "https://overpass.kumi.systems/api/interpreter",
-                       "https://maps.mail.ru/osm/tools/overpass/api/interpreter"):
+                       "https://overpass-api.de/api/interpreter",
+                       "https://overpass.private.coffee/api/interpreter",
+                       "https://overpass-api.de/api/interpreter",
+                       "https://overpass.kumi.systems/api/interpreter"):
             try:
                 req = urllib.request.Request(server, data=urllib.parse.urlencode({"data": q}).encode(),
                                              headers={"User-Agent": "lxr-films-karte/1.0"})
@@ -98,7 +100,7 @@ def overpass(q, art):
                 json.loads(antwort)            # nur gueltige Antworten merken
                 break
             except Exception as e:
-                print(art, server, "->", e); antwort = None
+                print(art, server, "->", e); antwort = None; time.sleep(5)
         if antwort is None: raise SystemExit("%s nicht abrufbar" % art)
         open(cf, "wb").write(antwort)
     return json.load(open(cf, encoding="utf-8"))
@@ -114,16 +116,27 @@ seemaske = np.zeros(h.shape, bool)
 if CFG.get("seen"):
     # Nur benannte Seen: in Ebenen wie der Po-Ebene gibt es sonst tausende
     # Teiche, und der Server bricht die Abfrage ab.
-    q = ('[out:json][timeout:240];(way["natural"="water"]["water"="lake"]["name"](%f,%f,%f,%f);'
-         'relation["natural"="water"]["water"="lake"]["name"](%f,%f,%f,%f););out geom;'
+    # Nur Seen mit Wikidata-Eintrag: das sind die bekannten; Teiche und
+    # Becken (in der Po-Ebene zu Tausenden) fallen weg, und die Abfrage ist
+    # klein genug fuer einen einzigen Durchgang.
+    q = ('[out:json][timeout:240];(way["natural"="water"]["water"="lake"]["wikidata"](%f,%f,%f,%f);'
+         'relation["natural"="water"]["water"="lake"]["wikidata"](%f,%f,%f,%f););out geom;'
          % (S_LAT, W_LON, N_LAT, E_LON, S_LAT, W_LON, N_LAT, E_LON))
-    osm = overpass(q, "seen")
+    osm = overpass(q, "seenwd")
     for el in osm["elements"]:
         if el["type"] == "way":
             ringe_ll = [[(p["lon"], p["lat"]) for p in el.get("geometry", [])]]
         else:
-            ringe_ll = [[(p["lon"], p["lat"]) for p in m.get("geometry", [])]
-                        for m in el.get("members", []) if m.get("role") == "outer" and m.get("geometry")]
+            # Grosse Seen sind aus mehreren Uferstuecken zusammengesetzt.
+            # Frueher wurde jedes Stueck als eigener See genommen -- aus
+            # halben Ufern entstanden falsche Flaechen (bei The South als
+            # Streifen und "Meer" auf dem Festland). Jetzt werden die Stuecke
+            # zu geschlossenen Ringen verbunden.
+            from shapely.ops import polygonize, linemerge
+            stuecke = [LineString([(p["lon"], p["lat"]) for p in m["geometry"]])
+                       for m in el.get("members", [])
+                       if m.get("role") == "outer" and m.get("geometry") and len(m["geometry"]) > 1]
+            ringe_ll = [list(poly.exterior.coords) for poly in polygonize(linemerge(stuecke))] if stuecke else []
         for rl in ringe_ll:
             if len(rl) < 4: continue
             pw = Polygon([welt(*p) for p in rl])
@@ -142,7 +155,73 @@ if CFG.get("seen"):
 
 for s in seen:
     h[s["maske"]] = s["pegel"]
+
+# ---------- Kueste aus OpenStreetMap (wo die Hoehen allein nicht reichen) ----------
+# An flachen Kuesten liegt Land unter dem Meeresspiegel (bei Venedig die
+# trockengelegten Flaechen von Polesine und Po-Delta, bis -3 m), und ueber
+# nassem Gelaende hat der Radarsatellit Messfehler als Streifen. Die Hoehen
+# koennen Land und Lagune dort nicht trennen. Fuer diesen Abschnitt wird
+# deshalb die Kuestenlinie aus OpenStreetMap genommen: dahinter Land, davor
+# Meer (die Lagune liegt in OSM ausserhalb der Kueste und bleibt Wasser).
+landmaske = meermaske = None
+if CFG.get("kueste"):
+    from shapely.geometry import box
+    from shapely.ops import polygonize, unary_union
+    kw, ke, ks, kn = CFG["kueste"]
+    ko = overpass('[out:json][timeout:240];way["natural"="coastline"](%f,%f,%f,%f);out geom;' % (ks, kw, kn, ke), "kueste")
+    # Die Kuestenlinie wird als Mauer ins Raster gezeichnet; Meer ist, was
+    # vom offenen Meer (tiefer als -10 m) aus erreichbar ist, ohne sie zu
+    # ueberqueren. Alles andere im Abschnitt ist Land -- auch Ebenen unter
+    # null. (Frueher: Flaechen aus abgeschnittenen Kuestenstuecken, dabei
+    # wurden Teile der tiefen Ebene faelschlich zu Meer.)
+    mauer = Image.new("L", (h.shape[1], h.shape[0]), 0)
+    zeichner = ImageDraw.Draw(mauer)
+    for el in ko["elements"]:
+        if el["type"] == "way" and len(el.get("geometry", [])) > 1:
+            zeichner.line([lonlat2pix(p["lon"], p["lat"]) for p in el["geometry"]], fill=1, width=2)
+    mauer = np.asarray(mauer).astype(bool)
+    x0p, y0p = lonlat2pix(kw, kn); x1p, y1p = lonlat2pix(ke, ks)
+    abschnitt = np.zeros(h.shape, bool)
+    abschnitt[max(0, int(y0p)):int(y1p) + 1, max(0, int(x0p)):int(x1p) + 1] = True
+    teile, anzahl = ndimage.label(abschnitt & ~mauer)
+    # Meer: zusammenhaengende Teile, die ueberwiegend tief sind. Einzelne
+    # tiefe Messfehler in der Ebene machen sie nicht zu Meer.
+    anteil_tief = ndimage.mean((h < -5).astype(float), labels=teile, index=np.arange(1, anzahl + 1))
+    groesse = ndimage.sum(np.ones(h.shape), labels=teile, index=np.arange(1, anzahl + 1))
+    offen = [i + 1 for i in range(anzahl) if anteil_tief[i] > 0.5 and groesse[i] > 200]
+    meermaske = np.isin(teile, offen)
+    # Lagunen (Venedig) sind in OSM eigene Wasserflaechen hinter der Kueste:
+    # ebenfalls Wasser.
+    lo = overpass('[out:json][timeout:240];(way["water"="lagoon"](%f,%f,%f,%f);relation["water"="lagoon"](%f,%f,%f,%f););out geom;'
+                  % (ks, kw, kn, ke, ks, kw, kn, ke), "lagune")
+    from shapely.ops import linemerge
+    lagbild = Image.new("L", (h.shape[1], h.shape[0]), 0)
+    for el in lo["elements"]:
+        if el["type"] == "way":
+            ringe_l = [[(p["lon"], p["lat"]) for p in el.get("geometry", [])]]
+        else:
+            st = [LineString([(p["lon"], p["lat"]) for p in m["geometry"]]) for m in el.get("members", [])
+                  if m.get("role") == "outer" and m.get("geometry") and len(m["geometry"]) > 1]
+            ringe_l = [list(x.exterior.coords) for x in polygonize(linemerge(st))] if st else []
+        for rl in ringe_l:
+            if len(rl) > 3: ImageDraw.Draw(lagbild).polygon([lonlat2pix(*q) for q in rl], fill=1)
+    lagune = np.asarray(lagbild).astype(bool)
+    print("Lagunen: %d Punkte" % lagune.sum())
+    meermaske |= lagune & abschnitt
+    landmaske = abschnitt & ~meermaske & ~mauer
+    print("Kueste: Meer %.0f %%, Land %.0f %% des Abschnitts"
+          % (100 * meermaske.sum() / max(1, abschnitt.sum()), 100 * landmaske.sum() / max(1, abschnitt.sum())))
+
+
+def kueste_setzen():
+    if meermaske is None: return
+    h[meermaske & (h > -0.6)] = -0.6
+    h[landmaske & (h < 1.0)] = 1.0
+
+
+kueste_setzen()
 h = ndimage.gaussian_filter(h, CFG.get("glaettung", 1.6))
+kueste_setzen()
 for s in seen:                                       # nach dem Weichzeichnen wieder flach
     h[s["maske"]] = s["pegel"]
 
@@ -181,6 +260,17 @@ def in_welt(r):
     return np.array([pix2welt(p[0], p[1]) for p in r])
 
 
+FEHLT = [0.0, 0.0]
+def pruefen(poly, rl):
+    """Deckt die Zerlegung die Flaeche? (Summe der Dreiecke gegen Flaeche)"""
+    allp = np.vstack(rl)
+    ends = np.cumsum([len(r) for r in rl]).astype(np.uint32)
+    idx = np.asarray(earcut.triangulate_float64(allp, ends)).reshape(-1, 3)
+    a, b, c = allp[idx[:, 0]], allp[idx[:, 1]], allp[idx[:, 2]]
+    flaeche = np.abs((b[:, 0] - a[:, 0]) * (c[:, 1] - a[:, 1]) - (c[:, 0] - a[:, 0]) * (b[:, 1] - a[:, 1])).sum() / 2
+    FEHLT[0] += abs(poly.area - flaeche); FEHLT[1] += poly.area
+
+
 layers = []
 gen = contourpy.contour_generator(z=h, fill_type=contourpy.FillType.OuterOffset, line_type=contourpy.LineType.Separate)
 TOL = CFG.get("vereinfachung", 0.9)       # in Pixeln
@@ -202,9 +292,30 @@ for lev in LEVELS:
                 continue
             ringlist = [chaikin(np.asarray(g.exterior.coords)[:-1])] + \
                        [chaikin(np.asarray(r.coords)[:-1]) for r in g.interiors if Polygon(r).area > 3]
-            ablegen([in_welt(r) for r in ringlist], v0)
+            # Das Abrunden kann an engen Stellen Kanten erzeugen, die sich
+            # kreuzen -- dann fehlen beim Zerlegen in Dreiecke ganze Stuecke
+            # (bei The South stand die Ebene um Treviso deshalb als "Meer" da).
+            # Solche Formen werden repariert und in gueltige Teile zerlegt.
+            rund = Polygon(ringlist[0], ringlist[1:])
+            if rund.is_valid:
+                teile = [(rund, ringlist)]
+            else:
+                rep = make_valid(rund)
+                teile = []
+                for x in ([rep] if rep.geom_type == "Polygon" else getattr(rep, "geoms", [])):
+                    if x.geom_type != "Polygon" or x.area < 1: continue
+                    teile.append((x, [np.asarray(x.exterior.coords)[:-1]] + [np.asarray(q.coords)[:-1] for q in x.interiors]))
+            for form, rl in teile:
+                neu = sum(len(r) for r in rl)
+                # Eine Schicht darf hoechstens 65 000 Punkte haben (16-Bit-Indizes);
+                # grosse Ausschnitte bekommen deshalb mehrere Teile je Hoehe.
+                if len(verts) - v0 + neu > 65000 and len(verts) > v0:
+                    layers.append({"lev": lev, "v": [v0, len(verts)], "t": [t0, len(tris)], "r": [r0, len(ringe)]})
+                    v0, t0, r0 = len(verts), len(tris), len(ringe)
+                ablegen([in_welt(r) for r in rl], v0)
+                pruefen(form, rl)
     layers.append({"lev": lev, "v": [v0, len(verts)], "t": [t0, len(tris)], "r": [r0, len(ringe)]})
-    print("Schicht %5d m: %6d Punkte %7d Dreiecke/3 %5d Ringe" % (lev, len(verts) - v0, len(tris) - t0, len(ringe) - r0))
+    print("Schicht %5d m: bis %6d Punkte" % (lev, len(verts)))
 
 
 def terrasse(v):
@@ -223,6 +334,7 @@ for s in seen:
     see_kopf.append({"name": s["name"], "lev": terrasse(s["pegel"]), "v": [v0, len(verts)],
                      "t": [t0, len(tris)], "r": [r0, len(ringe)]})
 
+print("Zerlegung: %.3f %% der Flaeche nicht gedeckt" % (100 * FEHLT[0] / max(1, FEHLT[1])))
 assert max(L["v"][1] - L["v"][0] for L in layers + see_kopf) < 65536
 vx = np.array(verts, dtype=np.int32)
 assert np.abs(vx).max() < 32767, np.abs(vx).max()

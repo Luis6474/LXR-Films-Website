@@ -25,7 +25,7 @@
  ],
  "glaettung": 1.4,
  "vereinfachung": 0.9,
- "seen": false,
+ "seen": true,
  "texKm": 3.0,
  "texSchritt": 1,
  "routeVereinfachung": 0.008,
@@ -48,5 +48,6 @@
     54.1
    ]
   }
- ]
+ ],
+ "seeMinKm2": 0.5
 }
