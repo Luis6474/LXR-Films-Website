@@ -764,6 +764,12 @@
      wegnehmen und beide falsch aussehen lassen. */
   .figure-media { position: relative; aspect-ratio: var(--fig-ar, 4 / 3); }
   .figure-media > img:not(.aura) { position: relative; z-index: 1; }
+  /* Zwei Bilder nebeneinander (Arbeitsweise): gleich breit, gleich hoch. */
+  .figure-paar { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+  /* Grosses Bild ueber einem Abschnitt, mittig. Nie hoeher als 70 % des
+     Fensters -- dominant, aber kein Vollbild. */
+  .bild-trenner { width: min(100%, calc(70vh * 16 / 9)); margin: 0 auto 72px; }
+  .bild-trenner figcaption { text-align: center; }
   .band-figure figcaption { margin-top: 14px; font-size: 0.78em; color: var(--text-dim); letter-spacing: 0.04em; line-height: 1.9; }
 
   /* Verweis mitten im Fliesstext: sieht aus wie ein Link, oeffnet aber die
@@ -1276,10 +1282,23 @@
     font-size: 0.72em; letter-spacing: 0.2em; text-transform: uppercase;
     color: rgba(184, 192, 187, 0.55);
   }
-  .karte-bild-a { width: min(78vw, 420px); left: 50%; top: 13%; margin-left: calc(-0.5 * min(78vw, 420px)); }
+  .karte-bild-a { width: min(70vw, 400px); left: 50%; top: 10%; margin-left: calc(-0.5 * min(70vw, 400px)); }
   .karte-bild-b { display: none; }
   .karte-bild img, .karte-bild video { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
   .karte-bild.hat-medium { background: #0b1012; }
+  .karte-bild .karte-nr {
+    position: absolute; right: 10px; bottom: 8px; z-index: 2;
+    font-size: 0.66em; letter-spacing: 0.18em; color: rgba(255, 255, 255, 0.86);
+    text-shadow: 0 1px 6px rgba(0, 0, 0, 0.8);
+  }
+  /* Ton an/aus bei Videos mit Ton: gross genug zum Antippen. */
+  .karte-ton {
+    position: absolute; left: 8px; bottom: 8px; z-index: 2; pointer-events: auto;
+    min-height: 34px; padding: 0 14px; border-radius: 999px; cursor: pointer;
+    font: inherit; font-size: 0.72em; letter-spacing: 0.12em;
+    color: #fff; background: rgba(0, 0, 0, 0.5); border: 1px solid rgba(255, 255, 255, 0.35);
+  }
+  .karte-ton:focus-visible { outline: 1px solid var(--accent); outline-offset: 2px; }
   /* Hochkant-Video: schmaler, sonst waere es hoeher als das Bild. */
   .karte-bild-a.ist-hoch { width: min(36vw, 180px); left: 6vw; margin-left: 0; }
 
@@ -1424,6 +1443,7 @@
     /* Ein Abschnitt bekommt bewusst mehr Bild. Die Textspalte verliert dabei
        nichts Sichtbares -- die Zeilenlaenge ist auf 46 Zeichen gedeckelt. */
     .band-grid.text-right.bild-gross { grid-template-columns: minmax(0, 6fr) minmax(0, 5fr); }
+    .band-grid.text-right.bild-paar { grid-template-columns: minmax(0, 7fr) minmax(0, 5fr); }
     .band-grid.text-right .band-text { grid-column: 2; }
     .band-grid.text-right .band-figure { grid-column: 1; grid-row: 1; }
     .band.alt::before {
@@ -1597,13 +1617,13 @@
         </div>
         <figure class="band-figure reveal-media">
           <div class="figure-media aura-host" style="--fig-ar: 4 / 3">
-            <img src="Images/web/img-4495-1600.webp"
-                 srcset="Images/web/img-4495-800.webp 800w, Images/web/img-4495-1600.webp 1600w, Images/web/img-4495-2400.webp 2400w"
+            <img src="Images/web/img-7216-1600.webp"
+                 srcset="Images/web/img-7216-800.webp 800w, Images/web/img-7216-1600.webp 1600w, Images/web/img-7216-2400.webp 2400w"
                  sizes="(min-width: 900px) 42vw, 100vw"
-                 alt="Dreh vom Boot aus: Kamera auf dem Gimbal, Nebel über dem Königssee"
+                 alt="Am Strand: Luis zeigt Stephen Corrall eine Aufnahme auf dem Kameramonitor"
                  loading="lazy" decoding="async">
           </div>
-          <figcaption>Dreharbeiten zu „<button type="button" class="in-link" data-viewer="v3">The Mountains</button>“ auf dem Königssee</figcaption>
+          <figcaption>Dreharbeiten am Sanna Beach auf Ardnamurchan mit Schauspieler <a class="in-link" href="https://app.spotlight.com/5813-0163-0340" target="_blank" rel="noopener">Stephen Corrall</a> für das Projekt „&#8288;<button type="button" class="in-link" data-viewer="v2">The Same Gray</button>“</figcaption>
         </figure>
       </div>
     </div>
@@ -1698,7 +1718,7 @@
 
   <section class="band alt">
     <div class="band-inner">
-      <div class="band-grid text-right bild-gross">
+      <div class="band-grid text-right bild-gross bild-paar">
         <div class="band-text holds reveal">
           <h2>Meine Arbeitsweise</h2>
           <p class="lead">Am Ende erinnern sich die meisten nicht daran, was genau gesagt wurde, sondern wie sich ein Video angefühlt hat.</p>
@@ -1708,14 +1728,24 @@
           <p class="standout">Zuerst die Musik, dann die erste Aufnahme.</p>
         </div>
         <figure class="band-figure reveal-media">
-          <div class="figure-media aura-host" style="--fig-ar: 3 / 4">
-            <img src="Images/web/img-1773-1600.webp"
-                 srcset="Images/web/img-1773-800.webp 800w, Images/web/img-1773-1600.webp 1600w, Images/web/img-1773-2400.webp 2400w"
-                 sizes="(min-width: 900px) 48vw, 100vw"
-                 alt="Nächtlicher Drehaufbau: Filmleuchte auf einem Stativ vor einem Cottage, warmes Licht im Fenster"
-                 loading="lazy" decoding="async">
+          <!-- Zwei Hochformate gleicher Breite und Hoehe nebeneinander -->
+          <div class="figure-paar">
+            <div class="figure-media aura-host" style="--fig-ar: 2 / 3">
+              <img src="Images/web/img-1773-schmal-800.webp"
+                   srcset="Images/web/img-1773-schmal-800.webp 800w, Images/web/img-1773-schmal-1600.webp 1600w"
+                   sizes="(min-width: 900px) 28vw, 50vw"
+                   alt="Nächtlicher Drehaufbau: Filmleuchte auf einem Stativ vor einem Cottage, warmes Licht im Fenster"
+                   loading="lazy" decoding="async">
+            </div>
+            <div class="figure-media aura-host" style="--fig-ar: 2 / 3">
+              <img src="Images/web/img-4295-800.webp"
+                   srcset="Images/web/img-4295-800.webp 800w, Images/web/img-4295-1600.webp 1600w"
+                   sizes="(min-width: 900px) 28vw, 50vw"
+                   alt="Dreh im Gewächshaus: Luis an der Kamera mit Softbox zwischen blühenden Balkonpflanzen"
+                   loading="lazy" decoding="async">
+            </div>
           </div>
-          <figcaption>Drehort für den Kurzfilm „The Same Gray“ in Auchindrain</figcaption>
+          <figcaption>Links: Drehort für den Kurzfilm „The Same Gray“ in Auchindrain · rechts: Dreh für „&#8288;<button type="button" class="in-link" data-viewer="v1">Gärtnerei Finder</button>“ in Hamburg-Sasel</figcaption>
         </figure>
       </div>
     </div>
@@ -1723,6 +1753,17 @@
 
   <section class="band">
     <div class="band-inner">
+      <!-- Grosses Bild ueber dem Text: trennt "Arbeitsweise" und "Equipment". -->
+      <figure class="band-figure bild-trenner reveal-media">
+        <div class="figure-media aura-host" style="--fig-ar: 16 / 9">
+          <img src="Images/web/img-7145-1600.webp"
+               srcset="Images/web/img-7145-800.webp 800w, Images/web/img-7145-1600.webp 1600w, Images/web/img-7145-2400.webp 2400w"
+               sizes="(min-width: 1120px) 1080px, 100vw"
+               alt="Dreh in einem alten Cottage: Luis filmt vom Stativ, Stephen Corrall sitzt am Tisch vor dem Fenster"
+               loading="lazy" decoding="async">
+        </div>
+        <figcaption>Dreharbeiten zu „<button type="button" class="in-link" data-viewer="v2">The Same Gray</button>“ in Auchindrain</figcaption>
+      </figure>
       <div class="band-grid">
         <div class="band-text reveal">
           <h2>Mein Equipment</h2>
@@ -1730,18 +1771,6 @@
           <p class="body">Ich filme mit der Lumix S5 II für einen sauberen, cineastischen Look und präzise Farben. Dazu setze ich lichtstarke Optiken ein, die vom weiten Überblick bis zur feinen Detailaufnahme alles abdecken. Ruhige Kamerafahrten und gezielt gesetztes Licht sorgen für Atmosphäre und ein hochwertiges Erscheinungsbild; der Ton wird genauso sorgfältig aufgenommen, damit Aussagen klar und nah klingen.</p>
           <p class="body">Wenn es die Geschichte verlangt, ergänze ich das durch Drohnenaufnahmen mit der DJI Mavic 3 Classic – für weite Establishing-Shots und fließende Übergänge von oben. Am Ende liefere ich flexibel nach Wunsch: in 24, 25 oder 30 fps und in HD, 4K oder 5K – oder genau in der Auflösung und Framerate, die benötigt wird.</p>
         </div>
-        <figure class="band-figure reveal-media">
-          <div class="figure-media aura-host" style="--fig-ar: 16 / 9">
-            <img src="Images/web/gaertnerei-finder/still-2025-07-01-232800-3-9-1-1600.webp"
-                 srcset="Images/web/gaertnerei-finder/still-2025-07-01-232800-3-9-1-800.webp 800w, Images/web/gaertnerei-finder/still-2025-07-01-232800-3-9-1-1600.webp 1600w, Images/web/gaertnerei-finder/still-2025-07-01-232800-3-9-1-2400.webp 2400w"
-                 sizes="(min-width: 900px) 42vw, 100vw"
-                 alt="Rosenpavillon aus Schmiedeeisen über einem Kopfsteinpflasterweg im Gegenlicht"
-                 loading="lazy" decoding="async">
-          </div>
-          <figcaption>Frame aus meinem Projekt „<button type="button" class="in-link" data-viewer="v1">Gärtnerei Finder</button>“</figcaption>
-        </figure>
-        <!-- Das Kamera-Setup-Foto fehlt mir noch; sobald die Datei da ist,
-             kommt sie als zweites Bild in diese Spalte. -->
       </div>
     </div>
   </section>
@@ -3909,20 +3938,39 @@
      aufgeht. Gezeichnet wird mit WebGL ohne Bibliothek; Route, Punkte und
      Seekarten-Linien liegen auf einer 2D-Ebene darueber.
 
-     ENTWURF: Orte, Reihenfolge und (bei Schottland) die Tage sind
-     vorlaeufig, bis der echte Ablauf da ist. */
+     Orte und Reihenfolge folgen den Aufnahmeorten und -zeiten der Fotos
+     (GPS und Zeitstempel in den Dateien). Orte ohne Foto (Portree, bei
+     Lochcarron, Hallstatt) stammen aus der ersten Ortsliste; ihre Tage
+     bzw. ihre Lage in der Reihenfolge sind geschaetzt. */
+  // Ein Bild der Karte: 800 und 1600 px breit, als WebP.
+  // "tag": Aufnahmetag (wie bei "tage") -- bleibt eine Station ueber mehrere
+  // Tage, zeigt das Datum den Tag des gerade gezeigten Bildes.
+  function kbild(basis, verhaeltnis, tag) {
+    return { bild: basis + '-800.webp', srcset: basis + '-800.webp 800w, ' + basis + '-1600.webp 1600w',
+             verhaeltnis: verhaeltnis || '4 / 3', hoch: verhaeltnis === '3 / 4', tag: tag };
+  }
+  const KSG = 'Images/web/karte-same-gray/', KMO = 'Images/web/karte-mountains/';
   const KARTEN = {
     schottland: {
       datei: 'daten/schottland-karte.bin.gz',
-      // Tage je Ort (0 = 17. Juli, 10 = 27. Juli)
-      tage: { je: [[0, 1], [2, 3], [4, 4], [5, 5], [6, 7], [8, 9], [10, 10]], anzahl: 11, erster: 17, monat: ' Juli 2026' },
+      // Tage je Ort (0 = 17. Juli, 10 = 27. Juli), aus den Aufnahmezeiten.
+      // Portree (20.-22.) und bei Lochcarron (26.) haben keine Fotos: geschaetzt.
+      tage: { je: [[0, 1], [1, 2], [2, 2], [3, 5], [6, 6], [7, 7], [8, 8], [9, 9], [10, 10]], anzahl: 11, erster: 17, monat: ' Juli 2026' },
       zeitraum: '17.–27. Juli 2026',
-      namen: ['Auchindrain', 'Ardnamurchan', 'Portree', 'Neist Point', 'Staffin', 'bei Lochcarron', 'Kylerhea'],
-      /* Bilder je Station (Index wie bei namen). Zugeordnet ueber die
-         Koordinaten im Dateinamen; ohne Eintrag bleibt "Bild folgt". */
+      namen: ['Auchindrain', 'Ardnamurchan', 'Sanna Beach', 'Portree', 'The Storr', 'Neist Point', 'Staffin', 'bei Lochcarron', 'Kylerhea'],
+      /* Bilder je Station (Index wie bei namen), in der Reihenfolge der
+         Aufnahme. Ohne Eintrag bleibt "Bild folgt". */
       medien: {
-        3: [{ video: 'video/web/karte-same-gray/neist-point-720.mp4', poster: 'video/web/karte-same-gray/neist-point-poster.jpg', hoch: true }],
-        6: [{ bild: 'Images/web/karte-same-gray/mam-udal-800.webp', srcset: 'Images/web/karte-same-gray/mam-udal-800.webp 800w, Images/web/karte-same-gray/mam-udal-1600.webp 1600w', verhaeltnis: '4 / 3' }]
+        0: [kbild(KSG + 'img-1773', '3 / 4', 0), kbild(KSG + 'img-7140', 0, 1), kbild(KSG + 'img-7145', 0, 1),
+            kbild(KSG + 'img-7146', 0, 1), kbild(KSG + 'img-7151', 0, 1)],
+        1: [kbild(KSG + 'img-7182', 0, 1), kbild(KSG + 'img-7206', 0, 2)],
+        2: [kbild(KSG + 'img-7216'), kbild(KSG + 'img-7218'), kbild(KSG + 'img-7219'), kbild(KSG + 'img-7227')],
+        4: [{ video: 'video/web/karte-same-gray/brides-veil.mp4', poster: 'video/web/karte-same-gray/brides-veil-poster.jpg', verhaeltnis: '16 / 9' },
+            kbild(KSG + 'img-7291')],
+        5: [kbild(KSG + 'img-7319'),
+            { video: 'video/web/karte-same-gray/neist-point-720.mp4', poster: 'video/web/karte-same-gray/neist-point-poster.jpg', hoch: true, ton: true }],
+        6: [kbild(KSG + 'img-7345')],
+        8: [kbild(KSG + 'mam-udal')]
       },
       ueberhoehung: 3.2,
       grund: [0.016, 0.03, 0.05],
@@ -3941,7 +3989,22 @@
        Linien in kuehlem Silber. Die Route bleibt warm -- Sonne auf Schnee. */
     mountains: {
       datei: 'daten/mountains-karte.bin.gz',
-      namen: ['Königssee', 'Hallstatt', 'Bozen'],
+      zeitraum: '5.–29. August 2025',
+      // Reihenfolge nach den Aufnahmezeiten (5.-12. August, Sylt am 29.).
+      // Hallstatt hat kein Foto: hier nach der Geografie eingeordnet.
+      namen: ['Königssee', 'Reit im Winkl', 'Ramsau', 'Hallstatt', 'St. Johann in Ranui', 'Pragser Wildsee',
+              'Alta Badia', 'Seiser Alm', 'Karersee', 'Sylt'],
+      medien: {
+        0: [kbild(KMO + 'img-4485'), kbild(KMO + 'img-4495'), kbild(KMO + 'img-4496')],
+        1: [kbild(KMO + 'img-4521')],
+        2: [kbild(KMO + 'img-4546')],
+        4: [kbild(KMO + 'img-4561')],
+        5: [kbild(KMO + 'img-4576')],
+        6: [kbild(KMO + 'img-4602')],
+        7: [kbild(KMO + 'img-4616')],
+        8: [kbild(KMO + 'img-4631', '16 / 9')],
+        9: [kbild(KMO + 'img-4737')]
+      },
       ueberhoehung: 1.35,
       grund: [0.018, 0.035, 0.038],
       land: [[0.05, 0.085, 0.075], [0.08, 0.125, 0.115], [0.15, 0.2, 0.2], [0.34, 0.4, 0.42], [0.86, 0.9, 0.92]],
@@ -3950,7 +4013,7 @@
       tinte: '214, 230, 232', tinteGl: [0.82, 0.92, 0.94],
       route: { hell: '255, 216, 156', schein: '255, 168, 80', leise: '240, 204, 150', sand: '250, 216, 166',
                ort: '255, 196, 120', ring: '255, 226, 186', punkt: '255, 238, 210' },
-      gradnetz: [10.5, 14.5, 46, 48],
+      gradnetz: [8, 14.5, 46, 55],
       kompass: [12.45, 47.87],               // mitten im Chiemsee
       wellen: [0.22, 0.9, 0.8, 2.5]
     },
@@ -4044,7 +4107,7 @@
       tagJetzt = tag;
       lageJetzt = 1 - lageJetzt;
       lagen[lageJetzt].textContent = TAGE ? (TAGE.erster + tag) + '.' + TAGE.monat
-                                          : (tag < 0 ? CFG.namen.join(' · ') : CFG.namen[tag]);
+                                          : (tag < 0 ? (CFG.zeitraum || CFG.namen.join(' · ')) : CFG.namen[tag]);
       lagen[lageJetzt].classList.add('ist-an');
       lagen[1 - lageJetzt].classList.remove('ist-an');
       striche.forEach(function (s, k) { s.classList.toggle('ist-an', k === tag); });
@@ -4150,15 +4213,20 @@
     }
 
     function einpassen(punkte, pitch, bearing, extra, W, H) {
-      let x0 = 1e9, x1 = -1e9, y0 = 1e9, y1 = -1e9;
+      // Ausdehnung in Bildrichtung: "rechts" und "oben" haengen vom Kurs ab.
+      const b = bearing * Math.PI / 180;
+      const vx = Math.sin(b), vy = Math.cos(b), rx = Math.cos(b), ry = -Math.sin(b);
+      let u0 = 1e9, u1 = -1e9, w0 = 1e9, w1 = -1e9;
       punkte.forEach(function (p) {
-        x0 = Math.min(x0, p[0]); x1 = Math.max(x1, p[0]); y0 = Math.min(y0, p[1]); y1 = Math.max(y1, p[1]);
+        const u = p[0] * rx + p[1] * ry, w = p[0] * vx + p[1] * vy;
+        u0 = Math.min(u0, u); u1 = Math.max(u1, u); w0 = Math.min(w0, w); w1 = Math.max(w1, w);
       });
       const t = Math.tan(FOV / 2), as = W / H;
-      const ex = (x1 - x0) / 2, ey = (y1 - y0) / 2;
-      // Unten Platz fuer das Datum: die Mitte etwas nach Sueden.
-      const dist = Math.max(ey / t, ex / (t * as)) * extra;
-      return { x: (x0 + x1) / 2, y: (y0 + y1) / 2 - ey * 0.14, z: 0, dist: dist, pitch: pitch, bearing: bearing };
+      const eu = (u1 - u0) / 2, ew = (w1 - w0) / 2;
+      // Unten Platz fuer das Datum: die Mitte etwas nach "unten" im Bild.
+      const dist = Math.max(ew / t, eu / (t * as)) * extra;
+      const uc = (u0 + u1) / 2, wc = (w0 + w1) / 2 - ew * 0.14;
+      return { x: uc * rx + wc * vx, y: uc * ry + wc * vy, z: 0, dist: dist, pitch: pitch, bearing: bearing };
     }
 
     function vorbereiten(W, H) {
@@ -4192,8 +4260,14 @@
       // Mehr Rand bei breiten, flachen Strecken: in der Schraegsicht wirkt
       // der vordere (untere) Teil groesser und liefe sonst aus dem Bild.
       const breit = Math.min(1, Math.max(0, (W / H) - 1.2));
-      uebersicht = einpassen(alle, 22, 0, 1.12 + 0.25 * breit, W, H);
-      gross = einpassen(alle, 30, -8, 1.3 + 0.25 * breit, W, H);
+      /* Laeuft die Reise fast nur nach Norden (The Mountains: Alpen bis
+         Sylt), bliebe von der Uebersicht ein schmaler Streifen mit viel
+         Schwarz daneben. Dann liegt die Karte quer: Norden rechts, die
+         Reise laeuft von links nach rechts durchs Bild. */
+      const quer = einpassen(alle, 22, -90, 1, W, H).dist < 0.6 * einpassen(alle, 22, 0, 1, W, H).dist;
+      const kursU = quer ? -90 : 0;
+      uebersicht = einpassen(alle, 22, kursU, 1.12 + 0.25 * breit, W, H);
+      gross = einpassen(alle, 30, kursU - 8, 1.3 + 0.25 * breit, W, H);
       // Die Karte loest sich um die Reise herum im Dunkel auf, nicht am
       // Rand des Datenausschnitts.
       let x0 = 1e9, x1 = -1e9, y0 = 1e9, y1 = -1e9;
@@ -4225,7 +4299,11 @@
         const tg = JE[i];
         phasen.push({ art: 'fahrt', von: i - 1, nach: i, tagA: i ? JE[i - 1][1] : (TAGE ? 0 : -1), tagB: tg[0],
                       laenge: i ? 0.5 + 0.32 * fluege[i - 1].S : 1.2 });
-        phasen.push({ art: 'halt', ort: i, tagA: tg[0], tagB: tg[1], laenge: 0.75 + 0.35 * (tg[1] - tg[0]) });
+        // Jedes weitere Bild der Station verlaengert den Halt: die Bilder
+        // blenden beim Weiterscrollen ineinander.
+        const nb = CFG.medien && CFG.medien[i] ? CFG.medien[i].length : 0;
+        phasen.push({ art: 'halt', ort: i, tagA: tg[0], tagB: tg[1],
+                      laenge: 0.75 + 0.35 * (tg[1] - tg[0]) + 0.6 * Math.max(0, nb - 1) });
       });
       phasen.push({ art: 'weit', tagA: JE[orte.length - 1][1], tagB: TAGE ? ANZAHL - 1 : -1, laenge: 1.5 });
       phasen.push({ art: 'ende', laenge: 0.7 });
@@ -4242,7 +4320,7 @@
       while (i < phasen.length - 1 && u >= phasen[i].ab + phasen[i].laenge) i++;
       const ph = phasen[i];
       const f = Math.max(0, Math.min(1, (u - ph.ab) / ph.laenge));
-      const k = { namen: 0, dampf: 0, tag: TAGE ? 0 : -1, sicht: 0, ort: -1, weg: -1, wegL: 0, sand: 0, weh: 0, alleHell: 0 };
+      const k = { bildQ: 0, namen: 0, dampf: 0, tag: TAGE ? 0 : -1, sicht: 0, ort: -1, weg: -1, wegL: 0, sand: 0, weh: 0, alleHell: 0 };
       function setze(c) { k.x = c.x; k.y = c.y; k.z = c.z; k.dist = c.dist; k.pitch = c.pitch; k.bearing = c.bearing; }
       if (ph.art === 'start') {
         setze(uebersicht); k.bearing += 3 * f; k.namen = 1;
@@ -4253,6 +4331,13 @@
         k.tag = ph.tagA + Math.min(n - 1, Math.floor(f * n));
         k.sicht = stufe(0.1, 0.26, f) * (1 - stufe(0.8, 0.95, f));
         k.ort = ph.ort; k.weg = ph.ort - 1; k.wegL = 1e9; k.dampf = 0.4;
+        // Stand in der Bildfolge der Station (0 .. n-1)
+        const liste = CFG.medien && CFG.medien[ph.ort];
+        if (liste && liste.length > 1) {
+          k.bildQ = Math.max(0, Math.min(1, (f - 0.24) / 0.52)) * (liste.length - 1);
+          const tb = liste[Math.min(liste.length - 1, Math.round(k.bildQ))].tag;
+          if (TAGE && tb !== undefined) k.tag = tb;
+        }
       } else if (ph.art === 'fahrt' && ph.von < 0) {          // aus der Uebersicht herein
         const e = glatt(f), o = orte[0];
         setze({ x: mix(uebersicht.x, o[0], e), y: mix(uebersicht.y, o[1], e), z: mix(0, o[2], e),
@@ -4851,8 +4936,11 @@
         if (!s) return;
         const txt = CFG.namen[i].toUpperCase();
         const b = ctx2.measureText(txt).width, h = 14;
-        const lagen = [[s[0] + 10, s[1]], [s[0] - 10 - b, s[1]], [s[0] - b / 2, s[1] - 14], [s[0] - b / 2, s[1] + 14]];
-        let wahl = lagen[0];
+        const lagen = [[s[0] + 10, s[1]], [s[0] - 10 - b, s[1]], [s[0] - b / 2, s[1] - 14], [s[0] - b / 2, s[1] + 14],
+                       [s[0] + 8, s[1] - 13], [s[0] + 8, s[1] + 13], [s[0] - 8 - b, s[1] - 13], [s[0] - 8 - b, s[1] + 13]];
+        // Liegen Orte so dicht, dass kein Platz frei ist, faellt der Name in
+        // der Uebersicht weg (am Halt steht der eigene Name immer).
+        let wahl = i === k.ort && k.sicht > 0.02 ? lagen[0] : null;
         for (let j = 0; j < lagen.length; j++) {
           const x = lagen[j][0], y = lagen[j][1];
           const frei = x > 6 && x + b < W - 6 && belegt.every(function (q) {
@@ -4860,6 +4948,7 @@
           });
           if (frei) { wahl = lagen[j]; break; }
         }
+        if (!wahl) return;
         belegt.push([wahl[0], wahl[1], b]);
         ctx2.lineWidth = 3; ctx2.strokeStyle = 'rgba(0, 0, 0,' + (0.55 * a).toFixed(3) + ')';
         ctx2.strokeText(txt, wahl[0], wahl[1]);
@@ -4869,52 +4958,122 @@
       if ('letterSpacing' in ctx2) ctx2.letterSpacing = '0px';
     }
 
-    /* Die Bilder der Station einsetzen, an der die Kamera gerade steht.
-       Hat eine Station erst ein Medium, bleibt der zweite Rahmen weg; hat
-       sie keins, steht dort weiter "Bild folgt". Videos laufen nur, solange
-       sie zu sehen sind. */
-    let medienOrt = -2;
-    const leer = bilder.map(function (b) { return b.innerHTML; });
+    /* Die Bilder der Station, an der die Kamera steht: EIN Rahmen, in dem
+       beim Weiterscrollen ein Bild ins naechste blendet (klein "2 / 5"
+       in der Ecke). Ohne Eintrag bleiben die Platzhalter "Bild folgt".
+       Ein Video beginnt von vorn, sobald es zu sehen ist, laeuft in voller
+       Laenge und dann in Schleife, und haelt an, sobald es verschwindet.
+       Videos mit "ton" laufen mit Ton, der mit dem Bild ein- und ausblendet
+       -- erlaubt der Browser Ton ohne Klick nicht, laufen sie stumm, und
+       der Knopf "Ton an" schaltet ihn zu. */
+    const halter = wurzel.querySelector('.karte-bilder');
+    let medienOrt = -2, folge = [], tonGewollt = true;
+    function tonKnopfSetzen(f) {
+      if (!f.knopf) return;
+      const an = !f.video.muted;
+      f.knopf.textContent = an ? 'Ton aus' : 'Ton an';
+      f.knopf.setAttribute('aria-pressed', an ? 'true' : 'false');
+    }
     function setzeMedien(ort) {
       if (ort === medienOrt) return;
       medienOrt = ort;
+      folge.forEach(function (f) { if (f.video) f.video.pause(); f.el.remove(); });
+      folge = [];
       const liste = (CFG.medien && CFG.medien[ort]) || null;
-      bilder.forEach(function (b, j) {
-        const m = liste ? liste[j] : null;
-        b.classList.remove('hat-medium', 'ist-hoch', 'ist-leer');
-        b.style.aspectRatio = '';
-        if (!m) {
-          b.innerHTML = leer[j];
-          if (liste) b.classList.add('ist-leer');
-          return;
-        }
-        b.innerHTML = '';
-        b.classList.add('hat-medium');
-        if (m.hoch) { b.classList.add('ist-hoch'); b.style.aspectRatio = '9 / 16'; }
-        else if (m.verhaeltnis) b.style.aspectRatio = m.verhaeltnis;
-        let el;
+      bilder.forEach(function (b) { b.style.display = liste ? 'none' : ''; });
+      halter.setAttribute('aria-hidden', liste ? 'false' : 'true');
+      if (!liste) return;
+      liste.forEach(function (m, j) {
+        const b = document.createElement('div');
+        b.className = 'karte-bild karte-bild-a hat-medium' + (m.hoch ? ' ist-hoch' : '');
+        b.style.aspectRatio = m.hoch && m.video ? '9 / 16' : (m.verhaeltnis || '4 / 3');
+        b.style.opacity = '0';
+        const f = { el: b, video: null, ton: !!m.ton, lief: false };
         if (m.video) {
-          el = document.createElement('video');
-          el.muted = true; el.loop = true; el.playsInline = true;
-          el.setAttribute('muted', ''); el.setAttribute('playsinline', '');
-          el.preload = 'metadata';
-          if (m.poster) el.poster = m.poster;
-          el.src = m.video;
+          const v = document.createElement('video');
+          v.muted = true; v.loop = true; v.playsInline = true;
+          v.setAttribute('playsinline', '');
+          v.preload = 'metadata';
+          if (m.poster) v.poster = m.poster;
+          v.src = m.video;
+          b.appendChild(v);
+          f.video = v;
+          if (m.ton) {
+            const k = document.createElement('button');
+            k.type = 'button'; k.className = 'karte-ton';
+            k.addEventListener('click', function () {
+              tonGewollt = v.muted;
+              v.muted = !v.muted;
+              if (!v.muted) v.volume = 1;
+              if (v.paused) { const p = v.play(); if (p && p.catch) p.catch(function () {}); }
+              tonKnopfSetzen(f);
+            });
+            b.appendChild(k);
+            f.knopf = k;
+            tonKnopfSetzen(f);
+          }
         } else {
-          el = document.createElement('img');
+          const el = document.createElement('img');
           el.decoding = 'async'; el.alt = '';
-          if (m.srcset) { el.srcset = m.srcset; el.sizes = '(min-width: 900px) 30vw, 78vw'; }
+          if (m.srcset) { el.srcset = m.srcset; el.sizes = m.hoch ? '(min-width: 900px) 16vw, 36vw' : '(min-width: 900px) 30vw, 78vw'; }
           el.src = m.bild;
+          b.appendChild(el);
         }
-        b.appendChild(el);
+        if (liste.length > 1) {
+          const nr = document.createElement('span');
+          nr.className = 'karte-nr'; nr.textContent = (j + 1) + ' / ' + liste.length;
+          b.appendChild(nr);
+        }
+        halter.appendChild(b);
+        folge.push(f);
       });
     }
-    function spieleMedien(an) {
-      bilder.forEach(function (b) {
-        const v = b.querySelector('video');
-        if (!v) return;
-        if (an && !reducedMotion && v.paused) { const p = v.play(); if (p && p.catch) p.catch(function () {}); }
-        else if (!an && !v.paused) v.pause();
+    function spiele(f, an, staerke) {
+      const v = f.video;
+      if (!an) {
+        if (!v.paused) v.pause();
+        f.lief = false;
+        return;
+      }
+      if (f.ton && !v.muted) { try { v.volume = Math.max(0, Math.min(1, staerke)); } catch (e) {} }
+      if (f.lief) return;
+      f.lief = true;
+      try { v.currentTime = 0; } catch (e) {}
+      if (reducedMotion) return;
+      v.muted = !(f.ton && tonGewollt);
+      if (!v.muted) { try { v.volume = Math.max(0, Math.min(1, staerke)); } catch (e) {} }
+      tonKnopfSetzen(f);
+      const p = v.play();
+      if (p && p.catch) p.catch(function () {
+        // Ton ohne vorherigen Klick verweigert: stumm abspielen.
+        if (!v.muted) { v.muted = true; tonKnopfSetzen(f); const q = v.play(); if (q && q.catch) q.catch(function () {}); }
+      });
+    }
+    function medienAnhalten() {
+      folge.forEach(function (f) { if (f.video) spiele(f, false, 0); });
+    }
+    function medienZeigen(k) {
+      if (k.sicht > 0.01 && k.ort >= 0) setzeMedien(k.ort);
+      if (!folge.length) {
+        bilder.forEach(function (b, j) {
+          const s = Math.max(0, Math.min(1, k.sicht * 1.15 - j * 0.15));
+          b.style.opacity = s.toFixed(3);
+          b.style.transform = 'translateY(' + ((1 - s) * 14).toFixed(1) + 'px) scale(' + (0.985 + 0.015 * s).toFixed(4) + ')';
+        });
+        return;
+      }
+      // Stand in der Folge: 0 .. n-1. Jedes Bild steht eine Weile, dann
+      // eine weiche Blende ins naechste.
+      const n = folge.length;
+      const q = Math.min(n - 1, k.bildQ);
+      const i = Math.min(n - 1, Math.floor(q)), r = stufe(0.3, 0.7, q - i);
+      folge.forEach(function (f, j) {
+        const w = j === i ? 1 - r : (j === i + 1 ? r : 0);
+        const s = k.sicht * w;
+        f.el.style.opacity = s.toFixed(3);
+        f.el.style.visibility = s < 0.004 ? 'hidden' : '';
+        f.el.style.transform = 'translateY(' + ((1 - k.sicht) * 14).toFixed(1) + 'px) scale(' + (0.985 + 0.015 * k.sicht).toFixed(4) + ')';
+        if (f.video) spiele(f, s > 0.05, s);
       });
     }
 
@@ -4924,13 +5083,7 @@
       if (zeitS === undefined) zeitS = reducedMotion ? 0 : (performance.now() / 1000) % 100000;
       const k = zustand(u);
       zeigeTag(k.tag);
-      if (k.sicht > 0.01 && k.ort >= 0) setzeMedien(k.ort);
-      spieleMedien(k.sicht > 0.05);
-      bilder.forEach(function (b, j) {
-        const s = Math.max(0, Math.min(1, k.sicht * 1.15 - j * 0.15));
-        b.style.opacity = s.toFixed(3);
-        b.style.transform = 'translateY(' + ((1 - s) * 14).toFixed(1) + 'px) scale(' + (0.985 + 0.015 * s).toFixed(4) + ')';
-      });
+      medienZeigen(k);
       const cam = kamera(k);
       landschaft(k, cam, zeitS);
       linien(k, cam, zeitS);
@@ -4989,10 +5142,10 @@
     if ('IntersectionObserver' in window) {
       new IntersectionObserver(function (e) {
         sichtbar = e[e.length - 1].isIntersecting;
-        if (sichtbar) anlaufen(); else spieleMedien(false);
+        if (sichtbar) anlaufen(); else medienAnhalten();
       }, { root: scroller }).observe(lauf);
     } else { sichtbar = true; }
-    document.addEventListener('visibilitychange', function () { if (!document.hidden) anlaufen(); else spieleMedien(false); });
+    document.addEventListener('visibilitychange', function () { if (!document.hidden) anlaufen(); else medienAnhalten(); });
     scroller.addEventListener('scroll', anstossen, { passive: true });
 
     /* ---- Laden, sobald die Projektseite aufgeht ---- */

@@ -78,7 +78,9 @@ def pix2welt(px, py):
 
 
 ox, oy = pix2welt(h.shape[1] / 2, h.shape[0] / 2)      # Ursprung: Mitte
-Q = 100.0                                              # 1 Einheit = 10 m
+# 1 Einheit = 10 m; sehr grosse Karten (The Mountains reicht bis Sylt)
+# brauchen groebere Einheiten, sonst passen die Punkte nicht in 16 Bit.
+Q = float(CFG.get("q", 100.0))
 px_km = (pix2welt(h.shape[1], 0)[0] - pix2welt(0, 0)[0]) / h.shape[1]
 
 
@@ -119,9 +121,13 @@ if CFG.get("seen"):
     # Nur Seen mit Wikidata-Eintrag: das sind die bekannten; Teiche und
     # Becken (in der Po-Ebene zu Tausenden) fallen weg, und die Abfrage ist
     # klein genug fuer einen einzigen Durchgang.
+    # Seen nur im Teil der Karte, wo sie zaehlen ("seenAusschnitt", sonst
+    # der ganze Ausschnitt) -- bei sehr grossen Karten wird die Abfrage
+    # sonst zu gross fuer den Server.
+    sw, se_, ss, sn = CFG.get("seenAusschnitt", [W_LON, E_LON, S_LAT, N_LAT])
     q = ('[out:json][timeout:240];(way["natural"="water"]["water"="lake"]["wikidata"](%f,%f,%f,%f);'
          'relation["natural"="water"]["water"="lake"]["wikidata"](%f,%f,%f,%f););out geom;'
-         % (S_LAT, W_LON, N_LAT, E_LON, S_LAT, W_LON, N_LAT, E_LON))
+         % (ss, sw, sn, se_, ss, sw, sn, se_))
     osm = overpass(q, "seenwd")
     for el in osm["elements"]:
         if el["type"] == "way":
@@ -208,7 +214,9 @@ if CFG.get("kueste"):
     lagune = np.asarray(lagbild).astype(bool)
     print("Lagunen: %d Punkte" % lagune.sum())
     meermaske |= lagune & abschnitt
-    landmaske = abschnitt & ~meermaske & ~mauer
+    # Die Kuestenlinie selbst zaehlt zum Land: schmale Inseln (Sylt ist
+    # 1-2 km breit, wenige Rasterpunkte) zerfielen sonst in Stuecke.
+    landmaske = abschnitt & ~meermaske
     print("Kueste: Meer %.0f %%, Land %.0f %% des Abschnitts"
           % (100 * meermaske.sum() / max(1, abschnitt.sum()), 100 * landmaske.sum() / max(1, abschnitt.sum())))
 
@@ -246,7 +254,9 @@ def ablegen(ringlist_welt, v0):
     zaehlen ab v0 (dem ersten Punkt der Schicht)."""
     allp = np.vstack(ringlist_welt)
     ends = np.cumsum([len(r) for r in ringlist_welt]).astype(np.uint32)
-    idx = earcut.triangulate_float64(allp, ends)
+    # atleast_1d: bei einem einzelnen Dreieck liefert earcut gelegentlich
+    # eine blanke Zahl statt einer Liste.
+    idx = np.atleast_1d(np.asarray(earcut.triangulate_float64(allp, ends))).ravel()
     base = len(verts) - v0
     for p in allp:
         verts.append((round((p[0] - ox) * Q), round((p[1] - oy) * Q)))
@@ -423,8 +433,18 @@ if CFG.get("bahn"):
     print("Halte:", ", ".join(b[3] for b in bahnhoefe))
 else:
     for a, b in zip(CFG["orte"][:-1], CFG["orte"][1:]):
-        pk = [a["lngLat"]] + b.get("ueber", []) + [b["lngLat"]]
-        co, km, modi = osrm(pk)
+        # "schiene": ein Stueck, das nicht auf der Strasse liegt (nach Sylt
+        # geht es ueber den Hindenburgdamm nur mit dem Zug). Der Router
+        # faehrt bis zu dessen Anfang und ab dessen Ende weiter; dazwischen
+        # liegen die Gleise aus OpenStreetMap.
+        sch = b.get("schiene")
+        if sch:
+            co1, km1, m1 = osrm([a["lngLat"]] + b.get("ueber", []) + [sch[0]])
+            co2, km2, m2 = osrm([sch[-1], b["lngLat"]])
+            co, km, modi = co1 + sch + co2, km1 + km2, m1 | m2 | {"schiene"}
+        else:
+            pk = [a["lngLat"]] + b.get("ueber", []) + [b["lngLat"]]
+            co, km, modi = osrm(pk)
         print("%s -> %s: %.0f km, %s" % (a["ort"], b["ort"], km, modi))
         legs.append(weg(co))
 
