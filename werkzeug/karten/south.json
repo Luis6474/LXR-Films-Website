@@ -1,0 +1,57 @@
+{
+ "titel": "The South",
+ "ausschnitt": [
+  10.3,
+  13.9,
+  44.75,
+  47.85
+ ],
+ "zoom": 9,
+ "stufen": [
+  -40,
+  -20,
+  -8,
+  0,
+  60,
+  200,
+  400,
+  700,
+  1000,
+  1300,
+  1600,
+  1900,
+  2200,
+  2500,
+  2800,
+  3100
+ ],
+ "glaettung": 2.0,
+ "vereinfachung": 0.9,
+ "seen": true,
+ "seeMinKm2": 2.0,
+ "texKm": 10.0,
+ "texSchritt": 1,
+ "orte": [
+  {
+   "ort": "Innsbruck",
+   "lngLat": [
+    11.404,
+    47.268
+   ]
+  },
+  {
+   "ort": "Dolomiten",
+   "lngLat": [
+    11.8,
+    46.51
+   ]
+  },
+  {
+   "ort": "Venedig",
+   "lngLat": [
+    12.3265,
+    45.4371
+   ]
+  }
+ ]
+}

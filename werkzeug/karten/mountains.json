@@ -1,0 +1,54 @@
+{
+ "titel": "The Mountains",
+ "ausschnitt": [
+  10.9,
+  14.1,
+  46.15,
+  47.95
+ ],
+ "zoom": 9,
+ "stufen": [
+  0,
+  380,
+  550,
+  750,
+  1000,
+  1250,
+  1500,
+  1750,
+  2000,
+  2250,
+  2500,
+  2800,
+  3100
+ ],
+ "glaettung": 2.0,
+ "vereinfachung": 0.9,
+ "seen": true,
+ "seeMinKm2": 2.0,
+ "texKm": 8.0,
+ "texSchritt": 1,
+ "orte": [
+  {
+   "ort": "Königssee",
+   "lngLat": [
+    12.985,
+    47.575
+   ]
+  },
+  {
+   "ort": "Hallstatt",
+   "lngLat": [
+    13.649,
+    47.562
+   ]
+  },
+  {
+   "ort": "Bozen",
+   "lngLat": [
+    11.354,
+    46.498
+   ]
+  }
+ ]
+}

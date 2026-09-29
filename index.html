@@ -1825,23 +1825,22 @@
         <p class="lead">[2–4 Sätze zum Film: worum es geht, wie der Kontakt zustande kam, was der Ausgangspunkt war.]</p>
         <p>[Der Text zu diesem Projekt fehlt mir noch. Die Bilder sind bereits final eingebunden.]</p>
       </div>
-      <!-- Reisekarte. ENTWURF: Orte aus dem Screenshot, Reihenfolge und
-           Tage sind vorlaeufig (siehe TAGE_JE_ORT im Skript und
-           werkzeug/reise.json). -->
-      <section class="karte" id="karte" aria-label="Karte der Reise durch Schottland, 17. bis 27. Juli 2026">
-        <div class="karte-lauf" id="karte-lauf">
-          <div class="karte-halt" id="karte-halt">
-            <canvas class="karte-gl" id="karte-gl" aria-hidden="true"></canvas>
-            <canvas class="karte-linien" id="karte-linien" aria-hidden="true"></canvas>
+      <!-- Reisekarte The Same Gray. ENTWURF: Orte und Reihenfolge vorlaeufig
+           (werkzeug/karten/schottland.json). -->
+      <section class="karte" data-karte="schottland" aria-label="Karte der Reise durch Schottland, 17. bis 27. Juli 2026">
+        <div class="karte-lauf">
+          <div class="karte-halt">
+            <canvas class="karte-gl" aria-hidden="true"></canvas>
+            <canvas class="karte-linien" aria-hidden="true"></canvas>
             <div class="karte-korn grain-mid" aria-hidden="true"></div>
             <div class="karte-schleier" aria-hidden="true"></div>
             <div class="karte-bilder" aria-hidden="true">
               <div class="karte-bild karte-bild-a"><span>Bild folgt</span></div>
               <div class="karte-bild karte-bild-b"><span>Bild folgt</span></div>
             </div>
-            <div class="karte-zeit" id="karte-zeit" aria-hidden="true"></div>
-            <div class="karte-datum" id="karte-datum" aria-hidden="true"><span></span><span></span></div>
-            <button type="button" class="karte-weiter" id="karte-weiter">Karte überspringen <span aria-hidden="true">↓</span></button>
+            <div class="karte-zeit" aria-hidden="true"></div>
+            <div class="karte-datum" aria-hidden="true"><span></span><span></span></div>
+            <button type="button" class="karte-weiter">Karte überspringen <span aria-hidden="true">↓</span></button>
             <p class="karte-quelle">Relief nach SRTM/ETOPO1 (Mapzen) · Routen © OpenStreetMap-Mitwirkende</p>
           </div>
         </div>
@@ -1881,6 +1880,26 @@
       <div class="viewer-text">
         <p class="lead">The Mountains ist eine filmische Reise durch die Alpen Bayerns und Norditaliens. Zwischen Morgennebel und Abendlicht entfalten sich Berge, Täler und Dörfer in ihrer stillen, zeitlosen Schönheit. Der Film sucht weniger das Spektakel als die Atmosphäre – er verweilt in Momenten, in denen Licht, Wind und Landschaft miteinander verschmelzen. Entstanden ist ein Werk, das die Erhabenheit der Natur nicht erklärt, sondern spürbar macht.</p>
       </div>
+      <!-- Reisekarte The Mountains. ENTWURF: Orte und Reihenfolge vorlaeufig
+           (werkzeug/karten/mountains.json). -->
+      <section class="karte" data-karte="mountains" aria-label="Karte der Reise: Königssee, Hallstatt, Bozen">
+        <div class="karte-lauf">
+          <div class="karte-halt">
+            <canvas class="karte-gl" aria-hidden="true"></canvas>
+            <canvas class="karte-linien" aria-hidden="true"></canvas>
+            <div class="karte-korn grain-mid" aria-hidden="true"></div>
+            <div class="karte-schleier" aria-hidden="true"></div>
+            <div class="karte-bilder" aria-hidden="true">
+              <div class="karte-bild karte-bild-a"><span>Bild folgt</span></div>
+              <div class="karte-bild karte-bild-b"><span>Bild folgt</span></div>
+            </div>
+            <div class="karte-zeit" aria-hidden="true"></div>
+            <div class="karte-datum" aria-hidden="true"><span></span><span></span></div>
+            <button type="button" class="karte-weiter">Karte überspringen <span aria-hidden="true">↓</span></button>
+            <p class="karte-quelle">Relief nach SRTM/ETOPO1 (Mapzen) · Routen und Seen © OpenStreetMap-Mitwirkende</p>
+          </div>
+        </div>
+      </section>
       <div class="viewer-grid">
         <div><img src="Images/web/oesterreich25/still-2025-08-22-215508-4-8-1-1-1-10-1600.webp" srcset="Images/web/oesterreich25/still-2025-08-22-215508-4-8-1-1-1-10-800.webp 800w, Images/web/oesterreich25/still-2025-08-22-215508-4-8-1-1-1-10-1600.webp 1600w" sizes="(min-width: 760px) 550px, 100vw" alt="Boot mit Licht im Nebel über dem Wasser" loading="lazy" decoding="async"></div>
         <div><img src="Images/web/oesterreich25/still-2025-08-22-215508-4-8-1-1-1-11-1600.webp" srcset="Images/web/oesterreich25/still-2025-08-22-215508-4-8-1-1-1-11-800.webp 800w, Images/web/oesterreich25/still-2025-08-22-215508-4-8-1-1-1-11-1600.webp 1600w" sizes="(min-width: 760px) 550px, 100vw" alt="Wandergruppe im Nebel neben einer Baumsilhouette" loading="lazy" decoding="async"></div>
@@ -1954,6 +1973,26 @@
         <p>Ein Film über die Sehnsucht nach Weite, über das Entdecken von Momenten, die bleiben – zwischen Alpenpässen, alten Gassen und stillen Landschaften, irgendwo zwischen Österreich, Italien und Bayern.</p>
         <p>Es beginnt alles mit einer Sehnsucht nach Ferne. Vielleicht möchtest du dem Alltag entfliehen und in den grünen Hügeln der Alpen oder den engen Gassen Venedigs neue Eindrücke sammeln. Vielleicht locken dich mächtige Burgen und historische Städte im Süden Österreichs oder idyllische Seenlandschaften im bayerischen Voralpenland. Oder du willst einfach einmal sehen, wie vielfältig Natur und Kultur in Mitteleuropa sind. Was auch immer dich antreibt – der Film „The South“ nimmt dich mit auf eine atmosphärische Reise durch Südösterreich, Italien und Deutschland in gestochen scharfer 6K-Auflösung und erinnert daran, dass Reisen weniger ein Zeitvertreib als vielmehr ein bewusster Blick auf Geschichte, Architektur und Natur ist.</p>
       </div>
+      <!-- Reisekarte The South. ENTWURF: Orte und Reihenfolge vorlaeufig
+           (werkzeug/karten/south.json). -->
+      <section class="karte" data-karte="south" aria-label="Karte der Reise: Innsbruck, Dolomiten, Venedig">
+        <div class="karte-lauf">
+          <div class="karte-halt">
+            <canvas class="karte-gl" aria-hidden="true"></canvas>
+            <canvas class="karte-linien" aria-hidden="true"></canvas>
+            <div class="karte-korn grain-mid" aria-hidden="true"></div>
+            <div class="karte-schleier" aria-hidden="true"></div>
+            <div class="karte-bilder" aria-hidden="true">
+              <div class="karte-bild karte-bild-a"><span>Bild folgt</span></div>
+              <div class="karte-bild karte-bild-b"><span>Bild folgt</span></div>
+            </div>
+            <div class="karte-zeit" aria-hidden="true"></div>
+            <div class="karte-datum" aria-hidden="true"><span></span><span></span></div>
+            <button type="button" class="karte-weiter">Karte überspringen <span aria-hidden="true">↓</span></button>
+            <p class="karte-quelle">Relief nach SRTM/ETOPO1 (Mapzen) · Routen und Seen © OpenStreetMap-Mitwirkende</p>
+          </div>
+        </div>
+      </section>
       <div class="viewer-grid">
         <div><img src="Images/web/oesterreich24/img-2103-1500.webp" srcset="Images/web/oesterreich24/img-2103-800.webp 800w, Images/web/oesterreich24/img-2103-1500.webp 1500w" sizes="(min-width: 760px) 550px, 100vw" alt="Palazzo-Fassaden am Canal Grande" loading="lazy" decoding="async"></div>
         <div><img src="Images/web/oesterreich24/img-2108-1500.webp" srcset="Images/web/oesterreich24/img-2108-800.webp 800w, Images/web/oesterreich24/img-2108-1500.webp 1500w" sizes="(min-width: 760px) 550px, 100vw" alt="Fassade des Markusdoms" loading="lazy" decoding="async"></div>
@@ -3762,55 +3801,122 @@
     uebernehmen();
   })();
 
-  /* ---------- Reisekarte (The Same Gray) ----------
-     Scrollen ist Zeit: die Strecke laeuft vom 17. bis zum 27. Juli, und die
-     Kamera ist immer dort, wo die Reise an diesem Tag war. Zwischen zwei
-     Orten fliegt sie die Route entlang; erst wenn sie steht, kommen die
-     Bilder der Station. Am Ende faehrt sie ins grosse Bild zurueck, alle
-     Orte stehen darin, und die Route laeuft vom Ende her zurueck und
-     zerfaellt dabei zu Sand.
+  /* ---------- Reisekarten ----------
+     Eine Familie von drei Karten: The Same Gray (Schottland), The Mountains
+     und The South (beide Alpen). Alle teilen denselben Motor und dieselben
+     Zuege -- gestapelte Hoehenschichten wie Papierlagen mit Tuschkanten,
+     die warme Lichtspur der Route, bewegte Wasserlinien wie auf alten
+     Seekarten, Kompasslinien und Gradnetz, die Beschriftung unten, der
+     Knopf zum Ueberspringen. Jede hat aber ihre eigene Farbwelt:
+     Schottland Nachtblau, The Mountains Tanne und Gletscher, The South
+     Dolomitstein und Lagune mit einer Route im Rosa des Alpengluehens.
 
-     Die Karte ist gezeichnet, nicht geladen: gestapelte Hoehenschichten wie
-     Papierlagen, jede mit einer feinen hellen Kante, nach oben heller. Die
-     Formen stammen aus freien Hoehendaten, sind aber bewusst weich und
-     vereinfacht (werkzeug/karte_bau.py). Alles liegt in EINER Datei von gut
-     einem Dreiviertel-Megabyte, ist Vektor und damit bei jedem Zoom scharf, und
-     wird erst geladen, wenn die Projektseite aufgeht. Gezeichnet wird mit
-     WebGL ohne Bibliothek; Route, Punkte und Rueckweg liegen auf einer
-     2D-Ebene darueber, damit sie weich und gleich breit bleiben. */
-  (function reisekarte() {
-    const wurzel = document.getElementById('karte');
-    if (!wurzel) return;
+     Scrollen ist die Reise: die Kamera fliegt von Ort zu Ort und steht an
+     jedem Ort still, bis dort die Bilder erscheinen. Am Ende faehrt sie
+     ins grosse Bild zurueck, und die Route zerfaellt zu Sand.
+
+     Die Karten sind gezeichnet, nicht geladen: jede ist EINE Datei (0,5
+     bis 0,9 MB), gebaut von werkzeug/karte_bau.py aus freien Hoehendaten,
+     Strassenrouten und Seen aus OpenStreetMap; die Einstellungen je Karte
+     stehen in werkzeug/karten/. Geladen wird erst, wenn die Projektseite
+     aufgeht. Gezeichnet wird mit WebGL ohne Bibliothek; Route, Punkte und
+     Seekarten-Linien liegen auf einer 2D-Ebene darueber.
+
+     ENTWURF: Orte, Reihenfolge und (bei Schottland) die Tage sind
+     vorlaeufig, bis der echte Ablauf da ist. */
+  const KARTEN = {
+    schottland: {
+      datei: 'daten/schottland-karte.bin.gz',
+      // Tage je Ort (0 = 17. Juli, 10 = 27. Juli)
+      tage: { je: [[0, 1], [2, 3], [4, 4], [5, 5], [6, 7], [8, 9]], anzahl: 11, erster: 17, monat: ' Juli 2026' },
+      zeitraum: '17.–27. Juli 2026',
+      ueberhoehung: 3.2,
+      grund: [0.016, 0.03, 0.05],
+      land: [[0.08, 0.105, 0.14], [0.11, 0.145, 0.195], [0.17, 0.215, 0.28], [0.45, 0.5, 0.57]],
+      wasser: [0.032, 0.054, 0.084],
+      linien: { meer: [0.56, 0.6, 0.62, 0.07], ufer: [0.88, 0.84, 0.74, 0.55], land: [0.74, 0.73, 0.67, 0.13] },
+      tinte: '226, 216, 190', tinteGl: [0.84, 0.82, 0.74],
+      route: { hell: '255, 222, 178', schein: '255, 170, 90', leise: '240, 200, 150', sand: '250, 214, 168',
+               ort: '255, 196, 130', ring: '255, 226, 190', punkt: '255, 236, 212' },
+      gradnetz: [-8.5, -3, 55.5, 58.5],
+      kompass: [-7.05, 57.02],
+      wellen: [0.7, 3.2, 2.6, 8.0]          // Abstand fein/grob (km), Abklingen fein/grob (km)
+    },
+    /* The Mountains: dunkle Tannentaeler, Schiefer an den Haengen, oben
+       Firn und Gletscher fast weiss; Bergseen in tiefem Gletschergruen,
+       Linien in kuehlem Silber. Die Route bleibt warm -- Sonne auf Schnee. */
+    mountains: {
+      datei: 'daten/mountains-karte.bin.gz',
+      namen: ['Königssee', 'Hallstatt', 'Bozen'],
+      ueberhoehung: 1.35,
+      grund: [0.018, 0.035, 0.038],
+      land: [[0.05, 0.085, 0.075], [0.08, 0.125, 0.115], [0.15, 0.2, 0.2], [0.34, 0.4, 0.42], [0.86, 0.9, 0.92]],
+      wasser: [0.02, 0.075, 0.085],
+      linien: { meer: [0.6, 0.7, 0.72, 0.07], ufer: [0.82, 0.92, 0.94, 0.55], land: [0.7, 0.8, 0.8, 0.11] },
+      tinte: '214, 230, 232', tinteGl: [0.82, 0.92, 0.94],
+      route: { hell: '255, 216, 156', schein: '255, 168, 80', leise: '240, 204, 150', sand: '250, 216, 166',
+               ort: '255, 196, 120', ring: '255, 226, 186', punkt: '255, 238, 210' },
+      gradnetz: [10.5, 14.5, 46, 48],
+      kompass: [12.45, 47.87],               // mitten im Chiemsee
+      wellen: [0.22, 0.9, 0.8, 2.5]
+    },
+    /* The South: warmer Stein -- Umbra in den Taelern, Terrakotta an den
+       Haengen, oben der helle Kalk der Dolomiten; Adria und Lagune tief-
+       blau, Linien in Sepia. Die Route leuchtet im Rosa des Alpen-
+       gluehens, wie die Dolomiten am Abend. */
+    south: {
+      datei: 'daten/south-karte.bin.gz',
+      namen: ['Innsbruck', 'Dolomiten', 'Venedig'],
+      ueberhoehung: 1.35,
+      grund: [0.04, 0.03, 0.028],
+      land: [[0.1, 0.072, 0.058], [0.16, 0.11, 0.085], [0.28, 0.2, 0.15], [0.5, 0.41, 0.33], [0.9, 0.84, 0.74]],
+      wasser: [0.035, 0.055, 0.075],
+      linien: { meer: [0.62, 0.58, 0.52, 0.08], ufer: [0.94, 0.86, 0.72, 0.55], land: [0.82, 0.72, 0.6, 0.12] },
+      tinte: '236, 212, 176', tinteGl: [0.92, 0.84, 0.72],
+      route: { hell: '255, 208, 198', schein: '240, 118, 118', leise: '240, 182, 172', sand: '250, 200, 190',
+               ort: '255, 168, 158', ring: '255, 216, 208', punkt: '255, 234, 228' },
+      gradnetz: [10.5, 13.5, 45, 47.5],
+      kompass: [12.85, 45.25],               // in der Adria vor Venedig
+      wellen: [0.5, 2.4, 2.0, 6.0]
+    }
+  };
+
+  document.querySelectorAll('.karte[data-karte]').forEach(function (el) {
+    const cfg = KARTEN[el.dataset.karte];
+    if (cfg) reisekarte(el, cfg);
+  });
+
+  function reisekarte(wurzel, CFG) {
     const viewer = wurzel.closest('.viewer');
     const scroller = wurzel.closest('.viewer-scroll');
-    const lauf = document.getElementById('karte-lauf');
-    const halt = document.getElementById('karte-halt');
-    const glc = document.getElementById('karte-gl');
-    const linc = document.getElementById('karte-linien');
-    const datum = document.getElementById('karte-datum');
-    const zeit = document.getElementById('karte-zeit');
+    if (!viewer || !scroller) return;
+    const lauf = wurzel.querySelector('.karte-lauf');
+    const halt = wurzel.querySelector('.karte-halt');
+    const glc = wurzel.querySelector('.karte-gl');
+    const linc = wurzel.querySelector('.karte-linien');
+    const datum = wurzel.querySelector('.karte-datum');
+    const zeit = wurzel.querySelector('.karte-zeit');
     const bilder = Array.from(wurzel.querySelectorAll('.karte-bild'));
 
-    /* ENTWURF: welche Tage an welchem Ort (0 = 17. Juli, 10 = 27. Juli).
-       Reihenfolge der Orte und die Routen stehen in werkzeug/reise.json;
-       beides ist vorlaeufig, bis der echte Ablauf da ist. */
-    const TAGE_JE_ORT = [[0, 1], [2, 3], [4, 4], [5, 5], [6, 7], [8, 9]];
-    const TAGE = 11;
-    const MONAT = ' Juli 2026';
-    const UEBERHOEHUNG = 3.2;        // Relief senkrecht gestreckt
+    /* Beschriftung: bei Schottland das Datum (Tag fuer Tag), bei den
+       Alpenkarten der Ort -- deren Tage kommen noch. */
+    const TAGE = CFG.tage;
+    const ANZAHL = TAGE ? TAGE.anzahl : CFG.namen.length;
+    const UEBERHOEHUNG = CFG.ueberhoehung;
     const FOV = 34 * Math.PI / 180;
 
-    for (let i = 0; i < TAGE; i++) zeit.appendChild(document.createElement('i'));
+    for (let i = 0; i < ANZAHL; i++) zeit.appendChild(document.createElement('i'));
     const striche = Array.from(zeit.children);
 
-    /* ---- Datum: weich ueberblendet ---- */
+    /* ---- Beschriftung: weich ueberblendet ---- */
     const lagen = Array.from(datum.children);
-    let tagJetzt = -1, lageJetzt = 0;
+    let tagJetzt = null, lageJetzt = 0;
     function zeigeTag(tag) {
       if (tag === tagJetzt) return;
       tagJetzt = tag;
       lageJetzt = 1 - lageJetzt;
-      lagen[lageJetzt].textContent = (17 + tag) + '.' + MONAT;
+      lagen[lageJetzt].textContent = TAGE ? (TAGE.erster + tag) + '.' + TAGE.monat
+                                          : (tag < 0 ? CFG.namen.join(' · ') : CFG.namen[tag]);
       lagen[lageJetzt].classList.add('ist-an');
       lagen[1 - lageJetzt].classList.remove('ist-an');
       striche.forEach(function (s, k) { s.classList.toggle('ist-an', k === tag); });
@@ -3963,7 +4069,12 @@
         x0 = Math.min(x0, p[0]); x1 = Math.max(x1, p[0]); y0 = Math.min(y0, p[1]); y1 = Math.max(y1, p[1]);
       });
       mitte = [(x0 + x1) / 2, (y0 + y1) / 2];
-      halb = [Math.max(70, (x1 - x0) * 0.78), Math.max(70, (y1 - y0) * 0.78)];
+      // Nicht zu schmal, wenn die Reise fast nur in eine Richtung geht
+      // (The South: Innsbruck -> Venedig liegt fast genau Nord-Sued).
+      const hx = (x1 - x0) * 0.78, hy = (y1 - y0) * 0.78;
+      halb = [Math.max(70, hx, hy * 0.75), Math.max(70, hy, hx * 0.75)];
+      // ... aber innerhalb der Daten bleiben, sonst entsteht dort eine Kante.
+      halb = [Math.min(halb[0], D.kopf.groesse[0] * 0.44), Math.min(halb[1], D.kopf.groesse[1] * 0.44)];
 
       /* Ablauf. "laenge" ist Scrollstrecke in Einheiten von 32 % der
          Fensterhoehe. Lange Fahrten bekommen etwas mehr Weg, aber nur
@@ -3973,14 +4084,17 @@
       });
       /* Scrollweg je Fahrt nach der Laenge der Flugbahn (S): so bleibt die
          Bewegung je Radschritt bei jeder Fahrt gleich ruhig. */
+      // Ohne Tage (Alpenkarten) steht jeder Ort fuer einen "Tag": die
+      // Beschriftung zeigt dann den Ort statt eines Datums.
+      const JE = TAGE ? TAGE.je : orte.map(function (o, i) { return [i, i]; });
       phasen = [{ art: 'start', laenge: 0.5 }];
       orte.forEach(function (o, i) {
-        const tg = TAGE_JE_ORT[i];
-        phasen.push({ art: 'fahrt', von: i - 1, nach: i, tagA: i ? TAGE_JE_ORT[i - 1][1] : 0, tagB: tg[0],
+        const tg = JE[i];
+        phasen.push({ art: 'fahrt', von: i - 1, nach: i, tagA: i ? JE[i - 1][1] : (TAGE ? 0 : -1), tagB: tg[0],
                       laenge: i ? 0.5 + 0.32 * fluege[i - 1].S : 1.2 });
         phasen.push({ art: 'halt', ort: i, tagA: tg[0], tagB: tg[1], laenge: 0.75 + 0.35 * (tg[1] - tg[0]) });
       });
-      phasen.push({ art: 'weit', tagA: TAGE_JE_ORT[orte.length - 1][1], tagB: TAGE - 1, laenge: 1.5 });
+      phasen.push({ art: 'weit', tagA: JE[orte.length - 1][1], tagB: TAGE ? ANZAHL - 1 : -1, laenge: 1.5 });
       phasen.push({ art: 'ende', laenge: 0.7 });
       let s = 0;
       phasen.forEach(function (p) { p.ab = s; s += p.laenge; });
@@ -3995,7 +4109,7 @@
       while (i < phasen.length - 1 && u >= phasen[i].ab + phasen[i].laenge) i++;
       const ph = phasen[i];
       const f = Math.max(0, Math.min(1, (u - ph.ab) / ph.laenge));
-      const k = { tag: 0, sicht: 0, ort: -1, weg: -1, wegL: 0, sand: 0, weh: 0, alleHell: 0 };
+      const k = { tag: TAGE ? 0 : -1, sicht: 0, ort: -1, weg: -1, wegL: 0, sand: 0, weh: 0, alleHell: 0 };
       function setze(c) { k.x = c.x; k.y = c.y; k.z = c.z; k.dist = c.dist; k.pitch = c.pitch; k.bearing = c.bearing; }
       if (ph.art === 'start') {
         setze(uebersicht); k.bearing += 3 * f;
@@ -4011,6 +4125,7 @@
         setze({ x: mix(uebersicht.x, o[0], e), y: mix(uebersicht.y, o[1], e), z: mix(0, o[2], e),
                 dist: logMix(uebersicht.dist, NAH.dist, e), pitch: mix(uebersicht.pitch, NAH.pitch, e),
                 bearing: winkelMix(uebersicht.bearing + 3, blick[0] - 3, e) });
+        if (!TAGE) k.tag = f > 0.5 ? 0 : -1;
       } else if (ph.art === 'fahrt') {                          // von Ort zu Ort
         /* Ein Kartenflug nach van Wijk & Nuij -- dieselbe Bahn, die grosse
            Kartendienste fuer ihr "Hinfliegen" nehmen: erst steigt die Kamera
@@ -4037,7 +4152,7 @@
         setze({ x: mix(o[0], gross.x, e), y: mix(o[1], gross.y, e), z: mix(o[2], 0, e),
                 dist: logMix(NAH.dist, gross.dist, e), pitch: mix(NAH.pitch, gross.pitch, e),
                 bearing: winkelMix(blick[orte.length - 1] + 3, gross.bearing, e) });
-        k.tag = Math.round(mix(ph.tagA, ph.tagB, Math.min(1, f * 1.4)));
+        k.tag = TAGE ? Math.round(mix(ph.tagA, ph.tagB, Math.min(1, f * 1.4))) : (f > 0.4 ? -1 : ph.tagA);
         k.weg = wege.length - 1; k.wegL = 1e9;
         // Waehrend die Kamera noch aufsteigt, beginnt die Route vom Ende her
         // zurueckzulaufen; was sie hinter sich laesst, zerfaellt zu Sand.
@@ -4045,15 +4160,14 @@
         k.alleHell = stufe(0.4, 0.9, f);
       } else {                                                  // Ende: stehen lassen
         setze(gross); k.bearing += 2 * f;
-        k.tag = TAGE - 1; k.weg = wege.length - 1; k.wegL = 1e9; k.sand = 1; k.weh = f; k.alleHell = 1;
+        k.tag = TAGE ? ANZAHL - 1 : -1; k.weg = wege.length - 1; k.wegL = 1e9; k.sand = 1; k.weh = f; k.alleHell = 1;
       }
       return k;
     }
 
     /* ---- WebGL: die Landschaft ---- */
     let gl = null, prog = null, loc = {}, puf = {}, W = 1, H = 1, PR = 1, ctx2 = null;
-    // Meer und Dunst: ein tiefes Petrol statt Grau.
-    const GRUND = [0.016, 0.03, 0.05];
+    const GRUND = CFG.grund;
 
     function glStarten() {
       const opt = { antialias: true, alpha: false, depth: true, powerPreference: 'high-performance' };
@@ -4071,19 +4185,21 @@
         'void main(){ vec3 w = vec3(aP / uQ, uZ); vW = w; gl_Position = uM * vec4(w, 1.0); }'));
       gl.attachShader(prog, shader(gl.FRAGMENT_SHADER,
         '#ifdef GL_FRAGMENT_PRECISION_HIGH\nprecision highp float;\n#else\nprecision mediump float;\n#endif\n' +
-        'uniform vec3 uF; uniform float uA; uniform vec3 uAuge; uniform vec3 uGrund; uniform vec2 uNebel; uniform vec2 uHalb; uniform vec2 uMitte; varying vec3 vW;' +
+        'uniform vec3 uF; uniform float uA; uniform vec3 uAuge; uniform vec3 uGrund; uniform vec2 uNebel; uniform vec2 uHalb; uniform vec2 uMitte; uniform vec2 uRand; varying vec3 vW;' +
         'void main(){' +
         '  float n = smoothstep(uNebel.x, uNebel.y, length(vW - uAuge));' +
         /* Die Karte hat keinen Rand: um die Reise herum loest sie sich im
            Grund auf, wie ein Bild, das aus dem Dunkel kommt. */
         '  float r = smoothstep(0.55, 1.0, length((vW.xy - uMitte) / uHalb));' +
-        '  float m = max(n, r);' +
+        /* ... und nie eine harte Kante am Rand der Daten. */
+        '  float e = smoothstep(0.84, 0.99, max(abs(vW.x) / uRand.x, abs(vW.y) / uRand.y));' +
+        '  float m = max(max(n, r), e);' +
         '  gl_FragColor = vec4(mix(uF, uGrund, m), uA * (1.0 - 0.7 * m));' +
         '}'));
       gl.linkProgram(prog);
       if (!gl.getProgramParameter(prog, gl.LINK_STATUS)) return false;
       gl.useProgram(prog);
-      ['uM', 'uZ', 'uQ', 'uF', 'uA', 'uAuge', 'uGrund', 'uNebel', 'uHalb', 'uMitte'].forEach(function (n) {
+      ['uM', 'uZ', 'uQ', 'uF', 'uA', 'uAuge', 'uGrund', 'uNebel', 'uHalb', 'uMitte', 'uRand'].forEach(function (n) {
         loc[n] = gl.getUniformLocation(prog, n);
       });
       loc.aP = gl.getAttribLocation(prog, 'aP');
@@ -4103,6 +4219,7 @@
       gl.useProgram(prog);
       gl.uniform1f(loc.uQ, D.kopf.q);
       gl.uniform3fv(loc.uGrund, GRUND);
+      gl.uniform2f(loc.uRand, D.kopf.groesse[0] / 2, D.kopf.groesse[1] / 2);
       gl.clearColor(GRUND[0], GRUND[1], GRUND[2], 1);
       gl.enable(gl.DEPTH_TEST);
       gl.depthFunc(gl.LEQUAL);
@@ -4129,11 +4246,11 @@
       const kopfV = zwei ? '#version 300 es\n' : '';
       const kopfF = zwei ? '#version 300 es\n' : '#extension GL_OES_standard_derivatives : enable\n';
       const ein = zwei ? 'in' : 'attribute', raus = zwei ? 'out' : 'varying', rein = zwei ? 'in' : 'varying';
-      const vs = kopfV + ein + ' vec2 aW; uniform mat4 uM; ' + raus + ' vec3 vW;' +
-        'void main(){ vW = vec3(aW, -0.001); gl_Position = uM * vec4(vW, 1.0); }';
+      const vs = kopfV + ein + ' vec2 aW; uniform mat4 uM; uniform float uQ; uniform float uZ; ' + raus + ' vec3 vW;' +
+        'void main(){ vW = vec3(aW / uQ, uZ); gl_Position = uM * vec4(vW, 1.0); }';
       const fs = kopfF + 'precision highp float;' +
         'uniform sampler2D uAbst; uniform vec2 uGroesse; uniform float uKm; uniform float uT;' +
-        'uniform vec3 uAuge; uniform vec2 uNebel; uniform vec2 uHalb; uniform vec2 uMitte;' +
+        'uniform vec3 uAuge; uniform vec2 uNebel; uniform vec2 uHalb; uniform vec2 uMitte; uniform vec4 uWelle; uniform vec3 uTinte; uniform vec2 uRand;' +
         rein + ' vec3 vW;' + (zwei ? 'out vec4 aus;' : '') +
         'float linie(float p){ float w = fwidth(p); float a = abs(fract(p + 0.5) - 0.5);' +
         '  return (1.0 - smoothstep(0.0, 0.02 + w * 1.3, a)) * (1.0 - smoothstep(0.1, 0.28, w)); }' +
@@ -4144,15 +4261,16 @@
         '  vec2 uv = vec2(vW.x / uGroesse.x + 0.5, 0.5 - vW.y / uGroesse.y);' +
         '  float d = ' + (zwei ? 'texture' : 'texture2D') + '(uAbst, uv).r * uKm;' +
         '  if (d < 0.06) discard;' +
-        '  float fein = linie(d / 0.7 - uT * 0.071) * exp(-d / 2.6);' +
-        '  float grob = linie(d / 3.2 - uT * 0.022) * exp(-d / 8.0);' +
+        '  float fein = linie(d / uWelle.x - uT * 0.071) * exp(-d / uWelle.z);' +
+        '  float grob = linie(d / uWelle.y - uT * 0.022) * exp(-d / uWelle.w);' +
         '  float n = rausch(vW.xy * 0.03 + vec2(uT * 0.018, uT * 0.011));' +
         '  float n2 = rausch(vW.xy * 0.09 - vec2(uT * 0.025, -uT * 0.02));' +
         '  float leben = 0.55 + 0.6 * n + 0.25 * n2;' +
         '  float weg = 1.0 - max(smoothstep(uNebel.x, uNebel.y, length(vW - uAuge)),' +
-        '                        smoothstep(0.55, 1.0, length((vW.xy - uMitte) / uHalb)));' +
+        '                        max(smoothstep(0.55, 1.0, length((vW.xy - uMitte) / uHalb)),' +
+        '                            smoothstep(0.84, 0.99, max(abs(vW.x) / uRand.x, abs(vW.y) / uRand.y))));' +
         '  float a = ((0.22 * fein + 0.15 * grob) * leben + 0.035 * n * n) * weg;' +
-        '  ' + (zwei ? 'aus' : 'gl_FragColor') + ' = vec4(0.84, 0.82, 0.74, a);' +
+        '  ' + (zwei ? 'aus' : 'gl_FragColor') + ' = vec4(uTinte, a);' +
         '}';
       try {
         const pr = gl.createProgram();
@@ -4161,14 +4279,15 @@
         gl.linkProgram(pr);
         if (!gl.getProgramParameter(pr, gl.LINK_STATUS)) return;
         const m = { prog: pr, loc: {} };
-        ['uM', 'uAbst', 'uGroesse', 'uKm', 'uT', 'uAuge', 'uNebel', 'uHalb', 'uMitte'].forEach(function (n) {
+        ['uM', 'uQ', 'uZ', 'uAbst', 'uGroesse', 'uKm', 'uT', 'uAuge', 'uNebel', 'uHalb', 'uMitte', 'uWelle', 'uTinte', 'uRand'].forEach(function (n) {
           m.loc[n] = gl.getUniformLocation(pr, n);
         });
         m.aW = gl.getAttribLocation(pr, 'aW');
-        const gx = D.kopf.groesse[0] / 2, gy = D.kopf.groesse[1] / 2;
+        const gx = Math.round(D.kopf.groesse[0] / 2 * D.kopf.q), gy = Math.round(D.kopf.groesse[1] / 2 * D.kopf.q);
         m.puf = gl.createBuffer();
         gl.bindBuffer(gl.ARRAY_BUFFER, m.puf);
-        gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-gx, -gy, gx, -gy, -gx, gy, gx, gy]), gl.STATIC_DRAW);
+        gl.bufferData(gl.ARRAY_BUFFER, new Int16Array([-gx, -gy, gx, -gy, -gx, gy, gx, gy]), gl.STATIC_DRAW);
+        m.meer = D.kopf.stufen[0] < 0;       // Karten ohne Meer brauchen die Flaeche nicht
         m.tex = gl.createTexture();
         gl.bindTexture(gl.TEXTURE_2D, m.tex);
         gl.pixelStorei(gl.UNPACK_ALIGNMENT, 1);
@@ -4181,13 +4300,19 @@
         gl.uniform1i(m.loc.uAbst, 0);
         gl.uniform2f(m.loc.uGroesse, D.kopf.groesse[0], D.kopf.groesse[1]);
         gl.uniform1f(m.loc.uKm, D.kopf.texKm);
+        gl.uniform1f(m.loc.uQ, D.kopf.q);
+        gl.uniform4fv(m.loc.uWelle, CFG.wellen);
+        gl.uniform3fv(m.loc.uTinte, CFG.tinteGl);
+        gl.uniform2f(m.loc.uRand, D.kopf.groesse[0] / 2, D.kopf.groesse[1] / 2);
         meer = m;
       } catch (e) { meer = null; }
     }
 
-    function wasser(k, cam, zeitS) {
-      if (!meer) return;
+    // Ohne "see": die Meeresflaeche; mit "see": die Flaeche dieses Sees.
+    function wasser(k, cam, zeitS, see, z) {
+      if (!meer || (!see && !meer.meer)) return;
       gl.useProgram(meer.prog);
+      gl.uniform1f(meer.loc.uZ, see ? z : -0.001);
       gl.uniformMatrix4fv(meer.loc.uM, false, new Float32Array(cam.M));
       gl.uniform1f(meer.loc.uT, zeitS);
       gl.uniform3fv(meer.loc.uAuge, cam.auge);
@@ -4196,12 +4321,21 @@
       gl.uniform2f(meer.loc.uMitte, mitte[0], mitte[1]);
       gl.activeTexture(gl.TEXTURE0);
       gl.bindTexture(gl.TEXTURE_2D, meer.tex);
-      gl.bindBuffer(gl.ARRAY_BUFFER, meer.puf);
       gl.enableVertexAttribArray(meer.aW);
-      gl.vertexAttribPointer(meer.aW, 2, gl.FLOAT, false, 0, 0);
-      gl.disable(gl.DEPTH_TEST); gl.enable(gl.BLEND); gl.depthMask(false);
-      gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
-      gl.enable(gl.DEPTH_TEST); gl.depthMask(true);
+      gl.enable(gl.BLEND); gl.depthMask(false);
+      if (see) {
+        gl.bindBuffer(gl.ARRAY_BUFFER, puf.v);
+        gl.vertexAttribPointer(meer.aW, 2, gl.SHORT, false, 0, see.v[0] * 4);
+        gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, puf.t);
+        gl.drawElements(gl.TRIANGLES, see.t[1] - see.t[0], gl.UNSIGNED_SHORT, see.t[0] * 2);
+      } else {
+        gl.bindBuffer(gl.ARRAY_BUFFER, meer.puf);
+        gl.vertexAttribPointer(meer.aW, 2, gl.SHORT, false, 0, 0);
+        gl.disable(gl.DEPTH_TEST);
+        gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
+        gl.enable(gl.DEPTH_TEST);
+      }
+      gl.depthMask(true);
       if (meer.aW !== loc.aP) gl.disableVertexAttribArray(meer.aW);
       gl.useProgram(prog);
       gl.enableVertexAttribArray(loc.aP);
@@ -4221,8 +4355,8 @@
        Das Meer bekommt Tiefenschichten wie eine Seekarte: je tiefer, desto
        dunkler, mit ganz feinen Linien an jeder Stufe. So ist es nicht mehr
        leer, sondern hat Grund. */
-    const LAND = [[0.08, 0.105, 0.14], [0.11, 0.145, 0.195], [0.17, 0.215, 0.28], [0.45, 0.5, 0.57]];
-    const MEER_FLACH = [0.032, 0.054, 0.084];
+    const LAND = CFG.land;
+    const MEER_FLACH = CFG.wasser;
     function schichtFarbe(lev, hoechste) {
       if (lev < 0) {
         const t = Math.min(1, -lev / 150);
@@ -4268,13 +4402,44 @@
         // Kante: die Kueste deutlicher, die Hoehenlinien zart.
         gl.enable(gl.BLEND); gl.depthMask(false);
         // Linien im Ton alter Tusche: ein warmes Elfenbein auf dem Nachtblau.
-        if (s.lev < 0) { gl.uniform3f(loc.uF, 0.56, 0.6, 0.62); gl.uniform1f(loc.uA, 0.07); }
-        else if (s.lev === 0) { gl.uniform3f(loc.uF, 0.88, 0.84, 0.74); gl.uniform1f(loc.uA, 0.55); }
-        else { gl.uniform3f(loc.uF, 0.74, 0.73, 0.67); gl.uniform1f(loc.uA, 0.13); }
+        // Die Kueste (Stufe 0) nur dort betont, wo es ein Meer gibt.
+        const li = s.lev < 0 ? CFG.linien.meer : s.lev === 0 && D.kopf.stufen[0] < 0 ? CFG.linien.ufer : CFG.linien.land;
+        gl.uniform3f(loc.uF, li[0], li[1], li[2]); gl.uniform1f(loc.uA, li[3]);
         gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, puf.l);
         gl.drawElements(gl.LINES, s.l[1] - s.l[0], gl.UNSIGNED_SHORT, s.l[0] * 2);
       });
       gl.depthMask(true);
+      seenZeichnen(k, cam, zeitS);
+    }
+
+    /* ---- Seen ----
+       Auf ihrer Hoehe, auf der Terrasse, auf der sie liegen: eine Wasser-
+       flaeche, darauf dieselben bewegten Wasserlinien wie im Meer, und ein
+       Ufer in Tusche. */
+    function seenZeichnen(k, cam, zeitS) {
+      const L = D.kopf.seen;
+      if (!L.length) return;
+      L.forEach(function (s) {
+        const z = s.lev / 1000 * UEBERHOEHUNG + 0.004;
+        gl.uniform1f(loc.uZ, z);
+        gl.uniform3fv(loc.uF, MEER_FLACH);
+        gl.uniform1f(loc.uA, 1);
+        gl.bindBuffer(gl.ARRAY_BUFFER, puf.v);
+        gl.vertexAttribPointer(loc.aP, 2, gl.SHORT, false, 0, s.v[0] * 4);
+        gl.disable(gl.BLEND); gl.depthMask(true);
+        gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, puf.t);
+        gl.drawElements(gl.TRIANGLES, s.t[1] - s.t[0], gl.UNSIGNED_SHORT, s.t[0] * 2);
+        wasser(k, cam, zeitS, s, z + 0.001);
+        gl.uniform1f(loc.uZ, z + 0.002);
+        gl.enable(gl.BLEND); gl.depthMask(false);
+        const li = CFG.linien.ufer;
+        gl.uniform3f(loc.uF, li[0], li[1], li[2]); gl.uniform1f(loc.uA, li[3] * 0.8);
+        gl.bindBuffer(gl.ARRAY_BUFFER, puf.v);
+        gl.vertexAttribPointer(loc.aP, 2, gl.SHORT, false, 0, s.v[0] * 4);
+        gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, puf.l);
+        gl.drawElements(gl.LINES, s.l[1] - s.l[0], gl.UNSIGNED_SHORT, s.l[0] * 2);
+        gl.depthMask(true);
+      });
     }
 
     /* ---- 2D: Route, Orte, Sand ---- */
@@ -4314,7 +4479,8 @@
     }
     function randWeg(p) {
       const q = Math.hypot((p[0] - mitte[0]) / halb[0], (p[1] - mitte[1]) / halb[1]);
-      return 1 - stufe(0.5, 1.0, q);
+      const e = Math.max(Math.abs(p[0]) / (D.kopf.groesse[0] / 2), Math.abs(p[1]) / (D.kopf.groesse[1] / 2));
+      return (1 - stufe(0.5, 1.0, q)) * (1 - stufe(0.84, 0.99, e));
     }
     /* Eine Linie in Stuecken, jedes mit eigener Deckkraft (Ausblenden zum
        Rand). Die Stuecke werden nach Deckkraft in acht Toepfe sortiert und
@@ -4341,7 +4507,7 @@
       for (let k = 0; k < TOEPFE; k++) {
         const z = topf[k];
         if (!z.length) continue;
-        ctx2.strokeStyle = 'rgba(226, 216, 190,' + ((k + 0.5) / TOEPFE * 0.1).toFixed(4) + ')';
+        ctx2.strokeStyle = 'rgba(' + CFG.tinte + ',' + ((k + 0.5) / TOEPFE * 0.1).toFixed(4) + ')';
         ctx2.beginPath();
         for (let i = 0; i < z.length; i += 4) { ctx2.moveTo(z[i], z[i + 1]); ctx2.lineTo(z[i + 2], z[i + 3]); }
         ctx2.stroke();
@@ -4352,15 +4518,17 @@
       ctx2.lineWidth = 0.6;
       topf = [];
       for (let k = 0; k < TOEPFE; k++) topf.push([]);
-      for (let lon = -8.5; lon <= -3; lon += 0.5) kartenLinie(M, geo(lon, 55.4), geo(lon, 58.6), 24, 0.075);
-      for (let lat = 55.5; lat <= 58.5; lat += 0.5) {
-        for (let lon = -8.5; lon < -3; lon += 0.5) kartenLinie(M, geo(lon, lat), geo(lon + 0.5, lat), 3, 0.075);
+      const G = CFG.gradnetz;
+      for (let lon = G[0]; lon <= G[1] + 1e-6; lon += 0.5) kartenLinie(M, geo(lon, G[2] - 0.1), geo(lon, G[3] + 0.1), 24, 0.075);
+      for (let lat = G[2]; lat <= G[3] + 1e-6; lat += 0.5) {
+        for (let lon = G[0]; lon < G[1] - 1e-6; lon += 0.5) kartenLinie(M, geo(lon, lat), geo(lon + 0.5, lat), 3, 0.075);
       }
-      if (!kompass) kompass = geo(-7.05, 57.02);
+      if (!kompass) kompass = geo(CFG.kompass[0], CFG.kompass[1]);
       const K = kompass;
       for (let j = 0; j < 32; j++) {
         const a = j / 32 * 2 * Math.PI, haupt = j % 4 === 0;
-        const L = haupt ? 320 : 230;
+        // Laenge nach der Groesse der Reise, damit die Linien jede Karte queren.
+        const L = (haupt ? 1.0 : 0.72) * Math.max(halb[0], halb[1]) * 1.6;
         kartenLinie(M, [K[0] + Math.sin(a) * 6, K[1] + Math.cos(a) * 6, 0],
                        [K[0] + Math.sin(a) * L, K[1] + Math.cos(a) * L, 0], 26, haupt ? 0.085 : 0.045);
       }
@@ -4375,7 +4543,7 @@
         if (!s) { ok = false; continue; }
         if (ok) ctx2.lineTo(s[0], s[1]); else { ctx2.moveTo(s[0], s[1]); ok = true; }
       }
-      ctx2.strokeStyle = 'rgba(226, 216, 190,' + (0.16 * randWeg(K)).toFixed(3) + ')';
+      ctx2.strokeStyle = 'rgba(' + CFG.tinte + ',' + (0.16 * randWeg(K)).toFixed(3) + ')';
       ctx2.stroke();
     }
 
@@ -4391,11 +4559,11 @@
          laesst, zerfaellt in einzelne Koerner, die etwas verwehen und
          verblassen. Stehen bleibt eine sandige Spur der Reise. */
       const kopf = GESAMT * (1 - k.sand);                // bis hier noch Linie
-      ctx2.strokeStyle = 'rgba(240, 200, 150,' + (0.26 * (1 - k.sand)).toFixed(3) + ')';
+      ctx2.strokeStyle = 'rgba(' + CFG.route.leise + ',' + (0.26 * (1 - k.sand)).toFixed(3) + ')';
       ctx2.lineWidth = 1;
       if (k.sand < 1) wege.forEach(function (w) { linie(M, w, 1e9); });
-      ctx2.strokeStyle = 'rgba(255, 222, 178, 0.92)'; ctx2.lineWidth = 1.7;
-      ctx2.shadowColor = 'rgba(255, 170, 90, 0.7)'; ctx2.shadowBlur = 9;
+      ctx2.strokeStyle = 'rgba(' + CFG.route.hell + ', 0.92)'; ctx2.lineWidth = 1.7;
+      ctx2.shadowColor = 'rgba(' + CFG.route.schein + ', 0.7)'; ctx2.shadowBlur = 9;
       for (let i = 0; i <= k.weg && i < wege.length; i++) {
         const bis = Math.min(i < k.weg ? 1e9 : k.wegL, kopf - wegAb[i]);
         if (bis > 0) linie(M, wege[i], bis);
@@ -4415,7 +4583,7 @@
             if (!s) continue;
             const weit = 0.3 + 2.2 * alt + 1.2 * k.weh;
             const a = 0.85 - 0.3 * alt;
-            ctx2.fillStyle = 'rgba(250, 214, 168,' + a.toFixed(3) + ')';
+            ctx2.fillStyle = 'rgba(' + CFG.route.sand + ',' + a.toFixed(3) + ')';
             ctx2.fillRect(s[0] + (zufall(i, 2) - 0.5) * 2 * weit, s[1] + (zufall(i, 4) - 0.5) * 2 * weit,
                           0.9 + zufall(i, 3) * 0.9, 0.9 + zufall(i, 5) * 0.9);
           }
@@ -4429,15 +4597,15 @@
         const h = Math.max(i === k.ort ? k.sicht : 0, k.alleHell * 0.55);
         if (h > 0.01) {
           const g = ctx2.createRadialGradient(s[0], s[1], 0, s[0], s[1], 26);
-          g.addColorStop(0, 'rgba(255, 196, 130,' + (0.38 * h).toFixed(3) + ')');
-          g.addColorStop(1, 'rgba(255, 196, 130, 0)');
+          g.addColorStop(0, 'rgba(' + CFG.route.ort + ',' + (0.38 * h).toFixed(3) + ')');
+          g.addColorStop(1, 'rgba(' + CFG.route.ort + ', 0)');
           ctx2.fillStyle = g;
           ctx2.beginPath(); ctx2.arc(s[0], s[1], 26, 0, 2 * Math.PI); ctx2.fill();
-          ctx2.strokeStyle = 'rgba(255, 226, 190,' + (0.5 * h).toFixed(3) + ')';
+          ctx2.strokeStyle = 'rgba(' + CFG.route.ring + ',' + (0.5 * h).toFixed(3) + ')';
           ctx2.lineWidth = 1;
           ctx2.beginPath(); ctx2.arc(s[0], s[1], 4 + 5 * h, 0, 2 * Math.PI); ctx2.stroke();
         }
-        ctx2.fillStyle = 'rgba(255, 236, 212,' + (0.55 + 0.45 * h).toFixed(3) + ')';
+        ctx2.fillStyle = 'rgba(' + CFG.route.punkt + ',' + (0.55 + 0.45 * h).toFixed(3) + ')';
         ctx2.beginPath(); ctx2.arc(s[0], s[1], 2 + 1.2 * h, 0, 2 * Math.PI); ctx2.fill();
       });
     }
@@ -4551,7 +4719,8 @@
       for (let r = 0; r < nr; r++) summe += ringe[r];
       const lin = new Uint16Array(summe * 2);
       let z = 0;
-      kopf.schichten.forEach(function (sch) {
+      kopf.seen = kopf.seen || [];
+      kopf.schichten.concat(kopf.seen).forEach(function (sch) {
         const l0 = z;
         let p = 0;
         for (let r = sch.r[0]; r < sch.r[1]; r++) {
@@ -4566,7 +4735,7 @@
     function laden() {
       if (geladen) { if (bereit) { groesse(); zeichne(stand); } return; }
       geladen = true;
-      fetch('daten/schottland-karte.bin.gz').then(function (r) {
+      fetch(CFG.datei).then(function (r) {
         if (!r.ok) throw new Error('Karte ' + r.status);
         return r.arrayBuffer();
       }).then(entpacken).then(function (buf) {
@@ -4581,7 +4750,8 @@
           groesse();
           phasen.forEach(function (p) { if (p.art === 'ende') stand = p.ab + p.laenge; });
           zeichne(stand);
-          lagen[0].textContent = '17.–27.' + MONAT; lagen[0].classList.add('ist-an'); lagen[1].classList.remove('ist-an');
+          lagen[0].textContent = CFG.zeitraum || CFG.namen.join(' · ');
+          lagen[0].classList.add('ist-an'); lagen[1].classList.remove('ist-an');
         } else {
           stand = ziel = zielAusScroll();
           zeichne(stand);
@@ -4594,7 +4764,7 @@
     /* Ueberspringen: sofort ans Ende der Karte, ohne die ganze Reise im
        Schnelldurchlauf abzuspielen -- die Anzeige springt mit, statt der
        Feder hinterherzurasen. */
-    const weiter = document.getElementById('karte-weiter');
+    const weiter = wurzel.querySelector('.karte-weiter');
     if (weiter) weiter.addEventListener('click', function () {
       const oben = lauf.getBoundingClientRect().top - scroller.getBoundingClientRect().top + scroller.scrollTop;
       scroller.scrollTo({ top: oben + lauf.offsetHeight, behavior: 'instant' });
@@ -4620,7 +4790,7 @@
       ziel = stand = zielAusScroll();
       zeichne(stand);
     });
-  })();
+  }
 
   // Bilder in der Projektansicht laufen gestaffelt auf -- wie nacheinander
   // gesetzte Einstellungen, nicht als Block.

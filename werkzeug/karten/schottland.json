@@ -1,4 +1,35 @@
 {
+ "titel": "The Same Gray",
+ "ausschnitt": [
+  -7.35,
+  -3.95,
+  55.75,
+  58.25
+ ],
+ "zoom": 9,
+ "stufen": [
+  -150,
+  -100,
+  -60,
+  -30,
+  -10,
+  0,
+  45,
+  110,
+  190,
+  280,
+  380,
+  490,
+  610,
+  740,
+  880,
+  1030
+ ],
+ "glaettung": 1.6,
+ "vereinfachung": 0.9,
+ "seen": false,
+ "texKm": 14.0,
+ "texSchritt": 2,
  "orte": [
   {
    "ort": "Auchindrain",
