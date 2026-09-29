@@ -2,3 +2,7 @@
 # Web-Fassungen in video/web/, und GitHub lehnt Dateien ueber 100 MB ab.
 *.mov
 *.MOV
+
+# Handyfotos im Original: die Seite nutzt nur die Web-Fassungen.
+*.heic
+*.HEIC

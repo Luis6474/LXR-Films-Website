@@ -1278,6 +1278,10 @@
   }
   .karte-bild-a { width: min(78vw, 420px); left: 50%; top: 13%; margin-left: calc(-0.5 * min(78vw, 420px)); }
   .karte-bild-b { display: none; }
+  .karte-bild img, .karte-bild video { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+  .karte-bild.hat-medium { background: #0b1012; }
+  /* Hochkant-Video: schmaler, sonst waere es hoeher als das Bild. */
+  .karte-bild-a.ist-hoch { width: min(36vw, 180px); left: 6vw; margin-left: 0; }
 
   /* Das Datum: die Zeitachse der ganzen Sequenz. Zwei Lagen uebereinander,
      damit ein Tageswechsel weich ueberblendet statt umzuspringen. */
@@ -1345,6 +1349,8 @@
   @media (min-width: 900px) {
     .karte-bild-a { width: min(30vw, 480px); left: auto; right: 7vw; top: 16%; margin-left: 0; }
     .karte-bild-b { display: flex; width: min(19vw, 300px); right: calc(7vw + min(30vw, 480px) - min(12vw, 190px)); top: calc(16% + min(20vw, 320px) - 20px); }
+    .karte-bild-a.ist-hoch { width: min(16vw, 250px); margin-left: 0; left: auto; right: 12vw; top: 19%; }
+    .karte-bild.ist-leer { display: none; }
   }
 
   .viewer-grid { display: grid; grid-template-columns: 1fr; gap: 12px; margin: 52px 0; }
@@ -3909,9 +3915,15 @@
     schottland: {
       datei: 'daten/schottland-karte.bin.gz',
       // Tage je Ort (0 = 17. Juli, 10 = 27. Juli)
-      tage: { je: [[0, 1], [2, 3], [4, 4], [5, 5], [6, 7], [8, 9]], anzahl: 11, erster: 17, monat: ' Juli 2026' },
+      tage: { je: [[0, 1], [2, 3], [4, 4], [5, 5], [6, 7], [8, 9], [10, 10]], anzahl: 11, erster: 17, monat: ' Juli 2026' },
       zeitraum: '17.–27. Juli 2026',
-      namen: ['Auchindrain', 'Ardnamurchan', 'Portree', 'Neist Point', 'Staffin', 'bei Lochcarron'],
+      namen: ['Auchindrain', 'Ardnamurchan', 'Portree', 'Neist Point', 'Staffin', 'bei Lochcarron', 'Kylerhea'],
+      /* Bilder je Station (Index wie bei namen). Zugeordnet ueber die
+         Koordinaten im Dateinamen; ohne Eintrag bleibt "Bild folgt". */
+      medien: {
+        3: [{ video: 'video/web/karte-same-gray/neist-point-720.mp4', poster: 'video/web/karte-same-gray/neist-point-poster.jpg', hoch: true }],
+        6: [{ bild: 'Images/web/karte-same-gray/mam-udal-800.webp', srcset: 'Images/web/karte-same-gray/mam-udal-800.webp 800w, Images/web/karte-same-gray/mam-udal-1600.webp 1600w', verhaeltnis: '4 / 3' }]
+      },
       ueberhoehung: 3.2,
       grund: [0.016, 0.03, 0.05],
       land: [[0.08, 0.105, 0.14], [0.11, 0.145, 0.195], [0.17, 0.215, 0.28], [0.45, 0.5, 0.57]],
@@ -4857,12 +4869,63 @@
       if ('letterSpacing' in ctx2) ctx2.letterSpacing = '0px';
     }
 
+    /* Die Bilder der Station einsetzen, an der die Kamera gerade steht.
+       Hat eine Station erst ein Medium, bleibt der zweite Rahmen weg; hat
+       sie keins, steht dort weiter "Bild folgt". Videos laufen nur, solange
+       sie zu sehen sind. */
+    let medienOrt = -2;
+    const leer = bilder.map(function (b) { return b.innerHTML; });
+    function setzeMedien(ort) {
+      if (ort === medienOrt) return;
+      medienOrt = ort;
+      const liste = (CFG.medien && CFG.medien[ort]) || null;
+      bilder.forEach(function (b, j) {
+        const m = liste ? liste[j] : null;
+        b.classList.remove('hat-medium', 'ist-hoch', 'ist-leer');
+        b.style.aspectRatio = '';
+        if (!m) {
+          b.innerHTML = leer[j];
+          if (liste) b.classList.add('ist-leer');
+          return;
+        }
+        b.innerHTML = '';
+        b.classList.add('hat-medium');
+        if (m.hoch) { b.classList.add('ist-hoch'); b.style.aspectRatio = '9 / 16'; }
+        else if (m.verhaeltnis) b.style.aspectRatio = m.verhaeltnis;
+        let el;
+        if (m.video) {
+          el = document.createElement('video');
+          el.muted = true; el.loop = true; el.playsInline = true;
+          el.setAttribute('muted', ''); el.setAttribute('playsinline', '');
+          el.preload = 'metadata';
+          if (m.poster) el.poster = m.poster;
+          el.src = m.video;
+        } else {
+          el = document.createElement('img');
+          el.decoding = 'async'; el.alt = '';
+          if (m.srcset) { el.srcset = m.srcset; el.sizes = '(min-width: 900px) 30vw, 78vw'; }
+          el.src = m.bild;
+        }
+        b.appendChild(el);
+      });
+    }
+    function spieleMedien(an) {
+      bilder.forEach(function (b) {
+        const v = b.querySelector('video');
+        if (!v) return;
+        if (an && !reducedMotion && v.paused) { const p = v.play(); if (p && p.catch) p.catch(function () {}); }
+        else if (!an && !v.paused) v.pause();
+      });
+    }
+
     let bereit = false;
     function zeichne(u, zeitS) {
       if (!bereit) return;
       if (zeitS === undefined) zeitS = reducedMotion ? 0 : (performance.now() / 1000) % 100000;
       const k = zustand(u);
       zeigeTag(k.tag);
+      if (k.sicht > 0.01 && k.ort >= 0) setzeMedien(k.ort);
+      spieleMedien(k.sicht > 0.05);
       bilder.forEach(function (b, j) {
         const s = Math.max(0, Math.min(1, k.sicht * 1.15 - j * 0.15));
         b.style.opacity = s.toFixed(3);
@@ -4926,10 +4989,10 @@
     if ('IntersectionObserver' in window) {
       new IntersectionObserver(function (e) {
         sichtbar = e[e.length - 1].isIntersecting;
-        if (sichtbar) anlaufen();
+        if (sichtbar) anlaufen(); else spieleMedien(false);
       }, { root: scroller }).observe(lauf);
     } else { sichtbar = true; }
-    document.addEventListener('visibilitychange', function () { if (!document.hidden) anlaufen(); });
+    document.addEventListener('visibilitychange', function () { if (!document.hidden) anlaufen(); else spieleMedien(false); });
     scroller.addEventListener('scroll', anstossen, { passive: true });
 
     /* ---- Laden, sobald die Projektseite aufgeht ---- */
