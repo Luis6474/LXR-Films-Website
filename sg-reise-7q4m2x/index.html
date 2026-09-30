@@ -19,7 +19,6 @@
     --accent: #93a09b;
     --warm: 240, 206, 156;
     --ease: cubic-bezier(0.22, 0.61, 0.36, 1);
-    --grain-size: 160px;
     color-scheme: dark;
   }
   * { box-sizing: border-box; }
@@ -28,12 +27,6 @@
   button { font: inherit; color: inherit; }
   :focus-visible { outline: 2px solid rgba(var(--warm), 0.9); outline-offset: 3px; }
 
-  /* Korn ueber der ganzen Seite, wie auf der Hauptseite */
-  .korn { position: fixed; inset: calc(-1 * var(--grain-size)); pointer-events: none; z-index: 50;
-    background-repeat: repeat; background-size: var(--grain-size) var(--grain-size); opacity: 0.55;
-    animation: kornZug 0.9s steps(1) infinite; }
-  @keyframes kornZug { 0% { transform: translate(0, 0); } 25% { transform: translate(-37px, 21px); } 50% { transform: translate(18px, -44px); } 75% { transform: translate(-12px, 33px); } }
-  @media (prefers-reduced-motion: reduce) { .korn { animation: none; } }
 
   /* ---------- Einstieg ---------- */
   .kopf { min-height: 88vh; min-height: 88svh; display: flex; flex-direction: column; justify-content: center; align-items: center;
@@ -81,16 +74,21 @@
   .karte-datum .tag { font: clamp(1.05em, 1.7vw, 1.4em) 'Belleza', 'Noto Serif', sans-serif; letter-spacing: 0.22em; opacity: 0.92; }
   .karte-datum .mehr { margin-top: 4px; font: clamp(0.78em, 1.05vw, 0.9em) 'Noto Serif', Georgia, serif; font-style: italic; color: var(--text-dim); letter-spacing: 0.03em; }
   .karte-datum .mehr b { font-style: normal; font-weight: 400; color: rgba(255, 226, 190, 0.92); letter-spacing: 0.08em; }
-  /* Ein Strich je Tag -- zum Anklicken: springt zum Tag */
-  .karte-zeit { position: absolute; left: 50%; bottom: calc(max(40px, 6.5vh) + 3.9em); transform: translateX(-50%); display: flex; gap: 2px; }
-  .karte-zeit button { display: block; width: 15px; height: 22px; padding: 0; border: 0; background: none; cursor: pointer; position: relative; }
-  .karte-zeit button::before { content: ""; position: absolute; left: 7px; bottom: 4px; width: 1px; height: 7px; background: var(--text); opacity: 0.22;
+  /* Die Zeitleiste: ziehen oder klicken spult durch die Reise */
+  .karte-zeit { position: absolute; left: 50%; bottom: calc(max(40px, 6.5vh) + 3.7em); transform: translateX(-50%); width: min(640px, 84vw); height: 30px;
+    cursor: pointer; touch-action: none; user-select: none; -webkit-user-select: none; }
+  .karte-zeit .spur { position: absolute; left: 0; right: 0; top: 20px; height: 1px; background: rgba(230, 234, 232, 0.2); }
+  .karte-zeit .pt { position: absolute; top: 19px; width: 3px; height: 3px; margin-left: -1.5px; border-radius: 50%; background: rgba(255, 226, 190, 0.45); pointer-events: none; }
+  .karte-zeit .tick { position: absolute; top: 11px; width: 1px; height: 8px; background: var(--text); opacity: 0.3; pointer-events: none;
     transition: opacity 0.6s var(--ease), transform 0.6s var(--ease); transform-origin: bottom; }
-  .karte-zeit button:hover::before { opacity: 0.6; }
-  .karte-zeit button.ist-an::before { opacity: 0.9; transform: scaleY(1.9); }
-  .karte-zeit button span { position: absolute; left: 50%; bottom: 24px; transform: translateX(-50%); white-space: nowrap; pointer-events: none;
-    font: 11px system-ui, sans-serif; color: var(--text); background: rgba(8, 11, 12, 0.8); padding: 2px 6px; border-radius: 3px; opacity: 0; transition: opacity 0.2s; }
-  .karte-zeit button:hover span, .karte-zeit button:focus-visible span { opacity: 1; }
+  .karte-zeit .tick.ist-an { opacity: 0.9; transform: scaleY(1.5); }
+  .karte-zeit .knopf { position: absolute; top: 15px; width: 11px; height: 11px; margin-left: -5.5px; border-radius: 50%; pointer-events: none;
+    background: rgba(240, 206, 156, 0.96); box-shadow: 0 0 0 4px rgba(240, 206, 156, 0.16), 0 0 14px rgba(255, 170, 90, 0.5); transition: left 0.5s var(--ease); }
+  .karte-zeit.zieht .knopf { transition: none; }
+  .karte-zeit .blase { position: absolute; bottom: 26px; transform: translateX(-50%); white-space: nowrap; pointer-events: none;
+    font: 11px system-ui, sans-serif; color: var(--text); background: rgba(8, 11, 12, 0.85); padding: 3px 8px; border-radius: 3px; opacity: 0; transition: opacity 0.2s; }
+  .karte-zeit:hover .blase, .karte-zeit.zieht .blase { opacity: 1; }
+  .karte-zeit:hover .spur { background: rgba(230, 234, 232, 0.36); }
 
   .karte-weiter { position: absolute; top: max(18px, 3vh); right: 16px; display: inline-flex; align-items: center; gap: 10px;
     font: 600 0.8em 'Libre Caslon Display', Georgia, serif; letter-spacing: 0.16em; text-transform: uppercase;
@@ -142,7 +140,6 @@
 </style>
 </head>
 <body>
-<div class="korn" aria-hidden="true"></div>
 
 <header class="kopf">
   <a class="marke" href="../">LXR Films</a>
@@ -160,9 +157,9 @@
       <div class="karte-schleier" aria-hidden="true"></div>
       <div class="karte-laden" aria-hidden="true">Karte lädt</div>
       <div class="karte-bilder"></div>
-      <div class="karte-zeit" role="group" aria-label="Tage der Reise"></div>
+      <div class="karte-zeit" role="slider" tabindex="0" aria-label="Zeitleiste der Reise: ziehen zum Vorspulen"></div>
       <div class="karte-datum" aria-live="polite"><div></div><div></div></div>
-      <div class="karte-hilfe" aria-hidden="true">Scrollen · ← → Station</div>
+      <div class="karte-hilfe" aria-hidden="true">Mausrad · ← → Station · unten vorspulen</div>
       <button type="button" class="karte-weiter">Karte überspringen <span aria-hidden="true">↓</span></button>
       <p class="karte-quelle">Relief nach SRTM/ETOPO1 (Mapzen) · Straßen, Wege, Seen und Namen © OpenStreetMap-Mitwirkende · Routen OSRM</p>
     </div>
@@ -205,19 +202,6 @@
   const WT = ['So', 'Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa'];
   const WTL = ['Sonntag', 'Montag', 'Dienstag', 'Mittwoch', 'Donnerstag', 'Freitag', 'Samstag'];
   const MO = ['Januar', 'Februar', 'März', 'April', 'Mai', 'Juni', 'Juli', 'August', 'September', 'Oktober', 'November', 'Dezember'];
-
-  /* ---------- Korn ---------- */
-  (function () {
-    const c = document.createElement('canvas'); c.width = c.height = 160;
-    const x = c.getContext('2d'), d = x.createImageData(160, 160);
-    for (let i = 0; i < d.data.length; i += 4) {
-      const g = Math.random();
-      d.data[i] = d.data[i + 1] = d.data[i + 2] = 255;
-      d.data[i + 3] = g < 0.5 ? 0 : Math.round((g - 0.5) * 2 * 22);
-    }
-    x.putImageData(d, 0, 0);
-    document.querySelector('.korn').style.backgroundImage = 'url(' + c.toDataURL() + ')';
-  })();
 
   /* ---------- Fotos und Stationen ---------- */
   const fotoNach = new Map(FOTOS.map(function (f) { return [f.id, f]; }));
@@ -292,19 +276,62 @@
     return [(lon + 180) / 360 * R.rahmen.c - R.rahmen.ursprung[0], -y * R.rahmen.c - R.rahmen.ursprung[1], z || 0];
   }
 
-  /* ---------- Beschriftung unten ---------- */
-  TAGE.forEach(function (d, i) {
-    const b = document.createElement('button');
-    b.type = 'button';
-    b.setAttribute('aria-label', 'Tag ' + (i + 1) + ': ' + tagText(d + 'T', true, true));
-    const sp = document.createElement('span'); sp.textContent = 'Tag ' + (i + 1) + ' · ' + tagText(d + 'T');
-    b.appendChild(sp);
-    b.addEventListener('click', function () { springeZuTag(i); });
-    zeitLeiste.appendChild(b);
+  /* ---------- Beschriftung unten ----------
+     Die Zeitleiste: von der ersten bis zur letzten Station, nach der Uhr.
+     Ziehen oder Klicken spult vor und zurueck (nicht das Mausrad). Ein
+     laengerer Strich je Tag, ein Punkt je Station. */
+  const T0 = ST[0].fotos[0].u, T1 = ST[ST.length - 1].fotos[0].u;
+  function zeitAnteil(u) { return Math.max(0, Math.min(1, (u - T0) / Math.max(1, T1 - T0))); }
+  zeitLeiste.innerHTML = '<div class="spur"></div><div class="blase"></div><div class="knopf"></div>';
+  const knopf = zeitLeiste.querySelector('.knopf'), blase = zeitLeiste.querySelector('.blase');
+  const striche = [];
+  ST.forEach(function (s, i) {
+    const x = (zeitAnteil(s.fotos[0].u) * 100).toFixed(3) + '%';
+    const p = document.createElement('span'); p.className = 'pt'; p.style.left = x; zeitLeiste.appendChild(p);
+    if (!i || ST[i - 1].tag !== s.tag) {
+      const t = document.createElement('span'); t.className = 'tick'; t.style.left = x; zeitLeiste.appendChild(t);
+      striche[s.tag] = t;
+    }
   });
-  const striche = Array.from(zeitLeiste.children);
+  zeitLeiste.setAttribute('aria-valuemin', '1');
+  zeitLeiste.setAttribute('aria-valuemax', String(ST.length));
+  function stationBei(clientX) {
+    const r = zeitLeiste.getBoundingClientRect();
+    const u = T0 + Math.max(0, Math.min(1, (clientX - r.left) / r.width)) * (T1 - T0);
+    let b = 0;
+    for (let i = 1; i < ST.length; i++) if (Math.abs(ST[i].fotos[0].u - u) < Math.abs(ST[b].fotos[0].u - u)) b = i;
+    return b;
+  }
+  function blaseZeigen(st) {
+    const f = ST[st].fotos[0];
+    blase.textContent = tagText(f.t) + ' · ' + f.t.slice(11, 16) + (ST[st].name ? ' · ' + ST[st].name : '');
+    blase.style.left = (zeitAnteil(f.u) * 100).toFixed(3) + '%';
+  }
+  let zieht = false, gezogenSt = -1;
+  zeitLeiste.addEventListener('pointerdown', function (e) {
+    if (!bereit) return;
+    zieht = true; gezogenSt = -1;
+    zeitLeiste.classList.add('zieht');
+    try { zeitLeiste.setPointerCapture(e.pointerId); } catch (x) {}
+    e.preventDefault();
+    vorspulen(e.clientX);
+  });
+  zeitLeiste.addEventListener('pointermove', function (e) {
+    if (zieht) vorspulen(e.clientX);
+    else if (e.pointerType === 'mouse') blaseZeigen(stationBei(e.clientX));
+  });
+  function loslassen() { zieht = false; zeitLeiste.classList.remove('zieht'); }
+  zeitLeiste.addEventListener('pointerup', loslassen);
+  zeitLeiste.addEventListener('pointercancel', loslassen);
+  function vorspulen(x) {
+    const st = stationBei(x);
+    blaseZeigen(st);
+    if (st === gezogenSt) return;
+    gezogenSt = st;
+    springeZuStation(st);
+  }
   const lagen = Array.from(datum.children);
-  let textJetzt = null, lageJetzt = 0, tagJetzt = -2;
+  let textJetzt = null, lageJetzt = 0, tagJetzt = -2, knopfJetzt = -1;
   function beschriften(k) {
     let html, tag = -1;
     if (k.st >= 0) {
@@ -326,7 +353,13 @@
     }
     if (tag !== tagJetzt) {
       tagJetzt = tag;
-      striche.forEach(function (s, i) { s.classList.toggle('ist-an', i === tag); });
+      striche.forEach(function (s, i) { if (s) s.classList.toggle('ist-an', i === tag); });
+    }
+    const kn = k.st >= 0 ? zeitAnteil(ST[k.st].fotos[0].u) : (stand < (HALTE[1] || 0) ? 0 : 1);
+    if (kn !== knopfJetzt) {
+      knopfJetzt = kn;
+      knopf.style.left = (kn * 100).toFixed(3) + '%';
+      zeitLeiste.setAttribute('aria-valuenow', String(k.st >= 0 ? k.st + 1 : kn ? ST.length : 1));
     }
   }
 
@@ -400,7 +433,7 @@
 
   /* Flugbahn nach van Wijk & Nuij (2003): erst steigt die Kamera auf,
      zieht oben hinueber und senkt sich ueber dem Ziel. */
-  const RHO = 1.6;
+  const RHO = 2.4;   // groesser: die Kamera steigt zwischen den Stationen hoeher auf
   const BREITE = 2 * Math.tan(FOV / 2);
   function flugBauen(A, Bp, w0, w1) {
     const u1 = Math.hypot(Bp[0] - A[0], Bp[1] - A[1]), r2 = RHO * RHO;
@@ -485,6 +518,7 @@
     let s = 0;
     phasen.forEach(function (p) { p.ab = s; s += p.laenge; });
     EINHEITEN = s;
+    halteBauen();
     if (!reducedMotion) lauf.style.setProperty('--einheiten', EINHEITEN.toFixed(2));
     ueberGeo = null; ueberNeu = true;
   }
@@ -1463,10 +1497,14 @@
   }
   let letzterK = null;
 
-  /* ---- Gefuehrt, aber in der Hand: die Kamera folgt dem Scrollen mit
-     Obergrenze und weichem Anfahren und Bremsen. ---- */
-  const VMAX = 1.0, BESCHL = 1.6;
+  /* ---- Schritt fuer Schritt: ein Einrasten am Mausrad, ein Wischen oder
+     eine Pfeiltaste faehrt zur naechsten Station. Waehrend der Fahrt zaehlt
+     weiteres Drehen nicht, und danach erst wieder nach einer kurzen Pause
+     am Rad -- wildes Kurbeln bringt immer nur eine Station weiter. Schneller
+     geht es nur ueber die Zeitleiste unten. ---- */
+  const VMAX = 0.6, BESCHL = 1.0, RAD_PAUSE = 220;
   let ziel = 0, stand = 0, tempo = 0, laeuft = false, zuletzt = 0, sichtbar = false;
+  let HALTE = [0], fahrt = null, eigenY = -1e9, sperreBis = 0;
   function scrollStrecke() { return lauf.offsetHeight - halt.offsetHeight; }
   function zielAusScroll() {
     const s = scrollStrecke();
@@ -1474,10 +1512,73 @@
     const oben = lauf.getBoundingClientRect().top;
     return Math.max(0, Math.min(1, -oben / s)) * EINHEITEN;
   }
+  function halteBauen() {
+    HALTE = [0];
+    phasen.forEach(function (p) { if (p.art === 'halt') HALTE.push(p.ab + p.laenge * 0.5); });
+    HALTE.push(EINHEITEN);
+  }
+  // Sekunden fuer eine ganze Phase: Halte kurz, Fahrten nach Laenge des Flugs
+  function phasenZeit(p) {
+    if (p.art === 'halt') return 1.2;
+    if (p.art === 'fahrt') return p.von < 0 ? 3.2 : Math.max(1.6, Math.min(5.2, 1.5 + 0.6 * fluege[p.von].S));
+    if (p.art === 'weit') return 3.4;
+    return 1.4;
+  }
+  function fahrtBauen(a, b) {
+    const lo = Math.min(a, b), hi = Math.max(a, b), stuecke = [];
+    phasen.forEach(function (p) {
+      const x0 = Math.max(lo, p.ab), x1 = Math.min(hi, p.ab + p.laenge);
+      if (x1 > x0) stuecke.push([x0, x1, (x1 - x0) / p.laenge * phasenZeit(p)]);
+    });
+    if (b < a) stuecke.reverse().forEach(function (s) { const t = s[0]; s[0] = s[1]; s[1] = t; });
+    const T = stuecke.reduce(function (s, x) { return s + x[2]; }, 0) || 0.3;
+    return { t0: performance.now(), T: T, stuecke: stuecke, von: a, nach: b };
+  }
+  function fahrtStand(f, jetzt) {
+    const u = Math.min(1, (jetzt - f.t0) / 1000 / f.T);
+    // weich anfahren und bremsen, aber nicht zaeh
+    let t = (0.5 * u + 0.5 * (0.5 - 0.5 * Math.cos(Math.PI * u))) * f.T;
+    for (let i = 0; i < f.stuecke.length; i++) {
+      const s = f.stuecke[i];
+      if (t <= s[2] || i === f.stuecke.length - 1) return mix(s[0], s[1], Math.min(1, t / (s[2] || 1)));
+      t -= s[2];
+    }
+    return f.nach;
+  }
+  function yFuer(einheit) {
+    return lauf.getBoundingClientRect().top + window.scrollY + einheit / EINHEITEN * scrollStrecke();
+  }
+  function setzeScroll(einheit) {
+    window.scrollTo({ top: Math.round(yFuer(einheit)), behavior: 'instant' });
+    eigenY = window.scrollY;
+  }
+  function haltIndex() {
+    const u = fahrt ? fahrt.nach : stand;
+    let b = 0;
+    for (let i = 1; i < HALTE.length; i++) if (Math.abs(HALTE[i] - u) < Math.abs(HALTE[b] - u)) b = i;
+    return b;
+  }
+  function stationsSchritt(d) {
+    if (fahrt || !bereit) return false;
+    const j = haltIndex() + d;
+    if (j < 0 || j >= HALTE.length) return false;
+    fahrt = fahrtBauen(stand, HALTE[j]);
+    ziel = HALTE[j]; tempo = 0;
+    setzeScroll(ziel);
+    anlaufen();
+    return true;
+  }
+  function springeSofort(einheit) {
+    fahrt = null; tempo = 0;
+    ziel = stand = einheit;
+    setzeScroll(einheit);
+    zeichne(stand);
+  }
+  // Nur falls jemand am Rollbalken zieht: dann folgt die Kamera gebremst.
   function folgen(dt) {
     const rest = ziel - stand, betrag = Math.abs(rest);
-    const soll = Math.sign(rest) * Math.min(VMAX * (betrag > 6 ? betrag / 6 : 1), Math.sqrt(2 * BESCHL * betrag) * 0.95);
-    const d = soll - tempo, grenze = BESCHL * (betrag > 6 ? betrag / 6 : 1) * dt;
+    const soll = Math.sign(rest) * Math.min(VMAX, Math.sqrt(2 * BESCHL * betrag) * 0.95);
+    const d = soll - tempo, grenze = BESCHL * dt;
     tempo += Math.max(-grenze, Math.min(grenze, d));
     stand += tempo * dt;
     if (betrag < 0.0015 && Math.abs(tempo) < 0.01) { stand = ziel; tempo = 0; }
@@ -1487,7 +1588,10 @@
     if (!bereit || !sichtbar || document.hidden) { laeuft = false; return; }
     const dt = Math.min(0.05, (jetzt - zuletzt) / 1000);
     zuletzt = jetzt;
-    folgen(dt);
+    if (fahrt) {
+      stand = fahrtStand(fahrt, jetzt);
+      if (jetzt - fahrt.t0 >= fahrt.T * 1000) { stand = ziel = fahrt.nach; fahrt = null; }
+    } else folgen(dt);
     if (stand !== standGezeichnet || jetzt - gezeichnet > 28) {
       zeichne(stand, (jetzt / 1000) % 100000);
       gezeichnet = jetzt; standGezeichnet = stand;
@@ -1501,6 +1605,9 @@
   }
   function anstossen() {
     if (!bereit || reducedMotion) return;
+    if (Math.abs(window.scrollY - eigenY) < 3) return;   // selbst gesetzt
+    if (performance.now() < sperreBis) return;             // sanftes Einrasten laeuft
+    fahrt = null;
     ziel = zielAusScroll();
     anlaufen();
   }
@@ -1513,39 +1620,79 @@
   document.addEventListener('visibilitychange', function () { if (!document.hidden) anlaufen(); });
   window.addEventListener('scroll', anstossen, { passive: true });
 
-  /* ---- Springen: Tage, Stationen, Ueberspringen ---- */
-  function scrollZu(einheit, sofort) {
-    const oben = lauf.getBoundingClientRect().top + window.scrollY;
-    window.scrollTo({ top: oben + einheit / EINHEITEN * scrollStrecke(), behavior: sofort ? 'instant' : 'smooth' });
+  function gepinnt() { const r = lauf.getBoundingClientRect(); return r.top <= 2 && r.bottom >= window.innerHeight - 2; }
+  // Sanft in die Karte einrasten, statt ueber sie hinwegzuschiessen
+  function einrasten(amEnde) {
+    sperreBis = performance.now() + 900;
+    const e = amEnde ? EINHEITEN : 0;
+    fahrt = null; tempo = 0; ziel = stand = e;
+    window.scrollTo({ top: Math.round(yFuer(e)), behavior: 'smooth' });
+    zeichne(stand);
   }
+  let radZuletzt = 0; 
+  window.addEventListener('wheel', function (e) {
+    if (!bereit || reducedMotion || !lupe.hidden || e.ctrlKey) return;
+    const d = Math.sign(e.deltaY);
+    if (!d) return;
+    const jetzt = performance.now(), pause = jetzt - radZuletzt;
+    radZuletzt = jetzt;
+    const r = lauf.getBoundingClientRect(), vh = window.innerHeight;
+    if (jetzt < sperreBis) { if (r.top < vh && r.bottom > 0) e.preventDefault(); return; }
+    if (d > 0 && r.top > 2 && r.top < vh * 0.9) { e.preventDefault(); einrasten(false); return; }
+    if (d < 0 && r.bottom < vh - 2 && r.bottom > vh * 0.1) { e.preventDefault(); einrasten(true); return; }
+    if (!gepinnt()) return;
+    const i = haltIndex();
+    // am Anfang nach oben, am Ende nach unten: die Seite scrollt normal weiter
+    if (!fahrt && ((d < 0 && i === 0) || (d > 0 && i === HALTE.length - 1))) return;
+    e.preventDefault();
+    if (fahrt || pause < RAD_PAUSE) return;
+    stationsSchritt(d);
+  }, { passive: false });
+
+  let tY = null, tRicht = 0, tFertig = false;
+  halt.addEventListener('touchstart', function (e) {
+    tY = zeitLeiste.contains(e.target) ? null : e.touches[0].clientY;
+    tRicht = 0; tFertig = false;
+  }, { passive: true });
+  halt.addEventListener('touchmove', function (e) {
+    if (tY === null || !bereit || reducedMotion || !gepinnt()) return;
+    const dy = tY - e.touches[0].clientY;
+    if (!tRicht && Math.abs(dy) > 8) {
+      tRicht = dy > 0 ? 1 : -1;
+      const i = haltIndex();
+      if (!fahrt && ((tRicht < 0 && i === 0) || (tRicht > 0 && i === HALTE.length - 1))) tRicht = 2;
+    }
+    if (tRicht === 2 || !tRicht) return;
+    e.preventDefault();
+    if (!tFertig && Math.abs(dy) > 36) { tFertig = true; stationsSchritt(tRicht); }
+  }, { passive: false });
+  halt.addEventListener('touchend', function () { tY = null; }, { passive: true });
+
+  /* ---- Springen: Zeitleiste, Tasten, Ueberspringen ---- */
   function haltPhase(st) { return phasen.find(function (p) { return p.art === 'halt' && p.st === st; }); }
-  function springeZuTag(t) {
-    const s = ST.find(function (x) { return x.tag === t; });
-    const p = s && haltPhase(s.i);
-    if (p) scrollZu(p.ab + p.laenge * 0.5, true);
-  }
-  function springeZuStation(d) {
-    const u = ziel;
-    const halte = phasen.filter(function (p) { return p.art === 'halt'; });
-    let z = null;
-    if (d > 0) z = halte.find(function (p) { return p.ab + p.laenge * 0.5 > u + 0.01; });
-    else for (let i = halte.length - 1; i >= 0; i--) if (halte[i].ab + halte[i].laenge * 0.5 < u - 0.01) { z = halte[i]; break; }
-    if (z) scrollZu(z.ab + z.laenge * 0.5, false);
+  function springeZuStation(st) {
+    const p = haltPhase(st);
+    if (p) springeSofort(p.ab + p.laenge * 0.5);
   }
   document.addEventListener('keydown', function (e) {
-    if (!lupe.hidden || !bereit) return;
-    const r = lauf.getBoundingClientRect();
-    if (r.top > window.innerHeight * 0.5 || r.bottom < window.innerHeight * 0.5) return;
-    if (e.key === 'ArrowRight') { e.preventDefault(); springeZuStation(1); }
-    else if (e.key === 'ArrowLeft') { e.preventDefault(); springeZuStation(-1); }
+    if (!lupe.hidden || !bereit || reducedMotion || !gepinnt()) return;
+    const vor = ['ArrowRight', 'ArrowDown', 'PageDown', ' '].indexOf(e.key) >= 0;
+    const zur = ['ArrowLeft', 'ArrowUp', 'PageUp'].indexOf(e.key) >= 0;
+    if (!vor && !zur) return;
+    const i = haltIndex();
+    if (!fahrt && ((zur && i === 0) || (vor && i === HALTE.length - 1))) return;
+    e.preventDefault();
+    if (!e.repeat) stationsSchritt(vor ? 1 : -1);
   });
   wurzel.querySelector('.karte-weiter').addEventListener('click', function () {
+    fahrt = null;
     const oben = lauf.getBoundingClientRect().top + window.scrollY;
-    window.scrollTo({ top: oben + lauf.offsetHeight, behavior: 'instant' });
+    window.scrollTo({ top: Math.round(oben + lauf.offsetHeight), behavior: 'instant' });
+    eigenY = window.scrollY;
     ziel = stand = EINHEITEN; tempo = 0;
     zeichne(stand);
   });
-  document.getElementById('nachoben').addEventListener('click', function () { window.scrollTo({ top: 0, behavior: 'instant' }); ziel = stand = 0; });
+  document.getElementById('nachoben').addEventListener('click', function () { fahrt = null; window.scrollTo({ top: 0, behavior: 'instant' }); ziel = stand = 0; });
 
   /* ---- Laden ---- */
   function entpacken(buf) {
