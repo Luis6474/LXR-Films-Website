@@ -346,8 +346,10 @@
      Das Korn soll auf dem Grund zu ahnen sein und nicht ins Bild treten. */
   .grain-mid { background-image: var(--grain-mid-img); mix-blend-mode: overlay; opacity: var(--korn-mitte, 0.105); }
   .grain-dark {
+    /* Weisse Koerner mit Deckkraft statt "screen" -- rechnerisch dasselbe,
+       aber ohne eigenen Mischschritt (siehe tile() im Skript). */
     background-image: var(--grain-dark-img);
-    mix-blend-mode: screen; opacity: var(--korn-tiefe, 0.07);
+    opacity: var(--korn-tiefe, 0.07);
     animation-delay: calc(var(--grain-rate) / -2);   /* versetzt, damit sich beide Lagen nicht decken */
   }
   /* Zwoelf Schritte je halber Sekunde: das Korn wechselt 24-mal pro Sekunde,
@@ -390,7 +392,8 @@
     background-image: var(--grain-dark-img);
     background-repeat: repeat;
     background-size: var(--grain-size) var(--grain-size);
-    mix-blend-mode: screen;
+    /* Normal statt "screen": die Kachel traegt weisse Koerner mit Deckkraft,
+       das ergibt dasselbe Bild ohne eigenen Mischschritt. */
     opacity: 0.075;
   }
 
@@ -2131,7 +2134,7 @@
     sternKern: 0.55,     // voll heller Kern, Anteil der Reichweite
     // Korn
     kornMitte: 0.105,    // Deckkraft der Mittelton-Lage (overlay)
-    kornTiefe: 0.07      // Deckkraft der Tiefen-Lage (screen)
+    kornTiefe: 0.07      // Deckkraft der Tiefen-Lage (wirkt wie screen)
   };
   const STANDARD = Object.assign({}, EINST);
   const REGLER = /[?&]regler\b/.test(location.search);
@@ -2151,7 +2154,7 @@
      Tonwertumfang traegt:
        "mitte"  -- Normalverteilung um 128 (der neutrale Wert fuer "overlay").
                    Moduliert Mitteltoene, also Fotos und den Film.
-       "tiefen" -- fast schwarz mit vereinzelten hellen Koernern (fuer "screen").
+       "tiefen" -- vereinzelte weisse Koerner auf durchsichtigem Grund (wirkt wie "screen").
                    Schwarz laesst den Untergrund unveraendert, nur die Koerner
                    treten hervor -- so bekommen auch die dunklen Flaechen Korn,
                    ohne dass die Schwaerzen aufgehellt werden. */
@@ -2271,13 +2274,23 @@
     const TAB_N = 16384, TAB_S = 1024, TAB_M = 8;
     const kleinEndig = new Uint8Array(new Uint32Array([1]).buffer)[0] === 1;
 
-    function tile(feld, abbild, fertig) {
+    /* weiss: statt grauer Deckung weisse Koerner, deren Grauwert in der
+       Deckkraft steckt. "screen" mit Grauwert a und Ebenen-Deckkraft o ergibt
+       G + o*a*(1-G) -- genau dasselbe wie Weiss mit Deckkraft o*a normal
+       darueber gelegt. Das Bild bleibt bis aufs Bit gleich, aber normales
+       Ueberblenden braucht keinen eigenen Mischschritt ueber den ganzen
+       Schirm, bei dem die Grafikkarte erst den Grund darunter auslesen muss.
+       Verkleinert wird in vormultiplizierter Deckung -- der Mittelwert der
+       Deckkraft ist derselbe wie vorher der Mittelwert der Grauwerte. */
+    function tile(feld, abbild, fertig, weiss) {
       const tab = new Uint32Array(TAB_N);
       for (let i = 0; i < TAB_N; i++) {
         const v = abbild((i + 0.5) / TAB_S - TAB_M);
         const g = v < 0 ? 0 : (v > 255 ? 255 : v) | 0;
-        tab[i] = kleinEndig ? (0xFF000000 | (g << 16) | (g << 8) | g) >>> 0
-                            : ((g << 24) | (g << 16) | (g << 8) | 0xFF) >>> 0;
+        tab[i] = weiss
+          ? (kleinEndig ? ((g << 24) | 0xFFFFFF) >>> 0 : (0xFFFFFF00 | g) >>> 0)
+          : (kleinEndig ? (0xFF000000 | (g << 16) | (g << 8) | g) >>> 0
+                        : ((g << 24) | (g << 16) | (g << 8) | 0xFF) >>> 0);
       }
       const gross = document.createElement('canvas');
       gross.width = gross.height = S;
@@ -2415,16 +2428,16 @@
     let feld = null;
     /* Je Kachel vier Schritte, jeder auch auf einem gedrosselten Handy
        unter 50 ms -- ab dieser Dauer gilt eine Aufgabe als blockierend. */
-    function kachel(abbild, name) {
+    function kachel(abbild, name, weiss) {
       return [
         function () { feld = wuerfeln(); },
         function () { feld = weichQuer(feld, S); },
         function () { feld = norm(weichHoch(feld, S)); },
-        function () { tile(feld, abbild, setze(name)); feld = null; }
+        function () { tile(feld, abbild, setze(name), weiss); feld = null; }
       ];
     }
     const schritte = kachel(mitteAbbild, '--grain-mid-img')
-      .concat(kachel(tiefenAbbild, '--grain-dark-img'));
+      .concat(kachel(tiefenAbbild, '--grain-dark-img', true));
     function weiter() {
       const s = schritte.shift();
       if (!s) return;
