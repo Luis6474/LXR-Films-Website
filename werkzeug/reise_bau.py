@@ -114,13 +114,15 @@ def holen(url, datei, versuche=4):
     raise SystemExit("nicht abrufbar: " + url)
 
 
+FEHLT = []
+
+
 def overpass(q, name):
     cf = os.path.join(CACHE, "reise_%s.json" % name)
     if os.path.exists(cf) and os.path.getsize(cf) > 0:
         return json.load(open(cf, encoding="utf-8"))
     for v, server in enumerate(["https://overpass-api.de/api/interpreter", "https://overpass.private.coffee/api/interpreter",
-                                "https://overpass-api.de/api/interpreter", "https://overpass.kumi.systems/api/interpreter",
-                                "https://overpass-api.de/api/interpreter"]):
+                                "https://overpass.kumi.systems/api/interpreter"] * 3):
         try:
             req = urllib.request.Request(server, data=urllib.parse.urlencode({"data": q}).encode(),
                                          headers={"User-Agent": "lxr-films-reisekarte/1.0"})
@@ -131,8 +133,12 @@ def overpass(q, name):
             time.sleep(1.5)
             return j
         except Exception as e:
-            print("   overpass", name, server, "->", e); time.sleep(8 + 6 * v)
-    raise SystemExit("Overpass nicht abrufbar: " + name)
+            print("   overpass", name, server, "->", e); time.sleep(min(60, 10 + 8 * v))
+    # Nicht abbrechen: das Stueck kommt ohne OSM-Daten aus (nicht zwischengespeichert,
+    # der naechste Lauf versucht es wieder).
+    print("   !! overpass", name, "nicht abrufbar -- ohne OSM weiter")
+    FEHLT.append(name)
+    return {"elements": []}
 
 
 # ---------- Gelaende ----------
@@ -582,6 +588,7 @@ def main():
         fh.write(";\n")
     groesse = sum(os.path.getsize(os.path.join(DATEN, f)) for f in os.listdir(DATEN))
     print("Fertig: %d Stationen, %d Kamerapunkte, Daten %.1f MB" % (len(st_aus), len(kp), groesse / 1e6))
+    if FEHLT: print("Ohne OSM-Daten (erneut laufen lassen):", ", ".join(FEHLT))
 
 
 if __name__ == "__main__":

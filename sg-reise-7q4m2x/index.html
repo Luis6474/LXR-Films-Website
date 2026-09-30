@@ -102,6 +102,7 @@
   .karte-hilfe { position: absolute; top: max(24px, 3.4vh); left: 18px; font: 0.7em 'Libre Caslon Display', Georgia, serif; letter-spacing: 0.2em;
     text-transform: uppercase; color: var(--text-dim); opacity: 0; transition: opacity 0.8s; pointer-events: none; }
   .karte.ist-bereit .karte-hilfe { opacity: 0.7; }
+  @media (max-width: 899px) { .karte-hilfe { display: none; } }
   .karte-quelle { position: absolute; right: 12px; bottom: 8px; margin: 0; font-size: 9px; letter-spacing: 0.02em; color: var(--text-dim); opacity: 0.4; pointer-events: none; }
 
   @media (min-width: 900px) {
@@ -195,6 +196,10 @@
 (function () {
   'use strict';
   const R = window.REISE, FOTOS = window.FOTOS || [];
+  if (!R) {
+    document.querySelector('.karte-laden').textContent = 'Kartendaten fehlen (reise.js)';
+    return;
+  }
   const reducedMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
   const B = 'bilder/';
   const WT = ['So', 'Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa'];
