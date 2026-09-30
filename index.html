@@ -1352,10 +1352,13 @@
   .karte-datum span.ist-an { opacity: 0.9; }
   /* Elf Striche, einer je Tag: wo man in der Reise steht. */
   .karte-zeit {
-    position: absolute; left: 50%; bottom: calc(max(44px, 7dvh) + 2.6em);
+    position: absolute; left: 50%; bottom: calc(max(44px, 7dvh) + 2.6em - 10px);
     transform: translateX(-50%);
-    display: flex; gap: 9px; pointer-events: none;
+    display: flex; gap: 9px; padding: 10px 6px; cursor: pointer; touch-action: none;
   }
+  /* Ziehen oder klicken: springt zum Tag (bei den Alpenkarten zum Ort) */
+  .karte-zeit:hover i { opacity: 0.45; }
+  .karte-zeit:hover i.ist-an { opacity: 0.9; }
   .karte-zeit i {
     display: block; width: 1px; height: 7px;
     background: var(--text); opacity: 0.18;
@@ -4049,6 +4052,8 @@
                ort: '255, 196, 130', ring: '255, 226, 190', punkt: '255, 236, 212' },
       gradnetz: [-8.5, -3, 55.5, 58.5],
       kompass: [-7.05, 57.02],
+      nah: [34, 42],                         // Kameraabstand an den Orten (quer / hochkant), km
+      ueberflug: 40,                         // ab so vielen km Strecke steigt der Flug bis zur ganzen Uebersicht
       wellen: [0.7, 3.2, 2.6, 8.0]          // Abstand fein/grob (km), Abklingen fein/grob (km)
     },
     /* The Mountains: dunkle Tannentaeler, Schiefer an den Haengen, oben
@@ -4382,6 +4387,7 @@
       let s = 0;
       phasen.forEach(function (p) { p.ab = s; s += p.laenge; });
       EINHEITEN = s;
+      halteBauen();
       if (!reducedMotion) lauf.style.setProperty('--einheiten', EINHEITEN.toFixed(2));
       ueberGeo = null; ueberNeu = true;
 
@@ -4425,8 +4431,18 @@
         const w = wege[ph.von], A = orte[ph.von], B = orte[ph.nach], fl = fluege[ph.von];
         const s = fl.S * glatt(f);
         const anteil = fl.u1 > 0 ? fl.u(s) / fl.u1 : glatt(f);
-        const dist = fl.w(s) / BREITE;
-        const oben = Math.max(0, Math.min(1, (dist - NAH.dist) / Math.max(1, fl.wMax / BREITE - NAH.dist)));
+        let dist = fl.w(s) / BREITE, gipfel = fl.wMax / BREITE;
+        /* Ueberblick: unterwegs steigt die Kamera weiter auf als die
+           Flugbahn allein verlangt -- bei langen Strecken bis zur ganzen
+           Uebersicht, damit man sieht, wo in der Reise man gerade ist; bei
+           kurzen Wegen entsprechend weniger. */
+        if (CFG.ueberflug) {
+          const g = Math.min(1, fl.u1 / CFG.ueberflug);
+          const spitze = logMix(NAH.dist, Math.max(NAH.dist, uebersicht.dist * 0.9), g);
+          dist = Math.max(dist, logMix(NAH.dist, spitze, Math.sin(Math.PI * glatt(f))));
+          gipfel = Math.max(gipfel, spitze);
+        }
+        const oben = Math.max(0, Math.min(1, (dist - NAH.dist) / Math.max(1, gipfel - NAH.dist)));
         setze({ x: mix(A[0], B[0], anteil), y: mix(A[1], B[1], anteil), z: mix(A[2], B[2], anteil),
                 dist: dist, pitch: mix(NAH.pitch, 22, glatt(Math.min(1, oben * 1.3))),
                 bearing: winkelMix(blick[ph.von] + 3, blick[ph.nach] - 3, stufe(0.2, 0.8, anteil)) });
@@ -5715,29 +5731,90 @@
       linien(k, cam, zeitS);
     }
 
-    /* ---- Gefuehrt, aber in der Hand ----
-       Die Kamera haengt wieder am Scrollen: scrollt man, faehrt sie, hoert
-       man auf, bremst sie weich und steht. Sie laeuft der Scrollposition
-       aber nicht beliebig schnell hinterher, sondern mit einer Obergrenze
-       und sanftem Anfahren und Bremsen (keine Feder, die bei jedem
-       Radschwung losschnellt). So bestimmt man Richtung und ungefaehres
-       Tempo selbst, die Fahrt bleibt trotzdem ruhig: ein Flug von Ort zu
-       Ort dauert mindestens rund drei Sekunden, auch bei wildem Scrollen.
-       Wer schneller weiter will, hat "Karte ueberspringen".
+    /* ---- Schritt fuer Schritt ----
+       Ein Einrasten am Mausrad (ein Wischen, eine Pfeiltaste) faehrt genau
+       zur naechsten Station und kommt dort ganz an -- die Bilder stehen,
+       ohne dass man noch ein Stueckchen nachschieben muss. Waehrend der
+       Fahrt zaehlt weiteres Drehen nicht, danach erst wieder nach einer
+       kurzen Pause am Rad: wildes Kurbeln bringt nur eine Station weiter.
+       Schneller geht es ueber die Zeitleiste unten (ziehen oder klicken).
        Solange die Karte zu sehen ist, laeuft die Zeichnung weiter: das
        Wasser bewegt sich. */
-    const VMAX = 0.6, BESCHL = 1.0;             // Einheiten je s, je s^2
+    const VMAX = 0.6, BESCHL = 1.0, RAD_PAUSE = 220;   // Einheiten je s, je s^2; ms
     let ziel = 0, stand = 0, tempo = 0, laeuft = false, zuletzt = 0, sichtbar = false;
+    let HALTE = [0], fahrt = null, eigenY = -1e9, sperreBis = 0;
+    function scrollStrecke() { return lauf.offsetHeight - halt.offsetHeight; }
     function zielAusScroll() {
-      const s = lauf.offsetHeight - halt.offsetHeight;
+      const s = scrollStrecke();
       if (s <= 0) return 0;
       const oben = lauf.getBoundingClientRect().top - scroller.getBoundingClientRect().top;
       return Math.max(0, Math.min(1, -oben / s)) * EINHEITEN;
     }
+    function halteBauen() {
+      HALTE = [0];
+      phasen.forEach(function (p) { if (p.art === 'halt') HALTE.push(p.ab + p.laenge * 0.5); });
+      HALTE.push(EINHEITEN);
+    }
+    // Sekunden je Phase: dasselbe ruhige Tempo wie vorher beim Scrollen
+    function phasenZeit(p) {
+      if (p.art === 'fahrt') return Math.max(p.von < 0 ? 2.6 : 1.8, p.laenge / VMAX);
+      if (p.art === 'weit') return 3.2;
+      return Math.max(1.0, p.laenge / VMAX);
+    }
+    function fahrtBauen(a, b) {
+      const lo = Math.min(a, b), hi = Math.max(a, b), stuecke = [];
+      phasen.forEach(function (p) {
+        const x0 = Math.max(lo, p.ab), x1 = Math.min(hi, p.ab + p.laenge);
+        if (x1 > x0) stuecke.push([x0, x1, (x1 - x0) / p.laenge * phasenZeit(p)]);
+      });
+      if (b < a) stuecke.reverse().forEach(function (s) { const t = s[0]; s[0] = s[1]; s[1] = t; });
+      const T = stuecke.reduce(function (s, x) { return s + x[2]; }, 0) || 0.3;
+      return { t0: performance.now(), T: T, stuecke: stuecke, nach: b };
+    }
+    function fahrtStand(f, jetzt) {
+      const u = Math.min(1, (jetzt - f.t0) / 1000 / f.T);
+      let t = (0.5 * u + 0.5 * (0.5 - 0.5 * Math.cos(Math.PI * u))) * f.T;
+      for (let i = 0; i < f.stuecke.length; i++) {
+        const s = f.stuecke[i];
+        if (t <= s[2] || i === f.stuecke.length - 1) return s[0] + (s[1] - s[0]) * Math.min(1, t / (s[2] || 1));
+        t -= s[2];
+      }
+      return f.nach;
+    }
+    function yFuer(einheit) {
+      return lauf.getBoundingClientRect().top - scroller.getBoundingClientRect().top + scroller.scrollTop +
+             einheit / EINHEITEN * scrollStrecke();
+    }
+    function setzeScroll(einheit) {
+      scroller.scrollTo({ top: Math.round(yFuer(einheit)), behavior: 'instant' });
+      eigenY = scroller.scrollTop;
+    }
+    function haltIndex() {
+      const u = fahrt ? fahrt.nach : stand;
+      let b = 0;
+      for (let i = 1; i < HALTE.length; i++) if (Math.abs(HALTE[i] - u) < Math.abs(HALTE[b] - u)) b = i;
+      return b;
+    }
+    function stationsSchritt(d) {
+      if (fahrt || !bereit) return false;
+      const j = haltIndex() + d;
+      if (j < 0 || j >= HALTE.length) return false;
+      fahrt = fahrtBauen(stand, HALTE[j]);
+      ziel = HALTE[j]; tempo = 0;
+      setzeScroll(ziel);
+      anlaufen();
+      return true;
+    }
+    function springeSofort(einheit) {
+      fahrt = null; tempo = 0;
+      ziel = stand = einheit;
+      setzeScroll(einheit);
+      zeichne(stand);
+      anlaufen();
+    }
+    // Nur noch, falls jemand am Rollbalken zieht: dann folgt die Kamera gebremst.
     function folgen(dt) {
       const rest = ziel - stand, betrag = Math.abs(rest);
-      // Soll-Tempo: hoechstens VMAX, und nur so schnell, dass gleichmaessiges
-      // Bremsen noch genau am Ziel zum Stehen kommt.
       const soll = Math.sign(rest) * Math.min(VMAX, Math.sqrt(2 * BESCHL * betrag) * 0.95);
       const d = soll - tempo, grenze = BESCHL * dt;
       tempo += Math.max(-grenze, Math.min(grenze, d));
@@ -5756,7 +5833,10 @@
       }
       const dt = Math.min(0.05, (jetzt - zuletzt) / 1000);
       zuletzt = jetzt;
-      folgen(dt);
+      if (fahrt) {
+        stand = fahrtStand(fahrt, jetzt);
+        if (jetzt - fahrt.t0 >= fahrt.T * 1000) { stand = ziel = fahrt.nach; fahrt = null; }
+      } else folgen(dt);
       if (stand !== standGezeichnet || jetzt - gezeichnet > 28) {
         zeichne(stand, (jetzt / 1000) % 100000);
         gezeichnet = jetzt; standGezeichnet = stand;
@@ -5770,9 +5850,109 @@
     }
     function anstossen() {
       if (!bereit || reducedMotion) return;
+      if (Math.abs(scroller.scrollTop - eigenY) < 3) return;   // selbst gesetzt
+      if (performance.now() < sperreBis) return;                // sanftes Einrasten laeuft
+      fahrt = null;
       ziel = zielAusScroll();
       anlaufen();
     }
+    function gepinnt() {
+      const r = lauf.getBoundingClientRect(), s = scroller.getBoundingClientRect();
+      return r.top <= s.top + 2 && r.bottom >= s.bottom - 2;
+    }
+    // Sanft in die Karte einrasten, statt ueber sie hinwegzuschiessen
+    function einrasten(amEnde) {
+      sperreBis = performance.now() + 900;
+      const e = amEnde ? EINHEITEN : 0;
+      fahrt = null; tempo = 0; ziel = stand = e;
+      scroller.scrollTo({ top: Math.round(yFuer(e)), behavior: 'smooth' });
+      zeichne(stand);
+      anlaufen();
+    }
+    let radZuletzt = 0;
+    scroller.addEventListener('wheel', function (e) {
+      if (!bereit || reducedMotion || e.ctrlKey || !viewer.classList.contains('is-active')) return;
+      const d = Math.sign(e.deltaY);
+      if (!d) return;
+      const jetzt = performance.now(), pause = jetzt - radZuletzt;
+      radZuletzt = jetzt;
+      const r = lauf.getBoundingClientRect(), s = scroller.getBoundingClientRect(), h = s.height;
+      const oben = r.top - s.top, unten = r.bottom - s.top;
+      if (jetzt < sperreBis) { if (oben < h && unten > 0) e.preventDefault(); return; }
+      if (d > 0 && oben > 2 && oben < h * 0.9) { e.preventDefault(); einrasten(false); return; }
+      if (d < 0 && unten < h - 2 && unten > h * 0.1) { e.preventDefault(); einrasten(true); return; }
+      if (!gepinnt()) return;
+      const i = haltIndex();
+      // am Anfang nach oben, am Ende nach unten: die Seite scrollt normal weiter
+      if (!fahrt && ((d < 0 && i === 0) || (d > 0 && i === HALTE.length - 1))) return;
+      e.preventDefault();
+      if (fahrt || pause < RAD_PAUSE) return;
+      stationsSchritt(d);
+    }, { passive: false });
+    let tY = null, tRicht = 0, tFertig = false;
+    halt.addEventListener('touchstart', function (e) {
+      tY = zeit.contains(e.target) ? null : e.touches[0].clientY;
+      tRicht = 0; tFertig = false;
+    }, { passive: true });
+    halt.addEventListener('touchmove', function (e) {
+      if (tY === null || !bereit || reducedMotion || !gepinnt()) return;
+      const dy = tY - e.touches[0].clientY;
+      if (!tRicht && Math.abs(dy) > 8) {
+        tRicht = dy > 0 ? 1 : -1;
+        const i = haltIndex();
+        if (!fahrt && ((tRicht < 0 && i === 0) || (tRicht > 0 && i === HALTE.length - 1))) tRicht = 2;
+      }
+      if (tRicht === 2 || !tRicht) return;
+      e.preventDefault();
+      if (!tFertig && Math.abs(dy) > 36) { tFertig = true; stationsSchritt(tRicht); }
+    }, { passive: false });
+    halt.addEventListener('touchend', function () { tY = null; }, { passive: true });
+    document.addEventListener('keydown', function (e) {
+      if (!bereit || reducedMotion || !viewer.classList.contains('is-active') || !gepinnt()) return;
+      const vor = ['ArrowRight', 'ArrowDown', 'PageDown', ' '].indexOf(e.key) >= 0;
+      const zur = ['ArrowLeft', 'ArrowUp', 'PageUp'].indexOf(e.key) >= 0;
+      if (!vor && !zur) return;
+      const i = haltIndex();
+      if (!fahrt && ((zur && i === 0) || (vor && i === HALTE.length - 1))) return;
+      e.preventDefault();
+      if (!e.repeat) stationsSchritt(vor ? 1 : -1);
+    });
+    /* Zeitleiste: ziehen oder klicken springt zu dem Tag (bei den
+       Alpenkarten: zu dem Ort) unter dem Finger -- das ist der schnelle Weg
+       durch die Reise, nicht das Mausrad. */
+    function einheitFuerTag(t) {
+      let beste = null, abst = 1e9;
+      phasen.forEach(function (p) {
+        if (p.art !== 'halt') return;
+        if (t >= p.tagA && t <= p.tagB) {
+          const n = p.tagB - p.tagA + 1;
+          beste = p.ab + p.laenge * (n > 1 ? (t - p.tagA + 0.5) / n : 0.5); abst = 0;
+        } else {
+          const a = Math.min(Math.abs(t - p.tagA), Math.abs(t - p.tagB));
+          if (a < abst) { abst = a; beste = p.ab + p.laenge * 0.5; }
+        }
+      });
+      return beste;
+    }
+    let zieht = false, gezogen = -1;
+    function vorspulen(x) {
+      const r = zeit.getBoundingClientRect();
+      const t = Math.max(0, Math.min(ANZAHL - 1, Math.floor((x - r.left) / r.width * ANZAHL)));
+      if (t === gezogen) return;
+      gezogen = t;
+      const u = einheitFuerTag(t);
+      if (u !== null) springeSofort(u);
+    }
+    zeit.addEventListener('pointerdown', function (e) {
+      if (!bereit) return;
+      zieht = true; gezogen = -1;
+      try { zeit.setPointerCapture(e.pointerId); } catch (x) {}
+      e.preventDefault();
+      vorspulen(e.clientX);
+    });
+    zeit.addEventListener('pointermove', function (e) { if (zieht) vorspulen(e.clientX); });
+    zeit.addEventListener('pointerup', function () { zieht = false; });
+    zeit.addEventListener('pointercancel', function () { zieht = false; });
     /* Steht die Karte bildfuellend (die Buehne klebt), liegt das Korn der
        Projektseite vollstaendig unter ihr. Es wird dann nicht gezeichnet --
        sein Mischschritt ueber den ganzen Schirm faellt in jedem Bild weg,
@@ -5849,19 +6029,36 @@
          wieder dort, wo die Scrollposition ist -- sonst stand sie noch am
          Ende des letzten Besuchs und flog die ganze Reise rueckwaerts. */
       if (geladen) {
-        if (bereit) { groesse(); vorbereiten(W, H); stand = ziel = zielAusScroll(); tempo = 0; zeichne(stand); }
+        if (bereit) { groesse(); vorbereiten(W, H); fahrt = null; stand = ziel = zielAusScroll(); tempo = 0; zeichne(stand); }
         return;
       }
       geladen = true;
-      // Erst die Groesse, dann der Kontext -- sonst wird er gleich wieder umgebaut.
-      try { groesse(); glAnstossen(); } catch (e) { /* dann eben beim Einrichten */ }
+      /* Geladen wird sofort, gerechnet erst nach der Blende: die Karte liegt
+         weit unten auf der Projektseite, und Entpacken, Aufbereiten und das
+         Hochladen auf die Grafikkarte kosteten auf schwaecheren Rechnern
+         zusammen gut 300 ms -- genau waehrend die Projektseite aufblendet.
+         Jetzt kommt jeder Schritt in eine eigene ruhige Luecke. */
+      const ab = performance.now() + 1000;
+      function ruhig(x) {
+        return new Promise(function (fertig) {
+          const warte = Math.max(0, ab - performance.now());
+          setTimeout(function () {
+            if ('requestIdleCallback' in window) requestIdleCallback(function () { fertig(x); }, { timeout: 300 });
+            else setTimeout(function () { fertig(x); }, 16);
+          }, warte);
+        });
+      }
       fetch(CFG.datei).then(function (r) {
         if (!r.ok) throw new Error('Karte ' + r.status);
         return r.arrayBuffer();
-      }).then(entpacken).then(function (buf) {
+      }).then(ruhig).then(entpacken).then(ruhig).then(function (buf) {
         D = lesen(buf);
-        return glFertig();
+        return ruhig();
       }).then(function () {
+        // Erst die Groesse, dann der Kontext -- sonst wird er gleich wieder umgebaut.
+        try { groesse(); glAnstossen(); } catch (e) { /* dann eben beim Einrichten */ }
+        return glFertig();
+      }).then(ruhig).then(function () {
         groesse();
         vorbereiten(W, H);
         if (!glStarten()) throw new Error('kein WebGL');
@@ -5889,7 +6086,9 @@
     const weiter = wurzel.querySelector('.karte-weiter');
     if (weiter) weiter.addEventListener('click', function () {
       const oben = lauf.getBoundingClientRect().top - scroller.getBoundingClientRect().top + scroller.scrollTop;
+      fahrt = null;
       scroller.scrollTo({ top: oben + lauf.offsetHeight, behavior: 'instant' });
+      eigenY = scroller.scrollTop;
       ziel = stand = EINHEITEN; tempo = 0;
       zeichne(stand);
       anlaufen();
