@@ -4482,21 +4482,71 @@
     let gl = null, prog = null, loc = {}, puf = {}, W = 1, H = 1, PR = 1, ctx2 = null;
     const GRUND = CFG.grund;
 
-    function glStarten() {
+    /* ---- Shader im Voraus uebersetzen ----
+       Das Uebersetzen der Shader dauert auf Windows-Laptops (ANGLE/Direct3D)
+       schnell einige hundert Millisekunden. Frueher wurde nach jedem einzelnen
+       Shader sofort nach dem Ergebnis gefragt -- der Hauptthread stand dann
+       jedes Mal still, bis der Treiber fertig war, einer nach dem anderen,
+       mitten im Aufgehen der Projektseite.
+       Jetzt werden alle Programme gleich beim Oeffnen angestossen, noch
+       waehrend die Kartendaten laden, und niemand wartet darauf: mit
+       KHR_parallel_shader_compile fragt die Seite nur nach, ob sie schon
+       fertig sind, ohne anzuhalten. Erst dann wird die Karte eingerichtet. */
+    let vorrat = new Map();
+    function glKontext() {
+      if (gl) return gl;
       const opt = { antialias: true, alpha: false, depth: true, powerPreference: 'high-performance' };
       gl = glc.getContext('webgl2', opt) || glc.getContext('webgl', opt);
-      if (!gl) return false;
-      function shader(typ, src) {
-        const s = gl.createShader(typ);
-        gl.shaderSource(s, src); gl.compileShader(s);
-        if (!gl.getShaderParameter(s, gl.COMPILE_STATUS)) throw new Error(gl.getShaderInfoLog(s));
-        return s;
+      return gl;
+    }
+    function glZwei() { return typeof WebGL2RenderingContext !== 'undefined' && gl instanceof WebGL2RenderingContext; }
+    // Uebersetzen und verbinden, ohne nach dem Ergebnis zu fragen.
+    function glBauen(vs, fs) {
+      const pr = gl.createProgram();
+      [[gl.VERTEX_SHADER, vs], [gl.FRAGMENT_SHADER, fs]].forEach(function (q) {
+        const s = gl.createShader(q[0]);
+        gl.shaderSource(s, q[1]); gl.compileShader(s);
+        gl.attachShader(pr, s);
+      });
+      gl.linkProgram(pr);
+      return pr;
+    }
+    // Aus dem Vorrat, sonst jetzt bauen. Geprueft wird beim Aufrufer (LINK_STATUS).
+    function glProgramm(vs, fs) {
+      const k = vs + '\u0000' + fs;
+      const pr = vorrat.get(k);
+      if (pr) { vorrat.delete(k); return pr; }
+      return glBauen(vs, fs);
+    }
+    // Alle Programme anstossen, die die Karte brauchen wird.
+    function glAnstossen() {
+      if (!glKontext() || vorrat.size) return;
+      const zwei = glZwei();
+      const liste = [[LAND_VS, LAND_FS]];
+      if (zwei || gl.getExtension('OES_standard_derivatives')) liste.push(meerQuellen(zwei));
+      const hp = gl.getShaderPrecisionFormat(gl.FRAGMENT_SHADER, gl.HIGH_FLOAT);
+      if ((zwei || gl.getExtension('EXT_blend_minmax')) && hp && hp.precision >= 23) {
+        liste.push([VS_BAND, FS_BAND], [VS_DECK, FS_DECK], [VS_SAND, FS_SAND], [VS_ORT, FS_ORT]);
       }
-      prog = gl.createProgram();
-      gl.attachShader(prog, shader(gl.VERTEX_SHADER,
+      liste.forEach(function (q) { vorrat.set(q[0] + '\u0000' + q[1], glBauen(q[0], q[1])); });
+    }
+    // Erfuellt, sobald alle angestossenen Programme fertig sind -- ohne zu blockieren.
+    function glFertig() {
+      return new Promise(function (fertig) {
+        const ext = gl && gl.getExtension('KHR_parallel_shader_compile');
+        if (!ext) { fertig(); return; }
+        (function pruefen() {
+          let alle = true;
+          vorrat.forEach(function (pr) { if (alle && !gl.getProgramParameter(pr, ext.COMPLETION_STATUS_KHR)) alle = false; });
+          if (alle || gl.isContextLost()) fertig(); else requestAnimationFrame(pruefen);
+        })();
+      });
+    }
+
+    const LAND_VS =
         'attribute vec2 aP; uniform mat4 uM; uniform float uZ; uniform float uQ; varying vec3 vW;' +
-        'void main(){ vec3 w = vec3(aP / uQ, uZ); vW = w; gl_Position = uM * vec4(w, 1.0); }'));
-      gl.attachShader(prog, shader(gl.FRAGMENT_SHADER,
+        'void main(){ vec3 w = vec3(aP / uQ, uZ); vW = w; gl_Position = uM * vec4(w, 1.0); }';
+    const LAND_FS =
         '#ifdef GL_FRAGMENT_PRECISION_HIGH\nprecision highp float;\n#else\nprecision mediump float;\n#endif\n' +
         'uniform vec3 uF; uniform float uA; uniform vec3 uAuge; uniform vec3 uGrund; uniform vec2 uNebel; uniform vec2 uHalb; uniform vec2 uMitte; uniform vec2 uRand; varying vec3 vW;' +
         'void main(){' +
@@ -4510,8 +4560,11 @@
         '  float e = smoothstep(0.88, 0.995, max(abs(vW.x) / uRand.x, abs(vW.y) / uRand.y));' +
         '  float m = max(n, e);' +
         '  gl_FragColor = vec4(mix(uF, uGrund, m), uA * (1.0 - 0.7 * m));' +
-        '}'));
-      gl.linkProgram(prog);
+        '}';
+
+    function glStarten() {
+      if (!glKontext()) return false;
+      prog = glProgramm(LAND_VS, LAND_FS);
       if (!gl.getProgramParameter(prog, gl.LINK_STATUS)) return false;
       gl.useProgram(prog);
       ['uM', 'uZ', 'uQ', 'uF', 'uA', 'uAuge', 'uGrund', 'uNebel', 'uHalb', 'uMitte', 'uRand'].forEach(function (n) {
@@ -4530,8 +4583,8 @@
       gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, puf.l);
       gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, D.lin, gl.STATIC_DRAW);
 
-      meerStarten(shader);
-      ueberStarten(shader);
+      meerStarten();
+      ueberStarten();
       gl.useProgram(prog);
       gl.uniform1f(loc.uQ, D.kopf.q);
       gl.uniform3fv(loc.uGrund, GRUND);
@@ -4556,9 +4609,7 @@
        Graustufenbild, das mit der Karte geladen wird. Werden die Linien auf
        dem Bildschirm zu dicht (weit weg), blenden sie aus, statt zu flimmern. */
     let meer = null;
-    function meerStarten(shader) {
-      const zwei = typeof WebGL2RenderingContext !== 'undefined' && gl instanceof WebGL2RenderingContext;
-      if (!zwei && !gl.getExtension('OES_standard_derivatives')) return;
+    function meerQuellen(zwei) {
       const kopfV = zwei ? '#version 300 es\n' : '';
       const kopfF = zwei ? '#version 300 es\n' : '#extension GL_OES_standard_derivatives : enable\n';
       const ein = zwei ? 'in' : 'attribute', raus = zwei ? 'out' : 'varying', rein = zwei ? 'in' : 'varying';
@@ -4587,11 +4638,14 @@
         '  float a = ((0.22 * fein + 0.15 * grob) * leben + 0.035 * n * n) * weg;' +
         '  ' + (zwei ? 'aus' : 'gl_FragColor') + ' = vec4(uTinte, a);' +
         '}';
+      return [vs, fs];
+    }
+    function meerStarten() {
+      const zwei = glZwei();
+      if (!zwei && !gl.getExtension('OES_standard_derivatives')) return;
+      const q = meerQuellen(zwei);
       try {
-        const pr = gl.createProgram();
-        gl.attachShader(pr, shader(gl.VERTEX_SHADER, vs));
-        gl.attachShader(pr, shader(gl.FRAGMENT_SHADER, fs));
-        gl.linkProgram(pr);
+        const pr = glProgramm(q[0], q[1]);
         if (!gl.getProgramParameter(pr, gl.LINK_STATUS)) return;
         const m = { prog: pr, loc: {} };
         ['uM', 'uQ', 'uZ', 'uAbst', 'uGroesse', 'uKm', 'uT', 'uAuge', 'uNebel', 'uHalb', 'uMitte', 'uWelle', 'uTinte', 'uRand'].forEach(function (n) {
@@ -4659,7 +4713,12 @@
     function groesse() {
       PR = Math.min(2, window.devicePixelRatio || 1);
       W = halt.clientWidth || 1; H = halt.clientHeight || 1;
-      [glc, linc].forEach(function (c) { c.width = Math.round(W * PR); c.height = Math.round(H * PR); });
+      const bw = Math.round(W * PR), bh = Math.round(H * PR);
+      /* Die Zeichenflaeche der Grafikkarte nur bei echter Aenderung neu
+         anlegen: jedes Setzen von width/height legt ihre Puffer (mit
+         Kantenglaettung) neu an und wartet dabei auf die Grafikkarte. */
+      if (glc.width !== bw || glc.height !== bh) { glc.width = bw; glc.height = bh; }
+      linc.width = bw; linc.height = bh;
       schildSchluessel = '';
       if (gl) gl.viewport(0, 0, glc.width, glc.height);
     }
@@ -4938,17 +4997,14 @@
       '  gl_FragColor = o;' +
       '}';
 
-    function ueberStarten(shader) {
+    function ueberStarten() {
       ueber = null;
-      const zwei = typeof WebGL2RenderingContext !== 'undefined' && gl instanceof WebGL2RenderingContext;
+      const zwei = glZwei();
       const mm = zwei ? null : gl.getExtension('EXT_blend_minmax');
       const hp = gl.getShaderPrecisionFormat(gl.FRAGMENT_SHADER, gl.HIGH_FLOAT);
       if ((!zwei && !mm) || !hp || hp.precision < 23) return;
       function programm(vs, fs, uni, att) {
-        const pr = gl.createProgram();
-        gl.attachShader(pr, shader(gl.VERTEX_SHADER, vs));
-        gl.attachShader(pr, shader(gl.FRAGMENT_SHADER, fs));
-        gl.linkProgram(pr);
+        const pr = glProgramm(vs, fs);
         if (!gl.getProgramParameter(pr, gl.LINK_STATUS)) throw new Error('Programm');
         const p = { prog: pr, loc: {}, att: {} };
         uni.forEach(function (n) { p.loc[n] = gl.getUniformLocation(pr, n); });
@@ -5801,11 +5857,15 @@
         return;
       }
       geladen = true;
+      // Erst die Groesse, dann der Kontext -- sonst wird er gleich wieder umgebaut.
+      try { groesse(); glAnstossen(); } catch (e) { /* dann eben beim Einrichten */ }
       fetch(CFG.datei).then(function (r) {
         if (!r.ok) throw new Error('Karte ' + r.status);
         return r.arrayBuffer();
       }).then(entpacken).then(function (buf) {
         D = lesen(buf);
+        return glFertig();
+      }).then(function () {
         groesse();
         vorbereiten(W, H);
         if (!glStarten()) throw new Error('kein WebGL');
@@ -5839,7 +5899,7 @@
       anlaufen();
     });
 
-    glc.addEventListener('webglcontextlost', function (e) { e.preventDefault(); bereit = false; }, false);
+    glc.addEventListener('webglcontextlost', function (e) { e.preventDefault(); bereit = false; vorrat = new Map(); }, false);
     glc.addEventListener('webglcontextrestored', function () {
       if (!D) return;
       loc = {}; puf = {}; ueberNeu = true;
