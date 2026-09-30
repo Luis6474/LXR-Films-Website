@@ -1369,6 +1369,21 @@
      leisen Aufleuchten, wenn die Karte erscheint -- vorher war der Knopf so
      zurueckgenommen, dass man ihn uebersah und sich ueber die Laenge der
      Reise aergerte, obwohl man sie haette ueberspringen koennen. */
+  /* Vor und zurueck zum Anklicken -- fuer Touchpad, Laptop ohne Maus und
+     alle, die das Mausrad nicht als Bedienung erkennen. */
+  .karte:focus { outline: none; }
+  .karte-schritt {
+    position: absolute; left: 50%; bottom: calc(max(44px, 7dvh) + 2.6em - 13px);
+    width: 34px; height: 34px; padding: 0; border-radius: 50%;
+    border: 1px solid rgba(255, 226, 190, 0.35); background: rgba(8, 11, 12, 0.45);
+    color: rgba(255, 236, 212, 0.92); font: 18px/1 Georgia, serif; cursor: pointer;
+    opacity: 0; transition: opacity 0.8s var(--ease), background-color 0.25s, border-color 0.25s;
+  }
+  .karte-schritt.zurueck { transform: translateX(calc(-50% - var(--zb, 120px) / 2 - 30px)); }
+  .karte-schritt.vor { transform: translateX(calc(-50% + var(--zb, 120px) / 2 + 30px)); }
+  .karte.ist-bereit .karte-schritt { opacity: 1; }
+  .karte-schritt:hover { background: rgba(240, 206, 156, 0.2); border-color: rgba(255, 226, 190, 0.8); }
+  .karte-schritt:disabled { opacity: 0.25 !important; cursor: default; }
   .karte-weiter {
     position: absolute; top: max(20px, 3dvh); right: 16px;
     display: inline-flex; align-items: center; gap: 10px;
@@ -3080,6 +3095,8 @@
        gleichzeitig. */
     const aufKnopf = document.activeElement && document.activeElement.closest
                      && document.activeElement.closest('.stage-ui, .viewer-close');
+    // Fuellt eine Reisekarte den Schirm, gehoert die Leertaste ihr (naechste Station).
+    if (taste === ' ' && current.classList.contains('karte-deckt')) return;
     if ((taste === ' ' || taste === 'k') && !aufKnopf) {
       e.preventDefault();          // sonst scrollt die Leertaste die Ansicht
       if (stage._playBtn) stage._playBtn.click();
@@ -4165,6 +4182,13 @@
     const linc = wurzel.querySelector('.karte-linien');
     const datum = wurzel.querySelector('.karte-datum');
     const zeit = wurzel.querySelector('.karte-zeit');
+    wurzel.tabIndex = -1;
+    const knopfZurueck = document.createElement('button'), knopfVor = document.createElement('button');
+    knopfZurueck.type = knopfVor.type = 'button';
+    knopfZurueck.className = 'karte-schritt zurueck'; knopfVor.className = 'karte-schritt vor';
+    knopfZurueck.textContent = '‹'; knopfVor.textContent = '›';
+    knopfZurueck.setAttribute('aria-label', 'Vorige Station'); knopfVor.setAttribute('aria-label', 'Nächste Station');
+    zeit.after(knopfZurueck, knopfVor);
     const bilder = Array.from(wurzel.querySelectorAll('.karte-bild'));
 
     /* Beschriftung: bei Schottland das Datum (Tag fuer Tag), bei den
@@ -4710,6 +4734,7 @@
       linc.width = bw; linc.height = bh;
       schildSchluessel = '';
       if (gl) gl.viewport(0, 0, glc.width, glc.height);
+      halt.style.setProperty('--zb', zeit.offsetWidth + 'px');
     }
 
     /* Farbe je Schicht, wie ein Farbgrading: tiefes Nachtblau im Tal,
@@ -5840,6 +5865,7 @@
       if (stand !== standGezeichnet || jetzt - gezeichnet > 28) {
         zeichne(stand, (jetzt / 1000) % 100000);
         gezeichnet = jetzt; standGezeichnet = stand;
+        knoepfe();
       }
       requestAnimationFrame(schleife);
     }
@@ -5869,13 +5895,24 @@
       zeichne(stand);
       anlaufen();
     }
-    let radZuletzt = 0;
+    /* Ein Mausrad liefert je Einrasten einen Sprung von rund 100 px, ein
+       Touchpad dagegen einen Strom winziger Schritte (und seitlich wischt es
+       auch). Deshalb zaehlt die Strecke einer Geste: erst ab 24 px faehrt
+       die Kamera los, einmal je Geste -- eine Geste endet nach einer kurzen
+       Pause ohne Ereignis (auch das Nachgleiten eines Touchpads gehoert noch
+       dazu). */
+    let radZuletzt = 0, radSumme = 0, radVerbraucht = false;
     scroller.addEventListener('wheel', function (e) {
       if (!bereit || reducedMotion || e.ctrlKey || !viewer.classList.contains('is-active')) return;
-      const d = Math.sign(e.deltaY);
+      const faktor = e.deltaMode === 1 ? 33 : e.deltaMode === 2 ? 600 : 1;
+      const dx = e.deltaX * faktor, dy = e.deltaY * faktor;
+      const delta = Math.abs(dx) > Math.abs(dy) * 1.2 ? dx : dy;
+      const d = Math.sign(delta);
       if (!d) return;
       const jetzt = performance.now(), pause = jetzt - radZuletzt;
       radZuletzt = jetzt;
+      if (pause >= RAD_PAUSE || Math.sign(radSumme) !== d) { radSumme = 0; radVerbraucht = false; }
+      radSumme += delta;
       const r = lauf.getBoundingClientRect(), s = scroller.getBoundingClientRect(), h = s.height;
       const oben = r.top - s.top, unten = r.bottom - s.top;
       if (jetzt < sperreBis) { if (oben < h && unten > 0) e.preventDefault(); return; }
@@ -5886,7 +5923,8 @@
       // am Anfang nach oben, am Ende nach unten: die Seite scrollt normal weiter
       if (!fahrt && ((d < 0 && i === 0) || (d > 0 && i === HALTE.length - 1))) return;
       e.preventDefault();
-      if (fahrt || pause < RAD_PAUSE) return;
+      if (fahrt || radVerbraucht || Math.abs(radSumme) < 24) return;
+      radVerbraucht = true;
       stationsSchritt(d);
     }, { passive: false });
     let tY = null, tRicht = 0, tFertig = false;
@@ -5908,15 +5946,35 @@
     }, { passive: false });
     halt.addEventListener('touchend', function () { tY = null; }, { passive: true });
     document.addEventListener('keydown', function (e) {
-      if (!bereit || reducedMotion || !viewer.classList.contains('is-active') || !gepinnt()) return;
+      if (!bereit || reducedMotion || !viewer.classList.contains('is-active')) return;
+      const tag = (e.target || {}).tagName || '';
+      if (e.altKey || e.ctrlKey || e.metaKey || /^(INPUT|TEXTAREA|SELECT)$/.test(tag)) return;
+      // Leertaste auf einem Knopf drueckt den Knopf, sie faehrt nicht zusaetzlich weiter
+      if (e.key === ' ' && tag === 'BUTTON') return;
       const vor = ['ArrowRight', 'ArrowDown', 'PageDown', ' '].indexOf(e.key) >= 0;
       const zur = ['ArrowLeft', 'ArrowUp', 'PageUp'].indexOf(e.key) >= 0;
       if (!vor && !zur) return;
+      if (!gepinnt()) {
+        // Karte halb im Bild: einrasten statt mit einem Seitensprung darueber hinweg
+        const r = lauf.getBoundingClientRect(), sr = scroller.getBoundingClientRect(), h = sr.height;
+        const oben = r.top - sr.top, unten = r.bottom - sr.top;
+        const weit = e.key === ' ' || e.key.indexOf('Page') === 0 ? h * 1.2 : h * 0.35;
+        if (vor && oben > 2 && oben < weit) { e.preventDefault(); einrasten(false); }
+        else if (zur && unten < h - 2 && unten > h - weit) { e.preventDefault(); einrasten(true); }
+        return;
+      }
       const i = haltIndex();
       if (!fahrt && ((zur && i === 0) || (vor && i === HALTE.length - 1))) return;
       e.preventDefault();
       if (!e.repeat) stationsSchritt(vor ? 1 : -1);
     });
+    knopfZurueck.addEventListener('click', function () { stationsSchritt(-1); });
+    knopfVor.addEventListener('click', function () { stationsSchritt(1); });
+    function knoepfe() {
+      const i = haltIndex();
+      knopfZurueck.disabled = i === 0;
+      knopfVor.disabled = i === HALTE.length - 1;
+    }
     /* Zeitleiste: ziehen oder klicken springt zu dem Tag (bei den
        Alpenkarten: zu dem Ort) unter dem Finger -- das ist der schnelle Weg
        durch die Reise, nicht das Mausrad. */
@@ -5963,7 +6021,13 @@
          Karten nacheinander, waren das zusammen ueber 100 ms Stillstand. */
       if (!sichtbar) { viewer.classList.remove('karte-deckt'); return; }
       const r = halt.getBoundingClientRect();
-      viewer.classList.toggle('karte-deckt', r.top <= 0.5 && r.bottom >= viewer.clientHeight - 0.5);
+      const deckt = r.top <= 0.5 && r.bottom >= viewer.clientHeight - 0.5;
+      viewer.classList.toggle('karte-deckt', deckt);
+      /* Beim Oeffnen steht der Fokus auf "Schliessen" -- eine Leertaste
+         schloesse dann die ganze Projektseite. Fuellt die Karte den Schirm,
+         bekommt sie den Fokus: Leertaste und Pfeile fahren weiter. */
+      const f = document.activeElement;
+      if (deckt && f && f.closest && f.closest('.viewer-close')) wurzel.focus({ preventScroll: true });
     }
     // Gezeichnet wird nur, solange die Karte im Bild ist.
     if ('IntersectionObserver' in window) {
