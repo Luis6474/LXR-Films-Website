@@ -471,6 +471,10 @@
      schliesst. Gesetzt wird das erst, wenn sie voll deckt, aufgehoben,
      bevor sie ausblendet -- zu sehen ist davon nichts. */
   body.bg-ruht .grain, body.bg-ruht .dither, body.bg-ruht .sterne { display: none; }
+  /* Ebenso die Bewegungen auf der Startseite: die langsame Drift der Bilder
+     und das Laufband. Angehalten statt abgeschaltet -- beim Zurueckkommen
+     laufen sie an derselben Stelle weiter, es springt nichts. */
+  body.bg-ruht .page .drift, body.bg-ruht .page .marquee-track { animation-play-state: paused; }
   body.is-viewing { overflow: hidden; }
 
   /* ---------- Hero ----------
@@ -3260,6 +3264,8 @@
     passen();
     let auraTimer = null;
     function paintAura() {
+      // Unter einer offenen Projektseite steht der Film ohnehin still.
+      if (document.body.classList.contains('bg-ruht')) return;
       if (heroVideo.readyState >= 2 && heroVideo.videoWidth) {
         try {
           if (!leinwandFilter) { ctx.drawImage(heroVideo, 0, 0, 32, 18); return; }
