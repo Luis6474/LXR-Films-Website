@@ -5111,6 +5111,7 @@
       gl.bindBuffer(gl.ARRAY_BUFFER, u.puf.weg); gl.bufferData(gl.ARRAY_BUFFER, g.weg, gl.STATIC_DRAW);
       gl.bindBuffer(gl.ARRAY_BUFFER, u.puf.sand); gl.bufferData(gl.ARRAY_BUFFER, g.sand, gl.STATIC_DRAW);
       u.nSee = g.see.length / 12; u.nWeg = g.weg.length / 12; u.wegEnde = g.wegEnde; u.nSand = g.sand.length / 9;
+      u.schluessel = null;   // neue Formen: Linienbilder neu zeichnen
       ueberNeu = false;
     }
 
@@ -5156,49 +5157,59 @@
       gl.disable(gl.DEPTH_TEST); gl.depthMask(false); gl.disable(gl.POLYGON_OFFSET_FILL);
       attrAus();
 
-      // 1) Linien in die eigenen Bilder: je Art (und Etappe) ein Kanal, der den groessten Wert behaelt.
-      gl.clearColor(0, 0, 0, 0);
-      gl.bindFramebuffer(gl.FRAMEBUFFER, u.fbs[1]); gl.clear(gl.COLOR_BUFFER_BIT);
-      gl.bindFramebuffer(gl.FRAMEBUFFER, u.fbs[0]); gl.clear(gl.COLOR_BUFFER_BIT);
-      gl.enable(gl.BLEND); gl.blendEquation(u.max); gl.blendFunc(gl.ONE, gl.ONE);
-      const b = u.band;
-      gl.useProgram(b.prog);
-      gl.uniformMatrix4fv(b.loc.uM, false, M);
-      gl.uniform2f(b.loc.uPx, BW, BH); gl.uniform1f(b.loc.uPR, PR); gl.uniform1f(b.loc.uHoch, UEBER_HOCH);
-      gl.uniform2f(b.loc.uRand, D.kopf.groesse[0] / 2, D.kopf.groesse[1] / 2);
-      gl.uniform1f(b.loc.uSigma, 4.5);
-      function band(puf, von, bis0, breite, bis, modus, kanal) {
-        if (bis0 <= von) return;
-        gl.bindBuffer(gl.ARRAY_BUFFER, puf);
-        attrSetzen(b, [['aP0', 3], ['aP1', 3], ['aEcke', 2], ['aL', 2], ['aArt', 2]], 48);
-        gl.uniform1f(b.loc.uBreite, breite); gl.uniform1f(b.loc.uRandPx, modus === 1 ? 13.5 : 1);
-        gl.uniform1f(b.loc.uBis, bis); gl.uniform1f(b.loc.uModus, modus);
-        gl.uniform4fv(b.loc.uKanal, kanal);
-        gl.drawArrays(gl.TRIANGLES, von, bis0 - von);
-      }
-      function etappe(i) { return [i % 3 === 0 ? 1 : 0, i % 3 === 1 ? 1 : 0, i % 3 === 2 ? 1 : 0, 0]; }
-      function ab(i) { return i ? u.wegEnde[i - 1] : 0; }
-      band(u.puf.see, 0, u.nSee, 0, 1e9, 2, [0, 0, 0, 1]);            // Seekarte -> A.a
-      let leise = 0;
-      if (!CFG.bahn) {
-        const kopf = GESAMT * (1 - k.sand);
-        if (k.sand < 1) {                                                // leise Route -> A.rgb
-          leise = (0.26 + 0.34 * k.namen) * (1 - k.sand);
-          for (let i = 0; i < wege.length; i++) band(u.puf.weg, ab(i), u.wegEnde[i], 1 + 0.4 * k.namen, 1e9, 0, etappe(i));
+      const leise = (!CFG.bahn && k.sand < 1) ? (0.26 + 0.34 * k.namen) * (1 - k.sand) : 0;
+      /* Die beiden Linienbilder haengen nur an Kamera, Groesse und
+         Reisestand -- nicht an der Zeit. Steht die Karte (das Wasser
+         bewegt sich weiter, die Linien nicht), sind sie Bild fuer Bild
+         dieselben und werden aus dem letzten Bild uebernommen. Das spart
+         im Stand den groessten Teil der Arbeit fuer die Linien. */
+      const schl = BW + ',' + BH + ',' + PR + ',' + k.sand + ',' + k.namen + ',' + k.weg + ',' + k.wegL + '|' +
+                   Array.prototype.join.call(M, ',');
+      gl.enable(gl.BLEND);
+      if (schl !== u.schluessel) {
+        u.schluessel = schl;
+        // 1) Linien in die eigenen Bilder: je Art (und Etappe) ein Kanal, der den groessten Wert behaelt.
+        gl.clearColor(0, 0, 0, 0);
+        gl.bindFramebuffer(gl.FRAMEBUFFER, u.fbs[1]); gl.clear(gl.COLOR_BUFFER_BIT);
+        gl.bindFramebuffer(gl.FRAMEBUFFER, u.fbs[0]); gl.clear(gl.COLOR_BUFFER_BIT);
+        gl.blendEquation(u.max); gl.blendFunc(gl.ONE, gl.ONE);
+        const b = u.band;
+        gl.useProgram(b.prog);
+        gl.uniformMatrix4fv(b.loc.uM, false, M);
+        gl.uniform2f(b.loc.uPx, BW, BH); gl.uniform1f(b.loc.uPR, PR); gl.uniform1f(b.loc.uHoch, UEBER_HOCH);
+        gl.uniform2f(b.loc.uRand, D.kopf.groesse[0] / 2, D.kopf.groesse[1] / 2);
+        gl.uniform1f(b.loc.uSigma, 4.5);
+        function band(puf, von, bis0, breite, bis, modus, kanal) {
+          if (bis0 <= von) return;
+          gl.bindBuffer(gl.ARRAY_BUFFER, puf);
+          attrSetzen(b, [['aP0', 3], ['aP1', 3], ['aEcke', 2], ['aL', 2], ['aArt', 2]], 48);
+          gl.uniform1f(b.loc.uBreite, breite); gl.uniform1f(b.loc.uRandPx, modus === 1 ? 13.5 : 1);
+          gl.uniform1f(b.loc.uBis, bis); gl.uniform1f(b.loc.uModus, modus);
+          gl.uniform4fv(b.loc.uKanal, kanal);
+          gl.drawArrays(gl.TRIANGLES, von, bis0 - von);
         }
-        if (k.weg >= 0) {                                                // Schein -> B.rgb, Route -> B.a
-          const j = Math.min(k.weg, wege.length - 1);
-          const bis = Math.min(kopf, wegAb[j] + k.wegL);
-          if (bis > 0) {
-            gl.bindFramebuffer(gl.FRAMEBUFFER, u.fbs[1]);
-            for (let i = 0; i <= j; i++) band(u.puf.weg, ab(i), u.wegEnde[i], 1.7, bis, 1, etappe(i));
-            band(u.puf.weg, 0, u.wegEnde[j], 1.7, bis, 0, [0, 0, 0, 1]);
+        function etappe(i) { return [i % 3 === 0 ? 1 : 0, i % 3 === 1 ? 1 : 0, i % 3 === 2 ? 1 : 0, 0]; }
+        function ab(i) { return i ? u.wegEnde[i - 1] : 0; }
+        band(u.puf.see, 0, u.nSee, 0, 1e9, 2, [0, 0, 0, 1]);            // Seekarte -> A.a
+        if (!CFG.bahn) {
+          const kopf = GESAMT * (1 - k.sand);
+          if (k.sand < 1) {                                                // leise Route -> A.rgb
+            for (let i = 0; i < wege.length; i++) band(u.puf.weg, ab(i), u.wegEnde[i], 1 + 0.4 * k.namen, 1e9, 0, etappe(i));
+          }
+          if (k.weg >= 0) {                                                // Schein -> B.rgb, Route -> B.a
+            const j = Math.min(k.weg, wege.length - 1);
+            const bis = Math.min(kopf, wegAb[j] + k.wegL);
+            if (bis > 0) {
+              gl.bindFramebuffer(gl.FRAMEBUFFER, u.fbs[1]);
+              for (let i = 0; i <= j; i++) band(u.puf.weg, ab(i), u.wegEnde[i], 1.7, bis, 1, etappe(i));
+              band(u.puf.weg, 0, u.wegEnde[j], 1.7, bis, 0, [0, 0, 0, 1]);
+            }
           }
         }
+        attrAus();
+        gl.blendEquation(gl.FUNC_ADD);
+        gl.bindFramebuffer(gl.FRAMEBUFFER, null);
       }
-      attrAus();
-      gl.blendEquation(gl.FUNC_ADD);
-      gl.bindFramebuffer(gl.FRAMEBUFFER, null);
 
       // 2) Die Lagen ueber die Karte legen (vormultiplizierte Farben).
       gl.blendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA);
