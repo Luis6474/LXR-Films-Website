@@ -569,7 +569,12 @@
        er in derselben Ebene wie die folgenden Abschnitte, aber davor in der
        Reihenfolge -- also dahinter. */
     z-index: 0;
-    filter: blur(70px) saturate(2.8) brightness(1.58);
+    /* Weichzeichnung, Saettigung und Helligkeit rechnet das Skript direkt in
+       die Leinwand, in einem Achtel der Aufloesung. Als CSS-Filter hat die
+       Grafikkarte die 70 px Weichzeichnung ueber die ganze Flaeche in jedem
+       Einzelbild neu gerechnet, sobald sich auf der Seite etwas bewegte.
+       Ein so weicher Schein hat keine Einzelheiten, die beim Hochziehen
+       verloren gehen koennten -- er sieht gleich aus. */
     opacity: 0; transition: opacity 1400ms var(--ease);
     pointer-events: none;
     /* Der Verlauf beginnt fast in der Mitte abzunehmen: langes, weiches
@@ -578,6 +583,8 @@
             mask-image: radial-gradient(closest-side, #000 4%, rgba(0,0,0,0.72) 24%, rgba(0,0,0,0.44) 48%, rgba(0,0,0,0.20) 72%, transparent 100%);
   }
   .hero-aura.on { opacity: 0.5; }
+  /* Ersatzweg fuer Browser ohne Filter auf der Leinwand (Safari vor 18). */
+  .hero-aura.css-weich { filter: blur(70px) saturate(2.8) brightness(1.58); }
 
   .hero-content {
     position: absolute; inset: 0; z-index: 507;
@@ -3231,13 +3238,41 @@
      Bild und nicht aus einer geschaetzten Palette. Der Aufwand pro Zeichnung
      ist verschwindend klein, deshalb reichen acht Bilder pro Sekunde. */
   if (heroAura && heroVideo && !reducedMotion) {
-    const ctx = heroAura.getContext('2d', { alpha: false });
+    /* Das 32x18-Feld liegt jetzt abseits. Gezeigt wird eine Leinwand in
+       einem Achtel der Anzeigegroesse, in die der fertig weichgezeichnete
+       Schein gerechnet wird: dieselbe Kette wie vorher im CSS (hochziehen,
+       70 px weich, Saettigung, Helligkeit), der Radius im selben Massstab
+       verkleinert. Ausserhalb der Leinwand ist es durchsichtig -- genau wie
+       beim CSS-Filter, der am Rand ebenfalls gegen Durchsichtig auslief. */
+    const FEIN = 8;
+    const feld = document.createElement('canvas');
+    feld.width = 32; feld.height = 18;
+    const fctx = feld.getContext('2d', { alpha: false });
+    const ctx = heroAura.getContext('2d');
+    const leinwandFilter = ctx && typeof ctx.filter === 'string';
+    if (!leinwandFilter) heroAura.classList.add('css-weich');
+    function passen() {
+      if (!leinwandFilter) { heroAura.width = 32; heroAura.height = 18; return; }
+      const w = Math.max(8, Math.round(heroAura.clientWidth / FEIN));
+      const h = Math.max(8, Math.round(heroAura.clientHeight / FEIN));
+      if (heroAura.width !== w || heroAura.height !== h) { heroAura.width = w; heroAura.height = h; }
+    }
+    passen();
     let auraTimer = null;
     function paintAura() {
       if (heroVideo.readyState >= 2 && heroVideo.videoWidth) {
-        try { ctx.drawImage(heroVideo, 0, 0, heroAura.width, heroAura.height); } catch (e) {}
+        try {
+          if (!leinwandFilter) { ctx.drawImage(heroVideo, 0, 0, 32, 18); return; }
+          fctx.drawImage(heroVideo, 0, 0, 32, 18);
+          ctx.clearRect(0, 0, heroAura.width, heroAura.height);
+          ctx.filter = 'blur(' + (70 / FEIN) + 'px) saturate(2.8) brightness(1.58)';
+          ctx.imageSmoothingEnabled = true;
+          ctx.drawImage(feld, 0, 0, heroAura.width, heroAura.height);
+        } catch (e) {}
       }
     }
+    // Die Groesse haengt am Fenster (vw/vh) -- danach neu zuschneiden.
+    window.addEventListener('resize', function () { passen(); paintAura(); });
     function auraOn() {
       if (auraTimer) return;
       paintAura();
