@@ -5533,6 +5533,7 @@
       // Rechts vom Punkt; stoesst der Name an einen anderen oder an den
       // Bildrand, weicht er nach links, oben oder unten aus.
       const belegt = [];
+      let beschriftet = route2d || sand2d;
       orte.forEach(function (o, i) {
         const a = Math.max(k.namen, i === k.ort ? k.sicht : 0);
         if (a < 0.02 || !CFG.namen || !CFG.namen[i]) return;
@@ -5561,8 +5562,15 @@
         ctx2.strokeText(txt, wahl[0], wahl[1]);
         ctx2.fillStyle = 'rgba(' + CFG.route.punkt + ',' + (0.9 * a).toFixed(3) + ')';
         ctx2.fillText(txt, wahl[0], wahl[1]);
+        beschriftet = true;
       });
       if ('letterSpacing' in ctx2) ctx2.letterSpacing = '0px';
+      /* Zeichnet die Grafikkarte die Linien, stehen auf dieser Leinwand nur
+         noch die Ortsnamen -- und unterwegs zwischen zwei Halten gar nichts.
+         Eine leere Leinwand legt der Browser trotzdem in jedem Bild ueber
+         den ganzen Schirm; ausgeblendet faellt dieser Schritt weg. */
+      const sicht = beschriftet ? '' : 'hidden';
+      if (linc.style.visibility !== sicht) linc.style.visibility = sicht;
     }
 
     /* Die Bilder der Station, an der die Kamera steht -- alle zugleich,
