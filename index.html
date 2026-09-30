@@ -2305,7 +2305,12 @@
       }
       const gross = document.createElement('canvas');
       gross.width = gross.height = S;
-      const gctx = gross.getContext('2d');
+      /* Die Leinwaende fuer Korn und Sterne liegen im Hauptspeicher
+         (willReadFrequently): am Ende wird ohnehin ein PNG daraus, und das
+         Zuruecklesen von der Grafikkarte hielt den Hauptthread beim Laden
+         spuerbar an. Die Kacheln weichen dadurch hoechstens um eine
+         Tonwertstufe ab -- bei 7-10 % Deckkraft auf dem Schirm unsichtbar. */
+      const gctx = gross.getContext('2d', { willReadFrequently: true });
       const im = gctx.createImageData(S, S);
       const px = new Uint32Array(im.data.buffer);
       for (let p = 0; p < px.length; p++) {
@@ -2318,7 +2323,7 @@
       // Einmal sauber halbieren -- das gibt den Koernern ihre runde Form.
       const klein = document.createElement('canvas');
       klein.width = klein.height = ZIEL;
-      const kctx = klein.getContext('2d');
+      const kctx = klein.getContext('2d', { willReadFrequently: true });
       kctx.imageSmoothingEnabled = true;
       kctx.imageSmoothingQuality = 'high';
       kctx.drawImage(gross, 0, 0, ZIEL, ZIEL);
@@ -2348,7 +2353,7 @@
       const K = Math.round(kante * SKAL);
       const c = document.createElement('canvas');
       c.width = c.height = K;
-      const x = c.getContext('2d');
+      const x = c.getContext('2d', { willReadFrequently: true });   // siehe tile()
       x.fillStyle = '#000';
       x.fillRect(0, 0, K, K);
       x.globalCompositeOperation = 'lighter';   // Sterne addieren, nicht decken
@@ -5794,8 +5799,12 @@
        sein Mischschritt ueber den ganzen Schirm faellt in jedem Bild weg,
        zu sehen war es an dieser Stelle ohnehin nicht. */
     function deckung() {
+      /* Ohne sichtbare Karte gibt es nichts zu messen. Das Messen erzwingt
+         ein Layout -- beim Laden der Startseite, fuer vier geschlossene
+         Karten nacheinander, waren das zusammen ueber 100 ms Stillstand. */
+      if (!sichtbar) { viewer.classList.remove('karte-deckt'); return; }
       const r = halt.getBoundingClientRect();
-      viewer.classList.toggle('karte-deckt', sichtbar && r.top <= 0.5 && r.bottom >= viewer.clientHeight - 0.5);
+      viewer.classList.toggle('karte-deckt', r.top <= 0.5 && r.bottom >= viewer.clientHeight - 0.5);
     }
     // Gezeichnet wird nur, solange die Karte im Bild ist.
     if ('IntersectionObserver' in window) {
