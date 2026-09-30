@@ -1,0 +1,355 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<!-- Versteckte Seite: nirgends verlinkt, nicht fuer Suchmaschinen. -->
+<meta name="robots" content="noindex, nofollow, noimageindex">
+<meta name="referrer" content="no-referrer">
+<title>The Same Gray – Die Reise</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' fill='%230d1216'/%3E%3Ctext x='16' y='22' font-family='Georgia,serif' font-size='15' fill='%23c8c2b6' text-anchor='middle'%3EL%3C/text%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif:wght@400;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet.markercluster/1.5.3/MarkerCluster.min.css">
+<style>
+  :root {
+    --bg: #0b1012;
+    --flaeche: #121a1d;
+    --linie: rgba(147, 160, 155, 0.18);
+    --text: #e6eae8;
+    --leise: #93a09b;
+    --akzent: #e8d9b5;
+    --route: #93a09b;
+    color-scheme: dark;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; background: var(--bg); color: var(--text); }
+  body { font: 15px/1.5 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; -webkit-font-smoothing: antialiased; }
+  button { font: inherit; color: inherit; background: none; border: 0; padding: 0; cursor: pointer; }
+  :focus-visible { outline: 2px solid var(--akzent); outline-offset: 2px; }
+
+  .aufbau { display: grid; grid-template-columns: minmax(0, 1fr) 440px; height: 100vh; height: 100dvh; }
+  #karte { height: 100%; background: #0d1214; }
+  .liste { overflow-y: auto; border-left: 1px solid var(--linie); overscroll-behavior: contain; }
+
+  .kopf { padding: 28px 24px 18px; border-bottom: 1px solid var(--linie); }
+  .kopf a { color: var(--leise); text-decoration: none; font-size: 0.8em; letter-spacing: 0.14em; text-transform: uppercase; }
+  .kopf h1 { font: 400 1.7em/1.2 "Noto Serif", Georgia, serif; margin: 10px 0 6px; letter-spacing: 0.01em; }
+  .kopf p { margin: 0; color: var(--leise); font-size: 0.92em; }
+  .folgen { display: flex; align-items: center; gap: 8px; margin-top: 14px; color: var(--leise); font-size: 0.86em; cursor: pointer; }
+  .folgen input { accent-color: var(--route); margin: 0; }
+
+  .tag { padding: 0 24px 22px; }
+  .tag h2 {
+    position: sticky; top: 0; z-index: 2; margin: 0 -24px 10px; padding: 14px 24px 10px;
+    background: rgba(11, 16, 18, 0.94); backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px);
+    font: 400 1em/1.3 "Noto Serif", Georgia, serif; display: flex; align-items: baseline; gap: 10px;
+  }
+  .tag h2 button { text-align: left; }
+  .tag h2 .nr { color: var(--leise); font: 0.78em system-ui, sans-serif; letter-spacing: 0.12em; text-transform: uppercase; }
+  .tag h2 .zahl { margin-left: auto; color: var(--leise); font: 0.8em system-ui, sans-serif; }
+  .tag.aktiv h2 .nr { color: var(--akzent); }
+  .raster { display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px; }
+  .foto { position: relative; aspect-ratio: 1; overflow: hidden; background: var(--flaeche); border-radius: 2px; }
+  .foto img { width: 100%; height: 100%; object-fit: cover; display: block; transition: opacity 0.2s; }
+  .foto:hover img { opacity: 0.82; }
+  .foto.ca::after { content: "≈"; position: absolute; right: 4px; bottom: 2px; font-size: 12px; color: #fff; text-shadow: 0 0 4px #000; }
+  .fuss { padding: 8px 24px 40px; color: var(--leise); font-size: 0.8em; }
+
+  /* Kartenpunkte */
+  .punkt, .haufen { position: relative; width: 40px; height: 40px; border-radius: 50%; background: var(--flaeche);
+    border: 2px solid var(--akzent); box-shadow: 0 2px 8px rgba(0, 0, 0, 0.6); transition: transform 0.15s; }
+  .punkt.ca { border-style: dashed; }
+  .punkt img, .haufen img { width: 100%; height: 100%; object-fit: cover; border-radius: 50%; display: block; }
+  .punkt:hover, .haufen:hover { transform: scale(1.12); }
+  .haufen { border-width: 3px; }
+  .haufen b { position: absolute; right: -6px; top: -6px; min-width: 22px; height: 22px; padding: 0 6px; border-radius: 11px;
+    background: var(--akzent); color: #0b1012; font: 700 12px/22px system-ui, sans-serif; text-align: center; }
+  .leaflet-control-layers { background: #121a1d; color: var(--text); border: 1px solid var(--linie) !important; }
+  .leaflet-control-layers-toggle { filter: invert(0.85); }
+  .leaflet-control-layers-expanded { padding: 8px 12px; }
+  .leaflet-container { font: 13px system-ui, sans-serif; }
+  .leaflet-bar a { background: #121a1d; color: var(--text); border-color: var(--linie) !important; }
+  .leaflet-bar a:hover { background: #1a2428; }
+  .leaflet-control-attribution { background: rgba(11, 16, 18, 0.75) !important; color: var(--leise); }
+  .leaflet-control-attribution a { color: var(--leise); }
+  .leaflet-popup-content-wrapper, .leaflet-popup-tip { background: #121a1d; color: var(--text); }
+  .leaflet-popup-content { margin: 8px; }
+  .leaflet-popup-content img { display: block; width: 180px; height: auto; border-radius: 2px; cursor: pointer; }
+
+  /* Grossansicht */
+  .lupe { position: fixed; inset: 0; z-index: 1000; background: rgba(5, 8, 9, 0.97); display: grid; grid-template-rows: minmax(0, 1fr) auto; }
+  .lupe[hidden] { display: none; }
+  .lupe-bild { position: relative; display: flex; align-items: center; justify-content: center; padding: 16px 64px 0; touch-action: pan-y pinch-zoom; }
+  .lupe-bild img { max-width: 100%; max-height: 100%; object-fit: contain; user-select: none; -webkit-user-drag: none; }
+  .lupe-leiste { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 18px; padding: 14px 20px calc(14px + env(safe-area-inset-bottom)); color: var(--leise); font-size: 0.92em; }
+  .lupe-leiste .wann { color: var(--text); }
+  .lupe-leiste .rechts { margin-left: auto; display: flex; gap: 8px; }
+  .knopf { border: 1px solid var(--linie); border-radius: 999px; padding: 6px 14px; color: var(--text); }
+  .knopf:hover { background: rgba(147, 160, 155, 0.12); }
+  .pfeil { position: absolute; top: 50%; transform: translateY(-50%); width: 48px; height: 72px; font-size: 28px; color: var(--text); opacity: 0.7; }
+  .pfeil:hover { opacity: 1; }
+  .pfeil.zurueck { left: 8px; } .pfeil.vor { right: 8px; }
+  .zu { position: absolute; top: 10px; right: 12px; width: 44px; height: 44px; font-size: 26px; opacity: 0.8; z-index: 2; }
+
+  @media (max-width: 899px) {
+    .aufbau { display: block; height: auto; }
+    #karte { position: sticky; top: 0; z-index: 3; height: 42vh; height: 42svh; border-bottom: 1px solid var(--linie); }
+    .liste { overflow: visible; border-left: 0; }
+    .kopf { padding: 22px 16px 14px; }
+    .tag { padding: 0 16px 18px; }
+    .tag h2 { top: 42vh; top: 42svh; margin: 0 -16px 8px; padding: 12px 16px 8px; }
+    .raster { grid-template-columns: repeat(3, 1fr); gap: 3px; }
+    .lupe-bild { padding: 52px 0 0; }
+    .pfeil { display: none; }
+    .fuss { padding: 8px 16px 32px; }
+  }
+</style>
+</head>
+<body>
+<main class="aufbau">
+  <div id="karte" role="region" aria-label="Karte der Reise"></div>
+  <aside class="liste" id="liste">
+    <header class="kopf">
+      <a href="../">LXR Films</a>
+      <h1>The Same Gray – Die Reise</h1>
+      <p id="zusammen"></p>
+      <label class="folgen"><input type="checkbox" id="folgen" checked> Karte folgt beim Scrollen dem Tag</label>
+    </header>
+    <div id="tage"></div>
+    <p class="fuss">≈ Ort ungefähr (Foto ohne Standort oder auf die Stadt gerundet) · Karte und Luftbild © Esri und Partner, © OpenStreetMap-Mitwirkende</p>
+  </aside>
+</main>
+
+<div class="lupe" id="lupe" hidden role="dialog" aria-modal="true" aria-label="Foto">
+  <div class="lupe-bild">
+    <button class="zu" id="zu" aria-label="Schließen">×</button>
+    <button class="pfeil zurueck" id="zurueck" aria-label="Vorheriges Foto">‹</button>
+    <img id="lupe-img" alt="">
+    <button class="pfeil vor" id="vor" aria-label="Nächstes Foto">›</button>
+  </div>
+  <div class="lupe-leiste">
+    <span class="wann" id="wann"></span>
+    <span id="stelle"></span>
+    <span class="rechts">
+      <button class="knopf" id="aufkarte">Auf der Karte</button>
+    </span>
+  </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet.markercluster/1.5.3/leaflet.markercluster.min.js"></script>
+<script src="fotos.js"></script>
+<script>
+(function () {
+  const F = window.FOTOS || [];
+  const B = 'bilder/';
+  const WT = ['So', 'Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa'];
+  const MO = ['Januar', 'Februar', 'März', 'April', 'Mai', 'Juni', 'Juli', 'August', 'September', 'Oktober', 'November', 'Dezember'];
+  const schmal = matchMedia('(max-width: 899px)');
+
+  function datum(tag, jahr) {
+    const d = new Date(tag + 'T12:00');
+    return WT[d.getDay()] + ', ' + d.getDate() + '. ' + MO[d.getMonth()] + (jahr ? ' ' + d.getFullYear() : '');
+  }
+
+  /* ---- Tage ---- */
+  const tage = [];
+  const nachTag = new Map();
+  F.forEach(function (f, i) {
+    f.i = i;
+    const k = f.t ? f.t.slice(0, 10) : '';
+    if (!nachTag.has(k)) { const t = { key: k, fotos: [] }; nachTag.set(k, t); tage.push(t); }
+    nachTag.get(k).fotos.push(f);
+  });
+  const erster = tage.find(function (t) { return t.key; });
+  const t0 = erster ? new Date(erster.key + 'T12:00') : null;
+  tage.forEach(function (t) {
+    t.nr = t.key && t0 ? Math.round((new Date(t.key + 'T12:00') - t0) / 864e5) + 1 : 0;
+    t.punkte = t.fotos.filter(function (f) { return f.ort; }).map(function (f) { return f.ort; });
+  });
+  const datiert = tage.filter(function (t) { return t.key; });
+  if (datiert.length) {
+    document.getElementById('zusammen').textContent = F.length + ' Fotos · ' + datum(datiert[0].key) + ' – ' + datum(datiert[datiert.length - 1].key, true);
+  }
+
+  /* ---- Liste ---- */
+  const wurzel = document.getElementById('tage');
+  const html = [];
+  tage.forEach(function (t, ti) {
+    html.push('<section class="tag" data-t="' + ti + '"><h2><button type="button" class="hin" data-t="' + ti + '">' +
+      (t.key ? '<span class="nr">Tag ' + t.nr + '</span> ' + datum(t.key) : 'Ohne Datum') +
+      '</button><span class="zahl">' + t.fotos.length + '</span></h2><div class="raster">');
+    t.fotos.forEach(function (f) {
+      const zeit = f.t ? f.t.slice(11, 16) + ' Uhr' : '';
+      html.push('<button type="button" class="foto' + (f.ca ? ' ca' : '') + '" data-i="' + f.i + '" aria-label="Foto ' + (f.i + 1) + (zeit ? ', ' + zeit : '') + '">' +
+        '<img src="' + B + f.id + '-400.webp" alt="" loading="lazy" decoding="async" width="' + (f.w >= f.h ? 400 : Math.round(400 * f.w / f.h)) + '" height="' + (f.h >= f.w ? 400 : Math.round(400 * f.h / f.w)) + '"></button>');
+    });
+    html.push('</div></section>');
+  });
+  wurzel.innerHTML = html.join('');
+
+  /* ---- Karte ---- */
+  const karte = L.map('karte', { zoomControl: true, attributionControl: true, worldCopyJump: false, maxZoom: 18 });
+  const ESRI = 'https://server.arcgisonline.com/ArcGIS/rest/services/';
+  function esri(dienst, max, zusatz) {
+    return L.tileLayer(ESRI + dienst + '/MapServer/tile/{z}/{y}/{x}', Object.assign({ maxNativeZoom: max, maxZoom: 19 }, zusatz || {}));
+  }
+  const dunkel = L.layerGroup([
+    esri('Canvas/World_Dark_Gray_Base', 16, { attribution: 'Karte © Esri, HERE, Garmin, © OpenStreetMap-Mitwirkende' }),
+    esri('Canvas/World_Dark_Gray_Reference', 16)
+  ]);
+  const satellit = L.layerGroup([
+    esri('World_Imagery', 19, { attribution: 'Luftbild © Esri, Maxar, Earthstar Geographics' }),
+    esri('Reference/World_Boundaries_and_Places', 19)
+  ]);
+  dunkel.addTo(karte);
+  L.control.layers({ 'Karte': dunkel, 'Luftbild': satellit }, null, { position: 'topright' }).addTo(karte);
+
+  const alle = F.filter(function (f) { return f.ort; }).map(function (f) { return f.ort; });
+  L.polyline(alle, { color: '#93a09b', weight: 2, opacity: 0.55, interactive: false }).addTo(karte);
+  let tagLinie = null;
+
+  const haufen = L.markerClusterGroup({
+    showCoverageOnHover: false, maxClusterRadius: 44, spiderfyDistanceMultiplier: 1.4, chunkedLoading: true,
+    iconCreateFunction: function (c) {
+      const n = c.getChildCount(), s = n < 10 ? 50 : n < 50 ? 58 : 66;
+      const f = c.getAllChildMarkers()[0].options.foto;
+      return L.divIcon({ html: '<div class="haufen" style="width:' + s + 'px;height:' + s + 'px"><img src="' + B + f.id + '-400.webp" alt=""><b>' + n + '</b></div>', className: '', iconSize: [s, s] });
+    }
+  });
+  const marker = [];
+  F.forEach(function (f) {
+    if (!f.ort) return;
+    const m = L.marker(f.ort, { foto: f, keyboard: false,
+      icon: L.divIcon({ html: '<div class="punkt' + (f.ca ? ' ca' : '') + '"><img src="' + B + f.id + '-400.webp" alt=""></div>', className: '', iconSize: [40, 40] }) });
+    m.on('click', function () { oeffnen(f.i); });
+    marker[f.i] = m;
+    haufen.addLayer(m);
+  });
+  karte.addLayer(haufen);
+  if (alle.length) karte.fitBounds(alle, { padding: [30, 30] }); else karte.setView([56.5, -5], 6);
+
+  function rand() { return schmal.matches ? [20, 20] : [50, 50]; }
+  function zeigeTag(ti, fliegen) {
+    const t = tage[ti];
+    document.querySelectorAll('.tag.aktiv').forEach(function (e) { e.classList.remove('aktiv'); });
+    const sek = wurzel.querySelector('.tag[data-t="' + ti + '"]');
+    if (sek) sek.classList.add('aktiv');
+    if (tagLinie) { karte.removeLayer(tagLinie); tagLinie = null; }
+    if (!t || !t.punkte.length) return;
+    tagLinie = L.polyline(t.punkte, { color: '#e8d9b5', weight: 4, opacity: 0.9, interactive: false }).addTo(karte);
+    if (fliegen) karte.flyToBounds(t.punkte, { padding: rand(), maxZoom: 13, duration: 0.8 });
+  }
+
+  /* Karte folgt dem Tag, der gerade oben in der Liste steht */
+  const folgen = document.getElementById('folgen');
+  let aktuell = -1, warte = 0;
+  function oben() {
+    const ref = schmal.matches ? document.getElementById('karte').getBoundingClientRect().bottom + 40 : 60;
+    let best = 0;
+    wurzel.querySelectorAll('.tag').forEach(function (s, i) { if (s.getBoundingClientRect().top <= ref) best = i; });
+    return best;
+  }
+  function beimScrollen() {
+    if (warte) return;
+    warte = requestAnimationFrame(function () {
+      warte = 0;
+      const ti = oben();
+      if (ti !== aktuell) { aktuell = ti; zeigeTag(ti, folgen.checked); }
+    });
+  }
+  document.getElementById('liste').addEventListener('scroll', beimScrollen, { passive: true });
+  window.addEventListener('scroll', beimScrollen, { passive: true });
+
+  wurzel.addEventListener('click', function (e) {
+    const hin = e.target.closest('.hin');
+    if (hin) {
+      const ti = +hin.dataset.t;
+      aktuell = ti; zeigeTag(ti, true);
+      return;
+    }
+    const b = e.target.closest('.foto');
+    if (b) oeffnen(+b.dataset.i);
+  });
+
+  /* ---- Grossansicht ---- */
+  const lupe = document.getElementById('lupe');
+  const img = document.getElementById('lupe-img');
+  let jetzt = -1, geschichte = false;
+  function quelle(f, g) { return B + f.id + '-' + g + '.webp'; }
+  function oeffnen(i) {
+    const f = F[i]; if (!f) return;
+    jetzt = i;
+    img.removeAttribute('src');
+    img.srcset = quelle(f, 1000) + ' 1000w, ' + quelle(f, 2400) + ' 2400w';
+    img.sizes = '100vw';
+    img.src = quelle(f, 1000);
+    const t = f.t ? nachTag.get(f.t.slice(0, 10)) : null;
+    document.getElementById('wann').textContent = f.t ? 'Tag ' + t.nr + ' · ' + datum(f.t.slice(0, 10), true) + ' · ' + f.t.slice(11, 16) + ' Uhr' : 'Ohne Datum';
+    document.getElementById('stelle').textContent = (i + 1) + ' / ' + F.length + (f.ca ? ' · Ort ungefähr' : '');
+    document.getElementById('aufkarte').hidden = !f.ort;
+    if (lupe.hidden) {
+      lupe.hidden = false;
+      document.body.style.overflow = 'hidden';
+      try { history.pushState({ lupe: 1 }, ''); geschichte = true; } catch (e) {}
+      document.getElementById('zu').focus();
+    }
+    [i - 1, i + 1].forEach(function (j) { if (F[j]) { const v = new Image(); v.src = quelle(F[j], 1000); } });
+  }
+  function schliessen(ausGeschichte) {
+    if (lupe.hidden) return;
+    lupe.hidden = true;
+    document.body.style.overflow = '';
+    img.removeAttribute('src'); img.removeAttribute('srcset');
+    if (geschichte && !ausGeschichte) { geschichte = false; history.back(); }
+    geschichte = false;
+    const b = wurzel.querySelector('.foto[data-i="' + jetzt + '"]');
+    if (b) b.focus({ preventScroll: true });
+  }
+  function schritt(d) { const j = jetzt + d; if (F[j]) oeffnen(j); }
+  window.addEventListener('popstate', function () { if (!lupe.hidden) { geschichte = false; schliessen(true); } });
+  document.getElementById('zu').onclick = function () { schliessen(); };
+  document.getElementById('zurueck').onclick = function () { schritt(-1); };
+  document.getElementById('vor').onclick = function () { schritt(1); };
+  document.getElementById('aufkarte').onclick = function () {
+    const f = F[jetzt], m = marker[jetzt];
+    schliessen();
+    if (!m) return;
+    if (schmal.matches) window.scrollTo({ top: 0, behavior: 'smooth' });
+    haufen.zoomToShowLayer(m, function () {
+      L.popup({ offset: [0, -4], autoPanPadding: [20, 20] })
+        .setLatLng(f.ort)
+        .setContent('<img src="' + quelle(f, 400) + '" alt="" data-i="' + f.i + '">')
+        .openOn(karte);
+    });
+  };
+  karte.on('popupopen', function (e) {
+    const el = e.popup.getElement().querySelector('img[data-i]');
+    if (el) el.onclick = function () { oeffnen(+el.dataset.i); };
+  });
+  lupe.addEventListener('click', function (e) { if (e.target === lupe || e.target.classList.contains('lupe-bild')) schliessen(); });
+  document.addEventListener('keydown', function (e) {
+    if (lupe.hidden) return;
+    if (e.key === 'Escape') schliessen();
+    else if (e.key === 'ArrowLeft') schritt(-1);
+    else if (e.key === 'ArrowRight') schritt(1);
+  });
+  /* Wischen */
+  let x0 = null, y0 = 0;
+  const flaeche = lupe.querySelector('.lupe-bild');
+  flaeche.addEventListener('pointerdown', function (e) { if (e.isPrimary) { x0 = e.clientX; y0 = e.clientY; } });
+  flaeche.addEventListener('pointerup', function (e) {
+    if (x0 === null) return;
+    const dx = e.clientX - x0, dy = e.clientY - y0; x0 = null;
+    if (Math.abs(dx) > 50 && Math.abs(dx) > Math.abs(dy) * 1.5) schritt(dx < 0 ? 1 : -1);
+  });
+  flaeche.addEventListener('pointercancel', function () { x0 = null; });
+
+  zeigeTag(0, false); aktuell = 0;
+})();
+</script>
+</body>
+</html>
