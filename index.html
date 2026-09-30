@@ -3263,9 +3263,11 @@
     }
     passen();
     let auraTimer = null;
+    /* Laeuft bewusst auch unter einer offenen Projektseite weiter: ohne das
+       Nachzeichnen legt der Browser den angehaltenen Film still und braucht
+       beim Zurueckkommen spuerbar lange, ihn wieder aufzunehmen (gemessen
+       rund 2 s Stillstand der ganzen Seite). */
     function paintAura() {
-      // Unter einer offenen Projektseite steht der Film ohnehin still.
-      if (document.body.classList.contains('bg-ruht')) return;
       if (heroVideo.readyState >= 2 && heroVideo.videoWidth) {
         try {
           if (!leinwandFilter) { ctx.drawImage(heroVideo, 0, 0, 32, 18); return; }
