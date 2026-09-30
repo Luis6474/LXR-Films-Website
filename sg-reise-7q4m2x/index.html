@@ -10,118 +10,170 @@
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' fill='%230d1216'/%3E%3Ctext x='16' y='22' font-family='Georgia,serif' font-size='15' fill='%23c8c2b6' text-anchor='middle'%3EL%3C/text%3E%3C/svg%3E">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Noto+Serif:wght@400;600&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet.markercluster/1.5.3/MarkerCluster.min.css">
+<link href="https://fonts.googleapis.com/css2?family=Belleza&family=Libre+Caslon+Display&family=Noto+Serif:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
 <style>
   :root {
-    --bg: #0b1012;
-    --flaeche: #121a1d;
-    --linie: rgba(147, 160, 155, 0.18);
+    --bg: #0e1314;
     --text: #e6eae8;
-    --leise: #93a09b;
-    --akzent: #e8d9b5;
-    --route: #93a09b;
+    --text-dim: #a9b3b0;
+    --accent: #93a09b;
+    --warm: 240, 206, 156;
+    --ease: cubic-bezier(0.22, 0.61, 0.36, 1);
+    --grain-size: 160px;
     color-scheme: dark;
   }
   * { box-sizing: border-box; }
-  html, body { margin: 0; background: var(--bg); color: var(--text); }
-  body { font: 15px/1.5 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; -webkit-font-smoothing: antialiased; }
-  button { font: inherit; color: inherit; background: none; border: 0; padding: 0; cursor: pointer; }
-  :focus-visible { outline: 2px solid var(--akzent); outline-offset: 2px; }
+  html { background: var(--bg); }
+  body { margin: 0; background: var(--bg); color: var(--text); font: 16px/1.6 'Noto Serif', Georgia, serif; -webkit-font-smoothing: antialiased; }
+  button { font: inherit; color: inherit; }
+  :focus-visible { outline: 2px solid rgba(var(--warm), 0.9); outline-offset: 3px; }
 
-  .aufbau { display: grid; grid-template-columns: minmax(0, 1fr) 440px; height: 100vh; height: 100dvh; }
-  #karte { height: 100%; background: #0d1214; }
-  .liste { overflow-y: auto; border-left: 1px solid var(--linie); overscroll-behavior: contain; }
+  /* Korn ueber der ganzen Seite, wie auf der Hauptseite */
+  .korn { position: fixed; inset: calc(-1 * var(--grain-size)); pointer-events: none; z-index: 50;
+    background-repeat: repeat; background-size: var(--grain-size) var(--grain-size); opacity: 0.55;
+    animation: kornZug 0.9s steps(1) infinite; }
+  @keyframes kornZug { 0% { transform: translate(0, 0); } 25% { transform: translate(-37px, 21px); } 50% { transform: translate(18px, -44px); } 75% { transform: translate(-12px, 33px); } }
+  @media (prefers-reduced-motion: reduce) { .korn { animation: none; } }
 
-  .kopf { padding: 28px 24px 18px; border-bottom: 1px solid var(--linie); }
-  .kopf a { color: var(--leise); text-decoration: none; font-size: 0.8em; letter-spacing: 0.14em; text-transform: uppercase; }
-  .kopf h1 { font: 400 1.7em/1.2 "Noto Serif", Georgia, serif; margin: 10px 0 6px; letter-spacing: 0.01em; }
-  .kopf p { margin: 0; color: var(--leise); font-size: 0.92em; }
-  .folgen { display: flex; align-items: center; gap: 8px; margin-top: 14px; color: var(--leise); font-size: 0.86em; cursor: pointer; }
-  .folgen input { accent-color: var(--route); margin: 0; }
+  /* ---------- Einstieg ---------- */
+  .kopf { min-height: 88vh; min-height: 88svh; display: flex; flex-direction: column; justify-content: center; align-items: center;
+    text-align: center; padding: 60px 20px 40px; position: relative; }
+  .kopf .marke { font: 0.78em 'Libre Caslon Display', Georgia, serif; letter-spacing: 0.32em; text-transform: uppercase; color: var(--text-dim); text-decoration: none; }
+  .kopf h1 { font: 400 clamp(2.1em, 6vw, 4.2em)/1.1 'Noto Serif', Georgia, serif; margin: 26px 0 14px; letter-spacing: 0.01em; }
+  .kopf .zeitraum { font: clamp(0.95em, 1.6vw, 1.15em) 'Belleza', 'Noto Serif', sans-serif; letter-spacing: 0.24em; color: var(--text-dim); }
+  .kopf p.leise { max-width: 46ch; margin: 28px auto 0; color: var(--text-dim); font-size: 0.98em; line-height: 1.8; }
+  .kopf .runter { position: absolute; bottom: 28px; left: 50%; transform: translateX(-50%); font: 0.72em 'Libre Caslon Display', Georgia, serif;
+    letter-spacing: 0.3em; text-transform: uppercase; color: var(--text-dim); opacity: 0.8; animation: atmen 2.8s var(--ease) infinite; }
+  @keyframes atmen { 0%, 100% { opacity: 0.35; transform: translate(-50%, 0); } 50% { opacity: 0.9; transform: translate(-50%, 6px); } }
 
-  .tag { padding: 0 24px 22px; }
-  .tag h2 {
-    position: sticky; top: 0; z-index: 2; margin: 0 -24px 10px; padding: 14px 24px 10px;
-    background: rgba(11, 16, 18, 0.94); backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px);
-    font: 400 1em/1.3 "Noto Serif", Georgia, serif; display: flex; align-items: baseline; gap: 10px;
+  /* ---------- Die Karte ---------- */
+  .karte { position: relative; }
+  .karte-lauf { --karte-einheit: 32vh; position: relative; height: calc(100vh + var(--einheiten, 40) * var(--karte-einheit)); }
+  @supports (height: 1svh) { .karte-lauf { --karte-einheit: 32svh; height: calc(100svh + var(--einheiten, 40) * var(--karte-einheit)); } }
+  .karte-halt { position: sticky; top: 0; height: 100vh; height: 100svh; overflow: hidden; background: var(--bg); }
+  .karte-gl, .karte-linien { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+  .karte-gl { opacity: 0; transition: opacity 1.6s var(--ease); }
+  .karte.ist-bereit .karte-gl { opacity: 1; }
+  .karte-schleier { position: absolute; inset: 0; pointer-events: none;
+    background: linear-gradient(to bottom, var(--bg) 0%, transparent 12%, transparent 80%, rgba(14, 19, 20, 0.92) 100%),
+                radial-gradient(140% 110% at 50% 55%, transparent 70%, rgba(4, 7, 8, 0.3) 100%); }
+  .karte-laden { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); font: 0.74em 'Libre Caslon Display', Georgia, serif;
+    letter-spacing: 0.3em; text-transform: uppercase; color: var(--text-dim); transition: opacity 0.8s; }
+  .karte.ist-bereit .karte-laden { opacity: 0; }
+
+  /* Fotos einer Station: die Tafel */
+  .karte-bilder { position: absolute; inset: 0; pointer-events: none; }
+  .karte-tafel { position: absolute; left: 4vw; right: 4vw; top: max(8%, 64px); max-width: 620px; margin: 0 auto; opacity: 0; will-change: opacity, transform; }
+  .karte-tafel.greifbar { pointer-events: auto; }
+  .karte-bild { position: absolute; overflow: hidden; background: #0b1012; border: 1px solid rgba(200, 214, 214, 0.14);
+    box-shadow: 0 24px 60px rgba(0, 0, 0, 0.45); cursor: zoom-in; padding: 0; }
+  .karte-bild img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; transition: transform 0.6s var(--ease), filter 0.4s; }
+  .karte-bild:hover img { transform: scale(1.025); filter: brightness(1.08); }
+  .karte-bild .nr { position: absolute; left: 7px; top: 7px; min-width: 20px; height: 20px; padding: 0 5px; border-radius: 10px;
+    background: rgba(8, 11, 12, 0.72); color: rgba(255, 236, 212, 0.95); font: 600 11px/20px system-ui, sans-serif; text-align: center;
+    border: 1px solid rgba(255, 226, 190, 0.45); }
+  .karte-bild .ca { position: absolute; right: 7px; top: 7px; font: 11px/1 system-ui, sans-serif; color: #fff; text-shadow: 0 0 4px #000; }
+
+  /* Unten: Datum, darunter Uhrzeit, Ort und Fotonummern */
+  .karte-datum { position: absolute; left: 0; right: 0; bottom: max(40px, 6.5vh); height: 3.4em; text-align: center; pointer-events: none; color: var(--text); }
+  .karte-datum > div { position: absolute; left: 0; right: 0; top: 0; opacity: 0; transition: opacity 0.6s var(--ease); }
+  .karte-datum > div.ist-an { opacity: 1; }
+  .karte-datum .tag { font: clamp(1.05em, 1.7vw, 1.4em) 'Belleza', 'Noto Serif', sans-serif; letter-spacing: 0.22em; opacity: 0.92; }
+  .karte-datum .mehr { margin-top: 4px; font: clamp(0.78em, 1.05vw, 0.9em) 'Noto Serif', Georgia, serif; font-style: italic; color: var(--text-dim); letter-spacing: 0.03em; }
+  .karte-datum .mehr b { font-style: normal; font-weight: 400; color: rgba(255, 226, 190, 0.92); letter-spacing: 0.08em; }
+  /* Ein Strich je Tag -- zum Anklicken: springt zum Tag */
+  .karte-zeit { position: absolute; left: 50%; bottom: calc(max(40px, 6.5vh) + 3.9em); transform: translateX(-50%); display: flex; gap: 2px; }
+  .karte-zeit button { display: block; width: 15px; height: 22px; padding: 0; border: 0; background: none; cursor: pointer; position: relative; }
+  .karte-zeit button::before { content: ""; position: absolute; left: 7px; bottom: 4px; width: 1px; height: 7px; background: var(--text); opacity: 0.22;
+    transition: opacity 0.6s var(--ease), transform 0.6s var(--ease); transform-origin: bottom; }
+  .karte-zeit button:hover::before { opacity: 0.6; }
+  .karte-zeit button.ist-an::before { opacity: 0.9; transform: scaleY(1.9); }
+  .karte-zeit button span { position: absolute; left: 50%; bottom: 24px; transform: translateX(-50%); white-space: nowrap; pointer-events: none;
+    font: 11px system-ui, sans-serif; color: var(--text); background: rgba(8, 11, 12, 0.8); padding: 2px 6px; border-radius: 3px; opacity: 0; transition: opacity 0.2s; }
+  .karte-zeit button:hover span, .karte-zeit button:focus-visible span { opacity: 1; }
+
+  .karte-weiter { position: absolute; top: max(18px, 3vh); right: 16px; display: inline-flex; align-items: center; gap: 10px;
+    font: 600 0.8em 'Libre Caslon Display', Georgia, serif; letter-spacing: 0.16em; text-transform: uppercase;
+    color: #1d150c; background: rgba(240, 206, 156, 0.96); border: 1px solid rgba(255, 236, 206, 0.95); border-radius: 999px;
+    padding: 12px 20px 11px; cursor: pointer; box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.25), 0 12px 34px rgba(0, 0, 0, 0.5);
+    opacity: 0; transition: opacity 0.8s var(--ease), background-color 0.3s; }
+  .karte.ist-bereit .karte-weiter { opacity: 1; }
+  .karte-weiter:hover { background-color: #fff1dc; }
+  .karte-hilfe { position: absolute; top: max(24px, 3.4vh); left: 18px; font: 0.7em 'Libre Caslon Display', Georgia, serif; letter-spacing: 0.2em;
+    text-transform: uppercase; color: var(--text-dim); opacity: 0; transition: opacity 0.8s; pointer-events: none; }
+  .karte.ist-bereit .karte-hilfe { opacity: 0.7; }
+  .karte-quelle { position: absolute; right: 12px; bottom: 8px; margin: 0; font-size: 9px; letter-spacing: 0.02em; color: var(--text-dim); opacity: 0.4; pointer-events: none; }
+
+  @media (min-width: 900px) {
+    .karte-tafel { left: auto; right: 4vw; top: max(12%, 96px); width: min(42vw, 700px); max-width: none; }
+    .karte-weiter { right: 28px; top: 26px; font-size: 0.86em; }
+    .karte-hilfe { left: 28px; top: 34px; }
   }
-  .tag h2 button { text-align: left; }
-  .tag h2 .nr { color: var(--leise); font: 0.78em system-ui, sans-serif; letter-spacing: 0.12em; text-transform: uppercase; }
-  .tag h2 .zahl { margin-left: auto; color: var(--leise); font: 0.8em system-ui, sans-serif; }
-  .tag.aktiv h2 .nr { color: var(--akzent); }
-  .raster { display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px; }
-  .foto { position: relative; aspect-ratio: 1; overflow: hidden; background: var(--flaeche); border-radius: 2px; }
-  .foto img { width: 100%; height: 100%; object-fit: cover; display: block; transition: opacity 0.2s; }
-  .foto:hover img { opacity: 0.82; }
-  .foto.ca::after { content: "≈"; position: absolute; right: 4px; bottom: 2px; font-size: 12px; color: #fff; text-shadow: 0 0 4px #000; }
-  .fuss { padding: 8px 24px 40px; color: var(--leise); font-size: 0.8em; }
+  .karte.ist-still .karte-lauf { height: auto; }
+  .karte.ist-still .karte-halt { position: relative; height: 85vh; }
 
-  /* Kartenpunkte */
-  .punkt, .haufen { position: relative; width: 40px; height: 40px; border-radius: 50%; background: var(--flaeche);
-    border: 2px solid var(--akzent); box-shadow: 0 2px 8px rgba(0, 0, 0, 0.6); transition: transform 0.15s; }
-  .punkt.ca { border-style: dashed; }
-  .punkt img, .haufen img { width: 100%; height: 100%; object-fit: cover; border-radius: 50%; display: block; }
-  .punkt:hover, .haufen:hover { transform: scale(1.12); }
-  .haufen { border-width: 3px; }
-  .haufen b { position: absolute; right: -6px; top: -6px; min-width: 22px; height: 22px; padding: 0 6px; border-radius: 11px;
-    background: var(--akzent); color: #0b1012; font: 700 12px/22px system-ui, sans-serif; text-align: center; }
-  .leaflet-control-layers { background: #121a1d; color: var(--text); border: 1px solid var(--linie) !important; }
-  .leaflet-control-layers-toggle { filter: invert(0.85); }
-  .leaflet-control-layers-expanded { padding: 8px 12px; }
-  .leaflet-container { font: 13px system-ui, sans-serif; }
-  .leaflet-bar a { background: #121a1d; color: var(--text); border-color: var(--linie) !important; }
-  .leaflet-bar a:hover { background: #1a2428; }
-  .leaflet-control-attribution { background: rgba(11, 16, 18, 0.75) !important; color: var(--leise); }
-  .leaflet-control-attribution a { color: var(--leise); }
-  .leaflet-popup-content-wrapper, .leaflet-popup-tip { background: #121a1d; color: var(--text); }
-  .leaflet-popup-content { margin: 8px; }
-  .leaflet-popup-content img { display: block; width: 180px; height: auto; border-radius: 2px; cursor: pointer; }
+  /* ---------- Schluss ---------- */
+  .schluss { padding: 90px 20px 110px; text-align: center; }
+  .schluss h2 { font: 400 1.6em 'Noto Serif', Georgia, serif; margin: 0 0 10px; }
+  .schluss p { color: var(--text-dim); margin: 0 auto; max-width: 52ch; }
+  .schluss .ohne { display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; margin: 34px auto 0; max-width: 900px; }
+  .schluss .ohne button { border: 1px solid rgba(200, 214, 214, 0.14); padding: 0; background: #0b1012; cursor: zoom-in; width: min(420px, 90vw); }
+  .schluss .ohne img { display: block; width: 100%; height: auto; }
+  .schluss .zurueck { display: inline-block; margin-top: 40px; font: 0.76em 'Libre Caslon Display', Georgia, serif; letter-spacing: 0.24em; text-transform: uppercase;
+    color: var(--text-dim); text-decoration: none; border: 1px solid rgba(200, 214, 214, 0.2); padding: 12px 20px; border-radius: 999px; background: none; cursor: pointer; }
 
-  /* Grossansicht */
+  /* ---------- Grossansicht ---------- */
   .lupe { position: fixed; inset: 0; z-index: 1000; background: rgba(5, 8, 9, 0.97); display: grid; grid-template-rows: minmax(0, 1fr) auto; }
   .lupe[hidden] { display: none; }
   .lupe-bild { position: relative; display: flex; align-items: center; justify-content: center; padding: 16px 64px 0; touch-action: pan-y pinch-zoom; }
   .lupe-bild img { max-width: 100%; max-height: 100%; object-fit: contain; user-select: none; -webkit-user-drag: none; }
-  .lupe-leiste { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 18px; padding: 14px 20px calc(14px + env(safe-area-inset-bottom)); color: var(--leise); font-size: 0.92em; }
-  .lupe-leiste .wann { color: var(--text); }
-  .lupe-leiste .rechts { margin-left: auto; display: flex; gap: 8px; }
-  .knopf { border: 1px solid var(--linie); border-radius: 999px; padding: 6px 14px; color: var(--text); }
-  .knopf:hover { background: rgba(147, 160, 155, 0.12); }
-  .pfeil { position: absolute; top: 50%; transform: translateY(-50%); width: 48px; height: 72px; font-size: 28px; color: var(--text); opacity: 0.7; }
-  .pfeil:hover { opacity: 1; }
-  .pfeil.zurueck { left: 8px; } .pfeil.vor { right: 8px; }
-  .zu { position: absolute; top: 10px; right: 12px; width: 44px; height: 44px; font-size: 26px; opacity: 0.8; z-index: 2; }
-
-  @media (max-width: 899px) {
-    .aufbau { display: block; height: auto; }
-    #karte { position: sticky; top: 0; z-index: 3; height: 42vh; height: 42svh; border-bottom: 1px solid var(--linie); }
-    .liste { overflow: visible; border-left: 0; }
-    .kopf { padding: 22px 16px 14px; }
-    .tag { padding: 0 16px 18px; }
-    .tag h2 { top: 42vh; top: 42svh; margin: 0 -16px 8px; padding: 12px 16px 8px; }
-    .raster { grid-template-columns: repeat(3, 1fr); gap: 3px; }
-    .lupe-bild { padding: 52px 0 0; }
-    .pfeil { display: none; }
-    .fuss { padding: 8px 16px 32px; }
-  }
+  .lupe-leiste { display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px 18px; padding: 14px 22px calc(16px + env(safe-area-inset-bottom));
+    color: var(--text-dim); font-size: 0.9em; }
+  .lupe-leiste .wann { color: var(--text); font-family: 'Belleza', 'Noto Serif', sans-serif; letter-spacing: 0.12em; }
+  .lupe-leiste .wo { font-style: italic; }
+  .lupe-leiste .stelle { margin-left: auto; font-family: system-ui, sans-serif; font-size: 0.85em; }
+  .pfeil, .zu { position: absolute; border: 0; background: none; color: var(--text); cursor: pointer; opacity: 0.7; }
+  .pfeil { top: 50%; transform: translateY(-50%); width: 52px; height: 80px; font-size: 30px; }
+  .pfeil:hover, .zu:hover { opacity: 1; }
+  .pfeil.zurueck { left: 6px; } .pfeil.vor { right: 6px; }
+  .zu { top: 10px; right: 12px; width: 44px; height: 44px; font-size: 28px; z-index: 2; }
+  @media (max-width: 700px) { .lupe-bild { padding: 54px 0 0; } .pfeil { display: none; } }
 </style>
 </head>
 <body>
-<main class="aufbau">
-  <div id="karte" role="region" aria-label="Karte der Reise"></div>
-  <aside class="liste" id="liste">
-    <header class="kopf">
-      <a href="../">LXR Films</a>
-      <h1>The Same Gray – Die Reise</h1>
-      <p id="zusammen"></p>
-      <label class="folgen"><input type="checkbox" id="folgen" checked> Karte folgt beim Scrollen dem Tag</label>
-    </header>
-    <div id="tage"></div>
-    <p class="fuss">≈ Ort ungefähr (Foto ohne Standort oder auf die Stadt gerundet) · Karte und Luftbild © Esri und Partner, © OpenStreetMap-Mitwirkende</p>
-  </aside>
-</main>
+<div class="korn" aria-hidden="true"></div>
+
+<header class="kopf">
+  <a class="marke" href="../">LXR Films</a>
+  <h1>The Same Gray</h1>
+  <div class="zeitraum" id="zeitraum">Die Reise</div>
+  <p class="leise">Die ganze Reise, Foto für Foto, an den Orten, an denen sie entstanden sind. Scrollen bewegt die Kamera von Station zu Station; ein Klick auf ein Foto zeigt es groß.</p>
+  <div class="runter" aria-hidden="true">Scrollen ↓</div>
+</header>
+
+<section class="karte" aria-label="Karte der Reise mit allen Fotos">
+  <div class="karte-lauf">
+    <div class="karte-halt">
+      <canvas class="karte-gl" aria-hidden="true"></canvas>
+      <canvas class="karte-linien" aria-hidden="true"></canvas>
+      <div class="karte-schleier" aria-hidden="true"></div>
+      <div class="karte-laden" aria-hidden="true">Karte lädt</div>
+      <div class="karte-bilder"></div>
+      <div class="karte-zeit" role="group" aria-label="Tage der Reise"></div>
+      <div class="karte-datum" aria-live="polite"><div></div><div></div></div>
+      <div class="karte-hilfe" aria-hidden="true">Scrollen · ← → Station</div>
+      <button type="button" class="karte-weiter">Karte überspringen <span aria-hidden="true">↓</span></button>
+      <p class="karte-quelle">Relief nach SRTM/ETOPO1 (Mapzen) · Straßen, Wege, Seen und Namen © OpenStreetMap-Mitwirkende · Routen OSRM</p>
+    </div>
+  </div>
+</section>
+
+<section class="schluss" id="schluss">
+  <h2>Ende der Reise</h2>
+  <p id="schluss-text"></p>
+  <div class="ohne" id="ohne"></div>
+  <button type="button" class="zurueck" id="nachoben">Noch einmal von vorn</button>
+</section>
 
 <div class="lupe" id="lupe" hidden role="dialog" aria-modal="true" aria-label="Foto">
   <div class="lupe-bild">
@@ -132,172 +184,1513 @@
   </div>
   <div class="lupe-leiste">
     <span class="wann" id="wann"></span>
-    <span id="stelle"></span>
-    <span class="rechts">
-      <button class="knopf" id="aufkarte">Auf der Karte</button>
-    </span>
+    <span class="wo" id="wo"></span>
+    <span class="stelle" id="stelle"></span>
   </div>
 </div>
 
-<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet.markercluster/1.5.3/leaflet.markercluster.min.js"></script>
 <script src="fotos.js"></script>
+<script src="reise.js"></script>
 <script>
 (function () {
-  const F = window.FOTOS || [];
+  'use strict';
+  const R = window.REISE, FOTOS = window.FOTOS || [];
+  const reducedMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
   const B = 'bilder/';
   const WT = ['So', 'Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa'];
+  const WTL = ['Sonntag', 'Montag', 'Dienstag', 'Mittwoch', 'Donnerstag', 'Freitag', 'Samstag'];
   const MO = ['Januar', 'Februar', 'März', 'April', 'Mai', 'Juni', 'Juli', 'August', 'September', 'Oktober', 'November', 'Dezember'];
-  const schmal = matchMedia('(max-width: 899px)');
 
-  function datum(tag, jahr) {
-    const d = new Date(tag + 'T12:00');
-    return WT[d.getDay()] + ', ' + d.getDate() + '. ' + MO[d.getMonth()] + (jahr ? ' ' + d.getFullYear() : '');
-  }
-
-  /* ---- Tage ---- */
-  const tage = [];
-  const nachTag = new Map();
-  F.forEach(function (f, i) {
-    f.i = i;
-    const k = f.t ? f.t.slice(0, 10) : '';
-    if (!nachTag.has(k)) { const t = { key: k, fotos: [] }; nachTag.set(k, t); tage.push(t); }
-    nachTag.get(k).fotos.push(f);
-  });
-  const erster = tage.find(function (t) { return t.key; });
-  const t0 = erster ? new Date(erster.key + 'T12:00') : null;
-  tage.forEach(function (t) {
-    t.nr = t.key && t0 ? Math.round((new Date(t.key + 'T12:00') - t0) / 864e5) + 1 : 0;
-    t.punkte = t.fotos.filter(function (f) { return f.ort; }).map(function (f) { return f.ort; });
-  });
-  const datiert = tage.filter(function (t) { return t.key; });
-  if (datiert.length) {
-    document.getElementById('zusammen').textContent = F.length + ' Fotos · ' + datum(datiert[0].key) + ' – ' + datum(datiert[datiert.length - 1].key, true);
-  }
-
-  /* ---- Liste ---- */
-  const wurzel = document.getElementById('tage');
-  const html = [];
-  tage.forEach(function (t, ti) {
-    html.push('<section class="tag" data-t="' + ti + '"><h2><button type="button" class="hin" data-t="' + ti + '">' +
-      (t.key ? '<span class="nr">Tag ' + t.nr + '</span> ' + datum(t.key) : 'Ohne Datum') +
-      '</button><span class="zahl">' + t.fotos.length + '</span></h2><div class="raster">');
-    t.fotos.forEach(function (f) {
-      const zeit = f.t ? f.t.slice(11, 16) + ' Uhr' : '';
-      html.push('<button type="button" class="foto' + (f.ca ? ' ca' : '') + '" data-i="' + f.i + '" aria-label="Foto ' + (f.i + 1) + (zeit ? ', ' + zeit : '') + '">' +
-        '<img src="' + B + f.id + '-400.webp" alt="" loading="lazy" decoding="async" width="' + (f.w >= f.h ? 400 : Math.round(400 * f.w / f.h)) + '" height="' + (f.h >= f.w ? 400 : Math.round(400 * f.h / f.w)) + '"></button>');
-    });
-    html.push('</div></section>');
-  });
-  wurzel.innerHTML = html.join('');
-
-  /* ---- Karte ---- */
-  const karte = L.map('karte', { zoomControl: true, attributionControl: true, worldCopyJump: false, maxZoom: 18 });
-  const ESRI = 'https://server.arcgisonline.com/ArcGIS/rest/services/';
-  function esri(dienst, max, zusatz) {
-    return L.tileLayer(ESRI + dienst + '/MapServer/tile/{z}/{y}/{x}', Object.assign({ maxNativeZoom: max, maxZoom: 19 }, zusatz || {}));
-  }
-  const dunkel = L.layerGroup([
-    esri('Canvas/World_Dark_Gray_Base', 16, { attribution: 'Karte © Esri, HERE, Garmin, © OpenStreetMap-Mitwirkende' }),
-    esri('Canvas/World_Dark_Gray_Reference', 16)
-  ]);
-  const satellit = L.layerGroup([
-    esri('World_Imagery', 19, { attribution: 'Luftbild © Esri, Maxar, Earthstar Geographics' }),
-    esri('Reference/World_Boundaries_and_Places', 19)
-  ]);
-  dunkel.addTo(karte);
-  L.control.layers({ 'Karte': dunkel, 'Luftbild': satellit }, null, { position: 'topright' }).addTo(karte);
-
-  const alle = F.filter(function (f) { return f.ort; }).map(function (f) { return f.ort; });
-  L.polyline(alle, { color: '#93a09b', weight: 2, opacity: 0.55, interactive: false }).addTo(karte);
-  let tagLinie = null;
-
-  const haufen = L.markerClusterGroup({
-    showCoverageOnHover: false, maxClusterRadius: 44, spiderfyDistanceMultiplier: 1.4, chunkedLoading: true,
-    iconCreateFunction: function (c) {
-      const n = c.getChildCount(), s = n < 10 ? 50 : n < 50 ? 58 : 66;
-      const f = c.getAllChildMarkers()[0].options.foto;
-      return L.divIcon({ html: '<div class="haufen" style="width:' + s + 'px;height:' + s + 'px"><img src="' + B + f.id + '-400.webp" alt=""><b>' + n + '</b></div>', className: '', iconSize: [s, s] });
+  /* ---------- Korn ---------- */
+  (function () {
+    const c = document.createElement('canvas'); c.width = c.height = 160;
+    const x = c.getContext('2d'), d = x.createImageData(160, 160);
+    for (let i = 0; i < d.data.length; i += 4) {
+      const g = Math.random();
+      d.data[i] = d.data[i + 1] = d.data[i + 2] = 255;
+      d.data[i + 3] = g < 0.5 ? 0 : Math.round((g - 0.5) * 2 * 22);
     }
-  });
-  const marker = [];
-  F.forEach(function (f) {
-    if (!f.ort) return;
-    const m = L.marker(f.ort, { foto: f, keyboard: false,
-      icon: L.divIcon({ html: '<div class="punkt' + (f.ca ? ' ca' : '') + '"><img src="' + B + f.id + '-400.webp" alt=""></div>', className: '', iconSize: [40, 40] }) });
-    m.on('click', function () { oeffnen(f.i); });
-    marker[f.i] = m;
-    haufen.addLayer(m);
-  });
-  karte.addLayer(haufen);
-  if (alle.length) karte.fitBounds(alle, { padding: [30, 30] }); else karte.setView([56.5, -5], 6);
+    x.putImageData(d, 0, 0);
+    document.querySelector('.korn').style.backgroundImage = 'url(' + c.toDataURL() + ')';
+  })();
 
-  function rand() { return schmal.matches ? [20, 20] : [50, 50]; }
-  function zeigeTag(ti, fliegen) {
-    const t = tage[ti];
-    document.querySelectorAll('.tag.aktiv').forEach(function (e) { e.classList.remove('aktiv'); });
-    const sek = wurzel.querySelector('.tag[data-t="' + ti + '"]');
-    if (sek) sek.classList.add('aktiv');
-    if (tagLinie) { karte.removeLayer(tagLinie); tagLinie = null; }
-    if (!t || !t.punkte.length) return;
-    tagLinie = L.polyline(t.punkte, { color: '#e8d9b5', weight: 4, opacity: 0.9, interactive: false }).addTo(karte);
-    if (fliegen) karte.flyToBounds(t.punkte, { padding: rand(), maxZoom: 13, duration: 0.8 });
+  /* ---------- Fotos und Stationen ---------- */
+  const fotoNach = new Map(FOTOS.map(function (f) { return [f.id, f]; }));
+  function tagText(t, jahr, lang) {
+    const d = new Date(t.slice(0, 10) + 'T12:00');
+    return (lang ? WTL : WT)[d.getDay()] + ', ' + d.getDate() + '. ' + MO[d.getMonth()] + (jahr ? ' ' + d.getFullYear() : '');
+  }
+  const ST = R.stationen.map(function (s, i) {
+    return { i: i, p: s.p, name: s.name, fotos: s.f.map(function (id) { return fotoNach.get(id); }).filter(Boolean) };
+  });
+  const TAGE = [];
+  ST.forEach(function (s) {
+    const d = s.fotos[0].t.slice(0, 10);
+    if (TAGE.indexOf(d) < 0) TAGE.push(d);
+    s.tag = TAGE.indexOf(d);
+  });
+  // Fortlaufende Nummer jedes Fotos in der Reise (fuer "Foto 41 von 186")
+  const REIHE = [];
+  ST.forEach(function (s) { s.ab = REIHE.length; s.fotos.forEach(function (f) { f.st = s.i; REIHE.push(f); }); });
+  (R.ohne || []).forEach(function (id) { const f = fotoNach.get(id); if (f) { f.st = -1; REIHE.push(f); } });
+  REIHE.forEach(function (f, i) { f.nr = i; });
+  const ZEITRAUM = tagText(TAGE[0] + 'T', false) + ' – ' + tagText(TAGE[TAGE.length - 1] + 'T', true);
+  document.getElementById('zeitraum').textContent = ZEITRAUM.toUpperCase();
+  document.getElementById('schluss-text').textContent = REIHE.length + ' Fotos an ' + ST.length + ' Stationen, ' + TAGE.length + ' Tage.' +
+    ((R.ohne || []).length ? ' Dieses Foto hat weder Ort noch Zeit:' : '');
+
+  /* ---------- Farben und Einstellungen ----------
+     Die Farbwelt von The Same Gray (Nachtblau, Schiefer, Nebelgrau, Tusche
+     in Elfenbein, eine warme Lichtspur), insgesamt etwas heller -- und an
+     der Station, an der man steht, faellt ein warmer Lichtschein aufs Land. */
+  const CFG = {
+    ueberhoehung: 2.2,
+    grund: [0.03, 0.047, 0.066],
+    land: [[0.105, 0.14, 0.175], [0.145, 0.19, 0.235], [0.215, 0.27, 0.325], [0.36, 0.41, 0.46], [0.64, 0.68, 0.72]],
+    wasser: [0.05, 0.082, 0.118],
+    linien: { meer: [0.62, 0.68, 0.72, 0.09], ufer: [0.92, 0.88, 0.78, 0.62], land: [0.82, 0.8, 0.72, 0.14] },
+    tinte: '226, 216, 190', tinteGl: [0.86, 0.84, 0.76],
+    route: { hell: '255, 222, 178', schein: '255, 170, 90', leise: '240, 200, 150', sand: '250, 214, 168',
+             ort: '255, 196, 130', ring: '255, 226, 190', punkt: '255, 236, 212' },
+    gradnetz: [-8, 11, 50.5, 58], gradnetzSchritt: 0.5,
+    kompass: [-7.05, 57.02],
+    wellenBasis: [1.4, 5.5, 5.0, 14.0],
+    wellenNah: [0.06, 0.26, 0.3, 1.0],
+    // Strassen und Wege der Detailstuecke: Farbe (rgb 0-1) und Deckkraft je Art
+    strassen: [
+      [0.98, 0.9, 0.76, 0.62],   // Fernstrasse
+      [0.95, 0.88, 0.76, 0.48],   // Landstrasse
+      [0.9, 0.86, 0.78, 0.32],    // Nebenstrasse
+      [0.8, 0.84, 0.8, 0.26],     // Weg, Pfad
+      [0.5, 0.68, 0.8, 0.55],     // Fluss
+      [0.5, 0.68, 0.8, 0.3],      // Bach
+      [0.62, 0.78, 0.9, 0.4],     // Faehre
+      [0.75, 0.75, 0.75, 0.4]     // Bahn
+    ]
+  };
+  const HOECHSTE = 1000;
+
+  const wurzel = document.querySelector('.karte');
+  const lauf = wurzel.querySelector('.karte-lauf');
+  const halt = wurzel.querySelector('.karte-halt');
+  const glc = wurzel.querySelector('.karte-gl');
+  const linc = wurzel.querySelector('.karte-linien');
+  const datum = wurzel.querySelector('.karte-datum');
+  const zeitLeiste = wurzel.querySelector('.karte-zeit');
+  const UEB = CFG.ueberhoehung;
+  const FOV = 34 * Math.PI / 180;
+
+  /* ---- Rahmen: dieselbe Mercator-Rechnung wie im Bau-Werkzeug ---- */
+  function geo(lon, lat, z) {
+    const s = Math.sin(lat * Math.PI / 180);
+    const y = 0.5 - Math.log((1 + s) / (1 - s)) / (4 * Math.PI);
+    return [(lon + 180) / 360 * R.rahmen.c - R.rahmen.ursprung[0], -y * R.rahmen.c - R.rahmen.ursprung[1], z || 0];
   }
 
-  /* Karte folgt dem Tag, der gerade oben in der Liste steht */
-  const folgen = document.getElementById('folgen');
-  let aktuell = -1, warte = 0;
-  function oben() {
-    const ref = schmal.matches ? document.getElementById('karte').getBoundingClientRect().bottom + 40 : 60;
-    let best = 0;
-    wurzel.querySelectorAll('.tag').forEach(function (s, i) { if (s.getBoundingClientRect().top <= ref) best = i; });
-    return best;
+  /* ---------- Beschriftung unten ---------- */
+  TAGE.forEach(function (d, i) {
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.setAttribute('aria-label', 'Tag ' + (i + 1) + ': ' + tagText(d + 'T', true, true));
+    const sp = document.createElement('span'); sp.textContent = 'Tag ' + (i + 1) + ' · ' + tagText(d + 'T');
+    b.appendChild(sp);
+    b.addEventListener('click', function () { springeZuTag(i); });
+    zeitLeiste.appendChild(b);
+  });
+  const striche = Array.from(zeitLeiste.children);
+  const lagen = Array.from(datum.children);
+  let textJetzt = null, lageJetzt = 0, tagJetzt = -2;
+  function beschriften(k) {
+    let html, tag = -1;
+    if (k.st >= 0) {
+      const s = ST[k.st], a = s.fotos[0], z = s.fotos[s.fotos.length - 1];
+      tag = s.tag;
+      const zeit = a.t.slice(11, 16) + (z.t.slice(11, 16) !== a.t.slice(11, 16) ? ' – ' + z.t.slice(11, 16) : '') + ' Uhr';
+      const nr = s.fotos.length > 1 ? 'Fotos ' + (s.ab + 1) + '–' + (s.ab + s.fotos.length) : 'Foto ' + (s.ab + 1);
+      html = '<div class="tag">' + tagText(a.t, true, false).toUpperCase() + '</div><div class="mehr">' +
+        zeit + (s.name ? ' · <b>' + s.name.replace(/[<&]/g, '') + '</b>' : '') + ' · ' + nr + ' von ' + REIHE.length + '</div>';
+    } else {
+      html = '<div class="tag">' + ZEITRAUM.toUpperCase() + '</div><div class="mehr">' + ST.length + ' Stationen · ' + REIHE.length + ' Fotos</div>';
+    }
+    if (html !== textJetzt) {
+      textJetzt = html;
+      lageJetzt = 1 - lageJetzt;
+      lagen[lageJetzt].innerHTML = html;
+      lagen[lageJetzt].classList.add('ist-an');
+      lagen[1 - lageJetzt].classList.remove('ist-an');
+    }
+    if (tag !== tagJetzt) {
+      tagJetzt = tag;
+      striche.forEach(function (s, i) { s.classList.toggle('ist-an', i === tag); });
+    }
   }
-  function beimScrollen() {
-    if (warte) return;
-    warte = requestAnimationFrame(function () {
-      warte = 0;
-      const ti = oben();
-      if (ti !== aktuell) { aktuell = ti; zeigeTag(ti, folgen.checked); }
+
+  function glatt(x) { x = Math.max(0, Math.min(1, x)); return x * x * x * (x * (x * 6 - 15) + 10); }
+  function stufe(a, b, x) { const u = Math.max(0, Math.min(1, (x - a) / (b - a))); return u * u * (3 - 2 * u); }
+  function mix(a, b, f) { return a + (b - a) * f; }
+  function logMix(a, b, f) { return Math.exp(mix(Math.log(a), Math.log(b), f)); }
+  function winkelMix(a, b, f) { const d = ((b - a + 540) % 360) - 180; return a + d * f; }
+  function kurs(dx, dy) { return Math.atan2(dx, dy) * 180 / Math.PI; }
+
+  /* ---- Matrizen (Spalten zuerst, wie WebGL sie will) ---- */
+  function perspektive(fy, as, n, f) {
+    const t = 1 / Math.tan(fy / 2), r = 1 / (n - f);
+    return [t / as, 0, 0, 0, 0, t, 0, 0, 0, 0, (f + n) * r, -1, 0, 0, 2 * f * n * r, 0];
+  }
+  function blickAuf(e, c, u) {
+    let zx = e[0] - c[0], zy = e[1] - c[1], zz = e[2] - c[2];
+    let l = Math.hypot(zx, zy, zz); zx /= l; zy /= l; zz /= l;
+    let xx = u[1] * zz - u[2] * zy, xy = u[2] * zx - u[0] * zz, xz = u[0] * zy - u[1] * zx;
+    l = Math.hypot(xx, xy, xz); xx /= l; xy /= l; xz /= l;
+    const yx = zy * xz - zz * xy, yy = zz * xx - zx * xz, yz = zx * xy - zy * xx;
+    return [xx, yx, zx, 0, xy, yy, zy, 0, xz, yz, zz, 0,
+            -(xx * e[0] + xy * e[1] + xz * e[2]), -(yx * e[0] + yy * e[1] + yz * e[2]),
+            -(zx * e[0] + zy * e[1] + zz * e[2]), 1];
+  }
+  function mal(a, b) {
+    const o = new Array(16);
+    for (let c = 0; c < 4; c++) for (let r = 0; r < 4; r++) {
+      o[c * 4 + r] = a[r] * b[c * 4] + a[4 + r] * b[c * 4 + 1] + a[8 + r] * b[c * 4 + 2] + a[12 + r] * b[c * 4 + 3];
+    }
+    return o;
+  }
+
+  let BASIS = null;                   // Grundkarte nach dem Laden
+  const NAH_SAETZE = R.nah.map(function (n) { return { info: n, satz: null, laedt: false }; });
+  let phasen = [], EINHEITEN = 40;
+  let fluege = [], kurse = [], wege = [], wegAb = [], GESAMT = 0, orte = [], blick = [], blickEnde = [], mitte = [0, 0], halb = [100, 100];
+  let uebersicht = null, gross = null;
+  const NAH = { dist: 4.2, pitch: 54 };
+  const stAnPunkt = [];
+  ST.forEach(function (s) { (stAnPunkt[s.p] = stAnPunkt[s.p] || []).push(s.i); });
+
+  /* ---- Wege ---- */
+  function rund(p) {
+    for (let n = 0; n < 2; n++) {
+      const q = [p[0]];
+      for (let i = 0; i < p.length - 1; i++) {
+        const a = p[i], b = p[i + 1];
+        q.push([0.75 * a[0] + 0.25 * b[0], 0.75 * a[1] + 0.25 * b[1], 0.75 * a[2] + 0.25 * b[2]]);
+        q.push([0.25 * a[0] + 0.75 * b[0], 0.25 * a[1] + 0.75 * b[1], 0.25 * a[2] + 0.75 * b[2]]);
+      }
+      q.push(p[p.length - 1]);
+      p = q;
+    }
+    return p;
+  }
+  function wegAus(pkte) {
+    pkte = rund(pkte);
+    const L = [0];
+    for (let i = 1; i < pkte.length; i++) L.push(L[i - 1] + Math.hypot(pkte[i][0] - pkte[i - 1][0], pkte[i][1] - pkte[i - 1][1]));
+    return { p: pkte, L: L, len: L[L.length - 1] };
+  }
+  function punkt(w, l) {
+    l = Math.max(0, Math.min(w.len, l));
+    let lo = 0, hi = w.L.length - 1;
+    while (hi - lo > 1) { const m = (lo + hi) >> 1; if (w.L[m] < l) lo = m; else hi = m; }
+    const f = (l - w.L[lo]) / ((w.L[hi] - w.L[lo]) || 1);
+    const a = w.p[lo], b = w.p[hi];
+    return [mix(a[0], b[0], f), mix(a[1], b[1], f), mix(a[2], b[2], f)];
+  }
+
+  /* Flugbahn nach van Wijk & Nuij (2003): erst steigt die Kamera auf,
+     zieht oben hinueber und senkt sich ueber dem Ziel. */
+  const RHO = 1.6;
+  const BREITE = 2 * Math.tan(FOV / 2);
+  function flugBauen(A, Bp, w0, w1) {
+    const u1 = Math.hypot(Bp[0] - A[0], Bp[1] - A[1]), r2 = RHO * RHO;
+    if (u1 < 0.01) {
+      const S = Math.abs(Math.log(w1 / w0)) / RHO || 0.001;
+      return { S: S, u1: 0, wMax: Math.max(w0, w1), u: function () { return 0; },
+               w: function (s) { return w0 * Math.exp(Math.log(w1 / w0) * s / S); } };
+    }
+    const b0 = (w1 * w1 - w0 * w0 + r2 * r2 * u1 * u1) / (2 * w0 * r2 * u1);
+    const b1 = (w1 * w1 - w0 * w0 - r2 * r2 * u1 * u1) / (2 * w1 * r2 * u1);
+    const r0 = Math.log(Math.sqrt(b0 * b0 + 1) - b0), r1 = Math.log(Math.sqrt(b1 * b1 + 1) - b1);
+    const fl = {
+      S: (r1 - r0) / RHO, u1: u1,
+      w: function (s) { return w0 * Math.cosh(r0) / Math.cosh(RHO * s + r0); },
+      u: function (s) { return w0 / r2 * (Math.cosh(r0) * Math.tanh(RHO * s + r0) - Math.sinh(r0)); }
+    };
+    fl.wMax = 0;
+    for (let j = 0; j <= 40; j++) fl.wMax = Math.max(fl.wMax, fl.w(fl.S * j / 40));
+    return fl;
+  }
+  function einpassen(punkte, pitch, bearing, extra, W, H) {
+    const b = bearing * Math.PI / 180;
+    const vx = Math.sin(b), vy = Math.cos(b), rx = Math.cos(b), ry = -Math.sin(b);
+    let u0 = 1e9, u1 = -1e9, w0 = 1e9, w1 = -1e9;
+    punkte.forEach(function (p) {
+      const u = p[0] * rx + p[1] * ry, w = p[0] * vx + p[1] * vy;
+      u0 = Math.min(u0, u); u1 = Math.max(u1, u); w0 = Math.min(w0, w); w1 = Math.max(w1, w);
+    });
+    const t = Math.tan(FOV / 2), as = W / H;
+    const eu = (u1 - u0) / 2, ew = (w1 - w0) / 2;
+    const dist = Math.max(ew / t, eu / (t * as)) * extra;
+    const uc = (u0 + u1) / 2, wc = (w0 + w1) / 2 - ew * 0.14;
+    return { x: uc * rx + wc * vx, y: uc * ry + wc * vy, z: 0, dist: dist, pitch: pitch, bearing: bearing };
+  }
+
+  function vorbereiten(W, H) {
+    const hoch = H / W > 1.2;
+    NAH.pitch = hoch ? 46 : 54;
+    NAH.dist = hoch ? 5.6 : 4.2;
+    orte = R.punkte.map(function (p) { return [p[0], p[1], p[2] * UEB]; });
+    wege = R.wege.map(function (w) { return wegAus(w.map(function (p) { return [p[0], p[1], p[2] * UEB]; })); });
+    wegAb = []; GESAMT = 0;
+    wege.forEach(function (w) { wegAb.push(GESAMT); GESAMT += w.len; });
+
+    /* Blickrichtung: die Richtung der Fahrt. Kurze Wege (ein paar hundert
+       Meter zu Fuss) drehen die Kamera nicht -- sie behaelt die Richtung
+       der letzten laengeren Fahrt, sonst schwenkte sie bei jedem Schritt. */
+    kurse = wege.map(function (w) {
+      const a = w.p[0], b = w.p[w.p.length - 1];
+      return Math.hypot(b[0] - a[0], b[1] - a[1]) > 6 ? kurs(b[0] - a[0], b[1] - a[1]) : null;
+    });
+    let letzter = kurse.find(function (k) { return k !== null; });
+    if (letzter === undefined) letzter = 0;
+    kurse = kurse.map(function (k) { if (k !== null) letzter = k; return letzter; });
+    blick = orte.map(function (o, i) { return (i ? kurse[i - 1] : kurse[0]) + 3; });
+    // An einem Ort mit mehreren Stationen dreht sich die Kamera je Station
+    // um 6 Grad weiter: ein langsamer Schwenk um den Ort.
+    blickEnde = orte.map(function (o, i) { return blick[i] - 3 + 6 * (stAnPunkt[i] ? stAnPunkt[i].length : 1); });
+
+    const alle = orte.slice();
+    wege.forEach(function (w) { for (let i = 0; i < w.p.length; i += 8) alle.push(w.p[i]); });
+    const breit = Math.min(1, Math.max(0, (W / H) - 1.2));
+    const quer = einpassen(alle, 22, -90, 1, W, H).dist < 0.6 * einpassen(alle, 22, 0, 1, W, H).dist;
+    const kursU = quer ? -90 : 0;
+    uebersicht = einpassen(alle, 22, kursU, 1.12 + 0.25 * breit, W, H);
+    gross = einpassen(alle, 30, kursU - 8, 1.3 + 0.25 * breit, W, H);
+    let x0 = 1e9, x1 = -1e9, y0 = 1e9, y1 = -1e9;
+    alle.forEach(function (p) { x0 = Math.min(x0, p[0]); x1 = Math.max(x1, p[0]); y0 = Math.min(y0, p[1]); y1 = Math.max(y1, p[1]); });
+    mitte = [(x0 + x1) / 2, (y0 + y1) / 2];
+    halb = [Math.max(70, (x1 - x0) * 0.78), Math.max(70, (y1 - y0) * 0.78)];
+
+    fluege = orte.slice(1).map(function (o, i) { return flugBauen(orte[i], o, NAH.dist * BREITE, NAH.dist * BREITE); });
+    phasen = [{ art: 'start', laenge: 0.6 }];
+    orte.forEach(function (o, i) {
+      phasen.push({ art: 'fahrt', von: i - 1, nach: i, laenge: i ? 0.45 + 0.3 * fluege[i - 1].S : 1.4 });
+      (stAnPunkt[i] || []).forEach(function (si, j) {
+        phasen.push({ art: 'halt', ort: i, st: si, j: j, laenge: 0.8 + 0.1 * ST[si].fotos.length });
+      });
+    });
+    phasen.push({ art: 'weit', laenge: 1.6 });
+    phasen.push({ art: 'ende', laenge: 0.7 });
+    let s = 0;
+    phasen.forEach(function (p) { p.ab = s; s += p.laenge; });
+    EINHEITEN = s;
+    if (!reducedMotion) lauf.style.setProperty('--einheiten', EINHEITEN.toFixed(2));
+    ueberGeo = null; ueberNeu = true;
+  }
+
+  /* ---- Kamera und Zustand fuer einen Stand auf der Zeitachse ---- */
+  function letzteSt(i) { const l = stAnPunkt[i]; return l ? l[l.length - 1] : -1; }
+  function ersteSt(i) { const l = stAnPunkt[i]; return l ? l[0] : -1; }
+  function zustand(u) {
+    let i = 0;
+    while (i < phasen.length - 1 && u >= phasen[i].ab + phasen[i].laenge) i++;
+    const ph = phasen[i];
+    const f = Math.max(0, Math.min(1, (u - ph.ab) / ph.laenge));
+    const k = { namen: 0, st: -1, sicht: 0, ort: -1, weg: -1, wegL: 0, sand: 0, weh: 0, alleHell: 0, links: 0, licht: 0 };
+    function setze(c) { k.x = c.x; k.y = c.y; k.z = c.z; k.dist = c.dist; k.pitch = c.pitch; k.bearing = c.bearing; }
+    if (ph.art === 'start') {
+      setze(uebersicht); k.bearing += 3 * f; k.namen = 1;
+    } else if (ph.art === 'halt') {
+      const o = orte[ph.ort];
+      setze({ x: o[0], y: o[1], z: o[2], dist: NAH.dist, pitch: NAH.pitch, bearing: blick[ph.ort] - 3 + 6 * (ph.j + f) });
+      k.st = ph.st;
+      k.sicht = stufe(0.08, 0.24, f) * (1 - stufe(0.84, 0.97, f));
+      k.ort = ph.ort; k.weg = ph.ort - 1; k.wegL = 1e9; k.links = 1; k.licht = 1;
+    } else if (ph.art === 'fahrt' && ph.von < 0) {
+      const e = glatt(f), o = orte[0];
+      setze({ x: mix(uebersicht.x, o[0], e), y: mix(uebersicht.y, o[1], e), z: mix(0, o[2], e),
+              dist: logMix(uebersicht.dist, NAH.dist, e), pitch: mix(uebersicht.pitch, NAH.pitch, e),
+              bearing: winkelMix(uebersicht.bearing + 3, blick[0] - 3, e) });
+      k.st = f > 0.6 ? ersteSt(0) : -1;
+      k.namen = 1 - stufe(0, 0.5, f);
+      k.links = stufe(0.7, 1, f); k.licht = stufe(0.75, 1, f);
+    } else if (ph.art === 'fahrt') {
+      const w = wege[ph.von], A = orte[ph.von], Bp = orte[ph.nach], fl = fluege[ph.von];
+      const s = fl.S * glatt(f);
+      const anteil = fl.u1 > 0 ? fl.u(s) / fl.u1 : glatt(f);
+      const dist = fl.w(s) / BREITE;
+      const oben = Math.max(0, Math.min(1, (dist - NAH.dist) / Math.max(1, fl.wMax / BREITE - NAH.dist)));
+      setze({ x: mix(A[0], Bp[0], anteil), y: mix(A[1], Bp[1], anteil), z: mix(A[2], Bp[2], anteil),
+              dist: dist, pitch: mix(NAH.pitch, 22, glatt(Math.min(1, oben * 1.3))),
+              bearing: winkelMix(blickEnde[ph.von], blick[ph.nach] - 3, stufe(0.2, 0.8, anteil)) });
+      k.st = anteil < 0.5 ? letzteSt(ph.von) : ersteSt(ph.nach);
+      k.weg = ph.von; k.wegL = w.len * anteil;
+      k.links = 1 - stufe(0, 0.3, f) * (1 - stufe(0.7, 1, f));
+      k.licht = 1 - stufe(0, 0.25, f) * (1 - stufe(0.75, 1, f));
+      k.namen = stufe(0.25, 0.6, oben) * 0.6;
+    } else if (ph.art === 'weit') {
+      const e = glatt(Math.min(1, f / 0.6)), o = orte[orte.length - 1];
+      setze({ x: mix(o[0], gross.x, e), y: mix(o[1], gross.y, e), z: mix(o[2], 0, e),
+              dist: logMix(NAH.dist, gross.dist, e), pitch: mix(NAH.pitch, gross.pitch, e),
+              bearing: winkelMix(blickEnde[orte.length - 1], gross.bearing, e) });
+      k.st = f < 0.3 ? letzteSt(orte.length - 1) : -1;
+      k.weg = wege.length - 1; k.wegL = 1e9;
+      k.sand = glatt(stufe(0.3, 1, f));
+      k.alleHell = stufe(0.4, 0.9, f);
+      k.namen = stufe(0.5, 0.9, f);
+      k.links = 1 - stufe(0, 0.3, f); k.licht = 1 - stufe(0, 0.3, f);
+    } else {
+      setze(gross); k.bearing += 2 * f;
+      k.weg = wege.length - 1; k.wegL = 1e9; k.sand = 1; k.weh = f; k.alleHell = 1; k.namen = 1;
+    }
+    return k;
+  }
+
+  /* ---- WebGL ---- */
+  let gl = null, prog = null, loc = {}, linProg = null, W = 1, H = 1, PR = 1, ctx2 = null, u32 = false;
+  const GRUND = CFG.grund;
+  function glKontext() {
+    if (gl) return gl;
+    const opt = { antialias: true, alpha: false, depth: true, powerPreference: 'high-performance' };
+    gl = glc.getContext('webgl2', opt) || glc.getContext('webgl', opt);
+    return gl;
+  }
+  function glZwei() { return typeof WebGL2RenderingContext !== 'undefined' && gl instanceof WebGL2RenderingContext; }
+  function glBauen(vs, fs) {
+    const pr = gl.createProgram();
+    [[gl.VERTEX_SHADER, vs], [gl.FRAGMENT_SHADER, fs]].forEach(function (q) {
+      const s = gl.createShader(q[0]);
+      gl.shaderSource(s, q[1]); gl.compileShader(s);
+      if (!gl.getShaderParameter(s, gl.COMPILE_STATUS)) console.warn(gl.getShaderInfoLog(s));
+      gl.attachShader(pr, s);
+    });
+    gl.linkProgram(pr);
+    return pr;
+  }
+
+  /* Land, Kanten, Seen und Strassen teilen einen Farbschritt: Nebel mit
+     dem Abstand, Ausblenden am Rand der Daten (die Grundkarte loest sich
+     dort ins Dunkel auf, ein Detailstueck wird durchsichtig und gibt die
+     Grundkarte frei), und ein warmer Lichtschein an der Station. */
+  const GENAU = '#ifdef GL_FRAGMENT_PRECISION_HIGH\nprecision highp float;\n#else\nprecision mediump float;\n#endif\n';
+  const LAND_VS =
+    'attribute vec2 aP; uniform mat4 uM; uniform float uZ; uniform float uQ; uniform vec2 uVers; varying vec3 vW;' +
+    'void main(){ vec3 w = vec3(aP / uQ + uVers, uZ); vW = w; gl_Position = uM * vec4(w, 1.0); }';
+  const STRASSE_VS =
+    'attribute vec3 aL; uniform mat4 uM; uniform float uQ; uniform vec2 uVers; uniform float uUeb; varying vec3 vW;' +
+    'void main(){ vec3 w = vec3(aL.xy / uQ + uVers, aL.z / 1000.0 * uUeb + 0.004); vW = w; gl_Position = uM * vec4(w, 1.0); }';
+  const LAND_FS = GENAU +
+    'uniform vec3 uF; uniform float uA; uniform vec3 uAuge; uniform vec3 uGrund; uniform vec2 uNebel; uniform vec2 uVers; uniform vec2 uRand;' +
+    'uniform vec2 uRandA; uniform float uNah; uniform float uEin; uniform vec4 uLicht; varying vec3 vW;' +
+    'void main(){' +
+    '  float n = smoothstep(uNebel.x, uNebel.y, length(vW - uAuge));' +
+    '  float d = max(abs(vW.x - uVers.x) / uRand.x, abs(vW.y - uVers.y) / uRand.y);' +
+    '  float e = smoothstep(uRandA.x, uRandA.y, d);' +
+    '  vec2 q = vW.xy - uLicht.xy; float li = uLicht.w * exp(-dot(q, q) / (uLicht.z * uLicht.z));' +
+    '  vec3 c = uF * (1.0 + 0.6 * li) + vec3(0.07, 0.056, 0.036) * li;' +
+    '  float m = max(n, e * (1.0 - uNah));' +
+    '  gl_FragColor = vec4(mix(c, uGrund, m), uA * uEin * (1.0 - 0.7 * m) * (1.0 - e * uNah));' +
+    '}';
+  const LAND_UNI = ['uM', 'uZ', 'uQ', 'uVers', 'uF', 'uA', 'uAuge', 'uGrund', 'uNebel', 'uRand', 'uRandA', 'uNah', 'uEin', 'uLicht', 'uUeb'];
+
+  function glStarten() {
+    if (!glKontext()) return false;
+    u32 = glZwei() || !!gl.getExtension('OES_element_index_uint');
+    prog = { prog: glBauen(LAND_VS, LAND_FS), loc: {} };
+    linProg = { prog: glBauen(STRASSE_VS, LAND_FS), loc: {} };
+    [prog, linProg].forEach(function (p) {
+      if (!gl.getProgramParameter(p.prog, gl.LINK_STATUS)) throw new Error('Programm');
+      LAND_UNI.forEach(function (n) { p.loc[n] = gl.getUniformLocation(p.prog, n); });
+    });
+    prog.aP = gl.getAttribLocation(prog.prog, 'aP');
+    linProg.aL = gl.getAttribLocation(linProg.prog, 'aL');
+    loc = prog.loc;
+    meerStarten();
+    ueberStarten();
+    gl.clearColor(GRUND[0], GRUND[1], GRUND[2], 1);
+    gl.enable(gl.DEPTH_TEST);
+    gl.depthFunc(gl.LEQUAL);
+    gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
+    gl.polygonOffset(1, 1);
+    return true;
+  }
+
+  /* ---- Ein Datensatz (Grundkarte oder Detailstueck) auf die Grafikkarte ---- */
+  function satzHochladen(S) {
+    S.puf = {};
+    S.puf.v = gl.createBuffer(); gl.bindBuffer(gl.ARRAY_BUFFER, S.puf.v); gl.bufferData(gl.ARRAY_BUFFER, S.pos, gl.STATIC_DRAW);
+    S.puf.t = gl.createBuffer(); gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, S.puf.t); gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, S.tri, gl.STATIC_DRAW);
+    S.puf.l = gl.createBuffer(); gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, S.puf.l); gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, S.lin, gl.STATIC_DRAW);
+    S.puf.strassen = S.strassen.map(function (a) {
+      if (!a || !a.length) return null;
+      const b = gl.createBuffer(); gl.bindBuffer(gl.ARRAY_BUFFER, b); gl.bufferData(gl.ARRAY_BUFFER, a, gl.STATIC_DRAW);
+      return { b: b, n: a.length / 3 };
+    });
+    // Wasserflaeche: ein Rechteck ueber das ganze Stueck
+    const gx = Math.min(32000, Math.round(S.kopf.groesse[0] / 2 * S.kopf.q)), gy = Math.min(32000, Math.round(S.kopf.groesse[1] / 2 * S.kopf.q));
+    S.puf.meer = gl.createBuffer(); gl.bindBuffer(gl.ARRAY_BUFFER, S.puf.meer);
+    gl.bufferData(gl.ARRAY_BUFFER, new Int16Array([-gx, -gy, gx, -gy, -gx, gy, gx, gy]), gl.STATIC_DRAW);
+    S.puf.tex = gl.createTexture();
+    gl.bindTexture(gl.TEXTURE_2D, S.puf.tex);
+    gl.pixelStorei(gl.UNPACK_ALIGNMENT, 1);
+    gl.texImage2D(gl.TEXTURE_2D, 0, gl.LUMINANCE, S.kopf.tex[0], S.kopf.tex[1], 0, gl.LUMINANCE, gl.UNSIGNED_BYTE, S.tex);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+    S.meer = S.kopf.stufen[0] < 0;
+    // Die Daten im Hauptspeicher braucht es danach nicht mehr.
+    S.pos = S.tri = S.lin = S.tex = null; S.strassen = null;
+  }
+
+  /* ---- Das Wasser lebt ---- */
+  let meer = null;
+  function meerStarten() {
+    const zwei = glZwei();
+    if (!zwei && !gl.getExtension('OES_standard_derivatives')) return;
+    const kopfV = zwei ? '#version 300 es\n' : '';
+    const kopfF = zwei ? '#version 300 es\n' : '#extension GL_OES_standard_derivatives : enable\n';
+    const ein = zwei ? 'in' : 'attribute', raus = zwei ? 'out' : 'varying', rein = zwei ? 'in' : 'varying';
+    const vs = kopfV + ein + ' vec2 aW; uniform mat4 uM; uniform float uQ; uniform float uZ; uniform vec2 uVers; ' + raus + ' vec3 vW;' +
+      'void main(){ vW = vec3(aW / uQ + uVers, uZ); gl_Position = uM * vec4(vW, 1.0); }';
+    const fs = kopfF + 'precision highp float;' +
+      'uniform sampler2D uAbst; uniform vec2 uGroesse; uniform float uKm; uniform float uT; uniform vec2 uVers;' +
+      'uniform vec3 uAuge; uniform vec2 uNebel; uniform vec4 uWelle; uniform vec3 uTinte; uniform vec2 uRand; uniform vec2 uRandA; uniform float uEin;' +
+      rein + ' vec3 vW;' + (zwei ? 'out vec4 aus;' : '') +
+      'float linie(float p){ float w = fwidth(p); float a = abs(fract(p + 0.5) - 0.5);' +
+      '  return (1.0 - smoothstep(0.0, 0.02 + w * 1.3, a)) * (1.0 - smoothstep(0.1, 0.28, w)); }' +
+      'float zuf(vec2 i){ return fract(sin(dot(i, vec2(127.1, 311.7))) * 43758.5453); }' +
+      'float rausch(vec2 p){ vec2 i = floor(p), f = fract(p); f = f * f * (3.0 - 2.0 * f);' +
+      '  return mix(mix(zuf(i), zuf(i + vec2(1.0, 0.0)), f.x), mix(zuf(i + vec2(0.0, 1.0)), zuf(i + vec2(1.0, 1.0)), f.x), f.y); }' +
+      'void main(){' +
+      '  vec2 r = vW.xy - uVers;' +
+      '  vec2 uv = vec2(r.x / uGroesse.x + 0.5, 0.5 - r.y / uGroesse.y);' +
+      '  float d = ' + (zwei ? 'texture' : 'texture2D') + '(uAbst, uv).r * uKm;' +
+      '  if (d < uWelle.x * 0.05) discard;' +
+      '  float fein = linie(d / uWelle.x - uT * 0.071) * exp(-d / uWelle.z);' +
+      '  float grob = linie(d / uWelle.y - uT * 0.022) * exp(-d / uWelle.w);' +
+      '  float s = 0.03 / uWelle.x;' +
+      '  float n = rausch(vW.xy * s + vec2(uT * 0.018, uT * 0.011));' +
+      '  float n2 = rausch(vW.xy * s * 3.0 - vec2(uT * 0.025, -uT * 0.02));' +
+      '  float leben = 0.55 + 0.6 * n + 0.25 * n2;' +
+      '  float e = smoothstep(uRandA.x, uRandA.y, max(abs(r.x) / uRand.x, abs(r.y) / uRand.y));' +
+      '  float weg = (1.0 - max(smoothstep(uNebel.x, uNebel.y, length(vW - uAuge)), e)) * uEin;' +
+      '  float a = ((0.24 * fein + 0.16 * grob) * leben + 0.035 * n * n) * weg;' +
+      '  ' + (zwei ? 'aus' : 'gl_FragColor') + ' = vec4(uTinte, a);' +
+      '}';
+    try {
+      const pr = glBauen(vs, fs);
+      if (!gl.getProgramParameter(pr, gl.LINK_STATUS)) return;
+      const m = { prog: pr, loc: {} };
+      ['uM', 'uQ', 'uZ', 'uVers', 'uAbst', 'uGroesse', 'uKm', 'uT', 'uAuge', 'uNebel', 'uWelle', 'uTinte', 'uRand', 'uRandA', 'uEin'].forEach(function (n) {
+        m.loc[n] = gl.getUniformLocation(pr, n);
+      });
+      m.aW = gl.getAttribLocation(pr, 'aW');
+      meer = m;
+    } catch (e) { meer = null; }
+  }
+  function wasser(S, k, cam, zeitS, see, z, ein, nah) {
+    if (!meer || (!see && !S.meer)) return;
+    const M = meer.loc;
+    gl.useProgram(meer.prog);
+    gl.uniform1f(M.uZ, see ? z : -0.001);
+    gl.uniformMatrix4fv(M.uM, false, cam.Mf);
+    gl.uniform1f(M.uT, zeitS);
+    gl.uniform3fv(M.uAuge, cam.auge);
+    gl.uniform2f(M.uNebel, k.dist * 1.3, k.dist * 3.4);
+    gl.uniform1i(M.uAbst, 0);
+    gl.uniform2f(M.uGroesse, S.kopf.groesse[0], S.kopf.groesse[1]);
+    gl.uniform1f(M.uKm, S.kopf.texKm);
+    gl.uniform1f(M.uQ, S.kopf.q);
+    gl.uniform2f(M.uVers, S.kopf.mitte[0], S.kopf.mitte[1]);
+    gl.uniform4fv(M.uWelle, nah ? CFG.wellenNah : CFG.wellenBasis);
+    gl.uniform3fv(M.uTinte, CFG.tinteGl);
+    gl.uniform2f(M.uRand, S.kopf.groesse[0] / 2, S.kopf.groesse[1] / 2);
+    gl.uniform2f(M.uRandA, nah ? 0.55 : 0.88, nah ? 0.97 : 0.995);
+    gl.uniform1f(M.uEin, ein);
+    gl.activeTexture(gl.TEXTURE0);
+    gl.bindTexture(gl.TEXTURE_2D, S.puf.tex);
+    gl.enableVertexAttribArray(meer.aW);
+    gl.enable(gl.BLEND); gl.depthMask(false);
+    if (see) {
+      gl.bindBuffer(gl.ARRAY_BUFFER, S.puf.v);
+      gl.vertexAttribPointer(meer.aW, 2, gl.SHORT, false, 0, see.v[0] * 4);
+      gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, S.puf.t);
+      gl.drawElements(gl.TRIANGLES, see.t[1] - see.t[0], gl.UNSIGNED_SHORT, see.t[0] * 2);
+    } else {
+      gl.bindBuffer(gl.ARRAY_BUFFER, S.puf.meer);
+      gl.vertexAttribPointer(meer.aW, 2, gl.SHORT, false, 0, 0);
+      gl.disable(gl.DEPTH_TEST);
+      gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
+      gl.enable(gl.DEPTH_TEST);
+    }
+    gl.depthMask(true);
+    gl.disableVertexAttribArray(meer.aW);
+  }
+
+  function groesse() {
+    PR = Math.min(2, window.devicePixelRatio || 1);
+    W = halt.clientWidth || 1; H = halt.clientHeight || 1;
+    const bw = Math.round(W * PR), bh = Math.round(H * PR);
+    if (glc.width !== bw || glc.height !== bh) { glc.width = bw; glc.height = bh; }
+    linc.width = bw; linc.height = bh;
+    if (gl) gl.viewport(0, 0, glc.width, glc.height);
+  }
+
+  const LAND = CFG.land, MEER_FLACH = CFG.wasser;
+  function schichtFarbe(lev) {
+    if (lev < 0) {
+      const t = Math.min(1, -lev / 150);
+      return [0, 1, 2].map(function (c) { return mix(MEER_FLACH[c], GRUND[c] * 1.15, Math.pow(t, 0.7)); });
+    }
+    const t = Math.min(1, Math.pow(lev / HOECHSTE, 0.8)) * (LAND.length - 1);
+    const k = Math.min(LAND.length - 2, Math.floor(t)), f = t - k;
+    return [0, 1, 2].map(function (c) { return mix(LAND[k][c], LAND[k + 1][c], f); });
+  }
+
+  function kamera(k) {
+    const br = k.bearing * Math.PI / 180, ph = k.pitch * Math.PI / 180;
+    const fx = Math.sin(br), fy = Math.cos(br);
+    /* Steht rechts (oder oben) die Tafel mit den Fotos, rueckt die Station
+       aus der Mitte nach links (unten): die Karte bleibt neben den Fotos
+       zu sehen. */
+    let tx = k.x, ty = k.y;
+    if (k.links > 0) {
+      const hh = k.dist * Math.tan(FOV / 2), hw = hh * W / H;
+      if (W > H * 1.1) { const s = 0.36 * hw * k.links; tx += fy * s; ty -= fx * s; }
+      else { const s = 0.5 * hh * k.links; tx += fx * s; ty += fy * s; }
+    }
+    const auge = [tx - k.dist * Math.sin(ph) * fx, ty - k.dist * Math.sin(ph) * fy, k.z + k.dist * Math.cos(ph)];
+    const V = blickAuf(auge, [tx, ty, k.z], [fx, fy, 0]);
+    const P = perspektive(FOV, W / H, k.dist * 0.02, k.dist * 6 + 400);
+    const M = mal(P, V);
+    return { M: M, Mf: new Float32Array(M), auge: auge };
+  }
+
+  function hoehe(s) { return s.lev >= 0 ? s.lev / 1000 * UEB : s.lev / 1000 * 2.0; }
+  function landUniforms(p, S, k, cam, ein, nah) {
+    const L = p.loc;
+    gl.useProgram(p.prog);
+    gl.uniformMatrix4fv(L.uM, false, cam.Mf);
+    gl.uniform3fv(L.uAuge, cam.auge);
+    gl.uniform3fv(L.uGrund, GRUND);
+    gl.uniform2f(L.uNebel, k.dist * (nah ? 1.6 : 1.3), k.dist * (nah ? 3.8 : 3.4));
+    gl.uniform1f(L.uQ, S.kopf.q);
+    gl.uniform2f(L.uVers, S.kopf.mitte[0], S.kopf.mitte[1]);
+    gl.uniform2f(L.uRand, S.kopf.groesse[0] / 2, S.kopf.groesse[1] / 2);
+    gl.uniform2f(L.uRandA, nah ? 0.55 : 0.88, nah ? 0.97 : 0.995);
+    gl.uniform1f(L.uNah, nah ? 1 : 0);
+    gl.uniform1f(L.uEin, ein);
+    gl.uniform1f(L.uUeb, UEB);
+    const o = k.ort >= 0 ? orte[k.ort] : [k.x, k.y];
+    gl.uniform4f(L.uLicht, o[0], o[1], Math.max(1.2, k.dist * 0.55), 0.85 * k.licht);
+  }
+
+  /* Ein Datensatz: Meeresgrund, bewegtes Wasser, Land von oben nach unten
+     (die Tiefe spart das Uebermalen), Kanten, Seen, Strassen. */
+  function satzZeichnen(S, k, cam, zeitS, ein, nah) {
+    landUniforms(prog, S, k, cam, ein, nah);
+    const St = S.kopf.schichten, n = St.length;
+    const fern = Math.max(0.1, Math.min(1, NAH.dist * (nah ? 2.2 : 6) / k.dist));
+    gl.enableVertexAttribArray(prog.aP);
+    function flaeche(s) {
+      gl.uniform1f(loc.uZ, hoehe(s));
+      const fb = schichtFarbe(s.lev);
+      if (s.lev > 0 && !nah) {
+        const mi = schichtFarbe(HOECHSTE * 0.3), ru = (1 - fern) * 0.55;
+        gl.uniform3f(loc.uF, mix(fb[0], mi[0], ru), mix(fb[1], mi[1], ru), mix(fb[2], mi[2], ru));
+      } else gl.uniform3fv(loc.uF, fb);
+      gl.uniform1f(loc.uA, 1);
+      gl.bindBuffer(gl.ARRAY_BUFFER, S.puf.v);
+      gl.vertexAttribPointer(prog.aP, 2, gl.SHORT, false, 0, s.v[0] * 4);
+      if (nah) gl.enable(gl.BLEND); else gl.disable(gl.BLEND);
+      gl.depthMask(true); gl.enable(gl.POLYGON_OFFSET_FILL);
+      gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, S.puf.t);
+      gl.drawElements(gl.TRIANGLES, s.t[1] - s.t[0], gl.UNSIGNED_SHORT, s.t[0] * 2);
+      gl.disable(gl.POLYGON_OFFSET_FILL);
+    }
+    function kante(s) {
+      gl.uniform1f(loc.uZ, hoehe(s));
+      gl.bindBuffer(gl.ARRAY_BUFFER, S.puf.v);
+      gl.vertexAttribPointer(prog.aP, 2, gl.SHORT, false, 0, s.v[0] * 4);
+      gl.enable(gl.BLEND); gl.depthMask(false);
+      const li = s.lev < 0 ? CFG.linien.meer : s.lev === 0 ? CFG.linien.ufer : CFG.linien.land;
+      gl.uniform3f(loc.uF, li[0], li[1], li[2]);
+      gl.uniform1f(loc.uA, li[3] * (li === CFG.linien.ufer ? 1 : fern) * (nah && s.lev > 0 ? 0.85 : 1));
+      gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, S.puf.l);
+      gl.drawElements(gl.LINES, s.l[1] - s.l[0], gl.UNSIGNED_SHORT, s.l[0] * 2);
+    }
+    let i = 0;
+    for (; i < n && St[i].lev < 0; i++) { flaeche(St[i]); kante(St[i]); }
+    if (i < n && St[i].lev === 0) {
+      wasser(S, k, cam, zeitS, null, 0, ein, nah);
+      gl.useProgram(prog.prog); gl.enableVertexAttribArray(prog.aP);
+    }
+    for (let j = n - 1; j >= i; j--) flaeche(St[j]);
+    for (let j = i; j < n; j++) kante(St[j]);
+    gl.depthMask(true);
+    // Seen: auf ihrer Terrasse, mit bewegtem Wasser und Ufer in Tusche
+    (S.kopf.seen || []).forEach(function (s) {
+      const z = s.lev / 1000 * UEB + 0.003;
+      gl.useProgram(prog.prog); gl.enableVertexAttribArray(prog.aP);
+      gl.uniform1f(loc.uZ, z);
+      gl.uniform3fv(loc.uF, MEER_FLACH);
+      gl.uniform1f(loc.uA, 1);
+      gl.bindBuffer(gl.ARRAY_BUFFER, S.puf.v);
+      gl.vertexAttribPointer(prog.aP, 2, gl.SHORT, false, 0, s.v[0] * 4);
+      if (nah) gl.enable(gl.BLEND); else gl.disable(gl.BLEND);
+      gl.depthMask(true);
+      gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, S.puf.t);
+      gl.drawElements(gl.TRIANGLES, s.t[1] - s.t[0], gl.UNSIGNED_SHORT, s.t[0] * 2);
+      wasser(S, k, cam, zeitS, s, z + 0.001, ein, nah);
+      gl.useProgram(prog.prog); gl.enableVertexAttribArray(prog.aP);
+      gl.uniform1f(loc.uZ, z + 0.002);
+      gl.enable(gl.BLEND); gl.depthMask(false);
+      const li = CFG.linien.ufer;
+      gl.uniform3f(loc.uF, li[0], li[1], li[2]); gl.uniform1f(loc.uA, li[3] * 0.8);
+      gl.bindBuffer(gl.ARRAY_BUFFER, S.puf.v);
+      gl.vertexAttribPointer(prog.aP, 2, gl.SHORT, false, 0, s.v[0] * 4);
+      gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, S.puf.l);
+      gl.drawElements(gl.LINES, s.l[1] - s.l[0], gl.UNSIGNED_SHORT, s.l[0] * 2);
+      gl.depthMask(true);
+    });
+    gl.disableVertexAttribArray(prog.aP);
+    // Strassen, Wege, Fluesse
+    if (nah && S.puf.strassen) {
+      landUniforms(linProg, S, k, cam, ein, nah);
+      const L = linProg.loc;
+      gl.uniform1f(L.uZ, 0);
+      gl.enable(gl.BLEND); gl.depthMask(false);
+      gl.enableVertexAttribArray(linProg.aL);
+      // Aus der Ferne treten die kleinen Wege zurueck.
+      const klein = 1 - stufe(NAH.dist * 1.6, NAH.dist * 3.5, k.dist);
+      S.puf.strassen.forEach(function (b, art) {
+        if (!b) return;
+        const f = CFG.strassen[art];
+        const a = f[3] * (art === 2 || art === 3 || art === 5 ? klein : 1);
+        if (a < 0.01) return;
+        gl.uniform3f(L.uF, f[0], f[1], f[2]); gl.uniform1f(L.uA, a);
+        gl.bindBuffer(gl.ARRAY_BUFFER, b.b);
+        gl.vertexAttribPointer(linProg.aL, 3, gl.SHORT, false, 0, 0);
+        gl.drawArrays(gl.LINES, 0, b.n);
+      });
+      gl.disableVertexAttribArray(linProg.aL);
+      gl.depthMask(true);
+    }
+  }
+
+  /* Welche Detailstuecke gerade zu sehen sind, und wie stark: voll, wenn
+     die Kamera tief ueber ihnen steht; beim Aufsteigen und am Rand des
+     Stuecks geben sie die Grundkarte frei. */
+  function nahAnteil(N, k) {
+    const hoch = 1 - stufe(NAH.dist * 2.6, NAH.dist * 6.5, k.dist);
+    if (hoch <= 0) return 0;
+    const g = N.info.groesse, m = N.info.mitte;
+    const r = Math.max(Math.abs(k.x - m[0]) / (g[0] / 2), Math.abs(k.y - m[1]) / (g[1] / 2));
+    return hoch * (1 - stufe(0.5, 0.85, r));
+  }
+
+  function landschaft(k, cam, zeitS) {
+    gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+    satzZeichnen(BASIS, k, cam, zeitS, 1, false);
+    const aktiv = [];
+    NAH_SAETZE.forEach(function (N) {
+      const a = nahAnteil(N, k);
+      if (a > 0.004) { if (N.satz) aktiv.push([N, a]); else nahWunsch(N); }
+    });
+    aktiv.sort(function (a, b) { return a[1] - b[1]; });
+    aktiv.forEach(function (x) {
+      gl.clear(gl.DEPTH_BUFFER_BIT);
+      satzZeichnen(x[0].satz, k, cam, zeitS, x[1], true);
+    });
+    k.nahAktiv = aktiv;
+    gl.useProgram(prog.prog);
+    if (ueber) ueberZeichnen(k, cam);
+  }
+
+  /* ---- Linien, Sand und Orte auf der Grafikkarte (wie auf der Hauptseite) ---- */
+  let ueber = null, ueberNeu = true, ueberGeo = null;
+  const UEBER_HOCH = 0.02;
+  function farbe(s) { return s.split(',').map(function (x) { return +x / 255; }); }
+  const VS_BAND =
+    'attribute vec3 aP0; attribute vec3 aP1; attribute vec2 aEcke; attribute vec2 aL; attribute vec2 aArt;' +
+    'uniform mat4 uM; uniform vec2 uPx; uniform float uPR; uniform float uBreite; uniform float uRandPx; uniform float uBis; uniform float uHoch;' +
+    'varying vec2 vA; varying vec2 vB; varying vec2 vW0; varying vec2 vW1; varying vec2 vQ; varying vec2 vArt; varying float vH;' +
+    'void main(){' +
+    '  vec4 c0 = uM * vec4(aP0.xy, aP0.z + uHoch, 1.0), c1 = uM * vec4(aP1.xy, aP1.z + uHoch, 1.0);' +
+    '  float t0 = 0.0, t1 = 1.0;' +
+    '  if (uBis < aL.y) t1 = (uBis - aL.x) / max(aL.y - aL.x, 1e-6);' +
+    '  if (c0.w < 0.01 && c1.w < 0.01) t1 = -1.0;' +
+    '  else if (c0.w < 0.01) t0 = max(t0, (0.01 - c0.w) / (c1.w - c0.w));' +
+    '  else if (c1.w < 0.01) t1 = min(t1, (0.01 - c0.w) / (c1.w - c0.w));' +
+    '  if (t1 <= t0) { gl_Position = vec4(0.0, 0.0, 2.0, 1.0); return; }' +
+    '  vec4 d0 = mix(c0, c1, t0), d1 = mix(c0, c1, t1);' +
+    '  vec2 s0 = (d0.xy / d0.w * 0.5 + 0.5) * uPx, s1 = (d1.xy / d1.w * 0.5 + 0.5) * uPx;' +
+    '  vec2 r = s1 - s0; float l = length(r); r = l > 1e-4 ? r / l : vec2(1.0, 0.0);' +
+    '  vec2 n = vec2(-r.y, r.x);' +
+    '  float hw = (uBreite > 0.0 ? uBreite : aArt.y) * uPR * 0.5, ra = hw + uRandPx;' +
+    '  vec2 s = (aEcke.y < 0.5 ? s0 - r * ra : s1 + r * ra) + n * aEcke.x * ra;' +
+    '  gl_Position = vec4(s / uPx * 2.0 - 1.0, 0.0, 1.0);' +
+    '  vA = s0; vB = s1; vQ = vec2(1.0 / d0.w, 1.0 / d1.w);' +
+    '  vW0 = mix(aP0.xy, aP1.xy, t0); vW1 = mix(aP0.xy, aP1.xy, t1); vArt = aArt; vH = hw;' +
+    '}';
+  const FS_BAND = GENAU +
+    'uniform float uModus; uniform float uSigma; uniform vec4 uKanal; uniform vec2 uRand;' +
+    'varying vec2 vA; varying vec2 vB; varying vec2 vW0; varying vec2 vW1; varying vec2 vQ; varying vec2 vArt; varying float vH;' +
+    'float fehler(float x){ float s = sign(x); x = abs(x); float t = 1.0 / (1.0 + 0.3275911 * x);' +
+    '  return s * (1.0 - (((((1.061405429 * t - 1.453152027) * t) + 1.421413741) * t - 0.284496736) * t + 0.254829592) * t * exp(-x * x)); }' +
+    'void main(){' +
+    '  vec2 p = gl_FragCoord.xy, ab = vB - vA;' +
+    '  float l2 = dot(ab, ab), t = l2 > 1e-6 ? clamp(dot(p - vA, ab) / l2, 0.0, 1.0) : 0.0;' +
+    '  float d = length(p - vA - ab * t), v;' +
+    '  if (uModus == 1.0) { float k = 0.70710678 / uSigma; v = 0.5 * (fehler((d + vH) * k) - fehler((d - vH) * k)); }' +
+    '  else v = clamp(min(d + 0.5, vH) - max(d - 0.5, -vH), 0.0, 1.0);' +
+    '  if (uModus == 2.0) {' +
+    '    vec2 w = mix(vW0, vW1, t * vQ.y / mix(vQ.x, vQ.y, t));' +
+    '    float a = -vArt.x;' +
+    '    if (vArt.x > 0.0) {' +
+    '      float al = vArt.x * (1.0 - smoothstep(0.88, 0.995, max(abs(w.x) / uRand.x, abs(w.y) / uRand.y)));' +
+    '      if (al <= 0.004) discard;' +
+    '      a = (min(7.0, floor(al / 0.1 * 8.0)) + 0.5) / 8.0 * 0.1;' +
+    '    }' +
+    '    v *= a;' +
+    '  }' +
+    '  gl_FragColor = uKanal * v;' +
+    '}';
+  const VS_DECK = 'attribute vec2 aV; void main(){ gl_Position = vec4(aV, 0.0, 1.0); }';
+  const FS_DECK = GENAU +
+    'uniform sampler2D uBildA; uniform sampler2D uBildB; uniform vec2 uPx; uniform vec3 uFS; uniform vec3 uFL; uniform vec3 uFG; uniform vec3 uFH; uniform vec3 uDeck;' +
+    'vec4 drauf(vec4 o, vec3 f, float a){ return vec4(f * a, a) + o * (1.0 - a); }' +
+    'void main(){' +
+    '  vec2 q = gl_FragCoord.xy / uPx;' +
+    '  vec4 c = texture2D(uBildA, q), g = texture2D(uBildB, q);' +
+    '  vec4 o = vec4(uFS * c.a, c.a);' +
+    '  o = drauf(o, uFL, c.r * uDeck.x); o = drauf(o, uFL, c.g * uDeck.x); o = drauf(o, uFL, c.b * uDeck.x);' +
+    '  o = drauf(o, uFG, g.r * uDeck.y); o = drauf(o, uFG, g.g * uDeck.y); o = drauf(o, uFG, g.b * uDeck.y);' +
+    '  o = drauf(o, uFH, g.a * uDeck.z);' +
+    '  if (o.a < 0.001) discard;' +
+    '  gl_FragColor = o;' +
+    '}';
+  const VS_SAND =
+    'attribute vec3 aP; attribute vec4 aZ; attribute vec2 aZ2;' +
+    'uniform mat4 uM; uniform vec2 uPx; uniform float uPR; uniform float uKopf; uniform float uAltN; uniform float uWeh; uniform float uHoch;' +
+    'varying vec4 vRect; varying float vA;' +
+    'void main(){' +
+    '  float alt = min(1.0, (aZ.x - uKopf) / uAltN + 0.15 * uWeh);' +
+    '  vec4 c = uM * vec4(aP.xy, aP.z + uHoch, 1.0);' +
+    '  if (aZ.x < uKopf || aZ.y < 0.1 + 0.3 * alt || c.w <= 0.01) { gl_Position = vec4(0.0, 0.0, 2.0, 1.0); gl_PointSize = 1.0; vA = 0.0; vRect = vec4(0.0); return; }' +
+    '  vec2 s = vec2((c.x / c.w * 0.5 + 0.5) * uPx.x, (0.5 - c.y / c.w * 0.5) * uPx.y) / uPR;' +
+    '  float weit = 0.3 + 2.2 * alt + 1.2 * uWeh;' +
+    '  vec2 o = s + vec2((aZ.z - 0.5) * 2.0 * weit, (aZ2.x - 0.5) * 2.0 * weit);' +
+    '  vec2 g = vec2(0.9 + aZ.w * 0.9, 0.9 + aZ2.y * 0.9);' +
+    '  vec2 lo = vec2(o.x * uPR, uPx.y - (o.y + g.y) * uPR), hi = vec2((o.x + g.x) * uPR, uPx.y - o.y * uPR);' +
+    '  vRect = vec4(lo, hi); vA = 0.85 - 0.3 * alt;' +
+    '  gl_Position = vec4((lo + hi) / uPx - 1.0, 0.0, 1.0);' +
+    '  gl_PointSize = ceil(max(hi.x - lo.x, hi.y - lo.y)) + 2.0;' +
+    '}';
+  const FS_SAND = GENAU +
+    'uniform vec3 uFarbe; varying vec4 vRect; varying float vA;' +
+    'void main(){' +
+    '  vec2 p = gl_FragCoord.xy, ov = clamp(min(p + 0.5, vRect.zw) - max(p - 0.5, vRect.xy), 0.0, 1.0);' +
+    '  float a = vA * ov.x * ov.y;' +
+    '  if (a < 0.001) discard;' +
+    '  gl_FragColor = vec4(uFarbe * a, a);' +
+    '}';
+  const VS_ORT =
+    'attribute vec2 aM; attribute vec2 aE; attribute float aH; uniform vec2 uPx; uniform float uPR;' +
+    'varying vec2 vM; varying float vH;' +
+    'void main(){ vM = aM; vH = aH; gl_Position = vec4((aM + aE * 27.0 * uPR) / uPx * 2.0 - 1.0, 0.0, 1.0); }';
+  const FS_ORT = GENAU +
+    'uniform float uPR; uniform vec3 uOrt; uniform vec3 uRing; uniform vec3 uPunkt; varying vec2 vM; varying float vH;' +
+    'void main(){' +
+    '  float r = length(gl_FragCoord.xy - vM), a, d;' +
+    '  vec4 o = vec4(0.0);' +
+    '  if (vH > 0.01) {' +
+    '    a = 0.38 * vH * max(0.0, 1.0 - r / uPR / 26.0); o = vec4(uOrt * a, a);' +
+    '    d = abs(r - (4.0 + 5.0 * vH) * uPR);' +
+    '    a = 0.5 * vH * clamp(min(d + 0.5, 0.5 * uPR) - max(d - 0.5, -0.5 * uPR), 0.0, 1.0);' +
+    '    o = vec4(uRing * a, a) + o * (1.0 - a);' +
+    '  }' +
+    '  a = (0.55 + 0.45 * vH) * clamp((2.0 + 1.2 * vH) * uPR + 0.5 - r, 0.0, 1.0);' +
+    '  o = vec4(uPunkt * a, a) + o * (1.0 - a);' +
+    '  if (o.a < 0.001) discard;' +
+    '  gl_FragColor = o;' +
+    '}';
+
+  function ueberStarten() {
+    ueber = null;
+    const zwei = glZwei();
+    const mm = zwei ? null : gl.getExtension('EXT_blend_minmax');
+    const hp = gl.getShaderPrecisionFormat(gl.FRAGMENT_SHADER, gl.HIGH_FLOAT);
+    if ((!zwei && !mm) || !hp || hp.precision < 23) return;
+    function programm(vs, fs, uni, att) {
+      const pr = glBauen(vs, fs);
+      if (!gl.getProgramParameter(pr, gl.LINK_STATUS)) throw new Error('Programm');
+      const p = { prog: pr, loc: {}, att: {} };
+      uni.forEach(function (n) { p.loc[n] = gl.getUniformLocation(pr, n); });
+      att.forEach(function (n) { p.att[n] = gl.getAttribLocation(pr, n); });
+      return p;
+    }
+    try {
+      const u = { max: zwei ? gl.MAX : mm.MAX_EXT, bw: 0, bh: 0 };
+      u.band = programm(VS_BAND, FS_BAND, ['uM', 'uPx', 'uPR', 'uBreite', 'uRandPx', 'uBis', 'uHoch', 'uModus', 'uSigma', 'uKanal', 'uRand'],
+                        ['aP0', 'aP1', 'aEcke', 'aL', 'aArt']);
+      u.deck = programm(VS_DECK, FS_DECK, ['uBildA', 'uBildB', 'uPx', 'uFS', 'uFL', 'uFG', 'uFH', 'uDeck'], ['aV']);
+      u.sand = programm(VS_SAND, FS_SAND, ['uM', 'uPx', 'uPR', 'uKopf', 'uAltN', 'uWeh', 'uHoch', 'uFarbe'], ['aP', 'aZ', 'aZ2']);
+      u.ort = programm(VS_ORT, FS_ORT, ['uPx', 'uPR', 'uOrt', 'uRing', 'uPunkt'], ['aM', 'aE', 'aH']);
+      u.sandOk = gl.getParameter(gl.ALIASED_POINT_SIZE_RANGE)[1] >= 8;
+      u.attrMax = Math.min(16, gl.getParameter(gl.MAX_VERTEX_ATTRIBS));
+      u.puf = { see: gl.createBuffer(), weg: gl.createBuffer(), sand: gl.createBuffer(), ort: gl.createBuffer(), drei: gl.createBuffer() };
+      gl.bindBuffer(gl.ARRAY_BUFFER, u.puf.drei);
+      gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1, -1, 3, -1, -1, 3]), gl.STATIC_DRAW);
+      u.bilder = [gl.createTexture(), gl.createTexture()];
+      u.fbs = [gl.createFramebuffer(), gl.createFramebuffer()];
+      u.farben = {
+        tinte: farbe(CFG.tinte), leise: farbe(CFG.route.leise), schein: farbe(CFG.route.schein), hell: farbe(CFG.route.hell),
+        sand: farbe(CFG.route.sand), ort: farbe(CFG.route.ort), ring: farbe(CFG.route.ring), punkt: farbe(CFG.route.punkt)
+      };
+      ueber = u; ueberNeu = true;
+    } catch (e) { ueber = null; }
+  }
+
+  function zufall(i, s) { const v = Math.sin(i * 127.1 + s * 311.7) * 43758.5453; return v - Math.floor(v); }
+  function randWeg(p) {
+    const e = Math.max(Math.abs(p[0] - BASIS.kopf.mitte[0]) / (BASIS.kopf.groesse[0] / 2), Math.abs(p[1] - BASIS.kopf.mitte[1]) / (BASIS.kopf.groesse[1] / 2));
+    return 1 - stufe(0.88, 0.995, e);
+  }
+  function ueberFormen() {
+    function stuecke(liste) {
+      const f = new Float32Array(liste.length * 6 * 12);
+      const E = [[-1, 0], [1, 0], [-1, 1], [1, 0], [1, 1], [-1, 1]];
+      let o = 0;
+      liste.forEach(function (s) {
+        for (let j = 0; j < 6; j++) {
+          f[o++] = s[0][0]; f[o++] = s[0][1]; f[o++] = s[0][2] || 0;
+          f[o++] = s[1][0]; f[o++] = s[1][1]; f[o++] = s[1][2] || 0;
+          f[o++] = E[j][0]; f[o++] = E[j][1];
+          f[o++] = s[2]; f[o++] = s[3];
+          f[o++] = s[4]; f[o++] = s[5];
+        }
+      });
+      return f;
+    }
+    const sk = [];
+    const G = CFG.gradnetz, GS = CFG.gradnetzSchritt;
+    for (let lon = G[0]; lon <= G[1] + 1e-6; lon += GS) {
+      for (let lat = G[2]; lat < G[3] - 1e-6; lat += GS) sk.push([geo(lon, lat), geo(lon, lat + GS), 0, 0, 0.075, 0.6]);
+    }
+    for (let lat = G[2]; lat <= G[3] + 1e-6; lat += GS) {
+      for (let lon = G[0]; lon < G[1] - 1e-6; lon += GS) sk.push([geo(lon, lat), geo(lon + GS, lat), 0, 0, 0.075, 0.6]);
+    }
+    const K = geo(CFG.kompass[0], CFG.kompass[1]), KR = 6;
+    for (let j = 0; j < 32; j++) {
+      const a = j / 32 * 2 * Math.PI, haupt = j % 4 === 0;
+      const L = (haupt ? 1.0 : 0.72) * Math.max(halb[0], halb[1]) * 1.6;
+      sk.push([[K[0] + Math.sin(a) * KR, K[1] + Math.cos(a) * KR, 0], [K[0] + Math.sin(a) * L, K[1] + Math.cos(a) * L, 0], 0, 0, haupt ? 0.085 : 0.045, 0.6]);
+    }
+    const ring = -0.16 * randWeg(K);
+    for (let j = 0; j < 48; j++) {
+      const a = j / 48 * 2 * Math.PI, b = (j + 1) / 48 * 2 * Math.PI;
+      sk.push([[K[0] + Math.sin(a) * KR, K[1] + Math.cos(a) * KR, 0], [K[0] + Math.sin(b) * KR, K[1] + Math.cos(b) * KR, 0], 0, 0, ring, 0.8]);
+    }
+    const rt = [], ende = [];
+    wege.forEach(function (w, j) {
+      for (let i = 0; i < w.p.length - 1; i++) rt.push([w.p[i], w.p[i + 1], wegAb[j] + w.L[i], wegAb[j] + w.L[i + 1], 0, 0]);
+      ende.push(rt.length * 6);
+    });
+    const sd = [];
+    let i = 0;
+    wege.forEach(function (w, j) {
+      const schritt = Math.max(0.05, Math.min(1.0, w.len / 60));
+      for (let l = 0; l < w.len; l += schritt, i++) {
+        const p = punkt(w, l);
+        sd.push(p[0], p[1], p[2], wegAb[j] + l, zufall(i, 1), zufall(i, 2), zufall(i, 3), zufall(i, 4), zufall(i, 5));
+      }
+    });
+    ueberGeo = { see: stuecke(sk), weg: stuecke(rt), wegEnde: ende, sand: new Float32Array(sd) };
+    ueberNeu = true;
+  }
+  function ueberHochladen() {
+    const u = ueber, g = ueberGeo;
+    gl.bindBuffer(gl.ARRAY_BUFFER, u.puf.see); gl.bufferData(gl.ARRAY_BUFFER, g.see, gl.STATIC_DRAW);
+    gl.bindBuffer(gl.ARRAY_BUFFER, u.puf.weg); gl.bufferData(gl.ARRAY_BUFFER, g.weg, gl.STATIC_DRAW);
+    gl.bindBuffer(gl.ARRAY_BUFFER, u.puf.sand); gl.bufferData(gl.ARRAY_BUFFER, g.sand, gl.STATIC_DRAW);
+    u.nSee = g.see.length / 12; u.nWeg = g.weg.length / 12; u.wegEnde = g.wegEnde; u.nSand = g.sand.length / 9;
+    u.schluessel = null;
+    ueberNeu = false;
+  }
+  function attrAus() { for (let i = 0; i < ueber.attrMax; i++) gl.disableVertexAttribArray(i); }
+  function attrSetzen(p, liste, schritt) {
+    let o = 0;
+    liste.forEach(function (a) {
+      const at = p.att[a[0]];
+      if (at >= 0) { gl.enableVertexAttribArray(at); gl.vertexAttribPointer(at, a[1], gl.FLOAT, false, schritt, o); }
+      o += a[1] * 4;
     });
   }
-  document.getElementById('liste').addEventListener('scroll', beimScrollen, { passive: true });
-  window.addEventListener('scroll', beimScrollen, { passive: true });
-
-  wurzel.addEventListener('click', function (e) {
-    const hin = e.target.closest('.hin');
-    if (hin) {
-      const ti = +hin.dataset.t;
-      aktuell = ti; zeigeTag(ti, true);
-      return;
+  function geraet(M, p) {
+    const x = p[0], y = p[1], z = p[2] + UEBER_HOCH;
+    const w = M[3] * x + M[7] * y + M[11] * z + M[15];
+    if (w <= 0.01) return null;
+    return [((M[0] * x + M[4] * y + M[8] * z + M[12]) / w * 0.5 + 0.5) * glc.width,
+            ((M[1] * x + M[5] * y + M[9] * z + M[13]) / w * 0.5 + 0.5) * glc.height];
+  }
+  function ueberZeichnen(k, cam) {
+    const u = ueber, M = cam.Mf, BW = glc.width, BH = glc.height, F = u.farben;
+    if (ueberNeu) { if (!ueberGeo) ueberFormen(); ueberHochladen(); }
+    if (u.bw !== BW || u.bh !== BH) {
+      let ok = true;
+      for (let j = 0; j < 2; j++) {
+        gl.bindTexture(gl.TEXTURE_2D, u.bilder[j]);
+        gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, BW, BH, 0, gl.RGBA, gl.UNSIGNED_BYTE, null);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+        gl.bindFramebuffer(gl.FRAMEBUFFER, u.fbs[j]);
+        gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, u.bilder[j], 0);
+        ok = ok && gl.checkFramebufferStatus(gl.FRAMEBUFFER) === gl.FRAMEBUFFER_COMPLETE;
+      }
+      gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+      if (!ok) { ueber = null; return; }
+      u.bw = BW; u.bh = BH;
     }
-    const b = e.target.closest('.foto');
-    if (b) oeffnen(+b.dataset.i);
-  });
+    gl.disable(gl.DEPTH_TEST); gl.depthMask(false); gl.disable(gl.POLYGON_OFFSET_FILL);
+    attrAus();
+    const leise = k.sand < 1 ? (0.3 + 0.34 * k.namen) * (1 - k.sand) : 0;
+    const schl = BW + ',' + BH + ',' + PR + ',' + k.sand + ',' + k.namen + ',' + k.weg + ',' + k.wegL + '|' + Array.prototype.join.call(M, ',');
+    gl.enable(gl.BLEND);
+    if (schl !== u.schluessel) {
+      u.schluessel = schl;
+      gl.clearColor(0, 0, 0, 0);
+      gl.bindFramebuffer(gl.FRAMEBUFFER, u.fbs[1]); gl.clear(gl.COLOR_BUFFER_BIT);
+      gl.bindFramebuffer(gl.FRAMEBUFFER, u.fbs[0]); gl.clear(gl.COLOR_BUFFER_BIT);
+      gl.blendEquation(u.max); gl.blendFunc(gl.ONE, gl.ONE);
+      const b = u.band;
+      gl.useProgram(b.prog);
+      gl.uniformMatrix4fv(b.loc.uM, false, M);
+      gl.uniform2f(b.loc.uPx, BW, BH); gl.uniform1f(b.loc.uPR, PR); gl.uniform1f(b.loc.uHoch, UEBER_HOCH);
+      gl.uniform2f(b.loc.uRand, BASIS.kopf.groesse[0] / 2, BASIS.kopf.groesse[1] / 2);
+      gl.uniform1f(b.loc.uSigma, 4.5);
+      function band(puf, von, bis0, breite, bis, modus, kanal) {
+        if (bis0 <= von) return;
+        gl.bindBuffer(gl.ARRAY_BUFFER, puf);
+        attrSetzen(b, [['aP0', 3], ['aP1', 3], ['aEcke', 2], ['aL', 2], ['aArt', 2]], 48);
+        gl.uniform1f(b.loc.uBreite, breite); gl.uniform1f(b.loc.uRandPx, modus === 1 ? 13.5 : 1);
+        gl.uniform1f(b.loc.uBis, bis); gl.uniform1f(b.loc.uModus, modus);
+        gl.uniform4fv(b.loc.uKanal, kanal);
+        gl.drawArrays(gl.TRIANGLES, von, bis0 - von);
+      }
+      function etappe(i) { return [i % 3 === 0 ? 1 : 0, i % 3 === 1 ? 1 : 0, i % 3 === 2 ? 1 : 0, 0]; }
+      function ab(i) { return i ? u.wegEnde[i - 1] : 0; }
+      band(u.puf.see, 0, u.nSee, 0, 1e9, 2, [0, 0, 0, 1]);
+      const kopf = GESAMT * (1 - k.sand);
+      if (k.sand < 1) {
+        for (let i = 0; i < wege.length; i++) band(u.puf.weg, ab(i), u.wegEnde[i], 1.1 + 0.4 * k.namen, 1e9, 0, etappe(i));
+      }
+      if (k.weg >= 0) {
+        const j = Math.min(k.weg, wege.length - 1);
+        const bis = Math.min(kopf, wegAb[j] + k.wegL);
+        if (bis > 0) {
+          gl.bindFramebuffer(gl.FRAMEBUFFER, u.fbs[1]);
+          for (let i = 0; i <= j; i++) band(u.puf.weg, ab(i), u.wegEnde[i], 1.9, bis, 1, etappe(i));
+          band(u.puf.weg, 0, u.wegEnde[j], 1.9, bis, 0, [0, 0, 0, 1]);
+        }
+      }
+      attrAus();
+      gl.blendEquation(gl.FUNC_ADD);
+      gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+    }
+    gl.blendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA);
+    const dk = u.deck;
+    gl.useProgram(dk.prog);
+    gl.activeTexture(gl.TEXTURE1); gl.bindTexture(gl.TEXTURE_2D, u.bilder[1]);
+    gl.activeTexture(gl.TEXTURE0); gl.bindTexture(gl.TEXTURE_2D, u.bilder[0]);
+    gl.uniform1i(dk.loc.uBildA, 0); gl.uniform1i(dk.loc.uBildB, 1); gl.uniform2f(dk.loc.uPx, BW, BH);
+    gl.uniform3fv(dk.loc.uFS, F.tinte); gl.uniform3fv(dk.loc.uFL, F.leise);
+    gl.uniform3fv(dk.loc.uFG, F.schein); gl.uniform3fv(dk.loc.uFH, F.hell);
+    gl.uniform3f(dk.loc.uDeck, leise, 0.7 * 0.92, 0.95);
+    gl.bindBuffer(gl.ARRAY_BUFFER, u.puf.drei);
+    attrSetzen(dk, [['aV', 2]], 8);
+    gl.drawArrays(gl.TRIANGLES, 0, 3);
+    attrAus();
+    if (k.sand > 0 && u.nSand && u.sandOk) {
+      const s = u.sand;
+      gl.useProgram(s.prog);
+      gl.uniformMatrix4fv(s.loc.uM, false, M);
+      gl.uniform2f(s.loc.uPx, BW, BH); gl.uniform1f(s.loc.uPR, PR); gl.uniform1f(s.loc.uHoch, UEBER_HOCH);
+      gl.uniform1f(s.loc.uKopf, GESAMT * (1 - k.sand)); gl.uniform1f(s.loc.uAltN, GESAMT * 0.3);
+      gl.uniform1f(s.loc.uWeh, k.weh); gl.uniform3fv(s.loc.uFarbe, F.sand);
+      gl.bindBuffer(gl.ARRAY_BUFFER, u.puf.sand);
+      attrSetzen(s, [['aP', 3], ['aZ', 4], ['aZ2', 2]], 36);
+      gl.drawArrays(gl.POINTS, 0, u.nSand);
+      attrAus();
+    }
+    const q = new Float32Array(orte.length * 30);
+    const E = [[-1, -1], [1, -1], [-1, 1], [1, -1], [1, 1], [-1, 1]];
+    let n = 0;
+    orte.forEach(function (o, i) {
+      const s = geraet(cam.M, o);
+      if (!s) return;
+      const h = Math.max(i === k.ort ? k.sicht : 0, k.alleHell * 0.55);
+      for (let j = 0; j < 6; j++) { q.set([s[0], s[1], E[j][0], E[j][1], h], n * 5); n++; }
+    });
+    if (n) {
+      const oe = u.ort;
+      gl.useProgram(oe.prog);
+      gl.uniform2f(oe.loc.uPx, BW, BH); gl.uniform1f(oe.loc.uPR, PR);
+      gl.uniform3fv(oe.loc.uOrt, F.ort); gl.uniform3fv(oe.loc.uRing, F.ring); gl.uniform3fv(oe.loc.uPunkt, F.punkt);
+      gl.bindBuffer(gl.ARRAY_BUFFER, u.puf.ort);
+      gl.bufferData(gl.ARRAY_BUFFER, q.subarray(0, n * 5), gl.DYNAMIC_DRAW);
+      attrSetzen(oe, [['aM', 2], ['aE', 2], ['aH', 1]], 20);
+      gl.drawArrays(gl.TRIANGLES, 0, n);
+      attrAus();
+    }
+    gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
+    gl.clearColor(GRUND[0], GRUND[1], GRUND[2], 1);
+    gl.enable(gl.DEPTH_TEST); gl.depthMask(true);
+    gl.useProgram(prog.prog);
+  }
 
-  /* ---- Grossansicht ---- */
+  /* ---- 2D: Namen und Fotopunkte ---- */
+  function projizieren(M, p) {
+    const x = p[0], y = p[1], z = p[2] + 0.02;
+    const w = M[3] * x + M[7] * y + M[11] * z + M[15];
+    if (w <= 0.01) return null;
+    return [((M[0] * x + M[4] * y + M[8] * z + M[12]) / w * 0.5 + 0.5) * W, (0.5 - (M[1] * x + M[5] * y + M[9] * z + M[13]) / w * 0.5) * H, w];
+  }
+  /* Ab welchem Kameraabstand (km) ein Name je Rang erscheint: Staedte
+     immer, Doerfer und grosse Gipfel ab mittlerer Hoehe, Weiler, Buchten,
+     Straende und Leuchttuerme erst nah, kleine Flurnamen ganz nah. */
+  const SICHT_RANG = [0, 1e9, 60, 14, 8, 5];
+  const SCHRIFT = {
+    ort: '"Libre Caslon Display", Georgia, serif',
+    natur: 'italic 400 {g}px "Noto Serif", Georgia, serif'
+  };
+  function namensStil(art, rang) {
+    const g = [0, 13, 12, 11, 10.5, 10][rang] || 10;
+    if (art === 'water' || art === 'bay' || art === 'sea') return { font: 'italic ' + g + 'px "Noto Serif", Georgia, serif', farbe: '176, 206, 226', gross: false, sperr: 0.5 };
+    if (art === 'peak' || art === 'hill' || art === 'saddle' || art === 'cliff' || art === 'cape' || art === 'beach')
+      return { font: 'italic ' + g + 'px "Noto Serif", Georgia, serif', farbe: '232, 224, 204', gross: false, sperr: 0.3 };
+    if (art === 'island' || art === 'islet') return { font: g + 'px "Libre Caslon Display", Georgia, serif', farbe: '226, 220, 204', gross: true, sperr: 3 };
+    if (art === 'lighthouse' || art === 'museum' || art === 'attraction' || art === 'viewpoint' || art === 'historic' || art === 'camp_site' || art === 'caravan_site')
+      return { font: 'italic ' + g + 'px "Noto Serif", Georgia, serif', farbe: '255, 222, 184', gross: false, sperr: 0.2 };
+    return { font: g + 'px "Libre Caslon Display", Georgia, serif', farbe: CFG.route.punkt, gross: true, sperr: 2 };
+  }
+  function namenZeichnen(k, cam, belegt) {
+    const quellen = [[BASIS, 1, true]];
+    (k.nahAktiv || []).forEach(function (x) { quellen.push([x[0].satz, x[1], false]); });
+    const liste = [];
+    quellen.forEach(function (q) {
+      const S = q[0], ein = q[1];
+      if (ein < 0.2) return;
+      (S.kopf.namen || []).forEach(function (n) {
+        const rang = n[5];
+        const grenze = SICHT_RANG[rang] || 3;
+        // Grundkarte: nur Staedte und Inseln; nah uebernehmen die Detailstuecke
+        let a = (1 - stufe(grenze * 0.75, grenze, k.dist)) * ein;
+        if (q[2] && k.dist < 20) a *= stufe(5, 20, k.dist);
+        if (a < 0.03) return;
+        liste.push([n, a, rang]);
+      });
+    });
+    liste.sort(function (a, b) { return a[2] - b[2]; });
+    const nebel = k.dist * 3.0;
+    liste.forEach(function (e) {
+      const n = e[0], p = [n[0], n[1], n[2] / 1000 * UEB];
+      const dx = p[0] - cam.auge[0], dy = p[1] - cam.auge[1], dz = p[2] - cam.auge[2];
+      const weit = Math.hypot(dx, dy, dz);
+      let a = e[1] * (1 - stufe(nebel * 0.7, nebel, weit));
+      if (a < 0.03) return;
+      const s = projizieren(cam.M, p);
+      if (!s || s[0] < -40 || s[0] > W + 40 || s[1] < -20 || s[1] > H + 20) return;
+      const st = namensStil(n[4], n[5]);
+      let txt = st.gross ? n[3].toUpperCase() : n[3];
+      if ((n[4] === 'peak' || n[4] === 'hill') && n[6]) txt = n[3] + '  ' + n[6] + ' m';
+      ctx2.font = st.font;
+      if ('letterSpacing' in ctx2) ctx2.letterSpacing = st.sperr + 'px';
+      const b = ctx2.measureText(txt).width, h = 14;
+      const zeichen = n[4] === 'peak' || n[4] === 'hill';
+      const x0 = s[0] + (zeichen ? 8 : -b / 2), y0 = s[1] - (zeichen ? 0 : 0);
+      const frei = belegt.every(function (q) { return x0 + b < q[0] || x0 > q[0] + q[2] || y0 + h / 2 < q[1] - h / 2 || y0 - h / 2 > q[1] + h / 2; });
+      if (!frei) return;
+      belegt.push([x0 - 3, y0, b + 6]);
+      if (zeichen) {
+        ctx2.fillStyle = 'rgba(' + st.farbe + ',' + (0.8 * a).toFixed(3) + ')';
+        ctx2.beginPath(); ctx2.moveTo(s[0], s[1] - 4); ctx2.lineTo(s[0] + 4, s[1] + 3); ctx2.lineTo(s[0] - 4, s[1] + 3); ctx2.closePath(); ctx2.fill();
+      }
+      ctx2.lineWidth = 3; ctx2.strokeStyle = 'rgba(4, 7, 9,' + (0.6 * a).toFixed(3) + ')';
+      ctx2.strokeText(txt, x0, y0);
+      ctx2.fillStyle = 'rgba(' + st.farbe + ',' + (0.92 * a).toFixed(3) + ')';
+      ctx2.fillText(txt, x0, y0);
+    });
+    if ('letterSpacing' in ctx2) ctx2.letterSpacing = '0px';
+  }
+  /* Die Stellen der Fotos der aktuellen Station, nummeriert wie auf der Tafel. */
+  function fotopunkte(k, cam, belegt) {
+    if (k.st < 0 || k.sicht < 0.02) return;
+    const s = ST[k.st], o = orte[s.p];
+    ctx2.font = '600 10px system-ui, sans-serif';
+    ctx2.textAlign = 'center';
+    s.fotos.forEach(function (f, i) {
+      if (f.ca || !f.ort) return;
+      const g = geo(f.ort[1], f.ort[0], o[2]);
+      const p = projizieren(cam.M, g);
+      if (!p) return;
+      const a = k.sicht;
+      ctx2.fillStyle = 'rgba(8, 11, 12,' + (0.75 * a).toFixed(3) + ')';
+      ctx2.beginPath(); ctx2.arc(p[0], p[1], 8, 0, 2 * Math.PI); ctx2.fill();
+      ctx2.lineWidth = 1; ctx2.strokeStyle = 'rgba(255, 226, 190,' + (0.8 * a).toFixed(3) + ')';
+      ctx2.stroke();
+      ctx2.fillStyle = 'rgba(255, 236, 212,' + a.toFixed(3) + ')';
+      ctx2.fillText(String(i + 1), p[0], p[1] + 0.5);
+      belegt.push([p[0] - 9, p[1], 18]);
+    });
+    ctx2.textAlign = 'left';
+  }
+  function linien(k, cam) {
+    ctx2.setTransform(PR, 0, 0, PR, 0, 0);
+    ctx2.clearRect(0, 0, W, H);
+    ctx2.textBaseline = 'middle';
+    const belegt = [];
+    if (!ueber) routeLeinwand(k, cam);
+    fotopunkte(k, cam, belegt);
+    namenZeichnen(k, cam, belegt);
+  }
+  // Nur falls die Grafikkarte die Linien nicht selbst zeichnen kann.
+  function routeLeinwand(k, cam) {
+    ctx2.lineCap = 'round'; ctx2.lineJoin = 'round';
+    ctx2.strokeStyle = 'rgba(' + CFG.route.hell + ', 0.9)'; ctx2.lineWidth = 1.8;
+    for (let i = 0; i <= k.weg && i < wege.length; i++) {
+      const w = wege[i], bis = i < k.weg ? 1e9 : k.wegL;
+      ctx2.beginPath(); let offen = false;
+      for (let j = 0; j < w.p.length; j++) {
+        if (w.L[j] > bis) break;
+        const s = projizieren(cam.M, w.p[j]);
+        if (!s) { offen = false; continue; }
+        if (offen) ctx2.lineTo(s[0], s[1]); else { ctx2.moveTo(s[0], s[1]); offen = true; }
+      }
+      ctx2.stroke();
+    }
+  }
+
+  /* ---- Die Tafel: alle Fotos der Station ---- */
+  const halter = wurzel.querySelector('.karte-bilder');
+  const tafel = document.createElement('div');
+  tafel.className = 'karte-tafel';
+  halter.appendChild(tafel);
+  let tafelSt = -2, folge = [];
+  function setzeTafel(st) {
+    if (st === tafelSt) return;
+    tafelSt = st;
+    tafel.textContent = '';
+    folge = [];
+    if (st < 0) return;
+    ST[st].fotos.forEach(function (f, i) {
+      const b = document.createElement('button');
+      b.type = 'button'; b.className = 'karte-bild';
+      b.setAttribute('aria-label', 'Foto ' + (f.nr + 1) + ' groß ansehen');
+      const img = document.createElement('img');
+      img.decoding = 'async'; img.alt = '';
+      img.srcset = B + f.id + '-400.webp 400w, ' + B + f.id + '-1000.webp 1000w';
+      img.sizes = '(min-width: 900px) 22vw, 48vw';
+      img.src = B + f.id + '-1000.webp';
+      b.appendChild(img);
+      const nr = document.createElement('span'); nr.className = 'nr'; nr.textContent = String(i + 1); b.appendChild(nr);
+      if (f.ca) { const c = document.createElement('span'); c.className = 'ca'; c.textContent = '≈ Ort'; b.appendChild(c); }
+      b.addEventListener('click', function () { oeffnen(f.nr); });
+      tafel.appendChild(b);
+      folge.push({ el: b, format: f.w / f.h });
+    });
+    tafelSetzen();
+    // Die Fotos der naechsten Stationen schon laden
+    for (let j = st + 1; j <= st + 2 && j < ST.length; j++) ST[j].fotos.forEach(function (f) { const v = new Image(); v.src = B + f.id + '-1000.webp'; });
+  }
+  /* Zeilen im Blocksatz: jede Zeile fuellt die Breite, jedes Foto behaelt
+     sein Format. Bei mehr als vier Fotos drei je Zeile (auf breiten
+     Schirmen). Wird es zu hoch, schrumpft alles gleichmaessig. */
+  function tafelSetzen() {
+    if (!folge.length) return;
+    const Bt = tafel.clientWidth || 300, L = 10;
+    const hoechstens = (H || window.innerHeight) * (W > H * 1.1 ? 0.66 : 0.4);
+    const je = folge.length > 4 && W > H * 1.1 ? 3 : folge.length === 3 && W > H * 1.1 ? 3 : 2;
+    const zeilen = [];
+    for (let i = 0; i < folge.length; i += je) zeilen.push(folge.slice(i, i + je));
+    let hs = zeilen.map(function (z) {
+      const summe = z.reduce(function (s, f) { return s + f.format; }, 0);
+      const h = (Bt - L * (z.length - 1)) / summe;
+      return z.length === 1 ? Math.min(h, Bt * 0.6) : h;
+    });
+    const gesamt = hs.reduce(function (s, h) { return s + h; }, 0) + L * (zeilen.length - 1);
+    const kf = Math.min(1, hoechstens / gesamt);
+    hs = hs.map(function (h) { return h * kf; });
+    let y = 0;
+    zeilen.forEach(function (z, zi) {
+      const breite = z.reduce(function (s, f) { return s + f.format * hs[zi]; }, 0) + L * (z.length - 1);
+      let x = (Bt - breite) / 2;
+      z.forEach(function (f) {
+        const w = f.format * hs[zi];
+        f.el.style.left = x.toFixed(1) + 'px'; f.el.style.top = y.toFixed(1) + 'px';
+        f.el.style.width = w.toFixed(1) + 'px'; f.el.style.height = hs[zi].toFixed(1) + 'px';
+        x += w + L;
+      });
+      y += hs[zi] + L;
+    });
+    tafel.style.height = (y - L).toFixed(1) + 'px';
+  }
+  window.addEventListener('resize', function () { if (folge.length) tafelSetzen(); });
+  function tafelZeigen(k) {
+    if (k.sicht > 0.01 && k.st >= 0) setzeTafel(k.st);
+    const s = Math.max(0, Math.min(1, k.sicht * 1.25));
+    tafel.style.opacity = s.toFixed(3);
+    tafel.style.visibility = s < 0.004 ? 'hidden' : '';
+    tafel.style.transform = 'translateY(' + ((1 - s) * 14).toFixed(1) + 'px)';
+    tafel.classList.toggle('greifbar', s > 0.6);
+  }
+
+  let bereit = false;
+  function zeichne(u, zeitS) {
+    if (!bereit) return;
+    if (zeitS === undefined) zeitS = reducedMotion ? 0 : (performance.now() / 1000) % 100000;
+    const k = zustand(u);
+    beschriften(k);
+    tafelZeigen(k);
+    const cam = kamera(k);
+    landschaft(k, cam, zeitS);
+    linien(k, cam);
+    letzterK = k;
+  }
+  let letzterK = null;
+
+  /* ---- Gefuehrt, aber in der Hand: die Kamera folgt dem Scrollen mit
+     Obergrenze und weichem Anfahren und Bremsen. ---- */
+  const VMAX = 1.0, BESCHL = 1.6;
+  let ziel = 0, stand = 0, tempo = 0, laeuft = false, zuletzt = 0, sichtbar = false;
+  function scrollStrecke() { return lauf.offsetHeight - halt.offsetHeight; }
+  function zielAusScroll() {
+    const s = scrollStrecke();
+    if (s <= 0) return 0;
+    const oben = lauf.getBoundingClientRect().top;
+    return Math.max(0, Math.min(1, -oben / s)) * EINHEITEN;
+  }
+  function folgen(dt) {
+    const rest = ziel - stand, betrag = Math.abs(rest);
+    const soll = Math.sign(rest) * Math.min(VMAX * (betrag > 6 ? betrag / 6 : 1), Math.sqrt(2 * BESCHL * betrag) * 0.95);
+    const d = soll - tempo, grenze = BESCHL * (betrag > 6 ? betrag / 6 : 1) * dt;
+    tempo += Math.max(-grenze, Math.min(grenze, d));
+    stand += tempo * dt;
+    if (betrag < 0.0015 && Math.abs(tempo) < 0.01) { stand = ziel; tempo = 0; }
+  }
+  let gezeichnet = 0, standGezeichnet = -1;
+  function schleife(jetzt) {
+    if (!bereit || !sichtbar || document.hidden) { laeuft = false; return; }
+    const dt = Math.min(0.05, (jetzt - zuletzt) / 1000);
+    zuletzt = jetzt;
+    folgen(dt);
+    if (stand !== standGezeichnet || jetzt - gezeichnet > 28) {
+      zeichne(stand, (jetzt / 1000) % 100000);
+      gezeichnet = jetzt; standGezeichnet = stand;
+    }
+    requestAnimationFrame(schleife);
+  }
+  function anlaufen() {
+    if (laeuft || !bereit || reducedMotion) return;
+    laeuft = true; zuletzt = performance.now();
+    requestAnimationFrame(schleife);
+  }
+  function anstossen() {
+    if (!bereit || reducedMotion) return;
+    ziel = zielAusScroll();
+    anlaufen();
+  }
+  if ('IntersectionObserver' in window) {
+    new IntersectionObserver(function (e) {
+      sichtbar = e[e.length - 1].isIntersecting;
+      if (sichtbar) anlaufen();
+    }).observe(lauf);
+  } else { sichtbar = true; }
+  document.addEventListener('visibilitychange', function () { if (!document.hidden) anlaufen(); });
+  window.addEventListener('scroll', anstossen, { passive: true });
+
+  /* ---- Springen: Tage, Stationen, Ueberspringen ---- */
+  function scrollZu(einheit, sofort) {
+    const oben = lauf.getBoundingClientRect().top + window.scrollY;
+    window.scrollTo({ top: oben + einheit / EINHEITEN * scrollStrecke(), behavior: sofort ? 'instant' : 'smooth' });
+  }
+  function haltPhase(st) { return phasen.find(function (p) { return p.art === 'halt' && p.st === st; }); }
+  function springeZuTag(t) {
+    const s = ST.find(function (x) { return x.tag === t; });
+    const p = s && haltPhase(s.i);
+    if (p) scrollZu(p.ab + p.laenge * 0.5, true);
+  }
+  function springeZuStation(d) {
+    const u = ziel;
+    const halte = phasen.filter(function (p) { return p.art === 'halt'; });
+    let z = null;
+    if (d > 0) z = halte.find(function (p) { return p.ab + p.laenge * 0.5 > u + 0.01; });
+    else for (let i = halte.length - 1; i >= 0; i--) if (halte[i].ab + halte[i].laenge * 0.5 < u - 0.01) { z = halte[i]; break; }
+    if (z) scrollZu(z.ab + z.laenge * 0.5, false);
+  }
+  document.addEventListener('keydown', function (e) {
+    if (!lupe.hidden || !bereit) return;
+    const r = lauf.getBoundingClientRect();
+    if (r.top > window.innerHeight * 0.5 || r.bottom < window.innerHeight * 0.5) return;
+    if (e.key === 'ArrowRight') { e.preventDefault(); springeZuStation(1); }
+    else if (e.key === 'ArrowLeft') { e.preventDefault(); springeZuStation(-1); }
+  });
+  wurzel.querySelector('.karte-weiter').addEventListener('click', function () {
+    const oben = lauf.getBoundingClientRect().top + window.scrollY;
+    window.scrollTo({ top: oben + lauf.offsetHeight, behavior: 'instant' });
+    ziel = stand = EINHEITEN; tempo = 0;
+    zeichne(stand);
+  });
+  document.getElementById('nachoben').addEventListener('click', function () { window.scrollTo({ top: 0, behavior: 'instant' }); ziel = stand = 0; });
+
+  /* ---- Laden ---- */
+  function entpacken(buf) {
+    const b = new Uint8Array(buf, 0, 2);
+    if (b[0] !== 0x1f || b[1] !== 0x8b) return Promise.resolve(buf);
+    return new Response(new Blob([buf]).stream().pipeThrough(new DecompressionStream('gzip'))).arrayBuffer();
+  }
+  const TYP = { '<i2': Int16Array, '<u2': Uint16Array, '<u4': Uint32Array, '|u1': Uint8Array };
+  function lesen(buf) {
+    const dv = new DataView(buf);
+    const kl = dv.getUint32(0, true);
+    const kopf = JSON.parse(new TextDecoder().decode(new Uint8Array(buf, 4, kl)));
+    const b0 = 4 + kl, T = {};
+    Object.keys(kopf.teile).forEach(function (n) { const t = kopf.teile[n]; T[n] = new TYP[t[2]](buf, b0 + t[0], t[1]); });
+    const pos = T.pos, ringe = T.ringe;
+    let s = 0;
+    for (let r = 0; r < ringe.length; r++) {
+      const m = ringe[r];
+      for (let k = s + 1; k < s + m; k++) { pos[2 * k] += pos[2 * k - 2]; pos[2 * k + 1] += pos[2 * k - 1]; }
+      s += m;
+    }
+    let summe = 0;
+    for (let r = 0; r < ringe.length; r++) summe += ringe[r];
+    const lin = new Uint16Array(summe * 2);
+    let z = 0;
+    kopf.seen = kopf.seen || [];
+    kopf.schichten.concat(kopf.seen).forEach(function (sch) {
+      const l0 = z;
+      let p = 0;
+      for (let r = sch.r[0]; r < sch.r[1]; r++) {
+        const m = ringe[r];
+        for (let k = 0; k < m; k++) { lin[z++] = p + k; lin[z++] = p + (k + 1) % m; }
+        p += m;
+      }
+      sch.l = [l0, z];
+    });
+    // Strassen und Wege: je Art eine Liste von Linienstuecken
+    const strassen = [];
+    if (kopf.nLinien) {
+      const lp = T.lpos, lz = T.lzahl, la = T.lart;
+      const zahl = [];
+      for (let i = 0; i < lz.length; i++) zahl[la[i]] = (zahl[la[i]] || 0) + (lz[i] - 1);
+      const aus = zahl.map(function (n) { return new Int16Array((n || 0) * 6); });
+      const o = zahl.map(function () { return 0; });
+      let p = 0;
+      for (let i = 0; i < lz.length; i++) {
+        const a = la[i], A = aus[a];
+        for (let j = 0; j < lz[i] - 1; j++) {
+          const q = (p + j) * 3;
+          A[o[a]++] = lp[q]; A[o[a]++] = lp[q + 1]; A[o[a]++] = lp[q + 2];
+          A[o[a]++] = lp[q + 3]; A[o[a]++] = lp[q + 4]; A[o[a]++] = lp[q + 5];
+        }
+        p += lz[i];
+      }
+      aus.forEach(function (a, i) { strassen[i] = a; });
+    }
+    return { kopf: kopf, pos: pos, tri: T.tri, lin: lin, tex: T.tex, strassen: strassen };
+  }
+  function holen(datei) {
+    return fetch(datei).then(function (r) { if (!r.ok) throw new Error(datei + ' ' + r.status); return r.arrayBuffer(); })
+      .then(entpacken).then(lesen);
+  }
+  /* Detailstuecke: zuerst das, das gerade gebraucht wird, dann die naechsten
+     entlang der Reise; eins nach dem anderen im Hintergrund. */
+  let nahLaedt = false;
+  function nahWunsch(N) { N.wunsch = true; nahWeiter(); }
+  function nahWeiter() {
+    if (nahLaedt || !bereit) return;
+    const k = letzterK;
+    let wahl = NAH_SAETZE.find(function (N) { return N.wunsch && !N.satz && !N.fehler; });
+    if (!wahl) {
+      const offen = NAH_SAETZE.filter(function (N) { return !N.satz && !N.fehler; });
+      if (!offen.length) return;
+      const x = k ? k.x : 0, y = k ? k.y : 0;
+      offen.sort(function (a, b) {
+        return Math.hypot(a.info.mitte[0] - x, a.info.mitte[1] - y) - Math.hypot(b.info.mitte[0] - x, b.info.mitte[1] - y);
+      });
+      wahl = offen[0];
+    }
+    nahLaedt = true;
+    holen(wahl.info.datei).then(function (S) {
+      satzHochladen(S);
+      wahl.satz = S;
+    }).catch(function (e) { console.warn(e); wahl.fehler = true; }).then(function () {
+      nahLaedt = false; wahl.wunsch = false;
+      if (bereit) { zeichne(stand); }
+      setTimeout(nahWeiter, 30);
+    });
+  }
+
+  function laden() {
+    groesse();
+    holen(R.basis).then(function (S) {
+      BASIS = S;
+      groesse();
+      vorbereiten(W, H);
+      if (!glStarten()) throw new Error('kein WebGL');
+      satzHochladen(BASIS);
+      ctx2 = linc.getContext('2d');
+      bereit = true;
+      if (reducedMotion) {
+        wurzel.classList.add('ist-still');
+        groesse();
+        phasen.forEach(function (p) { if (p.art === 'ende') stand = p.ab + p.laenge; });
+        zeichne(stand);
+      } else {
+        stand = ziel = zielAusScroll();
+        zeichne(stand);
+        anlaufen();
+      }
+      requestAnimationFrame(function () { wurzel.classList.add('ist-bereit'); });
+      nahWeiter();
+    }).catch(function (e) {
+      console.error(e);
+      wurzel.querySelector('.karte-laden').textContent = 'Die Karte braucht WebGL – dieser Browser kann sie nicht zeigen.';
+    });
+  }
+  window.addEventListener('resize', function () {
+    if (!bereit) return;
+    groesse();
+    vorbereiten(W, H);
+    ziel = stand = zielAusScroll();
+    zeichne(stand);
+  });
+  glc.addEventListener('webglcontextlost', function (e) { e.preventDefault(); bereit = false; }, false);
+
+  /* ---------- Grossansicht ---------- */
   const lupe = document.getElementById('lupe');
   const img = document.getElementById('lupe-img');
-  let jetzt = -1, geschichte = false;
+  let jetzt = -1, geschichte = false, vorFokus = null;
   function quelle(f, g) { return B + f.id + '-' + g + '.webp'; }
   function oeffnen(i) {
-    const f = F[i]; if (!f) return;
+    const f = REIHE[i]; if (!f) return;
     jetzt = i;
     img.removeAttribute('src');
     img.srcset = quelle(f, 1000) + ' 1000w, ' + quelle(f, 2400) + ' 2400w';
     img.sizes = '100vw';
     img.src = quelle(f, 1000);
-    const t = f.t ? nachTag.get(f.t.slice(0, 10)) : null;
-    document.getElementById('wann').textContent = f.t ? 'Tag ' + t.nr + ' · ' + datum(f.t.slice(0, 10), true) + ' · ' + f.t.slice(11, 16) + ' Uhr' : 'Ohne Datum';
-    document.getElementById('stelle').textContent = (i + 1) + ' / ' + F.length + (f.ca ? ' · Ort ungefähr' : '');
-    document.getElementById('aufkarte').hidden = !f.ort;
+    const s = f.st >= 0 ? ST[f.st] : null;
+    document.getElementById('wann').textContent = f.t ? tagText(f.t, true, true) + ' · ' + f.t.slice(11, 16) + ' Uhr' : 'Ohne Datum';
+    document.getElementById('wo').textContent = s && s.name ? s.name + (f.ca ? ' (Ort ungefähr)' : '') : (f.ca ? 'Ort ungefähr' : '');
+    document.getElementById('stelle').textContent = (i + 1) + ' / ' + REIHE.length;
     if (lupe.hidden) {
+      vorFokus = document.activeElement;
       lupe.hidden = false;
       document.body.style.overflow = 'hidden';
       try { history.pushState({ lupe: 1 }, ''); geschichte = true; } catch (e) {}
       document.getElementById('zu').focus();
     }
-    [i - 1, i + 1].forEach(function (j) { if (F[j]) { const v = new Image(); v.src = quelle(F[j], 1000); } });
+    [i - 1, i + 1].forEach(function (j) { if (REIHE[j]) { const v = new Image(); v.src = quelle(REIHE[j], 1000); } });
   }
   function schliessen(ausGeschichte) {
     if (lupe.hidden) return;
@@ -306,30 +1699,13 @@
     img.removeAttribute('src'); img.removeAttribute('srcset');
     if (geschichte && !ausGeschichte) { geschichte = false; history.back(); }
     geschichte = false;
-    const b = wurzel.querySelector('.foto[data-i="' + jetzt + '"]');
-    if (b) b.focus({ preventScroll: true });
+    if (vorFokus && vorFokus.focus) vorFokus.focus({ preventScroll: true });
   }
-  function schritt(d) { const j = jetzt + d; if (F[j]) oeffnen(j); }
+  function schritt(d) { const j = jetzt + d; if (REIHE[j]) oeffnen(j); }
   window.addEventListener('popstate', function () { if (!lupe.hidden) { geschichte = false; schliessen(true); } });
   document.getElementById('zu').onclick = function () { schliessen(); };
   document.getElementById('zurueck').onclick = function () { schritt(-1); };
   document.getElementById('vor').onclick = function () { schritt(1); };
-  document.getElementById('aufkarte').onclick = function () {
-    const f = F[jetzt], m = marker[jetzt];
-    schliessen();
-    if (!m) return;
-    if (schmal.matches) window.scrollTo({ top: 0, behavior: 'smooth' });
-    haufen.zoomToShowLayer(m, function () {
-      L.popup({ offset: [0, -4], autoPanPadding: [20, 20] })
-        .setLatLng(f.ort)
-        .setContent('<img src="' + quelle(f, 400) + '" alt="" data-i="' + f.i + '">')
-        .openOn(karte);
-    });
-  };
-  karte.on('popupopen', function (e) {
-    const el = e.popup.getElement().querySelector('img[data-i]');
-    if (el) el.onclick = function () { oeffnen(+el.dataset.i); };
-  });
   lupe.addEventListener('click', function (e) { if (e.target === lupe || e.target.classList.contains('lupe-bild')) schliessen(); });
   document.addEventListener('keydown', function (e) {
     if (lupe.hidden) return;
@@ -337,7 +1713,6 @@
     else if (e.key === 'ArrowLeft') schritt(-1);
     else if (e.key === 'ArrowRight') schritt(1);
   });
-  /* Wischen */
   let x0 = null, y0 = 0;
   const flaeche = lupe.querySelector('.lupe-bild');
   flaeche.addEventListener('pointerdown', function (e) { if (e.isPrimary) { x0 = e.clientX; y0 = e.clientY; } });
@@ -348,7 +1723,18 @@
   });
   flaeche.addEventListener('pointercancel', function () { x0 = null; });
 
-  zeigeTag(0, false); aktuell = 0;
+  // Fotos ohne Ort und Zeit: am Schluss
+  const ohneEl = document.getElementById('ohne');
+  (R.ohne || []).forEach(function (id) {
+    const f = fotoNach.get(id); if (!f) return;
+    const b = document.createElement('button'); b.type = 'button';
+    b.setAttribute('aria-label', 'Foto ohne Ort und Zeit groß ansehen');
+    const im = document.createElement('img'); im.src = quelle(f, 1000); im.alt = ''; im.loading = 'lazy';
+    b.appendChild(im); b.addEventListener('click', function () { oeffnen(f.nr); });
+    ohneEl.appendChild(b);
+  });
+
+  laden();
 })();
 </script>
 </body>

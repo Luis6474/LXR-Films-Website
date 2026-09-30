@@ -38,16 +38,17 @@ def lesen(pfad):
     ex = im.getexif()
     gps, sub = ex.get_ifd(0x8825), ex.get_ifd(0x8769)
     zeit = sub.get(0x9003) or ex.get(0x0132)
+    versatz = sub.get(0x9011)                  # z. B. "+01:00": Zeitzone des Telefons
     lat = lon = None
     if gps and 2 in gps and 4 in gps:
         lat, lon = grad(gps[2], gps.get(1, "N")), grad(gps[4], gps.get(3, "E"))
-    return im, zeit, lat, lon
+    return im, zeit, versatz, lat, lon
 
 
 def bearbeiten(pfad):
     name = os.path.splitext(os.path.basename(pfad))[0]
     ziele = [os.path.join(BILDER, "%s-%d.webp" % (name, g)) for g in GROESSEN]
-    im, zeit, lat, lon = lesen(pfad)
+    im, zeit, versatz, lat, lon = lesen(pfad)
     im = ImageOps.exif_transpose(im).convert("RGB")
     w, h = im.size
     if not all(os.path.exists(z) and os.path.getmtime(z) >= os.path.getmtime(pfad) for z in ziele):
@@ -55,7 +56,7 @@ def bearbeiten(pfad):
             k = im.copy()
             k.thumbnail((g, g), Image.LANCZOS)
             k.save(z, "WEBP", quality=80 if g > 400 else 72, method=6)
-    return dict(id=name, zeit=zeit, lat=lat, lon=lon, w=w, h=h)
+    return dict(id=name, zeit=zeit, versatz=versatz, lat=lat, lon=lon, w=w, h=h)
 
 
 def main():
@@ -74,8 +75,17 @@ def main():
     for z in glob.glob(os.path.join(BILDER, "*.webp")):
         if os.path.basename(z) not in soll: os.remove(z)
 
+    def versatz(f):
+        v = f.get("versatz")
+        if not v: return datetime.timedelta(hours=1)
+        s = -1 if v[0] == "-" else 1
+        return s * datetime.timedelta(hours=int(v[1:3]), minutes=int(v[4:6]))
+
     def zeitpunkt(f):
-        return datetime.datetime.strptime(f["zeit"], "%Y:%m:%d %H:%M:%S") if f["zeit"] else None
+        # Weltzeit (UTC): das Telefon stellt beim Grenzuebertritt die Uhr um,
+        # nach Ortszeit sortiert liefe die Reise an der Faehre rueckwaerts.
+        if not f["zeit"]: return None
+        return datetime.datetime.strptime(f["zeit"], "%Y:%m:%d %H:%M:%S") - versatz(f)
 
     mit_ort = [f for f in fotos if f["lat"] is not None and f["zeit"]]
     aus = []
@@ -89,11 +99,16 @@ def main():
         if lat is not None and abs(lat - HAMBURG[0]) < HAMBURG_R and abs(lon - HAMBURG[1]) < HAMBURG_R * 2:
             lat, lon, ungefaehr = HAMBURG[0], HAMBURG[1], True
         e = dict(id=f["id"], w=f["w"], h=f["h"])
-        if t: e["t"] = t.strftime("%Y-%m-%dT%H:%M")
+        if t:
+            # Angezeigt wird die Ortszeit des Landes, in dem das Foto entstand:
+            # Grossbritannien UTC+1 (Sommerzeit), das Festland UTC+2.
+            gb = lon is not None and lon < 1.6
+            e["t"] = (t + datetime.timedelta(hours=1 if gb else 2)).strftime("%Y-%m-%dT%H:%M")
+            e["u"] = int(t.replace(tzinfo=datetime.timezone.utc).timestamp() // 60)
         if lat is not None: e["ort"] = [round(lat, 4), round(lon, 4)]
         if ungefaehr: e["ca"] = 1
         aus.append(e)
-    aus.sort(key=lambda e: e.get("t", "9"))
+    aus.sort(key=lambda e: e.get("u", 1e12))
     with open(os.path.join(ZIEL, "fotos.js"), "w", encoding="utf-8") as fh:
         fh.write("/* erzeugt von werkzeug/geheime_karte_bau.py */\nwindow.FOTOS = ")
         json.dump(aus, fh, ensure_ascii=False, separators=(",", ":"))
