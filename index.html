@@ -6245,9 +6245,19 @@
       // Geschlossene Projektseite: nichts rechnen (sie haette keine Groesse);
       // beim naechsten Oeffnen wird ohnehin neu vermessen.
       if (!bereit || !viewer.classList.contains('is-active')) return;
+      /* Gedreht oder Fenster verkleinert: die Karte wird kuerzer oder
+         laenger, die Scrollposition in Pixeln bliebe aber stehen -- man
+         landete Tage weiter, zwischen zwei Stationen. Steht man in der
+         Karte, bleibt man an derselben Station. */
+      const drin = stand > 0.001 && stand < EINHEITEN - 0.001, station = haltIndex();
       groesse();
       vorbereiten(W, H);
-      ziel = stand = zielAusScroll();
+      if (drin) {
+        fahrt = null; tempo = 0;
+        ziel = stand = HALTE[Math.min(station, HALTE.length - 1)];
+        setzeScroll(stand);
+        clearTimeout(fremdZeit);
+      } else ziel = stand = zielAusScroll();
       zeichne(stand);
     });
   }
