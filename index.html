@@ -1373,7 +1373,7 @@
      alle, die das Mausrad nicht als Bedienung erkennen. */
   .karte:focus { outline: none; }
   .karte-schritt {
-    position: absolute; left: 50%; bottom: calc(max(44px, 7dvh) + 2.6em - 13px);
+    position: absolute; left: 50%; bottom: calc(max(44px, 7dvh) + 2.6em - 9px);
     width: 34px; height: 34px; padding: 0; border-radius: 50%;
     border: 1px solid rgba(255, 226, 190, 0.35); background: rgba(8, 11, 12, 0.45);
     color: rgba(255, 236, 212, 0.92); font: 18px/1 Georgia, serif; cursor: pointer;
@@ -1421,6 +1421,11 @@
     .karte-bild-a { width: min(30vw, 480px); left: auto; right: 7vw; top: 16%; margin-left: 0; }
     .karte-bild-b { display: flex; width: min(19vw, 300px); right: calc(7vw + min(30vw, 480px) - min(12vw, 190px)); top: calc(16% + min(20vw, 320px) - 20px); }
     .karte-tafel { left: auto; right: 5vw; top: max(15%, 118px); width: min(40vw, 660px); max-width: none; }
+  }
+  /* Handy quer: Fotos rechts wie am Rechner -- die Kamera rueckt den Ort
+     im Querformat nach links, mittig oben stuenden die Fotos genau davor. */
+  @media (max-width: 899px) and (min-aspect-ratio: 11/10) {
+    .karte-tafel { left: auto; right: 4vw; top: max(17%, 72px); width: 46vw; max-width: none; }
   }
 
   .viewer-grid { display: grid; grid-template-columns: 1fr; gap: 12px; margin: 52px 0; }
@@ -4183,6 +4188,7 @@
     const datum = wurzel.querySelector('.karte-datum');
     const zeit = wurzel.querySelector('.karte-zeit');
     wurzel.tabIndex = -1;
+    let tafelSicht = 0, tafelLinks = 0;
     const knopfZurueck = document.createElement('button'), knopfVor = document.createElement('button');
     knopfZurueck.type = knopfVor.type = 'button';
     knopfZurueck.className = 'karte-schritt zurueck'; knopfVor.className = 'karte-schritt vor';
@@ -4735,6 +4741,8 @@
       schildSchluessel = '';
       if (gl) gl.viewport(0, 0, glc.width, glc.height);
       halt.style.setProperty('--zb', zeit.offsetWidth + 'px');
+      tafelLinks = 0;
+      if (W > H * 1.1) for (let el = tafel; el && el !== halt; el = el.offsetParent) tafelLinks += el.offsetLeft;
     }
 
     /* Farbe je Schicht, wie ein Farbgrading: tiefes Nachtblau im Tal,
@@ -4759,8 +4767,18 @@
     function kamera(k) {
       const br = k.bearing * Math.PI / 180, ph = k.pitch * Math.PI / 180;
       const fx = Math.sin(br), fy = Math.cos(br);
-      const auge = [k.x - k.dist * Math.sin(ph) * fx, k.y - k.dist * Math.sin(ph) * fy, k.z + k.dist * Math.cos(ph)];
-      const V = blickAuf(auge, [k.x, k.y, k.z], [fx, fy, 0]);
+      /* Stehen die Fotos rechts, rueckt der Ort so weit nach links, dass er
+         Abstand zu ihnen haelt (am Rechner kaum, auf dem Handy quer mehr). */
+      let tx = k.x, ty = k.y;
+      if (tafelSicht > 0 && tafelLinks > 0) {
+        const px = (0.5 * W - Math.min(0.5 * W, tafelLinks - 0.12 * W)) * tafelSicht;
+        if (px > 0) {
+          const s = px / (W / 2) * k.dist * Math.tan(FOV / 2) * W / H;
+          tx += fy * s; ty -= fx * s;
+        }
+      }
+      const auge = [tx - k.dist * Math.sin(ph) * fx, ty - k.dist * Math.sin(ph) * fy, k.z + k.dist * Math.cos(ph)];
+      const V = blickAuf(auge, [tx, ty, k.z], [fx, fy, 0]);
       const P = perspektive(FOV, W / H, k.dist * 0.04, k.dist * 5 + 300);
       return { M: mal(P, V), auge: auge };
     }
@@ -5670,7 +5688,13 @@
     function tafelSetzen() {
       if (!folge.length) return;
       const B = tafel.clientWidth || 300, L = 10;
-      const hoechstens = (H || window.innerHeight) * (W > H * 1.1 ? 0.62 : 0.33);
+      let hoechstens = (H || window.innerHeight) * (W > H * 1.1 ? 0.62 : 0.33);
+      /* Nie bis in Zeitleiste, Knoepfe und Datum hinein: auf flachen
+         Schirmen (Handy quer, kleine Laptops) reichte die Pauschale nicht. */
+      let oben = 0;
+      for (let el = tafel; el && el !== halt; el = el.offsetParent) oben += el.offsetTop;
+      const unten = Math.min(zeit.offsetTop, knopfVor.offsetTop) - 16;
+      if (unten > oben) hoechstens = Math.min(hoechstens, Math.max(70, unten - oben));
       const zeilen = [];
       for (let i = 0; i < folge.length; i += 2) zeilen.push(folge.slice(i, i + 2));
       let hs = zeilen.map(function (z) {
@@ -5739,6 +5763,7 @@
       // bei gestaffeltem Einblenden die Karte durch einzelne Bilder.
       const s = Math.max(0, Math.min(1, k.sicht * 1.25));
       tafel.style.opacity = s.toFixed(3);
+      tafelSicht = s;
       tafel.style.visibility = s < 0.004 ? 'hidden' : '';
       tafel.style.transform = 'translateY(' + ((1 - s) * 14).toFixed(1) + 'px)';
       folge.forEach(function (f) { if (f.video) spiele(f, s > 0.05, s); });
@@ -5878,8 +5903,46 @@
       if (!bereit || reducedMotion) return;
       if (Math.abs(scroller.scrollTop - eigenY) < 3) return;   // selbst gesetzt
       if (performance.now() < sperreBis) return;                // sanftes Einrasten laeuft
-      fahrt = null;
-      ziel = zielAusScroll();
+      /* Fremdes Scrollen: am Rollbalken gezogen, Pos1/Ende, oder der
+         Schwung eines Wischens, das ausserhalb der Karte begann. Die Kamera
+         springt sofort mit (wie an der Zeitleiste) statt minutenlang
+         hinterherzukriechen, und ordnet sich danach an der naechsten
+         Station ein. */
+      fahrt = null; tempo = 0;
+      ziel = stand = zielAusScroll();
+      anlaufen();
+      clearTimeout(fremdZeit);
+      fremdZeit = setTimeout(einordnen, 200);
+    }
+    let letzterStand = 0;
+    scroller.addEventListener('scroll', function () {
+      // Richtung merken: einordnen() wird erst 200 ms nach dem letzten Schritt gerufen
+      clearTimeout(richtungZeit);
+      richtungZeit = setTimeout(function () { letzterStand = scroller.scrollTop; }, 600);
+    }, { passive: true });
+    let richtungZeit = null;
+    let fremdZeit = null, touchEnde = -1e9, vorGeste = 0, vorGesteDrin = false;
+    scroller.addEventListener('touchstart', function () { vorGeste = haltIndex(); vorGesteDrin = gepinnt(); }, { passive: true });
+    scroller.addEventListener('touchend', function () { touchEnde = performance.now(); }, { passive: true });
+    function einordnen() {
+      if (!bereit || fahrt || !viewer.classList.contains('is-active')) return;
+      const u = zielAusScroll();
+      if (u <= 0.001 || u >= EINHEITEN - 0.001) {
+        // Kurz vor der Karte stehen geblieben, auf sie zu: hineinrasten wie eine Seite im Buch
+        const r = lauf.getBoundingClientRect(), sr = scroller.getBoundingClientRect(), h = sr.height;
+        const richtung = scroller.scrollTop - letzterStand;
+        if (richtung > 0 && r.top - sr.top > 2 && r.top - sr.top < h * 0.35) einrasten(false);
+        else if (richtung < 0 && r.bottom - sr.top < h - 2 && r.bottom - sr.top > h * 0.65) einrasten(true);
+        return;
+      }
+      // Schwung eines Wischens von oberhalb/unterhalb: an den Rand der Karte, nicht mitten hinein
+      if (performance.now() - touchEnde < 2000 && !vorGesteDrin) { einrasten(vorGeste > 0); return; }
+      let j = 0;
+      for (let i = 1; i < HALTE.length; i++) if (Math.abs(HALTE[i] - u) < Math.abs(HALTE[j] - u)) j = i;
+      if (Math.abs(HALTE[j] - stand) < 0.002) { setzeScroll(HALTE[j]); return; }
+      fahrt = fahrtBauen(stand, HALTE[j]);
+      ziel = HALTE[j];
+      setzeScroll(ziel);
       anlaufen();
     }
     function gepinnt() {
@@ -5933,15 +5996,25 @@
       tRicht = 0; tFertig = false;
     }, { passive: true });
     halt.addEventListener('touchmove', function (e) {
-      if (tY === null || !bereit || reducedMotion || !gepinnt()) return;
+      if (tY === null || !bereit || reducedMotion) return;
       const dy = tY - e.touches[0].clientY;
+      if (!gepinnt()) {
+        // Karte halb im Bild: das Wischen rastet ein, statt nur ein Stueck weiterzuschieben
+        const r = lauf.getBoundingClientRect(), sr = scroller.getBoundingClientRect(), h = sr.height;
+        const rein = (dy > 0 && r.top - sr.top > 2 && r.top - sr.top < h * 0.9) ? 1 :
+                     (dy < 0 && r.bottom - sr.top < h - 2 && r.bottom - sr.top > h * 0.1) ? -1 : 0;
+        if (!rein) return;
+        if (e.cancelable) e.preventDefault();
+        if (!tFertig && Math.abs(dy) > 24) { tFertig = true; einrasten(rein < 0); }
+        return;
+      }
       if (!tRicht && Math.abs(dy) > 8) {
         tRicht = dy > 0 ? 1 : -1;
         const i = haltIndex();
         if (!fahrt && ((tRicht < 0 && i === 0) || (tRicht > 0 && i === HALTE.length - 1))) tRicht = 2;
       }
       if (tRicht === 2 || !tRicht) return;
-      e.preventDefault();
+      if (e.cancelable) e.preventDefault();
       if (!tFertig && Math.abs(dy) > 36) { tFertig = true; stationsSchritt(tRicht); }
     }, { passive: false });
     halt.addEventListener('touchend', function () { tY = null; }, { passive: true });
