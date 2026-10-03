@@ -3,7 +3,7 @@ Erzeugt aus den Originalbildern in Images/ optimierte Web-Versionen in Images/we
 
 Aufruf:  python optimize-images.py
 
-Pro Quellbild entstehen mehrere Breiten (800/1600/2400 px) jeweils als WebP und als
+Pro Quellbild entstehen mehrere Breiten (800/1200/1600/2400 px) jeweils als WebP und als
 JPEG-Fallback. Die Originale in Images/ werden nicht verändert -- sie bleiben das Archiv.
 Neue Bilder einfach in Images/ legen und das Skript erneut ausführen.
 
@@ -20,7 +20,9 @@ from PIL import Image
 SRC_DIR = Path(__file__).parent / "Images"
 OUT_DIR = SRC_DIR / "web"
 
-WIDTHS = [800, 1600, 2400]
+# 1200 fuer Handys mit dreifacher Pixeldichte: die brauchen rund 1000-1170 px,
+# ohne diese Stufe springen sie von 800 gleich auf 1600.
+WIDTHS = [800, 1200, 1600, 2400]
 # Hoch angesetzt: das Material lebt von weichen Verlaeufen (Nebel, Himmel,
 # Gegenlicht). Genau dort erzeugt staerkere Kompression sichtbare Stufen.
 WEBP_QUALITY = 92

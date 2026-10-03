@@ -25,7 +25,10 @@
      Beide sind so gebaut, dass sie ihn nicht brauchen: Belleza ist eine
      humanistische Versalschrift, Libre Caslon Display ein Lesegrad. Ein erzwungenes
      font-weight wuerde der Browser nur nachbilden und dabei verschmieren. -->
-<link href="https://fonts.googleapis.com/css2?family=Belleza&family=Libre+Caslon+Display&family=Noto+Serif:wght@400;600&display=swap" rel="stylesheet">
+<!-- Schriften laden ohne das erste Bild aufzuhalten: Die Hero-Zeile blendet
+     ohnehin erst nach 0,4 s ein, bis dahin ist die Schrift in aller Regel da. -->
+<link href="https://fonts.googleapis.com/css2?family=Belleza&family=Libre+Caslon+Display&family=Noto+Serif:wght@400;600&display=swap" rel="stylesheet" media="print" onload="this.onload=null;this.media='all'">
+<noscript><link href="https://fonts.googleapis.com/css2?family=Belleza&family=Libre+Caslon+Display&family=Noto+Serif:wght@400;600&display=swap" rel="stylesheet"></noscript>
 <style>
   :root {
     /* Tiefer und blauer als zuvor (#0d1216 / #090d10). Grund: die Lichthoefe
@@ -601,7 +604,9 @@
     transition: opacity 520ms var(--ease);
   }
   .hero-content > * { max-width: 900px; }
-  @keyframes heroIn { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: none; } }
+  /* 0.01 statt 0: mit 0 zaehlt Chrome die Zeile nicht als groesstes Element,
+     und PageSpeed meldet gar keinen Ladewert. 1 % ist auf dem Film nicht zu sehen. */
+  @keyframes heroIn { from { opacity: 0.01; transform: translateY(16px); } to { opacity: 1; transform: none; } }
   /* Im aufgeblendeten Hero steht die Wortmarke allein ueber der Zeile und
      traegt den ersten Eindruck -- dort darf sie groesser sein als die
      Versallabels im Fliessteil der Seite (0,72em). */
@@ -685,6 +690,7 @@
     animation-play-state: paused;
   }
   .hero.is-docked .marquee-track { animation-play-state: running; }
+  .hero.ausser-sicht .marquee-track { animation-play-state: paused; }
   .m-group { display: flex; align-items: center; }
   .m-word {
     font-family: 'Belleza', 'Noto Serif', Georgia, serif; font-weight: 400;
@@ -1290,6 +1296,8 @@
   }
   /* Die Karte deckt den Schirm: das Korn der Projektseite darunter ruht (siehe Skript). */
   .viewer.karte-deckt .viewer-grain { display: none; }
+  /* Die Fotos der Projektseite liegen dann ausserhalb des Bildes. */
+  .viewer.karte-deckt .drift { animation-play-state: paused; }
   .karte-korn {
     position: absolute; pointer-events: none;
     top: calc(-1 * var(--grain-size)); left: calc(-1 * var(--grain-size));
@@ -1600,8 +1608,8 @@
         <figure class="band-figure reveal-media">
           <div class="figure-media aura-host" style="--fig-ar: 4 / 3">
             <img src="Images/web/whatsapp-image-2026-09-13-at-20-36-50-1600.webp"
-                 srcset="Images/web/whatsapp-image-2026-09-13-at-20-36-50-800.webp 800w, Images/web/whatsapp-image-2026-09-13-at-20-36-50-1600.webp 1600w, Images/web/whatsapp-image-2026-09-13-at-20-36-50-2400.webp 2400w"
-                 sizes="(min-width: 900px) 42vw, 100vw"
+                 srcset="Images/web/whatsapp-image-2026-09-13-at-20-36-50-800.webp 800w, Images/web/whatsapp-image-2026-09-13-at-20-36-50-1200.webp 1200w, Images/web/whatsapp-image-2026-09-13-at-20-36-50-1600.webp 1600w, Images/web/whatsapp-image-2026-09-13-at-20-36-50-2400.webp 2400w"
+                 sizes="(min-width: 1180px) 462px, (min-width: 900px) 40vw, calc(100vw - 44px)"
                  alt="Dreh mit Teleobjektiv auf einer Weide, im Hintergrund Highlandrinder"
                  loading="lazy" decoding="async">
           </div>
@@ -1624,28 +1632,28 @@
         <div class="schau-platz aura-host" data-viewer="v2" data-titel="The Same Gray"
              data-gattung="Porträtfilm · Schottland" data-film="0" aria-hidden="false">
           <img src="Images/web/thumbnails/thumbnailsamegrey-2400.webp"
-               srcset="Images/web/thumbnails/thumbnailsamegrey-800.webp 800w, Images/web/thumbnails/thumbnailsamegrey-1600.webp 1600w, Images/web/thumbnails/thumbnailsamegrey-2400.webp 2400w"
+               srcset="Images/web/thumbnails/thumbnailsamegrey-800.webp 800w, Images/web/thumbnails/thumbnailsamegrey-1200.webp 1200w, Images/web/thumbnails/thumbnailsamegrey-1600.webp 1600w, Images/web/thumbnails/thumbnailsamegrey-2400.webp 2400w"
                sizes="(prefers-reduced-motion: reduce) calc(100vw - 32px), min(calc((100vw - 32px) * 0.88), 80vh)"
                alt="Titelbild „The Same Gray“: Porträt eines älteren Mannes vor nebligen Bergen" loading="lazy" decoding="async">
         </div>
         <div class="schau-platz aura-host" data-viewer="v3" data-titel="The Mountains"
              data-gattung="Reisefilm · Bayern &amp; Norditalien" data-film="1" aria-hidden="true">
-          <img src="Images/web/thumbnails/thumbnailoesterreich25-1280.webp"
-               srcset="Images/web/thumbnails/thumbnailoesterreich25-800.webp 800w, Images/web/thumbnails/thumbnailoesterreich25-1280.webp 1280w"
+          <img data-src="Images/web/thumbnails/thumbnailoesterreich25-1280.webp"
+               data-srcset="Images/web/thumbnails/thumbnailoesterreich25-800.webp 800w, Images/web/thumbnails/thumbnailoesterreich25-1280.webp 1280w"
                sizes="(prefers-reduced-motion: reduce) calc(100vw - 32px), min(calc((100vw - 32px) * 0.88), 80vh)"
                alt="Titelbild „The Mountains“: Boot auf einem See im Gegenlicht der aufgehenden Sonne" loading="lazy" decoding="async">
         </div>
         <div class="schau-platz aura-host" data-viewer="v4" data-titel="Track of Time"
              data-gattung="Kurzfilm · historische Eisenbahn" data-film="1" aria-hidden="true">
-          <img src="Images/web/thumbnails/thumbnailtrackoftime-1280.webp"
-               srcset="Images/web/thumbnails/thumbnailtrackoftime-800.webp 800w, Images/web/thumbnails/thumbnailtrackoftime-1280.webp 1280w"
+          <img data-src="Images/web/thumbnails/thumbnailtrackoftime-1280.webp"
+               data-srcset="Images/web/thumbnails/thumbnailtrackoftime-800.webp 800w, Images/web/thumbnails/thumbnailtrackoftime-1280.webp 1280w"
                sizes="(prefers-reduced-motion: reduce) calc(100vw - 32px), min(calc((100vw - 32px) * 0.88), 80vh)"
                alt="Titelbild „Track of Time“: Dampflokomotive zwischen Bäumen" loading="lazy" decoding="async">
         </div>
         <div class="schau-platz aura-host" data-viewer="v5" data-titel="The South"
              data-gattung="Reisefilm · Österreich, Italien, Bayern" data-film="1" aria-hidden="true">
-          <img src="Images/web/thumbnails/thumbnail-oesterreich24-2400.webp"
-               srcset="Images/web/thumbnails/thumbnail-oesterreich24-800.webp 800w, Images/web/thumbnails/thumbnail-oesterreich24-1600.webp 1600w, Images/web/thumbnails/thumbnail-oesterreich24-2400.webp 2400w"
+          <img data-src="Images/web/thumbnails/thumbnail-oesterreich24-2400.webp"
+               data-srcset="Images/web/thumbnails/thumbnail-oesterreich24-800.webp 800w, Images/web/thumbnails/thumbnail-oesterreich24-1200.webp 1200w, Images/web/thumbnails/thumbnail-oesterreich24-1600.webp 1600w, Images/web/thumbnails/thumbnail-oesterreich24-2400.webp 2400w"
                sizes="(prefers-reduced-motion: reduce) calc(100vw - 32px), min(calc((100vw - 32px) * 0.88), 80vh)"
                alt="Titelbild „The South“: fünf Bildstreifen von Schloss, Mosaik, Kanal, Kirchturm und Venedig" loading="lazy" decoding="async">
         </div>
@@ -1680,7 +1688,7 @@
           <div class="figure-media aura-host" style="--fig-ar: 4 / 3">
             <img src="Images/web/img-7216-1600.webp"
                  srcset="Images/web/img-7216-800.webp 800w, Images/web/img-7216-1600.webp 1600w, Images/web/img-7216-2400.webp 2400w"
-                 sizes="(min-width: 900px) 42vw, 100vw"
+                 sizes="(min-width: 1180px) 462px, (min-width: 900px) 40vw, calc(100vw - 44px)"
                  alt="Am Strand: Luis zeigt Stephen Corrall eine Aufnahme auf dem Kameramonitor"
                  loading="lazy" decoding="async">
           </div>
@@ -1697,7 +1705,7 @@
       <div class="card reveal" style="--card-accent:#a9b56d">
         <button class="card-trigger" data-viewer="v1" aria-haspopup="dialog">
           <div class="card-head">
-            <div class="card-preview"><img src="Images/web/gaertnerei-finder/still-2025-09-02-204030-6-3-1-800.webp" alt="" loading="lazy" decoding="async"></div>
+            <div class="card-preview"><img src="Images/web/gaertnerei-finder/still-2025-09-02-204030-6-3-1-400.webp" srcset="Images/web/gaertnerei-finder/still-2025-09-02-204030-6-3-1-400.webp 400w, Images/web/gaertnerei-finder/still-2025-09-02-204030-6-3-1-800.webp 800w" sizes="(min-width: 760px) 132px, (max-width: 620px) 96px, 112px" alt="" loading="lazy" decoding="async"></div>
             <div class="card-info">
               <div class="card-titleline">
                 <span class="name">Gärtnerei Eggert Finder</span>
@@ -1713,7 +1721,7 @@
       <div class="card reveal" style="--card-accent:#93a09b">
         <button class="card-trigger" data-viewer="v2" aria-haspopup="dialog">
           <div class="card-head">
-            <div class="card-preview"><img src="Images/web/stephen-am-strand-800.webp" alt="" loading="lazy" decoding="async"></div>
+            <div class="card-preview"><img src="Images/web/stephen-am-strand-400.webp" srcset="Images/web/stephen-am-strand-400.webp 400w, Images/web/stephen-am-strand-800.webp 800w" sizes="(min-width: 760px) 132px, (max-width: 620px) 96px, 112px" alt="" loading="lazy" decoding="async"></div>
             <div class="card-info">
               <div class="card-titleline">
                 <span class="name">[Filmtitel]</span>
@@ -1729,7 +1737,7 @@
       <div class="card reveal" style="--card-accent:#8aa3b2">
         <button class="card-trigger" data-viewer="v3" aria-haspopup="dialog">
           <div class="card-head">
-            <div class="card-preview"><img src="Images/web/oesterreich25/still-2025-08-22-215508-4-2-1-800.webp" alt="" loading="lazy" decoding="async"></div>
+            <div class="card-preview"><img src="Images/web/oesterreich25/still-2025-08-22-215508-4-2-1-400.webp" srcset="Images/web/oesterreich25/still-2025-08-22-215508-4-2-1-400.webp 400w, Images/web/oesterreich25/still-2025-08-22-215508-4-2-1-800.webp 800w" sizes="(min-width: 760px) 132px, (max-width: 620px) 96px, 112px" alt="" loading="lazy" decoding="async"></div>
             <div class="card-info">
               <div class="card-titleline">
                 <span class="name">The Mountains</span>
@@ -1745,7 +1753,7 @@
       <div class="card reveal" style="--card-accent:#c8863f">
         <button class="card-trigger" data-viewer="v4" aria-haspopup="dialog">
           <div class="card-head">
-            <div class="card-preview"><img src="Images/web/track-of-time/2-19-2-19-1-800.webp" alt="" loading="lazy" decoding="async"></div>
+            <div class="card-preview"><img src="Images/web/track-of-time/2-19-2-19-1-400.webp" srcset="Images/web/track-of-time/2-19-2-19-1-400.webp 400w, Images/web/track-of-time/2-19-2-19-1-800.webp 800w" sizes="(min-width: 760px) 132px, (max-width: 620px) 96px, 112px" alt="" loading="lazy" decoding="async"></div>
             <div class="card-info">
               <div class="card-titleline">
                 <span class="name">Track of Time</span>
@@ -1761,7 +1769,7 @@
       <div class="card reveal" style="--card-accent:#c8a171">
         <button class="card-trigger" data-viewer="v5" aria-haspopup="dialog">
           <div class="card-head">
-            <div class="card-preview"><img src="Images/web/oesterreich24/img-2100-800.webp" alt="" loading="lazy" decoding="async"></div>
+            <div class="card-preview"><img src="Images/web/oesterreich24/img-2100-400.webp" srcset="Images/web/oesterreich24/img-2100-400.webp 400w, Images/web/oesterreich24/img-2100-800.webp 800w" sizes="(min-width: 760px) 132px, (max-width: 620px) 96px, 112px" alt="" loading="lazy" decoding="async"></div>
             <div class="card-info">
               <div class="card-titleline">
                 <span class="name">The South</span>
@@ -1794,14 +1802,14 @@
             <div class="figure-media aura-host" style="--fig-ar: 2 / 3">
               <img src="Images/web/img-1773-schmal-800.webp"
                    srcset="Images/web/img-1773-schmal-800.webp 800w, Images/web/img-1773-schmal-1600.webp 1600w"
-                   sizes="(min-width: 900px) 34vw, 50vw"
+                   sizes="(min-width: 1440px) 375px, (min-width: 900px) 27vw, 50vw"
                    alt="Nächtlicher Drehaufbau: Filmleuchte auf einem Stativ vor einem Cottage, warmes Licht im Fenster"
                    loading="lazy" decoding="async">
             </div>
             <div class="figure-media aura-host" style="--fig-ar: 2 / 3">
               <img src="Images/web/img-4295-800.webp"
-                   srcset="Images/web/img-4295-800.webp 800w, Images/web/img-4295-1600.webp 1600w"
-                   sizes="(min-width: 900px) 34vw, 50vw"
+                   srcset="Images/web/img-4295-800.webp 800w, Images/web/img-4295-1200.webp 1200w, Images/web/img-4295-1600.webp 1600w"
+                   sizes="(min-width: 1440px) 375px, (min-width: 900px) 27vw, 50vw"
                    alt="Dreh im Gewächshaus: Luis an der Kamera mit Softbox zwischen blühenden Balkonpflanzen"
                    loading="lazy" decoding="async">
             </div>
@@ -1835,7 +1843,7 @@
           <div class="figure-media aura-host" style="--fig-ar: 4 / 3">
             <img src="Images/web/img-7145-1600.webp"
                  srcset="Images/web/img-7145-800.webp 800w, Images/web/img-7145-1600.webp 1600w, Images/web/img-7145-2400.webp 2400w"
-                 sizes="(min-width: 900px) 42vw, 100vw"
+                 sizes="(min-width: 1180px) 462px, (min-width: 900px) 40vw, calc(100vw - 44px)"
                  alt="Dreh in einem alten Cottage: Luis filmt vom Stativ, Stephen Corrall sitzt am Tisch vor dem Fenster"
                  loading="lazy" decoding="async">
           </div>
@@ -1879,7 +1887,7 @@
       <div class="stage-wrap aura-host">
       <div class="viewer-stage" data-yt="qUV4MVFWDoc" data-ar="2.133">
         <img src="Images/web/gaertnerei-finder/still-2025-07-01-232800-3-9-1-1600.webp"
-             srcset="Images/web/gaertnerei-finder/still-2025-07-01-232800-3-9-1-800.webp 800w, Images/web/gaertnerei-finder/still-2025-07-01-232800-3-9-1-1600.webp 1600w, Images/web/gaertnerei-finder/still-2025-07-01-232800-3-9-1-2400.webp 2400w"
+             srcset="Images/web/gaertnerei-finder/still-2025-07-01-232800-3-9-1-800.webp 800w, Images/web/gaertnerei-finder/still-2025-07-01-232800-3-9-1-1200.webp 1200w, Images/web/gaertnerei-finder/still-2025-07-01-232800-3-9-1-1600.webp 1600w, Images/web/gaertnerei-finder/still-2025-07-01-232800-3-9-1-2400.webp 2400w"
              sizes="(min-width: 1120px) 1120px, 100vw"
              alt="Rosenbogen und Pflanzgefäße im Freigelände der Gärtnerei" loading="lazy" decoding="async">
       </div>
@@ -1895,12 +1903,12 @@
         <p>Ein Projekt, das mir nicht nur filmisch viel bedeutet hat, sondern mir auch durch die Unterstützung der Eigentümerfamilie einen besonderen Einblick in echtes Handwerk und gelebte Nachhaltigkeit gegeben hat.</p>
       </div>
       <div class="viewer-grid">
-        <div><img src="Images/web/gaertnerei-finder/still-2025-07-01-232800-3-14-1-1600.webp" srcset="Images/web/gaertnerei-finder/still-2025-07-01-232800-3-14-1-800.webp 800w, Images/web/gaertnerei-finder/still-2025-07-01-232800-3-14-1-1600.webp 1600w" sizes="(min-width: 760px) 550px, 100vw" alt="Blühende Pflanzen im Gewächshaus im Gegenlicht" loading="lazy" decoding="async"></div>
-        <div><img src="Images/web/gaertnerei-finder/still-2025-07-01-232800-3-22-1-1600.webp" srcset="Images/web/gaertnerei-finder/still-2025-07-01-232800-3-22-1-800.webp 800w, Images/web/gaertnerei-finder/still-2025-07-01-232800-3-22-1-1600.webp 1600w" sizes="(min-width: 760px) 550px, 100vw" alt="Topfpflanzen auf einem Verkaufstisch" loading="lazy" decoding="async"></div>
-        <div><img src="Images/web/gaertnerei-finder/5-5-5-5-1-1600.webp" srcset="Images/web/gaertnerei-finder/5-5-5-5-1-800.webp 800w, Images/web/gaertnerei-finder/5-5-5-5-1-1600.webp 1600w" sizes="(min-width: 760px) 550px, 100vw" alt="Orchideen im Gewächshaus" loading="lazy" decoding="async"></div>
-        <div><img src="Images/web/gaertnerei-finder/still-2025-07-21-211752-3-53-1-1600.webp" srcset="Images/web/gaertnerei-finder/still-2025-07-21-211752-3-53-1-800.webp 800w, Images/web/gaertnerei-finder/still-2025-07-21-211752-3-53-1-1600.webp 1600w" sizes="(min-width: 760px) 550px, 100vw" alt="Zitrusfrüchte an einem Zweig" loading="lazy" decoding="async"></div>
-        <div><img src="Images/web/gaertnerei-finder/still-2025-07-21-211752-3-25-1-1600.webp" srcset="Images/web/gaertnerei-finder/still-2025-07-21-211752-3-25-1-800.webp 800w, Images/web/gaertnerei-finder/still-2025-07-21-211752-3-25-1-1600.webp 1600w" sizes="(min-width: 760px) 550px, 100vw" alt="Schwebfliege an einer Lavendelblüte" loading="lazy" decoding="async"></div>
-        <div><img src="Images/web/gaertnerei-finder/still-2025-09-02-204030-6-3-1-1600.webp" srcset="Images/web/gaertnerei-finder/still-2025-09-02-204030-6-3-1-800.webp 800w, Images/web/gaertnerei-finder/still-2025-09-02-204030-6-3-1-1600.webp 1600w" sizes="(min-width: 760px) 550px, 100vw" alt="Porträt des Inhabers im Gewächshaus" loading="lazy" decoding="async"></div>
+        <div><img src="Images/web/gaertnerei-finder/still-2025-07-01-232800-3-14-1-1600.webp" srcset="Images/web/gaertnerei-finder/still-2025-07-01-232800-3-14-1-800.webp 800w, Images/web/gaertnerei-finder/still-2025-07-01-232800-3-14-1-1200.webp 1200w, Images/web/gaertnerei-finder/still-2025-07-01-232800-3-14-1-1600.webp 1600w" sizes="(min-width: 760px) 550px, 100vw" alt="Blühende Pflanzen im Gewächshaus im Gegenlicht" loading="lazy" decoding="async"></div>
+        <div><img src="Images/web/gaertnerei-finder/still-2025-07-01-232800-3-22-1-1600.webp" srcset="Images/web/gaertnerei-finder/still-2025-07-01-232800-3-22-1-800.webp 800w, Images/web/gaertnerei-finder/still-2025-07-01-232800-3-22-1-1200.webp 1200w, Images/web/gaertnerei-finder/still-2025-07-01-232800-3-22-1-1600.webp 1600w" sizes="(min-width: 760px) 550px, 100vw" alt="Topfpflanzen auf einem Verkaufstisch" loading="lazy" decoding="async"></div>
+        <div><img src="Images/web/gaertnerei-finder/5-5-5-5-1-1600.webp" srcset="Images/web/gaertnerei-finder/5-5-5-5-1-800.webp 800w, Images/web/gaertnerei-finder/5-5-5-5-1-1200.webp 1200w, Images/web/gaertnerei-finder/5-5-5-5-1-1600.webp 1600w" sizes="(min-width: 760px) 550px, 100vw" alt="Orchideen im Gewächshaus" loading="lazy" decoding="async"></div>
+        <div><img src="Images/web/gaertnerei-finder/still-2025-07-21-211752-3-53-1-1600.webp" srcset="Images/web/gaertnerei-finder/still-2025-07-21-211752-3-53-1-800.webp 800w, Images/web/gaertnerei-finder/still-2025-07-21-211752-3-53-1-1200.webp 1200w, Images/web/gaertnerei-finder/still-2025-07-21-211752-3-53-1-1600.webp 1600w" sizes="(min-width: 760px) 550px, 100vw" alt="Zitrusfrüchte an einem Zweig" loading="lazy" decoding="async"></div>
+        <div><img src="Images/web/gaertnerei-finder/still-2025-07-21-211752-3-25-1-1600.webp" srcset="Images/web/gaertnerei-finder/still-2025-07-21-211752-3-25-1-800.webp 800w, Images/web/gaertnerei-finder/still-2025-07-21-211752-3-25-1-1200.webp 1200w, Images/web/gaertnerei-finder/still-2025-07-21-211752-3-25-1-1600.webp 1600w" sizes="(min-width: 760px) 550px, 100vw" alt="Schwebfliege an einer Lavendelblüte" loading="lazy" decoding="async"></div>
+        <div><img src="Images/web/gaertnerei-finder/still-2025-09-02-204030-6-3-1-1600.webp" srcset="Images/web/gaertnerei-finder/still-2025-09-02-204030-6-3-1-800.webp 800w, Images/web/gaertnerei-finder/still-2025-09-02-204030-6-3-1-1200.webp 1200w, Images/web/gaertnerei-finder/still-2025-09-02-204030-6-3-1-1600.webp 1600w" sizes="(min-width: 760px) 550px, 100vw" alt="Porträt des Inhabers im Gewächshaus" loading="lazy" decoding="async"></div>
       </div>
       <p class="viewer-process">Ich möchte mich bei Familie Finder ganz herzlich für ihr Vertrauen und für ihre Unterstützung bedanken, denn sie haben es mir ermöglicht, meinen ersten Imagefilm in ihrer Gärtnerei zu drehen.</p>
       <button class="viewer-close">Schließen</button>
@@ -1918,7 +1926,7 @@
       <div class="stage-wrap aura-host">
       <div class="viewer-stage" data-yt="">
         <img src="Images/web/mann-fluss-1600.webp"
-             srcset="Images/web/mann-fluss-800.webp 800w, Images/web/mann-fluss-1600.webp 1600w, Images/web/mann-fluss-2400.webp 2400w"
+             srcset="Images/web/mann-fluss-800.webp 800w, Images/web/mann-fluss-1200.webp 1200w, Images/web/mann-fluss-1600.webp 1600w, Images/web/mann-fluss-2400.webp 2400w"
              sizes="(min-width: 1120px) 1120px, 100vw"
              alt="Person am Fluss in einer nebligen schottischen Landschaft" loading="lazy" decoding="async">
       </div>
@@ -1952,12 +1960,12 @@
         </div>
       </section>
       <div class="viewer-grid">
-        <div><img src="Images/web/nahaufnahme-stephen-1600.webp" srcset="Images/web/nahaufnahme-stephen-800.webp 800w, Images/web/nahaufnahme-stephen-1600.webp 1600w" sizes="(min-width: 760px) 550px, 100vw" alt="Nahaufnahme des Porträtierten" loading="lazy" decoding="async"></div>
-        <div><img src="Images/web/aufnahme-stephen-im-cottage-1600.webp" srcset="Images/web/aufnahme-stephen-im-cottage-800.webp 800w, Images/web/aufnahme-stephen-im-cottage-1600.webp 1600w" sizes="(min-width: 760px) 550px, 100vw" alt="Der Porträtierte in seinem Cottage" loading="lazy" decoding="async"></div>
-        <div><img src="Images/web/highland-cattle-1600.webp" srcset="Images/web/highland-cattle-800.webp 800w, Images/web/highland-cattle-1600.webp 1600w" sizes="(min-width: 760px) 550px, 100vw" alt="Highland Cattle im Profil" loading="lazy" decoding="async"></div>
-        <div><img src="Images/web/schaf-1600.webp" srcset="Images/web/schaf-800.webp 800w, Images/web/schaf-1600.webp 1600w" sizes="(min-width: 760px) 550px, 100vw" alt="Schaf auf einer Klippe über dem Meer" loading="lazy" decoding="async"></div>
-        <div><img src="Images/web/stephen-am-strand-1600.webp" srcset="Images/web/stephen-am-strand-800.webp 800w, Images/web/stephen-am-strand-1600.webp 1600w" sizes="(min-width: 760px) 550px, 100vw" alt="Porträt an der Küste" loading="lazy" decoding="async"></div>
-        <div><img src="Images/web/nebelberg-1600.webp" srcset="Images/web/nebelberg-800.webp 800w, Images/web/nebelberg-1600.webp 1600w" sizes="(min-width: 760px) 550px, 100vw" alt="Nebelverhangener Bergrücken" loading="lazy" decoding="async"></div>
+        <div><img src="Images/web/nahaufnahme-stephen-1600.webp" srcset="Images/web/nahaufnahme-stephen-800.webp 800w, Images/web/nahaufnahme-stephen-1200.webp 1200w, Images/web/nahaufnahme-stephen-1600.webp 1600w" sizes="(min-width: 760px) 550px, 100vw" alt="Nahaufnahme des Porträtierten" loading="lazy" decoding="async"></div>
+        <div><img src="Images/web/aufnahme-stephen-im-cottage-1600.webp" srcset="Images/web/aufnahme-stephen-im-cottage-800.webp 800w, Images/web/aufnahme-stephen-im-cottage-1200.webp 1200w, Images/web/aufnahme-stephen-im-cottage-1600.webp 1600w" sizes="(min-width: 760px) 550px, 100vw" alt="Der Porträtierte in seinem Cottage" loading="lazy" decoding="async"></div>
+        <div><img src="Images/web/highland-cattle-1600.webp" srcset="Images/web/highland-cattle-800.webp 800w, Images/web/highland-cattle-1200.webp 1200w, Images/web/highland-cattle-1600.webp 1600w" sizes="(min-width: 760px) 550px, 100vw" alt="Highland Cattle im Profil" loading="lazy" decoding="async"></div>
+        <div><img src="Images/web/schaf-1600.webp" srcset="Images/web/schaf-800.webp 800w, Images/web/schaf-1200.webp 1200w, Images/web/schaf-1600.webp 1600w" sizes="(min-width: 760px) 550px, 100vw" alt="Schaf auf einer Klippe über dem Meer" loading="lazy" decoding="async"></div>
+        <div><img src="Images/web/stephen-am-strand-1600.webp" srcset="Images/web/stephen-am-strand-800.webp 800w, Images/web/stephen-am-strand-1200.webp 1200w, Images/web/stephen-am-strand-1600.webp 1600w" sizes="(min-width: 760px) 550px, 100vw" alt="Porträt an der Küste" loading="lazy" decoding="async"></div>
+        <div><img src="Images/web/nebelberg-1600.webp" srcset="Images/web/nebelberg-800.webp 800w, Images/web/nebelberg-1200.webp 1200w, Images/web/nebelberg-1600.webp 1600w" sizes="(min-width: 760px) 550px, 100vw" alt="Nebelverhangener Bergrücken" loading="lazy" decoding="async"></div>
       </div>
       <button class="viewer-close">Schließen</button>
     </div>
@@ -1974,7 +1982,7 @@
       <div class="stage-wrap aura-host">
       <div class="viewer-stage" data-yt="FfBvRlTPpvQ" data-ar="1.778">
         <img src="Images/web/oesterreich25/still-2025-08-22-215508-3-29-1-1600.webp"
-             srcset="Images/web/oesterreich25/still-2025-08-22-215508-3-29-1-800.webp 800w, Images/web/oesterreich25/still-2025-08-22-215508-3-29-1-1600.webp 1600w, Images/web/oesterreich25/still-2025-08-22-215508-3-29-1-2400.webp 2400w"
+             srcset="Images/web/oesterreich25/still-2025-08-22-215508-3-29-1-800.webp 800w, Images/web/oesterreich25/still-2025-08-22-215508-3-29-1-1200.webp 1200w, Images/web/oesterreich25/still-2025-08-22-215508-3-29-1-1600.webp 1600w, Images/web/oesterreich25/still-2025-08-22-215508-3-29-1-2400.webp 2400w"
              sizes="(min-width: 1120px) 1120px, 100vw"
              alt="Dolomitengipfel im ersten Morgenlicht" loading="lazy" decoding="async">
       </div>
@@ -2007,12 +2015,12 @@
         </div>
       </section>
       <div class="viewer-grid">
-        <div><img src="Images/web/oesterreich25/still-2025-08-22-215508-4-8-1-1-1-10-1600.webp" srcset="Images/web/oesterreich25/still-2025-08-22-215508-4-8-1-1-1-10-800.webp 800w, Images/web/oesterreich25/still-2025-08-22-215508-4-8-1-1-1-10-1600.webp 1600w" sizes="(min-width: 760px) 550px, 100vw" alt="Boot mit Licht im Nebel über dem Wasser" loading="lazy" decoding="async"></div>
-        <div><img src="Images/web/oesterreich25/still-2025-08-22-215508-4-8-1-1-1-11-1600.webp" srcset="Images/web/oesterreich25/still-2025-08-22-215508-4-8-1-1-1-11-800.webp 800w, Images/web/oesterreich25/still-2025-08-22-215508-4-8-1-1-1-11-1600.webp 1600w" sizes="(min-width: 760px) 550px, 100vw" alt="Wandergruppe im Nebel neben einer Baumsilhouette" loading="lazy" decoding="async"></div>
-        <div><img src="Images/web/oesterreich25/still-2025-08-22-215508-3-53-1-1600.webp" srcset="Images/web/oesterreich25/still-2025-08-22-215508-3-53-1-800.webp 800w, Images/web/oesterreich25/still-2025-08-22-215508-3-53-1-1600.webp 1600w" sizes="(min-width: 760px) 550px, 100vw" alt="Kuh im Gegenlicht auf der Weide" loading="lazy" decoding="async"></div>
-        <div><img src="Images/web/oesterreich25/still-2025-08-22-215508-3-9-1-1600.webp" srcset="Images/web/oesterreich25/still-2025-08-22-215508-3-9-1-800.webp 800w, Images/web/oesterreich25/still-2025-08-22-215508-3-9-1-1600.webp 1600w" sizes="(min-width: 760px) 550px, 100vw" alt="Hand über Gräsern vor einem Gipfel im Abendlicht" loading="lazy" decoding="async"></div>
-        <div><img src="Images/web/oesterreich25/still-2025-08-22-215508-4-2-1-1600.webp" srcset="Images/web/oesterreich25/still-2025-08-22-215508-4-2-1-800.webp 800w, Images/web/oesterreich25/still-2025-08-22-215508-4-2-1-1600.webp 1600w" sizes="(min-width: 760px) 550px, 100vw" alt="Almhütte auf einer Hochebene vor dem Massiv" loading="lazy" decoding="async"></div>
-        <div><img src="Images/web/oesterreich25/still-2025-08-22-215508-3-29-1-1600.webp" srcset="Images/web/oesterreich25/still-2025-08-22-215508-3-29-1-800.webp 800w, Images/web/oesterreich25/still-2025-08-22-215508-3-29-1-1600.webp 1600w" sizes="(min-width: 760px) 550px, 100vw" alt="Dolomitengipfel im ersten Morgenlicht" loading="lazy" decoding="async"></div>
+        <div><img src="Images/web/oesterreich25/still-2025-08-22-215508-4-8-1-1-1-10-1600.webp" srcset="Images/web/oesterreich25/still-2025-08-22-215508-4-8-1-1-1-10-800.webp 800w, Images/web/oesterreich25/still-2025-08-22-215508-4-8-1-1-1-10-1200.webp 1200w, Images/web/oesterreich25/still-2025-08-22-215508-4-8-1-1-1-10-1600.webp 1600w" sizes="(min-width: 760px) 550px, 100vw" alt="Boot mit Licht im Nebel über dem Wasser" loading="lazy" decoding="async"></div>
+        <div><img src="Images/web/oesterreich25/still-2025-08-22-215508-4-8-1-1-1-11-1600.webp" srcset="Images/web/oesterreich25/still-2025-08-22-215508-4-8-1-1-1-11-800.webp 800w, Images/web/oesterreich25/still-2025-08-22-215508-4-8-1-1-1-11-1200.webp 1200w, Images/web/oesterreich25/still-2025-08-22-215508-4-8-1-1-1-11-1600.webp 1600w" sizes="(min-width: 760px) 550px, 100vw" alt="Wandergruppe im Nebel neben einer Baumsilhouette" loading="lazy" decoding="async"></div>
+        <div><img src="Images/web/oesterreich25/still-2025-08-22-215508-3-53-1-1600.webp" srcset="Images/web/oesterreich25/still-2025-08-22-215508-3-53-1-800.webp 800w, Images/web/oesterreich25/still-2025-08-22-215508-3-53-1-1200.webp 1200w, Images/web/oesterreich25/still-2025-08-22-215508-3-53-1-1600.webp 1600w" sizes="(min-width: 760px) 550px, 100vw" alt="Kuh im Gegenlicht auf der Weide" loading="lazy" decoding="async"></div>
+        <div><img src="Images/web/oesterreich25/still-2025-08-22-215508-3-9-1-1600.webp" srcset="Images/web/oesterreich25/still-2025-08-22-215508-3-9-1-800.webp 800w, Images/web/oesterreich25/still-2025-08-22-215508-3-9-1-1200.webp 1200w, Images/web/oesterreich25/still-2025-08-22-215508-3-9-1-1600.webp 1600w" sizes="(min-width: 760px) 550px, 100vw" alt="Hand über Gräsern vor einem Gipfel im Abendlicht" loading="lazy" decoding="async"></div>
+        <div><img src="Images/web/oesterreich25/still-2025-08-22-215508-4-2-1-1600.webp" srcset="Images/web/oesterreich25/still-2025-08-22-215508-4-2-1-800.webp 800w, Images/web/oesterreich25/still-2025-08-22-215508-4-2-1-1200.webp 1200w, Images/web/oesterreich25/still-2025-08-22-215508-4-2-1-1600.webp 1600w" sizes="(min-width: 760px) 550px, 100vw" alt="Almhütte auf einer Hochebene vor dem Massiv" loading="lazy" decoding="async"></div>
+        <div><img src="Images/web/oesterreich25/still-2025-08-22-215508-3-29-1-1600.webp" srcset="Images/web/oesterreich25/still-2025-08-22-215508-3-29-1-800.webp 800w, Images/web/oesterreich25/still-2025-08-22-215508-3-29-1-1200.webp 1200w, Images/web/oesterreich25/still-2025-08-22-215508-3-29-1-1600.webp 1600w" sizes="(min-width: 760px) 550px, 100vw" alt="Dolomitengipfel im ersten Morgenlicht" loading="lazy" decoding="async"></div>
       </div>
       <button class="viewer-close">Schließen</button>
     </div>
@@ -2029,7 +2037,7 @@
       <div class="stage-wrap aura-host">
       <div class="viewer-stage" data-yt="o1YdluXKf3g" data-ar="1.778">
         <img src="Images/web/track-of-time/2-10-2-10-1-1600.webp"
-             srcset="Images/web/track-of-time/2-10-2-10-1-800.webp 800w, Images/web/track-of-time/2-10-2-10-1-1600.webp 1600w, Images/web/track-of-time/2-10-2-10-1-2400.webp 2400w"
+             srcset="Images/web/track-of-time/2-10-2-10-1-800.webp 800w, Images/web/track-of-time/2-10-2-10-1-1200.webp 1200w, Images/web/track-of-time/2-10-2-10-1-1600.webp 1600w, Images/web/track-of-time/2-10-2-10-1-2400.webp 2400w"
              sizes="(min-width: 1120px) 1120px, 100vw"
              alt="Luftbild: Dampfzug fährt durch Felder oberhalb der Küste" loading="lazy" decoding="async">
       </div>
@@ -2042,12 +2050,12 @@
         <p class="lead">Manche Orte scheinen stillzustehen – und bewegen doch so viel. „Track of Time“ ist eine Reise entlang historischer Gleise, eingefangen mit der Kamera, erzählt in Bildern. Es geht nicht nur um eine Dampflok. Es geht um Atmosphäre, Bewegung und Erinnerung. Um den Versuch, Zeit sichtbar zu machen – und ein Gefühl einzufangen, das bleibt, wenn alles andere längst weitergefahren ist.</p>
       </div>
       <div class="viewer-grid">
-        <div><img src="Images/web/track-of-time/2-50-2-50-1-1600.webp" srcset="Images/web/track-of-time/2-50-2-50-1-800.webp 800w, Images/web/track-of-time/2-50-2-50-1-1600.webp 1600w" sizes="(min-width: 760px) 550px, 100vw" alt="Luftbild: Zug mit Dampffahne zwischen Feldern" loading="lazy" decoding="async"></div>
-        <div><img src="Images/web/track-of-time/2-16-2-16-1-1600.webp" srcset="Images/web/track-of-time/2-16-2-16-1-800.webp 800w, Images/web/track-of-time/2-16-2-16-1-1600.webp 1600w" sizes="(min-width: 760px) 550px, 100vw" alt="Feuer in der Feuerbüchse der Lokomotive" loading="lazy" decoding="async"></div>
-        <div><img src="Images/web/tot-molli-1600.webp" srcset="Images/web/tot-molli-800.webp 800w, Images/web/tot-molli-1600.webp 1600w" sizes="(min-width: 760px) 550px, 100vw" alt="Blick von der fahrenden Lok entlang der Gleise" loading="lazy" decoding="async"></div>
-        <div><img src="Images/web/track-of-time-blumen-1600.webp" srcset="Images/web/track-of-time-blumen-800.webp 800w, Images/web/track-of-time-blumen-1600.webp 1600w" sizes="(min-width: 760px) 550px, 100vw" alt="Mohnblumenfeld im Gegenlicht" loading="lazy" decoding="async"></div>
-        <div><img src="Images/web/track-of-time/1-1-1-1-1-1600.webp" srcset="Images/web/track-of-time/1-1-1-1-1-800.webp 800w, Images/web/track-of-time/1-1-1-1-1-1600.webp 1600w" sizes="(min-width: 760px) 550px, 100vw" alt="Sonnenuntergang über der Ostsee" loading="lazy" decoding="async"></div>
-        <div><img src="Images/web/track-of-time/still-2025-12-19-174322-3-1-1-1600.webp" srcset="Images/web/track-of-time/still-2025-12-19-174322-3-1-1-800.webp 800w, Images/web/track-of-time/still-2025-12-19-174322-3-1-1-1600.webp 1600w" sizes="(min-width: 760px) 550px, 100vw" alt="Dünengras an der Küste" loading="lazy" decoding="async"></div>
+        <div><img src="Images/web/track-of-time/2-50-2-50-1-1600.webp" srcset="Images/web/track-of-time/2-50-2-50-1-800.webp 800w, Images/web/track-of-time/2-50-2-50-1-1200.webp 1200w, Images/web/track-of-time/2-50-2-50-1-1600.webp 1600w" sizes="(min-width: 760px) 550px, 100vw" alt="Luftbild: Zug mit Dampffahne zwischen Feldern" loading="lazy" decoding="async"></div>
+        <div><img src="Images/web/track-of-time/2-16-2-16-1-1600.webp" srcset="Images/web/track-of-time/2-16-2-16-1-800.webp 800w, Images/web/track-of-time/2-16-2-16-1-1200.webp 1200w, Images/web/track-of-time/2-16-2-16-1-1600.webp 1600w" sizes="(min-width: 760px) 550px, 100vw" alt="Feuer in der Feuerbüchse der Lokomotive" loading="lazy" decoding="async"></div>
+        <div><img src="Images/web/tot-molli-1600.webp" srcset="Images/web/tot-molli-800.webp 800w, Images/web/tot-molli-1200.webp 1200w, Images/web/tot-molli-1600.webp 1600w" sizes="(min-width: 760px) 550px, 100vw" alt="Blick von der fahrenden Lok entlang der Gleise" loading="lazy" decoding="async"></div>
+        <div><img src="Images/web/track-of-time-blumen-1600.webp" srcset="Images/web/track-of-time-blumen-800.webp 800w, Images/web/track-of-time-blumen-1200.webp 1200w, Images/web/track-of-time-blumen-1600.webp 1600w" sizes="(min-width: 760px) 550px, 100vw" alt="Mohnblumenfeld im Gegenlicht" loading="lazy" decoding="async"></div>
+        <div><img src="Images/web/track-of-time/1-1-1-1-1-1600.webp" srcset="Images/web/track-of-time/1-1-1-1-1-800.webp 800w, Images/web/track-of-time/1-1-1-1-1-1200.webp 1200w, Images/web/track-of-time/1-1-1-1-1-1600.webp 1600w" sizes="(min-width: 760px) 550px, 100vw" alt="Sonnenuntergang über der Ostsee" loading="lazy" decoding="async"></div>
+        <div><img src="Images/web/track-of-time/still-2025-12-19-174322-3-1-1-1600.webp" srcset="Images/web/track-of-time/still-2025-12-19-174322-3-1-1-800.webp 800w, Images/web/track-of-time/still-2025-12-19-174322-3-1-1-1200.webp 1200w, Images/web/track-of-time/still-2025-12-19-174322-3-1-1-1600.webp 1600w" sizes="(min-width: 760px) 550px, 100vw" alt="Dünengras an der Küste" loading="lazy" decoding="async"></div>
       </div>
       <p class="viewer-process">Gedreht an der Mecklenburgischen Bäderbahn Molli.</p>
       <button class="viewer-close">Schließen</button>
@@ -2065,7 +2073,7 @@
       <div class="stage-wrap aura-host">
       <div class="viewer-stage" data-yt="rKGhlvCMp7U" data-ar="1.778">
         <img src="Images/web/oesterreich24/img-2098-1500.webp"
-             srcset="Images/web/oesterreich24/img-2098-800.webp 800w, Images/web/oesterreich24/img-2098-1500.webp 1500w"
+             srcset="Images/web/oesterreich24/img-2098-800.webp 800w, Images/web/oesterreich24/img-2098-1200.webp 1200w, Images/web/oesterreich24/img-2098-1500.webp 1500w"
              sizes="(min-width: 1120px) 1120px, 100vw"
              alt="Luftbild: Kapelle über einem türkisfarbenen Bergsee" loading="lazy" decoding="async">
       </div>
@@ -2080,14 +2088,14 @@
         <p>Es beginnt alles mit einer Sehnsucht nach Ferne. Vielleicht möchtest du dem Alltag entfliehen und in den grünen Hügeln der Alpen oder den engen Gassen Venedigs neue Eindrücke sammeln. Vielleicht locken dich mächtige Burgen und historische Städte im Süden Österreichs oder idyllische Seenlandschaften im bayerischen Voralpenland. Oder du willst einfach einmal sehen, wie vielfältig Natur und Kultur in Mitteleuropa sind. Was auch immer dich antreibt – der Film „The South“ nimmt dich mit auf eine atmosphärische Reise durch Südösterreich, Italien und Deutschland in gestochen scharfer 6K-Auflösung und erinnert daran, dass Reisen weniger ein Zeitvertreib als vielmehr ein bewusster Blick auf Geschichte, Architektur und Natur ist.</p>
       </div>
       <div class="viewer-grid">
-        <div><img src="Images/web/oesterreich24/img-2103-1500.webp" srcset="Images/web/oesterreich24/img-2103-800.webp 800w, Images/web/oesterreich24/img-2103-1500.webp 1500w" sizes="(min-width: 760px) 550px, 100vw" alt="Palazzo-Fassaden am Canal Grande" loading="lazy" decoding="async"></div>
-        <div><img src="Images/web/oesterreich24/img-2108-1500.webp" srcset="Images/web/oesterreich24/img-2108-800.webp 800w, Images/web/oesterreich24/img-2108-1500.webp 1500w" sizes="(min-width: 760px) 550px, 100vw" alt="Fassade des Markusdoms" loading="lazy" decoding="async"></div>
-        <div><img src="Images/web/oesterreich24/img-2107-1500.webp" srcset="Images/web/oesterreich24/img-2107-800.webp 800w, Images/web/oesterreich24/img-2107-1500.webp 1500w" sizes="(min-width: 760px) 550px, 100vw" alt="Campanile gegen den Wolkenhimmel" loading="lazy" decoding="async"></div>
-        <div><img src="Images/web/oesterreich24/img-2083-1500.webp" srcset="Images/web/oesterreich24/img-2083-800.webp 800w, Images/web/oesterreich24/img-2083-1500.webp 1500w" sizes="(min-width: 760px) 550px, 100vw" alt="Wolken über einem bewaldeten Berghang am See" loading="lazy" decoding="async"></div>
-        <div><img src="Images/web/oesterreich24/img-2078-1500.webp" srcset="Images/web/oesterreich24/img-2078-800.webp 800w, Images/web/oesterreich24/img-2078-1500.webp 1500w" sizes="(min-width: 760px) 550px, 100vw" alt="Felsgipfel über bewaldeten Hängen" loading="lazy" decoding="async"></div>
-        <div><img src="Images/web/oesterreich24/img-2099-1500.webp" srcset="Images/web/oesterreich24/img-2099-800.webp 800w, Images/web/oesterreich24/img-2099-1500.webp 1500w" sizes="(min-width: 760px) 550px, 100vw" alt="Motiv aus dem Film The South" loading="lazy" decoding="async"></div>
-        <div><img src="Images/web/oesterreich24/img-2101-1500.webp" srcset="Images/web/oesterreich24/img-2101-800.webp 800w, Images/web/oesterreich24/img-2101-1500.webp 1500w" sizes="(min-width: 760px) 550px, 100vw" alt="Motiv aus dem Film The South" loading="lazy" decoding="async"></div>
-        <div><img src="Images/web/oesterreich24/img-2102-1500.webp" srcset="Images/web/oesterreich24/img-2102-800.webp 800w, Images/web/oesterreich24/img-2102-1500.webp 1500w" sizes="(min-width: 760px) 550px, 100vw" alt="Motiv aus dem Film The South" loading="lazy" decoding="async"></div>
+        <div><img src="Images/web/oesterreich24/img-2103-1500.webp" srcset="Images/web/oesterreich24/img-2103-800.webp 800w, Images/web/oesterreich24/img-2103-1200.webp 1200w, Images/web/oesterreich24/img-2103-1500.webp 1500w" sizes="(min-width: 760px) 550px, 100vw" alt="Palazzo-Fassaden am Canal Grande" loading="lazy" decoding="async"></div>
+        <div><img src="Images/web/oesterreich24/img-2108-1500.webp" srcset="Images/web/oesterreich24/img-2108-800.webp 800w, Images/web/oesterreich24/img-2108-1200.webp 1200w, Images/web/oesterreich24/img-2108-1500.webp 1500w" sizes="(min-width: 760px) 550px, 100vw" alt="Fassade des Markusdoms" loading="lazy" decoding="async"></div>
+        <div><img src="Images/web/oesterreich24/img-2107-1500.webp" srcset="Images/web/oesterreich24/img-2107-800.webp 800w, Images/web/oesterreich24/img-2107-1200.webp 1200w, Images/web/oesterreich24/img-2107-1500.webp 1500w" sizes="(min-width: 760px) 550px, 100vw" alt="Campanile gegen den Wolkenhimmel" loading="lazy" decoding="async"></div>
+        <div><img src="Images/web/oesterreich24/img-2083-1500.webp" srcset="Images/web/oesterreich24/img-2083-800.webp 800w, Images/web/oesterreich24/img-2083-1200.webp 1200w, Images/web/oesterreich24/img-2083-1500.webp 1500w" sizes="(min-width: 760px) 550px, 100vw" alt="Wolken über einem bewaldeten Berghang am See" loading="lazy" decoding="async"></div>
+        <div><img src="Images/web/oesterreich24/img-2078-1500.webp" srcset="Images/web/oesterreich24/img-2078-800.webp 800w, Images/web/oesterreich24/img-2078-1200.webp 1200w, Images/web/oesterreich24/img-2078-1500.webp 1500w" sizes="(min-width: 760px) 550px, 100vw" alt="Felsgipfel über bewaldeten Hängen" loading="lazy" decoding="async"></div>
+        <div><img src="Images/web/oesterreich24/img-2099-1500.webp" srcset="Images/web/oesterreich24/img-2099-800.webp 800w, Images/web/oesterreich24/img-2099-1200.webp 1200w, Images/web/oesterreich24/img-2099-1500.webp 1500w" sizes="(min-width: 760px) 550px, 100vw" alt="Motiv aus dem Film The South" loading="lazy" decoding="async"></div>
+        <div><img src="Images/web/oesterreich24/img-2101-1500.webp" srcset="Images/web/oesterreich24/img-2101-800.webp 800w, Images/web/oesterreich24/img-2101-1200.webp 1200w, Images/web/oesterreich24/img-2101-1500.webp 1500w" sizes="(min-width: 760px) 550px, 100vw" alt="Motiv aus dem Film The South" loading="lazy" decoding="async"></div>
+        <div><img src="Images/web/oesterreich24/img-2102-1500.webp" srcset="Images/web/oesterreich24/img-2102-800.webp 800w, Images/web/oesterreich24/img-2102-1200.webp 1200w, Images/web/oesterreich24/img-2102-1500.webp 1500w" sizes="(min-width: 760px) 550px, 100vw" alt="Motiv aus dem Film The South" loading="lazy" decoding="async"></div>
       </div>
       <button class="viewer-close">Schließen</button>
     </div>
@@ -2791,10 +2799,11 @@
       fitFrame(stage, frame, UEBERZOOM);
     }
     window.addEventListener('resize', neuMessen);
-    window.addEventListener('orientationchange', function () {
+    function gedreht() {
       neuMessen();
       setTimeout(neuMessen, 260);     // manche Geraete melden zu frueh
-    });
+    }
+    window.addEventListener('orientationchange', gedreht);
     if (window.visualViewport) window.visualViewport.addEventListener('resize', neuMessen);
     wrap._fsMess = neuMessen;
 
@@ -2804,6 +2813,7 @@
       document.removeEventListener('fullscreenchange', gewechselt);
       document.removeEventListener('webkitfullscreenchange', gewechselt);
       window.removeEventListener('resize', wrap._fsMess);
+      window.removeEventListener('orientationchange', gedreht);
       if (window.visualViewport) window.visualViewport.removeEventListener('resize', wrap._fsMess);
       wrap.classList.remove('fs-zu', 'fs-ersatz');
       stage.style.width = ''; stage.style.height = '';
@@ -3043,8 +3053,7 @@
     body.classList.remove('bg-ruht');
     if (heroPausiert) {
       heroPausiert = false;
-      const p = heroVideo.play();
-      if (p && p.catch) p.catch(function () {});
+      if (heroImBild) { const p = heroVideo.play(); if (p && p.catch) p.catch(function () {}); }
     }
 
     // Blende wieder zu ...
@@ -3193,6 +3202,21 @@
       // nicht auf.
       if (go && go.catch) { go.catch(function () {}); }
     }
+  }
+
+  /* Ausser Sicht ruht der Film: sonst laedt und dekodiert er unsichtbar
+     weiter (gemessen am PC 33 MB in 20 s). 300 px Vorlauf, damit er schon
+     wieder laeuft, wenn der Hero zurueck ins Bild kommt. Bei offener
+     Projektseite regeln open-/closeProject den Film. */
+  let heroImBild = true;
+  if (heroVideo && heroSection && !reducedMotion && 'IntersectionObserver' in window) {
+    new IntersectionObserver(function (es) {
+      heroImBild = es[es.length - 1].isIntersecting;
+      heroSection.classList.toggle('ausser-sicht', !heroImBild);
+      if (document.body.classList.contains('bg-ruht')) return;
+      if (heroImBild) { const p = heroVideo.play(); if (p && p.catch) p.catch(function () {}); }
+      else if (!heroVideo.paused) heroVideo.pause();
+    }, { rootMargin: '300px 0px' }).observe(heroSection);
   }
 
   /* Zwei Zustaende, kein Dazwischen: Beim ersten Scrollen schaltet der Film auf
@@ -3612,6 +3636,30 @@
     else src.addEventListener('load', function () { anlegen(src); }, { once: true });
   }
   document.querySelectorAll('.page .aura-host').forEach(buildAura);
+  /* Die drei hinteren Titelbilder des Karussells liegen auf dem Handy nur gut
+     einen Schirm unter dem Start -- trotz loading=lazy luden sie sofort mit
+     (rund 850 kB) und nahmen dem Hero-Film die Leitung. Jetzt laden sie alle
+     drei zusammen, sobald die Schau naht; einzeln beobachtet kaemen die
+     seitlich wartenden Folien erst beim Hereindrehen. Die Hoefe warten ohnehin
+     auf 'load' (buildAura oben). */
+  (function () {
+    const schau = document.getElementById('schau');
+    const spaet = schau ? Array.prototype.slice.call(schau.querySelectorAll('img[data-src]')) : [];
+    if (!spaet.length) return;
+    function laden() {
+      spaet.forEach(function (i) {
+        if (i.dataset.srcset) i.srcset = i.dataset.srcset;
+        i.src = i.dataset.src;
+        i.removeAttribute('data-srcset'); i.removeAttribute('data-src');
+      });
+    }
+    if (!('IntersectionObserver' in window)) { laden(); return; }
+    const ob = new IntersectionObserver(function (es) {
+      if (!es.some(function (x) { return x.isIntersecting; })) return;
+      ob.disconnect(); laden();
+    }, { rootMargin: '0px 0px 600px 0px' });
+    ob.observe(schau);
+  })();
   // Fuer das Reglerfeld: alle schon gebauten Hoefe mit neuen Werten neu bauen.
   reglerHaken.hoefe = function () {
     document.querySelectorAll('.aura-host').forEach(function (host) {
@@ -5877,9 +5925,11 @@
     }
     /* Steht die Kamera, bewegt sich nur noch das Wasser -- eine Linie
        braucht rund 14 Sekunden fuer ihren Abstand, das ist mit 30 Bildern je
-       Sekunde nicht von 60 zu unterscheiden. Im Stand wird deshalb nur jedes
-       zweite Bild gezeichnet: die Haelfte der Arbeit, und es bleibt Luft
-       fuer die Videos der Tafel. */
+       Sekunde nicht von 60 zu unterscheiden -- und auch bei 15 Bildern wandert
+       sie pro Bild weit unter einem Pixel. Im Stand wird deshalb nur rund
+       jedes vierte Bild gezeichnet: ein Viertel der Arbeit, und es bleibt Luft
+       fuer die Videos der Tafel. Nur die Bahnkarte bleibt bei rund 30 Bildern,
+       ihre Dampfwolken ziehen schneller. */
     let gezeichnet = 0, standGezeichnet = -1;
     function schleife(jetzt) {
       if (!bereit || !sichtbar || !viewer.classList.contains('is-active') || document.hidden) {
@@ -5891,7 +5941,7 @@
         stand = fahrtStand(fahrt, jetzt);
         if (jetzt - fahrt.t0 >= fahrt.T * 1000) { stand = ziel = fahrt.nach; fahrt = null; }
       } else folgen(dt);
-      if (stand !== standGezeichnet || jetzt - gezeichnet > 28) {
+      if (stand !== standGezeichnet || jetzt - gezeichnet > (CFG.bahn ? 28 : 62)) {
         zeichne(stand, (jetzt / 1000) % 100000);
         gezeichnet = jetzt; standGezeichnet = stand;
         knoepfe();
@@ -6254,9 +6304,27 @@
       if (glStarten()) { bereit = true; groesse(); zeichne(stand); }
     }, false);
 
+    /* Geschlossen haelt die Karte sonst ihre Zeichenpuffer (mit
+       Kantenglaettung) und die beiden Linienbilder -- auf dem Handy rund
+       60 MB je Karte. Erst wenn die Seite ganz verborgen ist, damit beim
+       Ausblenden nichts schwarz wird. Beim naechsten Oeffnen legt laden()
+       ueber groesse() alles neu an. Kartendaten und Programme bleiben. */
+    function freigeben() {
+      if (!bereit) return;
+      glc.width = glc.height = 1; linc.width = linc.height = 1;
+      if (ueber && ueber.bilder) {
+        ueber.bilder.forEach(function (t) {
+          gl.bindTexture(gl.TEXTURE_2D, t);
+          gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, 1, 1, 0, gl.RGBA, gl.UNSIGNED_BYTE, null);
+        });
+        ueber.bw = ueber.bh = 0; ueber.schluessel = '';
+      }
+      schildSchluessel = '';
+    }
     new MutationObserver(function () {
       if (viewer.classList.contains('is-active')) laden();
-    }).observe(viewer, { attributes: true, attributeFilter: ['class'] });
+      else if (viewer.hidden) freigeben();
+    }).observe(viewer, { attributes: true, attributeFilter: ['class', 'hidden'] });
     window.addEventListener('resize', function () {
       // Geschlossene Projektseite: nichts rechnen (sie haette keine Groesse);
       // beim naechsten Oeffnen wird ohnehin neu vermessen.
