@@ -1168,10 +1168,12 @@
      Die Balken liegen INNERHALB der Buehne. Das ist keine Geschmacksfrage:
      im echten Vollbild zeichnet der Browser ausschliesslich den Vollbild-Kasten
      und dessen Inhalt. Die Balken der Projektansicht liegen ausserhalb davon
-     und waeren schlicht unsichtbar. */
+     und waeren schlicht unsichtbar.
+     Rand und Blende sind im Vollbild schwarz wie im Kino. In der Farbe des
+     Projekts wirkte der Rand neben den dunklen Bildkanten des Films grau. */
   .fs-bar {
     position: absolute; left: 0; right: 0; height: 0;
-    background: var(--p-bg, #07090b);
+    background: #000;
     z-index: 8; pointer-events: none;
     transition: height 0.72s var(--ease);
   }
@@ -1184,7 +1186,7 @@
   .stage-wrap:fullscreen {
     display: flex; align-items: center; justify-content: center;
     width: 100%; height: 100%;
-    background: var(--p-bg, #07090b);
+    background: #000;
   }
   /* Frueher stand hier "max-width: calc(100vh * var(--ar))" und
      "max-height: 100vh". Beide Grenzen haengen an derselben Zahl -- faellt
@@ -1211,7 +1213,7 @@
   .stage-wrap:-webkit-full-screen {
     display: flex; align-items: center; justify-content: center;
     width: 100%; height: 100%;
-    background: var(--p-bg, #07090b);
+    background: #000;
   }
   .stage-wrap:-webkit-full-screen .viewer-stage {
     width: 100%;
@@ -1231,7 +1233,7 @@
        Leiste geschoben. */
     position: fixed; left: 0; top: 0; width: 100%; height: 100dvh; z-index: 960;
     display: flex; align-items: center; justify-content: center;
-    background: var(--p-bg, #07090b);
+    background: #000;
   }
   .stage-wrap.fs-ersatz .viewer-stage {
     width: 100%;
@@ -1630,7 +1632,7 @@
           <div class="schau-halt" id="schau-halt">
         <div class="schau-buehne" id="schau-buehne" data-hof-sammler>
         <div class="schau-platz aura-host" data-viewer="v2" data-titel="The Same Gray"
-             data-gattung="Porträtfilm · Schottland" data-film="0" aria-hidden="false">
+             data-gattung="Porträtfilm · Schottland" data-film="1" aria-hidden="false">
           <img src="Images/web/thumbnails/thumbnailsamegrey-2400.webp"
                srcset="Images/web/thumbnails/thumbnailsamegrey-800.webp 800w, Images/web/thumbnails/thumbnailsamegrey-1200.webp 1200w, Images/web/thumbnails/thumbnailsamegrey-1600.webp 1600w, Images/web/thumbnails/thumbnailsamegrey-2400.webp 2400w"
                sizes="(prefers-reduced-motion: reduce) calc(100vw - 32px), min(calc((100vw - 32px) * 0.88), 80vh)"
