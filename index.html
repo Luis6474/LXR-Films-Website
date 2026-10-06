@@ -4089,7 +4089,7 @@
      darueber.
 
      Orte und Reihenfolge folgen den Aufnahmeorten und -zeiten der Fotos
-     (GPS und Zeitstempel in den Dateien). Orte ohne Foto (Portree, bei
+     (GPS und Zeitstempel in den Dateien). Orte ohne Foto (bei
      Lochcarron, Hallstatt) stammen aus der ersten Ortsliste; ihre Tage
      bzw. ihre Lage in der Reihenfolge sind geschaetzt. */
   // Ein Bild der Karte: 800 und 1600 px breit, als WebP.
@@ -4102,21 +4102,22 @@
     schottland: {
       datei: 'daten/schottland-karte.bin.gz',
       // Tage je Ort (0 = 17. Juli, 10 = 27. Juli), aus den Aufnahmezeiten.
-      // Portree (20.-22.) und bei Lochcarron (26.) haben keine Fotos: geschaetzt.
-      tage: { je: [[0, 1], [1, 2], [2, 2], [3, 5], [6, 6], [7, 7], [8, 8], [9, 9], [10, 10]], anzahl: 11, erster: 17, monat: ' Juli 2026' },
+      // Bei Lochcarron (26.) hat keine Fotos: geschaetzt. Die Tage 20.-22.
+      // gehoeren zu keiner Station, sie laufen waehrend der Fahrt nach Skye ab.
+      tage: { je: [[0, 1], [1, 2], [2, 2], [6, 6], [7, 7], [8, 8], [9, 9], [10, 10]], anzahl: 11, erster: 17, monat: ' Juli 2026' },
       zeitraum: '17.–27. Juli 2026',
-      namen: ['Auchindrain', 'Ardnamurchan', 'Sanna Beach', 'Portree', 'The Storr', 'Neist Point', 'Staffin', 'bei Lochcarron', 'Kylerhea'],
+      namen: ['Auchindrain', 'Ardnamurchan', 'Sanna Beach', 'The Storr', 'Neist Point', 'Staffin', 'bei Lochcarron', 'Kylerhea'],
       /* Bilder je Station (Index wie bei namen), in der Reihenfolge der
          Aufnahme. Ohne Eintrag bleibt "Bild folgt". */
       medien: {
         0: [kbild(KSG + 'img-7140'), kbild(KSG + 'img-7146'), kbild(KSG + 'img-7151')],
         1: [kbild(KSG + 'img-7182'), kbild(KSG + 'img-7206')],
         2: [kbild(KSG + 'img-7216'), kbild(KSG + 'img-7219'), kbild(KSG + 'img-7227')],
-        4: [kbild(KSG + 'img-7291')],
-        5: [kbild(KSG + 'img-7319'),
+        3: [kbild(KSG + 'img-7291')],
+        4: [kbild(KSG + 'img-7319'),
             { video: 'video/web/karte-same-gray/neist-point-720.mp4', poster: 'video/web/karte-same-gray/neist-point-poster.jpg', hoch: true, ton: true }],
-        6: [kbild(KSG + 'img-7345')],
-        8: [kbild(KSG + 'mam-udal')]
+        5: [kbild(KSG + 'img-7345')],
+        7: [kbild(KSG + 'mam-udal')]
       },
       ueberhoehung: 3.2,
       grund: [0.016, 0.03, 0.05],
