@@ -4162,6 +4162,14 @@
         5: 'Am Neist Point haben wir besonders viele Kormorane gefilmt. Auch die Eröffnungsszene des Films ist hier entstanden.',
         6: 'Bei Strathcarron haben wir zum Schluss noch Wiesen im Regen und im Nebel gefilmt.'
       },
+      /* Seenebel: um die Reise herum bleibt es klar ("klar": West, Sued,
+         Ost, Nord in Grad), nach aussen zieht Nebel auf -- die Aeusseren
+         Hebriden liegen schon leicht darin, der Osten verschwindet langsam.
+         "weich": auf wie vielen km er dicht wird. Drei duenne Lagen in
+         verschiedener Hoehe (m) mit ihrer Dichte: ueber dem Meer und in den
+         Taelern liegen alle drei uebereinander, hohe Berge ragen heraus. */
+      nebel: { klar: [-6.88, 55.95, -4.35, 57.8], weich: 110, farbe: [0.42, 0.47, 0.52],
+               lagen: [[40, 0.42], [170, 0.3], [420, 0.2]] },
       ueberhoehung: 3.2,
       grund: [0.016, 0.03, 0.05],
       land: [[0.08, 0.105, 0.14], [0.11, 0.145, 0.195], [0.17, 0.215, 0.28], [0.45, 0.5, 0.57]],
@@ -4682,6 +4690,7 @@
       const zwei = glZwei();
       const liste = [[LAND_VS, LAND_FS]];
       if (zwei || gl.getExtension('OES_standard_derivatives')) liste.push(meerQuellen(zwei));
+      if (CFG.nebel) liste.push(nebelQuellen());
       const hp = gl.getShaderPrecisionFormat(gl.FRAGMENT_SHADER, gl.HIGH_FLOAT);
       if ((zwei || gl.getExtension('EXT_blend_minmax')) && hp && hp.precision >= 23) {
         liste.push([VS_BAND, FS_BAND], [VS_DECK, FS_DECK], [VS_SAND, FS_SAND], [VS_ORT, FS_ORT]);
@@ -4742,6 +4751,7 @@
       gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, D.lin, gl.STATIC_DRAW);
 
       meerStarten();
+      nebelStarten();
       ueberStarten();
       gl.useProgram(prog);
       gl.uniform1f(loc.uQ, D.kopf.q);
@@ -4864,6 +4874,136 @@
       }
       gl.depthMask(true);
       if (meer.aW !== loc.aP) gl.disableVertexAttribArray(meer.aW);
+      gl.useProgram(prog);
+      gl.enableVertexAttribArray(loc.aP);
+    }
+
+    /* ---- Seenebel ----
+       Wie auf einer Aufnahme vom Meer her: um die Reise ist die Luft klar,
+       nach aussen ziehen Schwaden auf, erst leicht, dann immer dichter, und
+       ganz am Rand der Karte geht der Nebel in das Dunkel ueber, in dem die
+       Karte endet. Jede Lage ist eine flache Ebene ueber der ganzen Karte;
+       die Tiefe der Grafikkarte laesst Berge durch sie hindurchstossen --
+       so liegt der Nebel auf dem Wasser und in den Taelern, wie Seenebel.
+       Die Schwaden ziehen sehr langsam, jede Lage in eigenem Tempo.
+       Im klaren Gebiet verwirft der Shader den Bildpunkt sofort: an den
+       Stationen kostet der Nebel praktisch nichts. */
+    let nebel = null;
+    function nebelQuellen() {
+      const vs = 'attribute vec2 aW; uniform mat4 uM; uniform float uQ; uniform float uZ; varying vec3 vW;' +
+        'void main(){ vW = vec3(aW / uQ, uZ); gl_Position = uM * vec4(vW, 1.0); }';
+      const fs = GENAU +
+        'uniform sampler2D uRausch; uniform vec4 uKlar; uniform float uWeich; uniform float uT; uniform vec2 uVersatz; uniform float uDichte;' +
+        'uniform vec3 uFarbe; uniform vec3 uGrund; uniform vec2 uRand; uniform vec3 uAuge; uniform vec2 uNebel; varying vec3 vW;' +
+        'float tx(vec2 q){ return texture2D(uRausch, q).r; }' +
+        'void main(){' +
+        '  vec2 p = vW.xy;' +
+        // 0 in der Mitte der Daten, 1 an ihrem Rand
+        '  float r = max(abs(p.x) / uRand.x, abs(p.y) / uRand.y);' +
+        '  vec2 t = vec2(uT * 0.0011, uT * 0.0005);' +
+        // die Grenze des klaren Gebiets verwirbelt: Schwaden statt Kante
+        '  vec2 w = vec2(tx(p * 0.0042 + uVersatz + t), tx(p * 0.0042 - t + uVersatz + 0.37)) - 0.5;' +
+        '  vec2 pw = p + w * 60.0;' +
+        '  float d = length(max(max(uKlar.xy - pw, pw - uKlar.zw), 0.0));' +
+        '  float dunkel = smoothstep(0.6, 0.97, r);' +
+        '  if (d <= 0.0 && dunkel <= 0.0) discard;' +
+        '  float feld = smoothstep(0.0, uWeich, d);' +
+        // Schwaden in drei Groessen, die feineren ziehen schneller
+        '  vec2 q = p * 0.0105 + uVersatz * 1.7 + w * 0.35;' +
+        '  float s = tx(q + t * 1.6) * 0.55 + tx(q * 2.3 - t * 2.4 + 0.21) * 0.3 + tx(q * 5.1 + t * 3.5 + 0.6) * 0.15;' +
+        '  float sw = smoothstep(0.3, 0.78, s);' +
+        '  float n = smoothstep(uNebel.x, uNebel.y, length(vW - uAuge));' +
+        // hellere Kuppen, dunklere Taeler -- Licht im Nebel
+        '  vec3 c = uFarbe * (0.62 + 0.62 * sw);' +
+        '  c = mix(c, uGrund, max(dunkel, 0.6 * n));' +
+        '  float a = feld * mix(0.28, 1.0, sw) * (1.0 - 0.35 * n);' +
+        '  a = max(a, dunkel * 0.9);' +
+        '  gl_FragColor = vec4(c, min(1.0, a) * uDichte);' +
+        '}';
+      return [vs, fs];
+    }
+    /* Rauschen fuer die Schwaden, einmal vorab gerechnet und nahtlos
+       kachelbar: im Shader kostet es dann nur ein paar Texturzugriffe statt
+       vieler Rechnungen je Bildpunkt. Werterauschen in vier Oktaven. */
+    function nebelRauschen(N) {
+      const out = new Uint8Array(N * N);
+      const gitter = [8, 16, 32, 64], gew = [0.5, 0.27, 0.15, 0.08];
+      let saat = 7;
+      function zz() { saat = (saat * 16807) % 2147483647; return saat / 2147483647; }
+      const werte = gitter.map(function (g) { const v = new Float32Array(g * g); for (let i = 0; i < v.length; i++) v[i] = zz(); return v; });
+      for (let y = 0; y < N; y++) for (let x = 0; x < N; x++) {
+        let sum = 0;
+        gitter.forEach(function (g, o) {
+          const fx = x / N * g, fy = y / N * g, ix = Math.floor(fx), iy = Math.floor(fy);
+          let ux = fx - ix, uy = fy - iy;
+          ux = ux * ux * (3 - 2 * ux); uy = uy * uy * (3 - 2 * uy);
+          const v = werte[o], a = v[iy * g + ix], b = v[iy * g + (ix + 1) % g];
+          const c = v[((iy + 1) % g) * g + ix], e = v[((iy + 1) % g) * g + (ix + 1) % g];
+          sum += gew[o] * mix(mix(a, b, ux), mix(c, e, ux), uy);
+        });
+        out[y * N + x] = Math.round(sum * 255);
+      }
+      return out;
+    }
+    function nebelStarten() {
+      if (!CFG.nebel) return;
+      const q = nebelQuellen();
+      try {
+        const pr = glProgramm(q[0], q[1]);
+        if (!gl.getProgramParameter(pr, gl.LINK_STATUS)) return;
+        const n = { prog: pr, loc: {} };
+        ['uM', 'uQ', 'uZ', 'uRausch', 'uKlar', 'uWeich', 'uT', 'uVersatz', 'uDichte', 'uFarbe', 'uGrund', 'uRand', 'uAuge', 'uNebel'].forEach(function (x) {
+          n.loc[x] = gl.getUniformLocation(pr, x);
+        });
+        n.aW = gl.getAttribLocation(pr, 'aW');
+        const gx = Math.round(D.kopf.groesse[0] / 2 * D.kopf.q), gy = Math.round(D.kopf.groesse[1] / 2 * D.kopf.q);
+        n.puf = gl.createBuffer();
+        gl.bindBuffer(gl.ARRAY_BUFFER, n.puf);
+        gl.bufferData(gl.ARRAY_BUFFER, new Int16Array([-gx, -gy, gx, -gy, -gx, gy, gx, gy]), gl.STATIC_DRAW);
+        const N = CFG.nebel, a = geo(N.klar[0], N.klar[1]), b = geo(N.klar[2], N.klar[3]);
+        n.tex = gl.createTexture();
+        gl.activeTexture(gl.TEXTURE2);
+        gl.bindTexture(gl.TEXTURE_2D, n.tex);
+        gl.pixelStorei(gl.UNPACK_ALIGNMENT, 1);
+        gl.texImage2D(gl.TEXTURE_2D, 0, gl.LUMINANCE, 128, 128, 0, gl.LUMINANCE, gl.UNSIGNED_BYTE, nebelRauschen(128));
+        gl.generateMipmap(gl.TEXTURE_2D);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR_MIPMAP_LINEAR);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.REPEAT);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.REPEAT);
+        gl.activeTexture(gl.TEXTURE0);
+        gl.useProgram(pr);
+        gl.uniform1i(n.loc.uRausch, 2);
+        gl.uniform1f(n.loc.uQ, D.kopf.q);
+        gl.uniform4f(n.loc.uKlar, Math.min(a[0], b[0]), Math.min(a[1], b[1]), Math.max(a[0], b[0]), Math.max(a[1], b[1]));
+        gl.uniform1f(n.loc.uWeich, N.weich);
+        gl.uniform3fv(n.loc.uFarbe, N.farbe);
+        gl.uniform3fv(n.loc.uGrund, GRUND);
+        gl.uniform2f(n.loc.uRand, D.kopf.groesse[0] / 2, D.kopf.groesse[1] / 2);
+        nebel = n;
+      } catch (e) { nebel = null; }
+    }
+    function nebelZeichnen(cam, zeitS, k) {
+      if (!nebel) return;
+      const n = nebel;
+      gl.useProgram(n.prog);
+      gl.uniformMatrix4fv(n.loc.uM, false, new Float32Array(cam.M));
+      gl.uniform3fv(n.loc.uAuge, cam.auge);
+      gl.uniform2f(n.loc.uNebel, k.dist * 1.3, k.dist * 3.4);
+      gl.activeTexture(gl.TEXTURE2); gl.bindTexture(gl.TEXTURE_2D, n.tex); gl.activeTexture(gl.TEXTURE0);
+      gl.bindBuffer(gl.ARRAY_BUFFER, n.puf);
+      gl.enableVertexAttribArray(n.aW);
+      gl.vertexAttribPointer(n.aW, 2, gl.SHORT, false, 0, 0);
+      gl.enable(gl.BLEND); gl.depthMask(false);
+      CFG.nebel.lagen.forEach(function (l, j) {
+        gl.uniform1f(n.loc.uZ, l[0] / 1000 * UEBERHOEHUNG);
+        gl.uniform1f(n.loc.uDichte, l[1]);
+        gl.uniform1f(n.loc.uT, zeitS * (1 + 0.45 * j));
+        gl.uniform2f(n.loc.uVersatz, 0.53 * j, 0.29 * j);
+        gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
+      });
+      gl.depthMask(true);
+      if (n.aW !== loc.aP) gl.disableVertexAttribArray(n.aW);
       gl.useProgram(prog);
       gl.enableVertexAttribArray(loc.aP);
     }
@@ -4997,6 +5137,7 @@
       for (let j = i; j < n; j++) kante(S[j]);
       gl.depthMask(true);
       seenZeichnen(k, cam, zeitS);
+      nebelZeichnen(cam, zeitS, k);
       if (ueber) ueberZeichnen(k, cam);
     }
 
