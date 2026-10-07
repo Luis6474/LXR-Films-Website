@@ -1348,6 +1348,12 @@
   }
   /* Flache Schirme (Handy quer): kleinere Schrift und eine breitere Tafel,
      sonst blieben fuer die Bilder nur Briefmarken. */
+  .karte-text.eng {
+    overflow-y: auto; overscroll-behavior: contain; pointer-events: auto;
+    /* unten weich auslaufen: der Text geht weiter */
+    -webkit-mask-image: linear-gradient(#000 calc(100% - 1.4em), transparent);
+    mask-image: linear-gradient(#000 calc(100% - 1.4em), transparent);
+  }
   @media (max-height: 520px) { .karte-text { font-size: 0.66em; line-height: 1.4; padding: 7px 10px 8px; } }
   /* Ton an/aus bei Videos mit Ton: gross genug zum Antippen. */
   .karte-ton {
@@ -5852,26 +5858,55 @@
       for (let el = tafel; el && el !== halt; el = el.offsetParent) oben += el.offsetTop;
       const unten = Math.min(zeit.offsetTop, knopfVor.offsetTop) - 16;
       if (unten > oben) hoechstens = Math.min(hoechstens, Math.max(70, unten - oben));
+      /* Reicht die Hoehe nicht fuer Text und Bilder (Handy quer im Browser,
+         rund 300 px), wird der Text knapper gefasst und laesst sich in sich
+         scrollen -- er bleibt vollstaendig, und nichts legt sich ueber
+         Zeitleiste und Knoepfe. */
+      if (tafelText) {
+        tafelText.style.maxHeight = '';
+        tafelText.classList.remove('eng');
+        const platz = hoechstens - 56 - 14;
+        if (tafelText.offsetHeight > platz) {
+          tafelText.style.maxHeight = Math.max(44, platz) + 'px';
+          tafelText.classList.add('eng');
+        }
+      }
       const textH = tafelText ? tafelText.offsetHeight + 14 : 0;
-      hoechstens = Math.max(60, hoechstens - textH);
+      hoechstens = Math.max(tafelText ? 40 : 60, hoechstens - textH);
       /* "zeile": wie breit eine Zeile hoechstens wird, als Summe der
          Seitenverhaeltnisse ihrer Bilder. So passen drei Handyfotos oder
          Foto, Hochkant-Video und Filmbild nebeneinander, zwei breite
          Filmbilder aber nur zu zweit. Ohne Angabe: je zwei. */
-      const zeilen = [], ZEILE = CFG.zeile || 0;
-      folge.forEach(function (f) {
-        const z = zeilen[zeilen.length - 1];
-        const summe = z ? z.reduce(function (s, g) { return s + g.format; }, 0) : 0;
-        if (z && (ZEILE ? summe + f.format <= ZEILE : z.length < 2)) z.push(f); else zeilen.push([f]);
-      });
-      let hs = zeilen.map(function (z) {
-        const summe = z.reduce(function (s, f) { return s + f.format; }, 0);
-        const h = (B - L * (z.length - 1)) / summe;
-        return z.length === 1 ? Math.min(h, B * 0.42) : h;
-      });
-      const gesamt = hs.reduce(function (s, h) { return s + h; }, 0) + L * (zeilen.length - 1);
-      const k = Math.min(1, hoechstens / gesamt);
-      hs = hs.map(function (h) { return h * k; });
+      function packen(grenze) {
+        const zeilen = [];
+        folge.forEach(function (f) {
+          const z = zeilen[zeilen.length - 1];
+          const summe = z ? z.reduce(function (s, g) { return s + g.format; }, 0) : 0;
+          if (z && (grenze ? summe + f.format <= grenze : z.length < 2)) z.push(f); else zeilen.push([f]);
+        });
+        let hs = zeilen.map(function (z) {
+          const summe = z.reduce(function (s, f) { return s + f.format; }, 0);
+          const h = (B - L * (z.length - 1)) / summe;
+          return z.length === 1 ? Math.min(h, B * 0.42) : h;
+        });
+        const gesamt = hs.reduce(function (s, h) { return s + h; }, 0) + L * (zeilen.length - 1);
+        const k = Math.min(1, hoechstens / gesamt);
+        hs = hs.map(function (h) { return h * k; });
+        // Bildflaeche insgesamt: daran wird gemessen, welche Anordnung besser ist.
+        const flaeche = zeilen.reduce(function (s, z, zi) {
+          return s + z.reduce(function (t, f) { return t + f.format * hs[zi] * hs[zi]; }, 0);
+        }, 0);
+        return { zeilen: zeilen, hs: hs, flaeche: flaeche };
+      }
+      let lage = packen(CFG.zeile || 0);
+      /* Auf sehr flachen Schirmen schrumpfen mehrere Reihen zu Briefmarken;
+         dann ist eine einzige Reihe groesser. Genommen wird, was die Bilder
+         groesser zeigt (nur bei Karten mit "zeile"). */
+      if (CFG.zeile && lage.zeilen.length > 1) {
+        const eine = packen(1e9);
+        if (eine.flaeche > lage.flaeche) lage = eine;
+      }
+      const zeilen = lage.zeilen, hs = lage.hs;
       let y = textH;
       zeilen.forEach(function (z, zi) {
         const breite = z.reduce(function (s, f) { return s + f.format * hs[zi]; }, 0) + L * (z.length - 1);
