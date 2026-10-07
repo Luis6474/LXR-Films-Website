@@ -6,3 +6,7 @@
 # Handyfotos im Original: die Seite nutzt nur die Web-Fassungen.
 *.heic
 *.HEIC
+
+# Standbilder aus dem Film im Original (4K): die Karte nutzt nur die
+# Web-Fassungen in Images/web/karte-same-gray/film-*.
+Images/Bilder Karte Same gray/Frames aus dem Film/

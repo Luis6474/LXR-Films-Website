@@ -1336,6 +1336,19 @@
     opacity: 0; will-change: opacity, transform;
   }
   .karte-tafel .karte-bild { opacity: 1; aspect-ratio: auto; will-change: auto; box-shadow: 0 24px 60px rgba(0, 0, 0, 0.45); }
+  /* Text der Station ueber den Bildern: auf einem dunklen Grund, damit er
+     ueber jeder Stelle der Karte lesbar bleibt. */
+  .karte-text {
+    position: absolute; left: 0; right: 0; top: 0; margin: 0;
+    padding: 12px 15px 13px;
+    font-size: clamp(0.8em, 0.95vw, 0.94em); line-height: 1.6;
+    color: var(--text);
+    background: rgba(8, 11, 12, 0.62);
+    border-left: 1px solid rgba(255, 226, 190, 0.45);
+  }
+  /* Flache Schirme (Handy quer): kleinere Schrift und eine breitere Tafel,
+     sonst blieben fuer die Bilder nur Briefmarken. */
+  @media (max-height: 520px) { .karte-text { font-size: 0.66em; line-height: 1.4; padding: 7px 10px 8px; } }
   /* Ton an/aus bei Videos mit Ton: gross genug zum Antippen. */
   .karte-ton {
     position: absolute; left: 8px; bottom: 8px; z-index: 2; pointer-events: auto;
@@ -1440,6 +1453,7 @@
      im Querformat nach links, mittig oben stuenden die Fotos genau davor. */
   @media (max-width: 899px) and (min-aspect-ratio: 11/10) {
     .karte-tafel { left: auto; right: 4vw; top: max(17%, 72px); width: 46vw; max-width: none; }
+    .karte-tafel.mit-text { width: 54vw; right: 3vw; }
   }
 
   .viewer-grid { display: grid; grid-template-columns: 1fr; gap: 12px; margin: 52px 0; }
@@ -4097,27 +4111,50 @@
     return { bild: basis + '-800.webp', srcset: basis + '-800.webp 800w, ' + basis + '-1600.webp 1600w',
              verhaeltnis: verhaeltnis || '4 / 3' };
   }
+  // Standbild aus dem Film: im Format des Films (4096 x 1976), ungeschnitten.
+  function kfilm(basis) { return kbild(basis, '4096 / 1976'); }
   const KSG = 'Images/web/karte-same-gray/', KMO = 'Images/web/karte-mountains/';
   const KARTEN = {
     schottland: {
       datei: 'daten/schottland-karte.bin.gz',
-      // Tage je Ort (0 = 17. Juli, 10 = 27. Juli), aus den Aufnahmezeiten.
-      // Bei Lochcarron (26.) hat keine Fotos: geschaetzt. Die Tage 20.-22.
-      // gehoeren zu keiner Station, sie laufen waehrend der Fahrt nach Skye ab.
-      tage: { je: [[0, 1], [1, 2], [2, 2], [6, 6], [7, 7], [8, 8], [9, 9], [10, 10]], anzahl: 11, erster: 17, monat: ' Juli 2026' },
+      // Tage je Ort (0 = 17. Juli, 10 = 27. Juli), aus den Aufnahmezeiten
+      // und Luis' Zeitplan. Bei Lochcarron (26.) hat kein Foto: geschaetzt.
+      // Skye steht fuer die Tage 20.-22., bevor es zu den Einzelstationen geht.
+      tage: { je: [[0, 1], [1, 2], [2, 2], [3, 5], [6, 6], [7, 7], [9, 9]], anzahl: 11, erster: 17, monat: ' Juli 2026' },
       zeitraum: '17.–27. Juli 2026',
-      namen: ['Auchindrain', 'Ardnamurchan', 'Sanna Beach', 'The Storr', 'Neist Point', 'Staffin', 'bei Lochcarron', 'Kylerhea'],
-      /* Bilder je Station (Index wie bei namen), in der Reihenfolge der
-         Aufnahme. Ohne Eintrag bleibt "Bild folgt". */
+      namen: ['Auchindrain', 'Ardnamurchan', 'Sanna Beach', 'Skye', 'The Storr', 'Neist Point', 'bei Lochcarron'],
+      /* Sammelstation: die Kamera zeigt das Gebiet von oben mit allen seinen
+         Stationen, dann geht es zu ihnen einzeln. Der Punkt der Sammelstation
+         selbst (Sligachan, mitten auf Skye) liegt nur auf der Route, damit sie
+         dort entlangfaehrt; gezeichnet wird er nicht. */
+      gruppen: { 3: [3, 4, 5] },
+      zeile: 4.3,                            // Bilder je Zeile der Tafel (siehe tafelSetzen)
+      /* Bilder je Station (Index wie bei namen): erst die Handyfotos in der
+         Reihenfolge der Aufnahme, dann die Standbilder aus dem Film. Ohne
+         Eintrag bleibt "Bild folgt". */
       medien: {
-        0: [kbild(KSG + 'img-7140'), kbild(KSG + 'img-7146'), kbild(KSG + 'img-7151')],
-        1: [kbild(KSG + 'img-7182'), kbild(KSG + 'img-7206')],
-        2: [kbild(KSG + 'img-7216'), kbild(KSG + 'img-7219'), kbild(KSG + 'img-7227')],
-        3: [kbild(KSG + 'img-7291')],
-        4: [kbild(KSG + 'img-7319'),
-            { video: 'video/web/karte-same-gray/neist-point-720.mp4', poster: 'video/web/karte-same-gray/neist-point-poster.jpg', hoch: true, ton: true }],
-        5: [kbild(KSG + 'img-7345')],
-        7: [kbild(KSG + 'mam-udal')]
+        0: [kbild(KSG + 'img-7140'), kbild(KSG + 'img-7146'), kbild(KSG + 'img-7151'),
+            kfilm(KSG + 'film-auchindrain-1'), kfilm(KSG + 'film-auchindrain-2')],
+        1: [kbild(KSG + 'img-7182'), kbild(KSG + 'img-7206'),
+            kfilm(KSG + 'film-ardnamurchan-1'), kfilm(KSG + 'film-ardnamurchan-2')],
+        2: [kbild(KSG + 'img-7216'), kbild(KSG + 'img-7219'), kbild(KSG + 'img-7227'),
+            kfilm(KSG + 'film-sanna-beach')],
+        3: [kfilm(KSG + 'film-skye'), kbild(KSG + 'mam-udal')],
+        4: [kbild(KSG + 'img-7291'), kfilm(KSG + 'film-storr')],
+        5: [kbild(KSG + 'img-7319'),
+            { video: 'video/web/karte-same-gray/neist-point-720.mp4', poster: 'video/web/karte-same-gray/neist-point-poster.jpg', hoch: true, ton: true },
+            kfilm(KSG + 'film-neist-point-1'), kfilm(KSG + 'film-neist-point-2'), kfilm(KSG + 'film-neist-point-3')],
+        6: [kfilm(KSG + 'film-strathcarron')]
+      },
+      // Text je Station, steht ueber den Bildern. Wortgleich von Luis.
+      texte: {
+        0: 'Auchindrain war unsere erste Station. Hier haben wir Stephen Corrall getroffen und am Abend des 17. Juli bis spät in die Nacht das Township für den Dreh vorbereitet. Am nächsten Morgen ging es um 7 Uhr los, bis etwa 13 Uhr. Die Innenaufnahmen sind hier entstanden. Das Morgensonnenlicht im Fenster haben wir mit einem LED-Licht nachgebaut.',
+        1: 'Am Nachmittag des 18. Juli sind wir von Auchindrain nach Ardnamurchan weitergefahren. Noch am selben Tag haben wir in den Bergen der Halbinsel gedreht, und in der Blauen Stunde an der Küste.',
+        2: 'Am Morgen des 19. Juli haben wir in den Hügeln gedreht, diesmal für die zweite Zeitebene des Films. Dort entstanden die Aufnahmen von Stephen, gestrandet am Strand, erst auf einer Wiese, dann am Sanna Beach. Am Sanna Beach haben wir außerdem wieder für die Gegenwart gedreht.',
+        3: 'Am 20. Juli ging es weiter nach Skye. Mit Drohne und Teleobjektiv haben wir auf der ganzen Insel Tiere, Nebel und Meer gefilmt.',
+        4: 'In der Nähe des Old Man of Storr haben wir die Berge im Nebel gefilmt, die ganz am Anfang des Films zu sehen sind.',
+        5: 'Am Neist Point haben wir besonders viele Kormorane gefilmt. Auch die Eröffnungsszene des Films ist hier entstanden.',
+        6: 'Bei Strathcarron haben wir zum Schluss noch Wiesen im Regen und im Nebel gefilmt.'
       },
       ueberhoehung: 3.2,
       grund: [0.016, 0.03, 0.05],
@@ -4243,7 +4280,7 @@
     const datum = wurzel.querySelector('.karte-datum');
     const zeit = wurzel.querySelector('.karte-zeit');
     wurzel.tabIndex = -1;
-    let tafelSicht = 0, tafelLinks = 0;
+    let tafelSicht = 0, tafelLinks = 0, tafelUnten = 0, freiUnten = 0;
     const knopfZurueck = document.createElement('button'), knopfVor = document.createElement('button');
     knopfZurueck.type = knopfVor.type = 'button';
     knopfZurueck.className = 'karte-schritt zurueck'; knopfVor.className = 'karte-schritt vor';
@@ -4309,6 +4346,10 @@
     let D = null;                       // Daten nach dem Laden
     let phasen = [], EINHEITEN = 12;
     let fluege = [], kurse = [], wege = [], wegAb = [], GESAMT = 0, orte = [], blick = [], mitte = [0, 0], halb = [100, 100];
+    // Kamera je Station: nah und schraeg, bei einer Sammelstation von oben.
+    let kams = [];
+    const GRUPPEN = CFG.gruppen || {};
+    function glieder(i) { return GRUPPEN[i] || null; }
     let uebersicht = null, gross = null;
     const NAH = { dist: 24, pitch: 56 };
 
@@ -4375,7 +4416,8 @@
       return fl;
     }
 
-    function einpassen(punkte, pitch, bearing, extra, W, H) {
+    // qx, qy: welcher Anteil der Bildbreite bzw. -hoehe zur Verfuegung steht.
+    function einpassen(punkte, pitch, bearing, extra, W, H, qx, qy) {
       // Ausdehnung in Bildrichtung: "rechts" und "oben" haengen vom Kurs ab.
       const b = bearing * Math.PI / 180;
       const vx = Math.sin(b), vy = Math.cos(b), rx = Math.cos(b), ry = -Math.sin(b);
@@ -4387,9 +4429,37 @@
       const t = Math.tan(FOV / 2), as = W / H;
       const eu = (u1 - u0) / 2, ew = (w1 - w0) / 2;
       // Unten Platz fuer das Datum: die Mitte etwas nach "unten" im Bild.
-      const dist = Math.max(ew / t, eu / (t * as)) * extra;
+      const dist = Math.max(ew / (t * (qy || 1)), eu / (t * as * (qx || 1))) * extra;
       const uc = (u0 + u1) / 2, wc = (w0 + w1) / 2 - ew * 0.14;
       return { x: uc * rx + wc * vx, y: uc * ry + wc * vy, z: 0, dist: dist, pitch: pitch, bearing: bearing };
+    }
+
+    /* Der Teil des Bildes, den die Bildtafel frei laesst: am breiten Schirm
+       links neben ihr, im Hochformat unter ihr. */
+    // In der Draufsicht einer Sammelstation leuchten ihre Stationen mit.
+    function imGebiet(k, i) { return !!k.gruppe && k.gruppe.indexOf(i) >= 0; }
+    function ortHell(k, i) {
+      return Math.max(i === k.ort ? k.sicht : 0, imGebiet(k, i) ? 0.7 * k.sicht : 0, k.alleHell * 0.55);
+    }
+    // Rechts bleibt Platz fuer die Ortsnamen, die neben den Punkten stehen.
+    function frei(W, H) {
+      if (tafelLinks > 0) return [Math.max(0.3 * W, tafelLinks - 0.12 * W), H];
+      if (tafelUnten > 0) return [W, Math.max(0.25 * H, freiUnten - tafelUnten)];
+      return [W, H];
+    }
+    /* Sammelstation: von oben, Norden oben, mit allen Stationen des Gebiets
+       im Bild. Steht die Bildtafel (s = ihre Sichtbarkeit), passt die
+       Kamera das Gebiet in den freien Teil daneben bzw. darunter ein; den
+       Versatz dorthin macht kamera(). */
+    const DRAUF = 16;
+    function gruppenKam(i, W, H, s) {
+      const pkte = glieder(i).map(function (j) { return orte[j]; });
+      const c0 = einpassen(pkte, DRAUF, 0, 1.4, W, H);
+      if (!s) return c0;
+      const f = frei(W, H);
+      const c1 = einpassen(pkte, DRAUF, 0, 1.3, W, H, f[0] / W, f[1] / H);
+      return { x: mix(c0.x, c1.x, s), y: mix(c0.y, c1.y, s), z: 0,
+               dist: logMix(c0.dist, c1.dist, s), pitch: DRAUF, bearing: 0 };
     }
 
     function vorbereiten(W, H) {
@@ -4417,6 +4487,10 @@
         return kurs(b[0] - a[0], b[1] - a[1]);
       });
       blick = orte.map(function (o, i) { return (i ? kurse[i - 1] : kurse[0]) + 3; });
+      kams = orte.map(function (o, i) {
+        return glieder(i) ? gruppenKam(i, W, H, 0)
+                          : { x: o[0], y: o[1], z: o[2], dist: NAH.dist, pitch: NAH.pitch, bearing: blick[i] };
+      });
 
       const alle = orte.slice();
       wege.forEach(function (w) { alle.push.apply(alle, w.p); });
@@ -4449,8 +4523,9 @@
       /* Ablauf. "laenge" ist Scrollstrecke in Einheiten von 32 % der
          Fensterhoehe. Lange Fahrten bekommen etwas mehr Weg, aber nur
          logarithmisch -- 260 km sollen nicht fuenfmal so lang dauern wie 50. */
-      fluege = orte.slice(1).map(function (o, i) {
-        return flugBauen(orte[i], o, NAH.dist * BREITE, NAH.dist * BREITE);
+      fluege = kams.slice(1).map(function (b, i) {
+        const a = kams[i];
+        return flugBauen([a.x, a.y], [b.x, b.y], a.dist * BREITE, b.dist * BREITE);
       });
       /* Scrollweg je Fahrt nach der Laenge der Flugbahn (S): so bleibt die
          Bewegung je Radschritt bei jeder Fahrt gleich ruhig. */
@@ -4489,17 +4564,18 @@
       if (ph.art === 'start') {
         setze(uebersicht); k.bearing += 3 * f; k.namen = 1;
       } else if (ph.art === 'halt') {
-        const o = orte[ph.ort], n = ph.tagB - ph.tagA + 1;
-        setze({ x: o[0], y: o[1], z: o[2], dist: NAH.dist, pitch: NAH.pitch,
-                bearing: blick[ph.ort] - 3 + 6 * f });
+        const n = ph.tagB - ph.tagA + 1, g = glieder(ph.ort);
+        const c = g ? gruppenKam(ph.ort, W, H, tafelSicht) : kams[ph.ort];
+        setze({ x: c.x, y: c.y, z: c.z, dist: c.dist, pitch: c.pitch, bearing: c.bearing - 3 + 6 * f });
+        k.gruppe = g;
         k.tag = ph.tagA + Math.min(n - 1, Math.floor(f * n));
         k.sicht = stufe(0.1, 0.26, f) * (1 - stufe(0.8, 0.95, f));
         k.ort = ph.ort; k.weg = ph.ort - 1; k.wegL = 1e9; k.dampf = 0.4;
       } else if (ph.art === 'fahrt' && ph.von < 0) {          // aus der Uebersicht herein
-        const e = glatt(f), o = orte[0];
-        setze({ x: mix(uebersicht.x, o[0], e), y: mix(uebersicht.y, o[1], e), z: mix(0, o[2], e),
-                dist: logMix(uebersicht.dist, NAH.dist, e), pitch: mix(uebersicht.pitch, NAH.pitch, e),
-                bearing: winkelMix(uebersicht.bearing + 3, blick[0] - 3, e) });
+        const e = glatt(f), c = kams[0];
+        setze({ x: mix(uebersicht.x, c.x, e), y: mix(uebersicht.y, c.y, e), z: mix(0, c.z, e),
+                dist: logMix(uebersicht.dist, c.dist, e), pitch: mix(uebersicht.pitch, c.pitch, e),
+                bearing: winkelMix(uebersicht.bearing + 3, c.bearing - 3, e) });
         if (!TAGE) k.tag = f > 0.5 ? 0 : -1;
         k.namen = 1 - stufe(0, 0.5, f);
       } else if (ph.art === 'fahrt') {                          // von Ort zu Ort
@@ -4513,31 +4589,33 @@
            die Strasse entlang -- viel Bewegung dicht ueber dem Gelaende, das
            wirkte wie eine Achterbahn. Oben blickt sie fast senkrecht herab,
            gedreht wird nur dort, wo die Drehung kaum auffaellt. */
-        const w = wege[ph.von], A = orte[ph.von], B = orte[ph.nach], fl = fluege[ph.von];
+        const w = wege[ph.von], A = kams[ph.von], B = kams[ph.nach], fl = fluege[ph.von];
         const s = fl.S * glatt(f);
         const anteil = fl.u1 > 0 ? fl.u(s) / fl.u1 : glatt(f);
         let dist = fl.w(s) / BREITE, gipfel = fl.wMax / BREITE;
+        // Abstand am Boden der Fahrt: nah, bei einer Sammelstation hoeher.
+        const basis = logMix(A.dist, B.dist, anteil);
         /* Ueberblick: unterwegs steigt die Kamera weiter auf als die
            Flugbahn allein verlangt -- bei langen Strecken bis zur ganzen
            Uebersicht, damit man sieht, wo in der Reise man gerade ist; bei
            kurzen Wegen entsprechend weniger. */
         if (CFG.ueberflug) {
           const g = Math.min(1, fl.u1 / CFG.ueberflug);
-          const spitze = logMix(NAH.dist, Math.max(NAH.dist, uebersicht.dist * 0.9), g);
-          dist = Math.max(dist, logMix(NAH.dist, spitze, Math.sin(Math.PI * glatt(f))));
+          const spitze = Math.max(basis, logMix(NAH.dist, Math.max(NAH.dist, uebersicht.dist * 0.9), g));
+          dist = Math.max(dist, logMix(basis, spitze, Math.sin(Math.PI * glatt(f))));
           gipfel = Math.max(gipfel, spitze);
         }
-        const oben = Math.max(0, Math.min(1, (dist - NAH.dist) / Math.max(1, gipfel - NAH.dist)));
-        setze({ x: mix(A[0], B[0], anteil), y: mix(A[1], B[1], anteil), z: mix(A[2], B[2], anteil),
-                dist: dist, pitch: mix(NAH.pitch, 22, glatt(Math.min(1, oben * 1.3))),
-                bearing: winkelMix(blick[ph.von] + 3, blick[ph.nach] - 3, stufe(0.2, 0.8, anteil)) });
+        const oben = Math.max(0, Math.min(1, (dist - basis) / Math.max(1, gipfel - basis)));
+        setze({ x: mix(A.x, B.x, anteil), y: mix(A.y, B.y, anteil), z: mix(A.z, B.z, anteil),
+                dist: dist, pitch: mix(mix(A.pitch, B.pitch, anteil), 22, glatt(Math.min(1, oben * 1.3))),
+                bearing: winkelMix(A.bearing + 3, B.bearing - 3, stufe(0.2, 0.8, anteil)) });
         k.tag = Math.round(mix(ph.tagA, ph.tagB, anteil));
         k.weg = ph.von; k.wegL = w.len * anteil; k.dampf = 1;
       } else if (ph.art === 'weit') {                           // ins grosse Bild
-        const e = glatt(Math.min(1, f / 0.6)), o = orte[orte.length - 1];
-        setze({ x: mix(o[0], gross.x, e), y: mix(o[1], gross.y, e), z: mix(o[2], 0, e),
-                dist: logMix(NAH.dist, gross.dist, e), pitch: mix(NAH.pitch, gross.pitch, e),
-                bearing: winkelMix(blick[orte.length - 1] + 3, gross.bearing, e) });
+        const e = glatt(Math.min(1, f / 0.6)), c = kams[kams.length - 1];
+        setze({ x: mix(c.x, gross.x, e), y: mix(c.y, gross.y, e), z: mix(c.z, 0, e),
+                dist: logMix(c.dist, gross.dist, e), pitch: mix(c.pitch, gross.pitch, e),
+                bearing: winkelMix(c.bearing + 3, gross.bearing, e) });
         k.tag = TAGE ? Math.round(mix(ph.tagA, ph.tagB, Math.min(1, f * 1.4))) : (f > 0.4 ? -1 : ph.tagA);
         k.weg = wege.length - 1; k.wegL = 1e9;
         // Waehrend die Kamera noch aufsteigt, beginnt die Route vom Ende her
@@ -4824,12 +4902,22 @@
       const fx = Math.sin(br), fy = Math.cos(br);
       /* Stehen die Fotos rechts, rueckt der Ort so weit nach links, dass er
          Abstand zu ihnen haelt (am Rechner kaum, auf dem Handy quer mehr). */
+      /* Eine Sammelstation rueckt ganz in die freie Flaeche neben der Tafel.
+         Im Hochformat steht die Tafel oben: der Ort rueckt nach unten, in
+         die Mitte der Flaeche zwischen Tafel und Zeitleiste. */
       let tx = k.x, ty = k.y;
       if (tafelSicht > 0 && tafelLinks > 0) {
-        const px = (0.5 * W - Math.min(0.5 * W, tafelLinks - 0.12 * W)) * tafelSicht;
+        const ziel = k.gruppe ? frei(W, H)[0] / 2 : Math.min(0.5 * W, tafelLinks - 0.12 * W);
+        const px = (0.5 * W - ziel) * tafelSicht;
         if (px > 0) {
           const s = px / (W / 2) * k.dist * Math.tan(FOV / 2) * W / H;
           tx += fy * s; ty -= fx * s;
+        }
+      } else if (tafelSicht > 0 && tafelUnten > 0) {
+        const py = (Math.max(0.5 * H, (tafelUnten + freiUnten) / 2) - 0.5 * H) * tafelSicht;
+        if (py > 0) {
+          const s = py / (H / 2) * k.dist * Math.tan(FOV / 2) / Math.max(0.35, Math.cos(ph));
+          tx += fx * s; ty += fy * s;
         }
       }
       const auge = [tx - k.dist * Math.sin(ph) * fx, ty - k.dist * Math.sin(ph) * fy, k.z + k.dist * Math.cos(ph)];
@@ -5319,9 +5407,10 @@
         const E = [[-1, -1], [1, -1], [-1, 1], [1, -1], [1, 1], [-1, 1]];
         let n = 0;
         orte.forEach(function (o, i) {
+          if (glieder(i)) return;
           const s = geraet(cam.M, o);
           if (!s) return;
-          const h = Math.max(i === k.ort ? k.sicht : 0, k.alleHell * 0.55);
+          const h = ortHell(k, i);
           for (let j = 0; j < 6; j++) { q.set([s[0], s[1], E[j][0], E[j][1], h], n * 5); n++; }
         });
         if (n) {
@@ -5583,9 +5672,10 @@
 
       // Orte: schlichte Punkte; der aktuelle mit Schein und feinem Ring.
       if (route2d) orte.forEach(function (o, i) {
+        if (glieder(i)) return;
         const s = projizieren(M, o);
         if (!s) return;
-        const h = Math.max(i === k.ort ? k.sicht : 0, k.alleHell * 0.55);
+        const h = ortHell(k, i);
         if (h > 0.01) {
           const g = ctx2.createRadialGradient(s[0], s[1], 0, s[0], s[1], 26);
           g.addColorStop(0, 'rgba(' + CFG.route.ort + ',' + (0.38 * h).toFixed(3) + ')');
@@ -5609,7 +5699,7 @@
       const belegt = [];
       let beschriftet = route2d || sand2d;
       orte.forEach(function (o, i) {
-        const a = Math.max(k.namen, i === k.ort ? k.sicht : 0);
+        const a = Math.max(k.namen, i === k.ort || imGebiet(k, i) ? k.sicht : 0);
         if (a < 0.02 || !CFG.namen || !CFG.namen[i]) return;
         const s = projizieren(M, o);
         if (!s) return;
@@ -5661,7 +5751,7 @@
     const tafel = document.createElement('div');
     tafel.className = 'karte-tafel';
     halter.appendChild(tafel);
-    let medienOrt = -2, folge = [], tonGewollt = true;
+    let medienOrt = -2, folge = [], tonGewollt = true, tafelText = null;
     function tonKnopfSetzen(f) {
       if (!f.knopf) return;
       const an = !f.video.muted;
@@ -5674,11 +5764,20 @@
       medienOrt = ort;
       folge.forEach(function (f) { if (f.video) f.video.pause(); });
       tafel.textContent = '';
-      folge = [];
+      folge = []; tafelText = null;
       const liste = (CFG.medien && CFG.medien[ort]) || null;
       bilder.forEach(function (b) { b.style.display = liste ? 'none' : ''; });
       halter.setAttribute('aria-hidden', liste ? 'false' : 'true');
       if (!liste) return;
+      // Der Text der Station steht ueber den Bildern.
+      const text = CFG.texte && CFG.texte[ort];
+      if (text) {
+        tafelText = document.createElement('p');
+        tafelText.className = 'karte-text';
+        tafelText.textContent = text;
+        tafel.appendChild(tafelText);
+      }
+      tafel.classList.toggle('mit-text', !!text);
       liste.forEach(function (m) {
         const b = document.createElement('div');
         b.className = 'karte-bild hat-medium';
@@ -5743,15 +5842,28 @@
     function tafelSetzen() {
       if (!folge.length) return;
       const B = tafel.clientWidth || 300, L = 10;
-      let hoechstens = (H || window.innerHeight) * (W > H * 1.1 ? 0.62 : 0.33);
+      const quer = W > H * 1.1;
+      /* Im Hochformat stehen Text und Bilder oben; mit Text darf die Tafel
+         hoeher werden, die Kamera rueckt den Ort dafuer nach unten. */
+      let hoechstens = (H || window.innerHeight) * (quer ? 0.62 : (tafelText ? 0.52 : 0.33));
       /* Nie bis in Zeitleiste, Knoepfe und Datum hinein: auf flachen
          Schirmen (Handy quer, kleine Laptops) reichte die Pauschale nicht. */
       let oben = 0;
       for (let el = tafel; el && el !== halt; el = el.offsetParent) oben += el.offsetTop;
       const unten = Math.min(zeit.offsetTop, knopfVor.offsetTop) - 16;
       if (unten > oben) hoechstens = Math.min(hoechstens, Math.max(70, unten - oben));
-      const zeilen = [];
-      for (let i = 0; i < folge.length; i += 2) zeilen.push(folge.slice(i, i + 2));
+      const textH = tafelText ? tafelText.offsetHeight + 14 : 0;
+      hoechstens = Math.max(60, hoechstens - textH);
+      /* "zeile": wie breit eine Zeile hoechstens wird, als Summe der
+         Seitenverhaeltnisse ihrer Bilder. So passen drei Handyfotos oder
+         Foto, Hochkant-Video und Filmbild nebeneinander, zwei breite
+         Filmbilder aber nur zu zweit. Ohne Angabe: je zwei. */
+      const zeilen = [], ZEILE = CFG.zeile || 0;
+      folge.forEach(function (f) {
+        const z = zeilen[zeilen.length - 1];
+        const summe = z ? z.reduce(function (s, g) { return s + g.format; }, 0) : 0;
+        if (z && (ZEILE ? summe + f.format <= ZEILE : z.length < 2)) z.push(f); else zeilen.push([f]);
+      });
       let hs = zeilen.map(function (z) {
         const summe = z.reduce(function (s, f) { return s + f.format; }, 0);
         const h = (B - L * (z.length - 1)) / summe;
@@ -5760,7 +5872,7 @@
       const gesamt = hs.reduce(function (s, h) { return s + h; }, 0) + L * (zeilen.length - 1);
       const k = Math.min(1, hoechstens / gesamt);
       hs = hs.map(function (h) { return h * k; });
-      let y = 0;
+      let y = textH;
       zeilen.forEach(function (z, zi) {
         const breite = z.reduce(function (s, f) { return s + f.format * hs[zi]; }, 0) + L * (z.length - 1);
         let x = (B - breite) / 2;
@@ -5773,6 +5885,11 @@
         y += hs[zi] + L;
       });
       tafel.style.height = (y - L).toFixed(1) + 'px';
+      tafelUnten = quer ? 0 : oben + y - L;
+      freiUnten = unten;
+      // Mit Text ist die Tafel auf dem Handy quer breiter: neu messen.
+      tafelLinks = 0;
+      if (quer) for (let el = tafel; el && el !== halt; el = el.offsetParent) tafelLinks += el.offsetLeft;
     }
     window.addEventListener('resize', function () { if (folge.length) tafelSetzen(); });
     function spiele(f, an, staerke) {
@@ -5807,6 +5924,7 @@
       if (k.sicht > 0.01 && k.ort >= 0) setzeMedien(k.ort);
       if (!folge.length) {
         tafel.style.opacity = '0';
+        tafelSicht = 0;
         bilder.forEach(function (b, j) {
           const s = Math.max(0, Math.min(1, k.sicht * 1.15 - j * 0.15));
           b.style.opacity = s.toFixed(3);

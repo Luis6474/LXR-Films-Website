@@ -63,10 +63,10 @@
    ]
   },
   {
-   "ort": "The Storr",
+   "ort": "Skye (Sammelstation, Sligachan)",
    "lngLat": [
-    -6.168,
-    57.498
+    -6.172,
+    57.29
    ],
    "ueber": [
     [
@@ -84,6 +84,13 @@
    ]
   },
   {
+   "ort": "The Storr",
+   "lngLat": [
+    -6.168,
+    57.498
+   ]
+  },
+  {
    "ort": "Neist Point",
    "lngLat": [
     -6.787,
@@ -91,34 +98,10 @@
    ]
   },
   {
-   "ort": "Staffin",
-   "lngLat": [
-    -6.2056,
-    57.6372
-   ]
-  },
-  {
    "ort": "oestlich Lochcarron",
    "lngLat": [
     -5.39,
     57.47
-   ]
-  },
-  {
-   "ort": "Kylerhea (Mam Udal)",
-   "lngLat": [
-    -5.7195,
-    57.2215
-   ],
-   "ueber": [
-    [
-     -5.735,
-     57.277
-    ],
-    [
-     -5.9,
-     57.245
-    ]
    ]
   }
  ]
