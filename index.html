@@ -5975,7 +5975,7 @@
         } else {
           const el = document.createElement('img');
           el.decoding = 'async'; el.alt = '';
-          if (m.srcset) { el.srcset = m.srcset; el.sizes = '(min-width: 900px) 20vw, 46vw'; }
+          if (m.srcset) { el.srcset = m.srcset; el.sizes = TAFEL_SIZES; }
           el.src = m.bild;
           b.appendChild(el);
         }
@@ -5983,6 +5983,33 @@
         folge.push(f);
       });
       tafelSetzen();
+      // Waehrend man hier steht, schon die Nachbarn laden.
+      clearTimeout(vorTimer);
+      vorTimer = setTimeout(function () { vorladen(ort + 1); vorladen(ort - 1); }, 700);
+    }
+    /* Die Bilder einer Station vorab laden, damit sie beim Ankommen schon
+       da sind -- sonst ging das Laden erst mit dem Einblenden los, und bei
+       fuenf Bildern je Station tauchten sie einzeln nacheinander auf.
+       Gleiche srcset und sizes wie in der Tafel: der Browser waehlt dieselbe
+       Datei und nimmt sie dann aus dem Speicher. Mit Datensparen nicht. */
+    const TAFEL_SIZES = '(min-width: 900px) 20vw, 46vw';
+    const vorgeladen = {}, vorBilder = [];
+    let vorTimer = 0;
+    function vorladen(ort) {
+      const liste = CFG.medien && CFG.medien[ort];
+      if (!liste || vorgeladen[ort] || reducedMotion) return;
+      const c = navigator.connection;
+      if (c && c.saveData) return;
+      vorgeladen[ort] = true;
+      liste.forEach(function (m) {
+        const src = m.video ? m.poster : m.bild;
+        if (!src) return;
+        const i = new Image();
+        i.decoding = 'async';
+        if (m.srcset) { i.sizes = TAFEL_SIZES; i.srcset = m.srcset; }
+        i.src = src;
+        vorBilder.push(i);
+      });
     }
     /* Je zwei Bilder in einer Zeile, gleich hoch, zusammen so breit wie die
        Tafel. Wird es insgesamt zu hoch, schrumpft alles gleichmaessig. */
@@ -6575,6 +6602,8 @@
           stand = ziel = zielAusScroll();
           zeichne(stand);
           anlaufen();
+          // Die Bilder der ersten Station, bevor man an der Karte ankommt.
+          if (medienOrt < 0) setTimeout(function () { vorladen(0); }, 1500);
         }
         requestAnimationFrame(function () { wurzel.classList.add('ist-bereit'); });
       }).catch(function () { wurzel.hidden = true; });
