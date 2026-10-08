@@ -6430,6 +6430,9 @@
     halt.addEventListener('touchend', function () { tY = null; }, { passive: true });
     document.addEventListener('keydown', function (e) {
       if (!bereit || reducedMotion || !viewer.classList.contains('is-active')) return;
+      // Film im Vollbild: die Tasten gehoeren dem Film, nicht der Karte dahinter.
+      const fs = document.fullscreenElement;
+      if ((fs && viewer.contains(fs)) || viewer.querySelector('.stage-wrap.fs-ersatz')) return;
       const tag = (e.target || {}).tagName || '';
       if (e.altKey || e.ctrlKey || e.metaKey || /^(INPUT|TEXTAREA|SELECT)$/.test(tag)) return;
       // Leertaste auf einem Knopf drueckt den Knopf, sie faehrt nicht zusaetzlich weiter
