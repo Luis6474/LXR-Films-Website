@@ -1434,7 +1434,7 @@
   .karte-weiter:focus-visible { background-color: #fff1dc; outline: 2px solid #fff1dc; outline-offset: 3px; }
   @media (hover: hover) { .karte-weiter:hover { background-color: #fff1dc; } }
   @media (prefers-reduced-motion: reduce) { .karte.ist-bereit .karte-weiter { animation: none; } }
-  .karte.ist-still .karte-weiter { display: none; }
+  .karte.ist-still .karte-weiter, .karte.ist-still .karte-schritt { display: none; }
   @media (min-width: 900px) { .karte-weiter { right: 28px; top: 28px; font-size: 0.92em; } }
   /* Sehr schmal (Falt-Handy zugeklappt): sonst bricht der Knopf in zwei
      Zeilen und reicht bis in die Fotos. */
@@ -3196,7 +3196,9 @@
     // Auf schmalen Fenstern die kleinere Fassung -- spart Daten, sieht dort gleich aus.
     const netz = navigator.connection || {};
     const wide = window.innerWidth >= 900 && !netz.saveData;
-    heroVideo.src = wide ? heroVideo.dataset.hd : heroVideo.dataset.sd;
+    // Bei reduzierter Bewegung ist der Film ausgeblendet: dann nichts laden.
+    if (reducedMotion) heroVideo.preload = 'none';
+    else heroVideo.src = wide ? heroVideo.dataset.hd : heroVideo.dataset.sd;
     /* Die grosse Fassung braucht rund 12 Mbit/s. Reicht die Leitung dafuer
        nicht und der Film bleibt zum Nachladen stehen, wird nach 1,5 s an
        derselben Stelle auf die kleine Fassung gewechselt -- einmal, danach
@@ -3733,6 +3735,8 @@
         const knopf = ansehen.cloneNode(true);
         knopf.removeAttribute('id');
         knopfSetzen(knopf, platz);
+        // Der Klon erbt den Klick des Vorbilds nicht.
+        knopf.addEventListener('click', function () { openProject(knopf); });
         reihe.appendChild(knopf);
         platz.insertAdjacentElement('afterend', reihe);
       });
@@ -5992,7 +5996,7 @@
        fuenf Bildern je Station tauchten sie einzeln nacheinander auf.
        Gleiche srcset und sizes wie in der Tafel: der Browser waehlt dieselbe
        Datei und nimmt sie dann aus dem Speicher. Mit Datensparen nicht. */
-    const TAFEL_SIZES = '(min-width: 900px) 20vw, 46vw';
+    const TAFEL_SIZES = '(min-width: 900px) 20vw, (min-aspect-ratio: 11/10) 30vw, 46vw';
     const vorgeladen = {}, vorBilder = [];
     let vorTimer = 0;
     function vorladen(ort) {
@@ -6094,7 +6098,6 @@
       tafelLinks = 0;
       if (quer) for (let el = tafel; el && el !== halt; el = el.offsetParent) tafelLinks += el.offsetLeft;
     }
-    window.addEventListener('resize', function () { if (folge.length) tafelSetzen(); });
     function spiele(f, an, staerke) {
       const v = f.video;
       if (!an) {
@@ -6152,6 +6155,11 @@
       const k = zustand(u);
       zeigeTag(k.tag);
       medienZeigen(k);
+      /* Sammelstation: den Ausschnitt erst jetzt rechnen, mit der Tafel
+         dieses Bildes -- zustand() kannte nur die des vorigen, und nach
+         einem Sprung (Zeitleiste, reduzierte Bewegung) lag dann ein Ort
+         ausserhalb des Bildes. Neigung und Drehung bleiben aus zustand(). */
+      if (k.gruppe) { const c = gruppenKam(k.ort, W, H, tafelSicht); k.x = c.x; k.y = c.y; k.z = c.z; k.dist = c.dist; }
       const cam = kamera(k);
       landschaft(k, cam, zeitS);
       linien(k, cam, zeitS);
@@ -6368,6 +6376,9 @@
       if (!seitlich && d > 0 && oben > 2 && oben < h * 0.9) { e.preventDefault(); einrasten(false); return; }
       if (!seitlich && d < 0 && unten < h - 2 && unten > h * 0.1) { e.preventDefault(); einrasten(true); return; }
       if (!gepinnt()) return;
+      // Ueber gekuerztem Text rollt erst der Text; am Ende geht es mit
+      // einer neuen Geste weiter zur naechsten Station.
+      if (!seitlich && !fahrt && textRollt(e.target, d)) { radVerbraucht = true; return; }
       const i = haltIndex();
       // am Anfang nach oben, am Ende nach unten: die Seite scrollt normal weiter
       if (!fahrt && ((d < 0 && i === 0) || (d > 0 && i === HALTE.length - 1))) return;
@@ -6376,8 +6387,15 @@
       radVerbraucht = true;
       stationsSchritt(d);
     }, { passive: false });
-    let tY = null, tRicht = 0, tFertig = false;
+    /* Kann der gekuerzte Stationstext (.eng) in diese Richtung noch rollen? */
+    function textRollt(ziel, d) {
+      const t = ziel && ziel.closest && ziel.closest('.karte-text.eng');
+      if (!t) return false;
+      return d > 0 ? t.scrollTop + t.clientHeight < t.scrollHeight - 1 : t.scrollTop > 0;
+    }
+    let tY = null, tRicht = 0, tFertig = false, tZiel = null;
     halt.addEventListener('touchstart', function (e) {
+      tZiel = e.target;
       // Zwei Finger zoomen -- das ist kein Wischen zur naechsten Station
       // Hineingezoomt: Wischen verschiebt den Ausschnitt, nicht die Reise
       const gezoomt = window.visualViewport && window.visualViewport.scale > 1.05;
@@ -6402,6 +6420,8 @@
         tRicht = dy > 0 ? 1 : -1;
         const i = haltIndex();
         if (!fahrt && ((tRicht < 0 && i === 0) || (tRicht > 0 && i === HALTE.length - 1))) tRicht = 2;
+        // Wisch ueber gekuerztem Text: der Text rollt, die Karte bleibt
+        if (!fahrt && textRollt(tZiel, tRicht)) tRicht = 2;
       }
       if (tRicht === 2 || !tRicht) return;
       if (e.cancelable) e.preventDefault();
@@ -6482,10 +6502,10 @@
       /* Ohne sichtbare Karte gibt es nichts zu messen. Das Messen erzwingt
          ein Layout -- beim Laden der Startseite, fuer vier geschlossene
          Karten nacheinander, waren das zusammen ueber 100 ms Stillstand. */
-      if (!sichtbar) { viewer.classList.remove('karte-deckt'); return; }
+      if (!sichtbar) { if (viewer.classList.contains('karte-deckt')) viewer.classList.remove('karte-deckt'); return; }
       const r = halt.getBoundingClientRect();
       const deckt = r.top <= 0.5 && r.bottom >= viewer.clientHeight - 0.5;
-      viewer.classList.toggle('karte-deckt', deckt);
+      if (viewer.classList.contains('karte-deckt') !== deckt) viewer.classList.toggle('karte-deckt', deckt);
       /* Beim Oeffnen steht der Fokus auf "Schliessen" -- eine Leertaste
          schloesse dann die ganze Projektseite. Fuellt die Karte den Schirm,
          bekommt sie den Fokus: Leertaste und Pfeile fahren weiter. */
@@ -6556,7 +6576,12 @@
          wieder dort, wo die Scrollposition ist -- sonst stand sie noch am
          Ende des letzten Besuchs und flog die ganze Reise rueckwaerts. */
       if (geladen) {
-        if (bereit) { groesse(); vorbereiten(W, H); fahrt = null; stand = ziel = zielAusScroll(); tempo = 0; zeichne(stand); }
+        if (bereit) {
+          groesse();
+          // Fenster bei geschlossener Seite veraendert: die Tafel neu vermessen
+          if (folge.length) tafelSetzen();
+          vorbereiten(W, H); fahrt = null; stand = ziel = zielAusScroll(); tempo = 0; zeichne(stand);
+        }
         return;
       }
       geladen = true;
@@ -6627,7 +6652,7 @@
     glc.addEventListener('webglcontextrestored', function () {
       if (!D) return;
       loc = {}; puf = {}; ueberNeu = true;
-      if (glStarten()) { bereit = true; groesse(); zeichne(stand); }
+      if (glStarten()) { bereit = true; groesse(); zeichne(stand); anlaufen(); }
     }, false);
 
     /* Geschlossen haelt die Karte sonst ihre Zeichenpuffer (mit
@@ -6647,9 +6672,16 @@
       }
       schildSchluessel = '';
     }
+    /* Nur auf Oeffnen und Schliessen reagieren -- andere Klassenwechsel
+       (etwa karte-deckt beim Scrollen) liefen sonst jedes Mal durch laden(). */
+    let warAktiv = viewer.classList.contains('is-active');
     new MutationObserver(function () {
-      if (viewer.classList.contains('is-active')) laden();
-      else if (viewer.hidden) freigeben();
+      const aktiv = viewer.classList.contains('is-active');
+      if (aktiv && !warAktiv) laden();
+      // Geschlossen: Videos der Tafel sofort still, nicht erst nach der Blende
+      if (!aktiv && warAktiv) medienAnhalten();
+      warAktiv = aktiv;
+      if (!aktiv && viewer.hidden) freigeben();
     }).observe(viewer, { attributes: true, attributeFilter: ['class', 'hidden'] });
     window.addEventListener('resize', function () {
       // Geschlossene Projektseite: nichts rechnen (sie haette keine Groesse);
@@ -6661,6 +6693,8 @@
          Karte, bleibt man an derselben Station. */
       const drin = stand > 0.001 && stand < EINHEITEN - 0.001, station = haltIndex();
       groesse();
+      // Die Tafel nach der neuen Groesse -- vorher rechnete sie mit der alten.
+      if (folge.length) tafelSetzen();
       vorbereiten(W, H);
       if (drin) {
         fahrt = null; tempo = 0;
