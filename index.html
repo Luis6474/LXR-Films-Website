@@ -1302,6 +1302,7 @@
   }
   .karte-gl { opacity: 0; transition: opacity 1.6s var(--ease); }
   .karte.ist-bereit .karte-gl { opacity: 1; }
+  .karte-halt.ueber-station { cursor: pointer; }
   /* Vignette und Verlauf in den Grund der Seite. */
   .karte-schleier {
     position: absolute; inset: 0; pointer-events: none;
@@ -1309,6 +1310,12 @@
       linear-gradient(to bottom, var(--p-bg) 0%, transparent 16%, transparent 78%, var(--p-bg) 100%),
       radial-gradient(140% 110% at 50% 55%, transparent 70%, rgba(4,7,8,0.3) 100%);
   }
+  /* Karte mit Seenebel: deckt sie den Schirm, verschwindet der dunkle
+     Uebergang zur Projektseite -- der Rand der Karte liegt dann ganz im
+     Nebel, nirgends soll Dunkel zu sehen sein. Beim Hinein- und
+     Herausscrollen ist er wieder da. */
+  .karte.mit-nebel .karte-schleier { transition: opacity 0.6s var(--ease); }
+  .viewer.karte-deckt .karte.mit-nebel .karte-schleier { opacity: 0; }
   /* Die Karte deckt den Schirm: das Korn der Projektseite darunter ruht (siehe Skript). */
   .viewer.karte-deckt .viewer-grain { display: none; }
   /* Die Fotos der Projektseite liegen dann ausserhalb des Bildes. */
@@ -3001,7 +3008,10 @@
     if (!viewer) return;
     /* "direkt" kommt von der Projektschau: von dort aus startet der Film
        fensterfuellend, die Projektseite liegt darunter (siehe grossStarten). */
-    const direkt = trigger.dataset.direkt === '1';
+    // Ein Klick auf das Titelbild selbst zaehlt wie "Ansehen" (am Rechner
+    // klickt man meist aufs Bild, nicht auf den Knopf darunter).
+    const direkt = trigger.dataset.direkt === '1' ||
+      (trigger.classList.contains('schau-platz') && trigger.dataset.film !== '0');
     busy = true;
     current = viewer;
 
@@ -4262,12 +4272,12 @@
       medien: {
         0: [kbild(KSG + 'img-7140'), kbild(KSG + 'img-7146'), kbild(KSG + 'img-7151'),
             kfilm(KSG + 'film-auchindrain-1'), kfilm(KSG + 'film-auchindrain-2')],
-        1: [kbild(KSG + 'img-7182'), kbild(KSG + 'img-7206'),
+        1: [kbild(KSG + 'img-7206'),
             kfilm(KSG + 'film-ardnamurchan-1'), kfilm(KSG + 'film-ardnamurchan-2')],
         2: [kbild(KSG + 'img-7216'), kbild(KSG + 'img-7219'), kbild(KSG + 'img-7227'),
             kfilm(KSG + 'film-sanna-beach')],
         3: [kfilm(KSG + 'film-skye'), kbild(KSG + 'mam-udal')],
-        4: [kbild(KSG + 'img-7291'), kfilm(KSG + 'film-storr')],
+        4: [kbild(KSG + 'img-7291'), kfilm(KSG + 'film-storr'), kfilm(KSG + 'film-storr-2')],
         5: [kbild(KSG + 'img-7319'),
             { video: 'video/web/karte-same-gray/neist-point-720.mp4', poster: 'video/web/karte-same-gray/neist-point-poster.jpg', hoch: true, ton: true },
             kfilm(KSG + 'film-neist-point-1'), kfilm(KSG + 'film-neist-point-2'), kfilm(KSG + 'film-neist-point-3')],
@@ -4289,7 +4299,11 @@
          "weich": auf wie vielen km er dicht wird. Drei duenne Lagen in
          verschiedener Hoehe (m) mit ihrer Dichte: ueber dem Meer und in den
          Taelern liegen alle drei uebereinander, hohe Berge ragen heraus. */
-      nebel: { klar: [-6.88, 55.95, -4.35, 57.8], weich: 110, farbe: [0.42, 0.47, 0.52],
+      /* "schnitt": eine schraege Kante, die die Nordwest-Ecke des klaren
+         Gebiets abschneidet (von Punkt zu Punkt, Laenge/Breite) -- dort
+         rueckt der Nebel naeher an Neist Point und The Storr heran. */
+      nebel: { klar: [-6.88, 55.95, -4.65, 57.8], schnitt: [[-6.95, 57.58], [-6.3, 57.83]],
+               weich: 110, farbe: [0.42, 0.47, 0.52],
                lagen: [[40, 0.42], [170, 0.3], [420, 0.2]] },
       ueberhoehung: 3.2,
       grund: [0.016, 0.03, 0.05],
@@ -4405,6 +4419,7 @@
   });
 
   function reisekarte(wurzel, CFG) {
+    if (CFG.nebel) wurzel.classList.add('mit-nebel');
     const viewer = wurzel.closest('.viewer');
     const scroller = wurzel.closest('.viewer-scroll');
     if (!viewer || !scroller) return;
@@ -4688,6 +4703,31 @@
 
     }
 
+    /* Ein Flug von Kamera A nach B (fl aus flugBauen, f von 0 bis 1);
+       setzt die Kamera in k und gibt zurueck, wie weit sie am Boden ist. */
+    function fliegen(k, A, B, fl, f, bA, bB) {
+      const s = fl.S * glatt(f);
+      const anteil = fl.u1 > 0 ? fl.u(s) / fl.u1 : glatt(f);
+      let dist = fl.w(s) / BREITE, gipfel = fl.wMax / BREITE;
+      // Abstand am Boden der Fahrt: nah, bei einer Sammelstation hoeher.
+      const basis = logMix(A.dist, B.dist, anteil);
+      /* Ueberblick: unterwegs steigt die Kamera weiter auf als die
+         Flugbahn allein verlangt -- bei langen Strecken bis zur ganzen
+         Uebersicht, damit man sieht, wo in der Reise man gerade ist; bei
+         kurzen Wegen entsprechend weniger. */
+      if (CFG.ueberflug) {
+        const g = Math.min(1, fl.u1 / CFG.ueberflug);
+        const spitze = Math.max(basis, logMix(NAH.dist, Math.max(NAH.dist, uebersicht.dist * 0.9), g));
+        dist = Math.max(dist, logMix(basis, spitze, Math.sin(Math.PI * glatt(f))));
+        gipfel = Math.max(gipfel, spitze);
+      }
+      const oben = Math.max(0, Math.min(1, (dist - basis) / Math.max(1, gipfel - basis)));
+      k.x = mix(A.x, B.x, anteil); k.y = mix(A.y, B.y, anteil); k.z = mix(A.z, B.z, anteil);
+      k.dist = dist; k.pitch = mix(mix(A.pitch, B.pitch, anteil), 22, glatt(Math.min(1, oben * 1.3)));
+      k.bearing = winkelMix(bA, bB, stufe(0.2, 0.8, anteil));
+      return anteil;
+    }
+
     /* ---- Kamera und Zustand fuer einen Stand auf der Zeitachse ---- */
     function zustand(u) {
       let i = 0;
@@ -4724,26 +4764,8 @@
            die Strasse entlang -- viel Bewegung dicht ueber dem Gelaende, das
            wirkte wie eine Achterbahn. Oben blickt sie fast senkrecht herab,
            gedreht wird nur dort, wo die Drehung kaum auffaellt. */
-        const w = wege[ph.von], A = kams[ph.von], B = kams[ph.nach], fl = fluege[ph.von];
-        const s = fl.S * glatt(f);
-        const anteil = fl.u1 > 0 ? fl.u(s) / fl.u1 : glatt(f);
-        let dist = fl.w(s) / BREITE, gipfel = fl.wMax / BREITE;
-        // Abstand am Boden der Fahrt: nah, bei einer Sammelstation hoeher.
-        const basis = logMix(A.dist, B.dist, anteil);
-        /* Ueberblick: unterwegs steigt die Kamera weiter auf als die
-           Flugbahn allein verlangt -- bei langen Strecken bis zur ganzen
-           Uebersicht, damit man sieht, wo in der Reise man gerade ist; bei
-           kurzen Wegen entsprechend weniger. */
-        if (CFG.ueberflug) {
-          const g = Math.min(1, fl.u1 / CFG.ueberflug);
-          const spitze = Math.max(basis, logMix(NAH.dist, Math.max(NAH.dist, uebersicht.dist * 0.9), g));
-          dist = Math.max(dist, logMix(basis, spitze, Math.sin(Math.PI * glatt(f))));
-          gipfel = Math.max(gipfel, spitze);
-        }
-        const oben = Math.max(0, Math.min(1, (dist - basis) / Math.max(1, gipfel - basis)));
-        setze({ x: mix(A.x, B.x, anteil), y: mix(A.y, B.y, anteil), z: mix(A.z, B.z, anteil),
-                dist: dist, pitch: mix(mix(A.pitch, B.pitch, anteil), 22, glatt(Math.min(1, oben * 1.3))),
-                bearing: winkelMix(A.bearing + 3, B.bearing - 3, stufe(0.2, 0.8, anteil)) });
+        const w = wege[ph.von], A = kams[ph.von], B = kams[ph.nach];
+        const anteil = fliegen(k, A, B, fluege[ph.von], f, A.bearing + 3, B.bearing - 3);
         k.tag = Math.round(mix(ph.tagA, ph.tagB, anteil));
         k.weg = ph.von; k.wegL = w.len * anteil; k.dampf = 1;
       } else if (ph.art === 'weit') {                           // ins grosse Bild
@@ -4768,6 +4790,10 @@
     /* ---- WebGL: die Landschaft ---- */
     let gl = null, prog = null, loc = {}, puf = {}, W = 1, H = 1, PR = 1, ctx2 = null;
     const GRUND = CFG.grund;
+    /* Wohin die Karte in der Ferne und am Rand ausblendet: mit Seenebel in
+       den Nebel, sonst ins Dunkel des Grundes. Schwarz soll bei Nebel nirgends
+       zu sehen sein, auch nicht hinter dem Rand der Kartendaten. */
+    const FERNE = CFG.nebel ? CFG.nebel.farbe : GRUND;
 
     /* ---- Shader im Voraus uebersetzen ----
        Das Uebersetzen der Shader dauert auf Windows-Laptops (ANGLE/Direct3D)
@@ -4876,9 +4902,9 @@
       ueberStarten();
       gl.useProgram(prog);
       gl.uniform1f(loc.uQ, D.kopf.q);
-      gl.uniform3fv(loc.uGrund, GRUND);
+      gl.uniform3fv(loc.uGrund, FERNE);
       gl.uniform2f(loc.uRand, D.kopf.groesse[0] / 2, D.kopf.groesse[1] / 2);
-      gl.clearColor(GRUND[0], GRUND[1], GRUND[2], 1);
+      gl.clearColor(FERNE[0], FERNE[1], FERNE[2], 1);
       gl.enable(gl.DEPTH_TEST);
       gl.depthFunc(gl.LEQUAL);
       gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
@@ -5014,31 +5040,38 @@
       const vs = 'attribute vec2 aW; uniform mat4 uM; uniform float uQ; uniform float uZ; varying vec3 vW;' +
         'void main(){ vW = vec3(aW / uQ, uZ); gl_Position = uM * vec4(vW, 1.0); }';
       const fs = GENAU +
-        'uniform sampler2D uRausch; uniform vec4 uKlar; uniform float uWeich; uniform float uT; uniform vec2 uVersatz; uniform float uDichte;' +
-        'uniform vec3 uFarbe; uniform vec3 uGrund; uniform vec2 uRand; uniform vec3 uAuge; uniform vec2 uNebel; varying vec3 vW;' +
+        'uniform sampler2D uRausch; uniform vec4 uKlar; uniform vec3 uSchnitt; uniform float uWeich; uniform float uT; uniform vec2 uVersatz; uniform float uDichte;' +
+        'uniform float uRandLage; uniform vec3 uFarbe; uniform vec3 uBoden; uniform vec2 uRand; varying vec3 vW;' +
         'float tx(vec2 q){ return texture2D(uRausch, q).r; }' +
         'void main(){' +
         '  vec2 p = vW.xy;' +
-        // 0 in der Mitte der Daten, 1 an ihrem Rand
-        '  float r = max(abs(p.x) / uRand.x, abs(p.y) / uRand.y);' +
         '  vec2 t = vec2(uT * 0.0011, uT * 0.0005);' +
+        /* Randlage: liegt ueber allen Bergen und wird zum Rand hin ganz dicht,
+           in der Nebelfarbe selbst -- dicht schon bei 92-95 % der Daten,
+           also bevor sie enden, und darueber hinaus bis weit ins Leere. */
+        // Boden unter dem tiefsten Meer: fuellt, wo das Meer tiefer ist als die letzte Stufe
+        '  if (uRandLage > 1.5) { gl_FragColor = vec4(uBoden, 1.0); return; }' +
+        '  if (uRandLage > 0.5) {' +
+        '    float r = max(abs(p.x) / uRand.x, abs(p.y) / uRand.y) + (tx(p * 0.006 + t) - 0.5) * 0.05;' +
+        '    float ra = smoothstep(0.76, 0.92, r);' +
+        '    if (ra <= 0.0) discard;' +
+        '    gl_FragColor = vec4(uFarbe, ra);' +
+        '    return;' +
+        '  }' +
         // die Grenze des klaren Gebiets verwirbelt: Schwaden statt Kante
         '  vec2 w = vec2(tx(p * 0.0042 + uVersatz + t), tx(p * 0.0042 - t + uVersatz + 0.37)) - 0.5;' +
         '  vec2 pw = p + w * 60.0;' +
-        '  float d = length(max(max(uKlar.xy - pw, pw - uKlar.zw), 0.0));' +
-        '  float dunkel = smoothstep(0.6, 0.97, r);' +
-        '  if (d <= 0.0 && dunkel <= 0.0) discard;' +
+        // Abstand zum klaren Gebiet: Kasten, dazu die schraege Kante
+        '  float d = max(length(max(max(uKlar.xy - pw, pw - uKlar.zw), 0.0)), dot(uSchnitt.xy, pw) - uSchnitt.z);' +
+        '  if (d <= 0.0) discard;' +
         '  float feld = smoothstep(0.0, uWeich, d);' +
         // Schwaden in drei Groessen, die feineren ziehen schneller
         '  vec2 q = p * 0.0105 + uVersatz * 1.7 + w * 0.35;' +
         '  float s = tx(q + t * 1.6) * 0.55 + tx(q * 2.3 - t * 2.4 + 0.21) * 0.3 + tx(q * 5.1 + t * 3.5 + 0.6) * 0.15;' +
         '  float sw = smoothstep(0.3, 0.78, s);' +
-        '  float n = smoothstep(uNebel.x, uNebel.y, length(vW - uAuge));' +
         // hellere Kuppen, dunklere Taeler -- Licht im Nebel
         '  vec3 c = uFarbe * (0.62 + 0.62 * sw);' +
-        '  c = mix(c, uGrund, max(dunkel, 0.6 * n));' +
-        '  float a = feld * mix(0.28, 1.0, sw) * (1.0 - 0.35 * n);' +
-        '  a = max(a, dunkel * 0.9);' +
+        '  float a = feld * mix(0.28, 1.0, sw);' +
         '  gl_FragColor = vec4(c, min(1.0, a) * uDichte);' +
         '}';
       return [vs, fs];
@@ -5073,7 +5106,7 @@
         const pr = glProgramm(q[0], q[1]);
         if (!gl.getProgramParameter(pr, gl.LINK_STATUS)) return;
         const n = { prog: pr, loc: {} };
-        ['uM', 'uQ', 'uZ', 'uRausch', 'uKlar', 'uWeich', 'uT', 'uVersatz', 'uDichte', 'uFarbe', 'uGrund', 'uRand', 'uAuge', 'uNebel'].forEach(function (x) {
+        ['uM', 'uQ', 'uZ', 'uRausch', 'uKlar', 'uSchnitt', 'uWeich', 'uT', 'uVersatz', 'uDichte', 'uRandLage', 'uFarbe', 'uBoden', 'uRand'].forEach(function (x) {
           n.loc[x] = gl.getUniformLocation(pr, x);
         });
         n.aW = gl.getAttribLocation(pr, 'aW');
@@ -5081,6 +5114,10 @@
         n.puf = gl.createBuffer();
         gl.bindBuffer(gl.ARRAY_BUFFER, n.puf);
         gl.bufferData(gl.ARRAY_BUFFER, new Int16Array([-gx, -gy, gx, -gy, -gx, gy, gx, gy]), gl.STATIC_DRAW);
+        // Die Randlage reicht viermal so weit wie die Daten.
+        n.randPuf = gl.createBuffer();
+        gl.bindBuffer(gl.ARRAY_BUFFER, n.randPuf);
+        gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-4 * gx, -4 * gy, 4 * gx, -4 * gy, -4 * gx, 4 * gy, 4 * gx, 4 * gy]), gl.STATIC_DRAW);
         const N = CFG.nebel, a = geo(N.klar[0], N.klar[1]), b = geo(N.klar[2], N.klar[3]);
         n.tex = gl.createTexture();
         gl.activeTexture(gl.TEXTURE2);
@@ -5097,9 +5134,21 @@
         gl.uniform1i(n.loc.uRausch, 2);
         gl.uniform1f(n.loc.uQ, D.kopf.q);
         gl.uniform4f(n.loc.uKlar, Math.min(a[0], b[0]), Math.min(a[1], b[1]), Math.max(a[0], b[0]), Math.max(a[1], b[1]));
+        // Schraege Kante: die Normale zeigt vom klaren Gebiet weg.
+        let sn = [0, 0, 1e9];
+        if (N.schnitt) {
+          const s0 = geo(N.schnitt[0][0], N.schnitt[0][1]), s1 = geo(N.schnitt[1][0], N.schnitt[1][1]);
+          const mx = (a[0] + b[0]) / 2, my = (a[1] + b[1]) / 2;
+          let nx = s1[1] - s0[1], ny = -(s1[0] - s0[0]);
+          const l = Math.hypot(nx, ny) || 1; nx /= l; ny /= l;
+          let c = nx * s0[0] + ny * s0[1];
+          if (nx * mx + ny * my - c > 0) { nx = -nx; ny = -ny; c = -c; }
+          sn = [nx, ny, c];
+        }
+        gl.uniform3f(n.loc.uSchnitt, sn[0], sn[1], sn[2]);
         gl.uniform1f(n.loc.uWeich, N.weich);
         gl.uniform3fv(n.loc.uFarbe, N.farbe);
-        gl.uniform3fv(n.loc.uGrund, GRUND);
+        gl.uniform3fv(n.loc.uBoden, GRUND);
         gl.uniform2f(n.loc.uRand, D.kopf.groesse[0] / 2, D.kopf.groesse[1] / 2);
         nebel = n;
       } catch (e) { nebel = null; }
@@ -5109,11 +5158,18 @@
       const n = nebel;
       gl.useProgram(n.prog);
       gl.uniformMatrix4fv(n.loc.uM, false, new Float32Array(cam.M));
-      gl.uniform3fv(n.loc.uAuge, cam.auge);
-      gl.uniform2f(n.loc.uNebel, k.dist * 1.3, k.dist * 3.4);
       gl.activeTexture(gl.TEXTURE2); gl.bindTexture(gl.TEXTURE_2D, n.tex); gl.activeTexture(gl.TEXTURE0);
-      gl.bindBuffer(gl.ARRAY_BUFFER, n.puf);
       gl.enableVertexAttribArray(n.aW);
+      /* Erst der Boden unter dem tiefsten Meer, im Dunkel des Grundes: der
+         Hintergrund ist jetzt Nebel, und wo das Meer tiefer ist als die
+         letzte Stufe, schien er sonst als helle Flaeche durch. */
+      gl.bindBuffer(gl.ARRAY_BUFFER, n.randPuf);
+      gl.vertexAttribPointer(n.aW, 2, gl.FLOAT, false, 0, 0);
+      gl.uniform1f(n.loc.uRandLage, 2);
+      gl.uniform1f(n.loc.uZ, (D.kopf.stufen[0] - 50) / 1000 * 2.0);
+      gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
+      gl.uniform1f(n.loc.uRandLage, 0);
+      gl.bindBuffer(gl.ARRAY_BUFFER, n.puf);
       gl.vertexAttribPointer(n.aW, 2, gl.SHORT, false, 0, 0);
       gl.enable(gl.BLEND); gl.depthMask(false);
       CFG.nebel.lagen.forEach(function (l, j) {
@@ -5123,6 +5179,13 @@
         gl.uniform2f(n.loc.uVersatz, 0.53 * j, 0.29 * j);
         gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
       });
+      // Randlage ueber dem hoechsten Berg (Ben Nevis 1,35 km), ganz deckend
+      gl.bindBuffer(gl.ARRAY_BUFFER, n.randPuf);
+      gl.vertexAttribPointer(n.aW, 2, gl.FLOAT, false, 0, 0);
+      gl.uniform1f(n.loc.uRandLage, 1);
+      gl.uniform1f(n.loc.uZ, 1.5 * UEBERHOEHUNG);
+      gl.uniform1f(n.loc.uT, zeitS);
+      gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
       gl.depthMask(true);
       if (n.aW !== loc.aP) gl.disableVertexAttribArray(n.aW);
       gl.useProgram(prog);
@@ -5365,7 +5428,7 @@
       '    vec2 w = mix(vW0, vW1, t * vQ.y / mix(vQ.x, vQ.y, t));' +
       '    float a = -vArt.x;' +
       '    if (vArt.x > 0.0) {' +
-      '      float al = vArt.x * (1.0 - smoothstep(0.88, 0.995, max(abs(w.x) / uRand.x, abs(w.y) / uRand.y)));' +
+      '      float al = vArt.x * (1.0 - smoothstep(' + (CFG.nebel ? '0.68, 0.86' : '0.88, 0.995') + ', max(abs(w.x) / uRand.x, abs(w.y) / uRand.y)));' +
       '      if (al <= 0.004) discard;' +
       '      a = (min(7.0, floor(al / 0.1 * 8.0)) + 0.5) / 8.0 * 0.1;' +
       '    }' +
@@ -5697,7 +5760,7 @@
       // Zustand zurueck fuer die Landschaft des naechsten Bildes.
       gl.enableVertexAttribArray(loc.aP);
       gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
-      gl.clearColor(GRUND[0], GRUND[1], GRUND[2], 1);
+      gl.clearColor(FERNE[0], FERNE[1], FERNE[2], 1);
       gl.enable(gl.DEPTH_TEST); gl.depthMask(true);
       gl.useProgram(prog);
     }
@@ -5886,7 +5949,7 @@
       const M = cam.M;
       const route2d = !ueber || CFG.bahn, sand2d = route2d || !ueber.sandOk;
       if (!route2d && !sand2d) {
-        const sl = M.join(',') + '|' + k.namen + '|' + k.sicht + '|' + k.ort + '|' + folge.length;
+        const sl = M.join(',') + '|' + k.namen + '|' + k.sicht + '|' + k.ort + '|' + folge.length + '|' + ueberOrt;
         if (sl === schildSchluessel) return;
         schildSchluessel = sl;
       } else schildSchluessel = '';
@@ -5966,8 +6029,20 @@
       // Bildrand, weicht er nach links, oben oder unten aus.
       const belegt = [];
       let beschriftet = route2d || sand2d;
+      schilder = [];
+      /* Unter dem Mauszeiger: ein feiner Ring um die Station, ihr Name
+         steht hell -- ohne Knopf, im Stil der Karte. */
+      if (ueberOrt >= 0) {
+        const s = projizieren(M, orte[ueberOrt]);
+        if (s) {
+          ctx2.strokeStyle = 'rgba(' + CFG.route.ring + ', 0.9)';
+          ctx2.lineWidth = 1.2;
+          ctx2.beginPath(); ctx2.arc(s[0], s[1], 8, 0, 2 * Math.PI); ctx2.stroke();
+          beschriftet = true;
+        }
+      }
       orte.forEach(function (o, i) {
-        const a = Math.max(k.namen, i === k.ort || imGebiet(k, i) ? k.sicht : 0);
+        const a = Math.max(k.namen, i === k.ort || imGebiet(k, i) ? k.sicht : 0, i === ueberOrt ? 1 : 0);
         if (a < 0.02 || !CFG.namen || !CFG.namen[i]) return;
         const s = projizieren(M, o);
         if (!s) return;
@@ -5990,6 +6065,7 @@
         }
         if (!wahl) return;
         belegt.push([wahl[0], wahl[1], b]);
+        schilder.push([i, wahl[0], wahl[1], b]);
         ctx2.lineWidth = 3; ctx2.strokeStyle = 'rgba(0, 0, 0,' + (0.55 * a).toFixed(3) + ')';
         ctx2.strokeText(txt, wahl[0], wahl[1]);
         ctx2.fillStyle = 'rgba(' + CFG.route.punkt + ',' + (0.9 * a).toFixed(3) + ')';
@@ -6269,7 +6345,7 @@
     function zeichne(u, zeitS) {
       if (!bereit) return;
       if (zeitS === undefined) zeitS = reducedMotion ? 0 : (performance.now() / 1000) % 100000;
-      const k = zustand(u);
+      const k = sprung ? sprungZustand(performance.now()) : zustand(u);
       zeigeTag(k.tag);
       medienZeigen(k);
       /* Sammelstation: den Ausschnitt erst jetzt rechnen, mit der Tafel
@@ -6278,9 +6354,126 @@
          ausserhalb des Bildes. Neigung und Drehung bleiben aus zustand(). */
       if (k.gruppe) { const c = gruppenKam(k.ort, W, H, tafelSicht); k.x = c.x; k.y = c.y; k.z = c.z; k.dist = c.dist; }
       const cam = kamera(k);
+      letzteK = k; letzteM = cam.M;
       landschaft(k, cam, zeitS);
       linien(k, cam, zeitS);
     }
+
+    /* ---- Direkt zu einer Station ----
+       Ein Klick (ein Tippen) auf eine Station fliegt ohne Umweg dorthin:
+       vom Bild, das gerade steht, auf derselben Bahn wie zur naechsten
+       Station, in der Zeit einer gewoehnlichen Fahrt -- bei weitem Weg
+       fliegt die Kamera eben schneller. Die Bilder des Ausgangsorts
+       blenden aus, unterwegs erscheint nichts; erst am Ziel kommen dessen
+       Bilder und Text, wie bei jeder Ankunft. Das Datum springt sofort. */
+    let sprung = null, letzteK = null, letzteM = null;
+    function sprungZustand(jetzt) {
+      const s = sprung, f = Math.min(1, (jetzt - s.t0) / 1000 / s.T);
+      const a = s.von, aus = 1 - stufe(0, 0.25, f);
+      const k = { namen: a.namen * aus, dampf: 0, tag: s.tag, sicht: a.sicht * aus, ort: a.ort,
+                  weg: s.ort - 1, wegL: 1e9, sand: a.sand * aus, weh: a.weh * aus, alleHell: a.alleHell * aus };
+      fliegen(k, a, s.nach, s.fl, f, a.bearing, s.nach.bearing);
+      return k;
+    }
+    function sprungDauer() {
+      // so lange wie eine gewoehnliche Fahrt von Station zu Station (Median)
+      const t = [];
+      for (let i = 1; i < HALTE.length - 2; i++) t.push(fahrtBauen(HALTE[i], HALTE[i + 1]).T);
+      t.sort(function (a, b) { return a - b; });
+      return t.length ? t[t.length >> 1] : 3;
+    }
+    function springeZu(ort) {
+      if (!bereit || !letzteK) return;
+      const j = ort + 1, ph = phasen.find(function (p) { return p.art === 'halt' && p.ort === ort; });
+      if (!ph || j >= HALTE.length) return;
+      if (!fahrt && !sprung && Math.abs(stand - HALTE[j]) < 0.002) return;   // schon da
+      if (reducedMotion) { springeSofort(HALTE[j]); return; }
+      const c = kams[ort], a = letzteK;
+      const nach = { x: c.x, y: c.y, z: c.z, dist: c.dist, pitch: c.pitch, bearing: c.bearing - 3 };
+      // Ankunft am Anfang des Halts; dessen erste Haelfte (Bilder blenden ein) faehrt danach normal.
+      const rein = (HALTE[j] - ph.ab) / ph.laenge * phasenZeit(ph);
+      fahrt = null; tempo = 0;
+      sprung = { t0: performance.now(), T: Math.max(1.2, sprungDauer() - rein), ort: ort, tag: ph.tagA,
+                 ab: ph.ab, u: HALTE[j], nach: nach,
+                 von: { x: a.x, y: a.y, z: a.z, dist: a.dist, pitch: a.pitch, bearing: a.bearing,
+                        namen: a.namen, sicht: a.sicht, ort: a.ort, sand: a.sand, weh: a.weh, alleHell: a.alleHell },
+                 fl: flugBauen([a.x, a.y], [nach.x, nach.y], a.dist * BREITE, nach.dist * BREITE) };
+      ziel = HALTE[j];
+      setzeScroll(ziel);
+      vorladen(ort);
+      anlaufen();
+    }
+    // Am Ziel angekommen: den Rest (Bilder blenden ein) faehrt die gewoehnliche Fahrt.
+    function sprungLanden() {
+      const s = sprung;
+      sprung = null;
+      stand = s.ab;
+      fahrt = fahrtBauen(s.ab, s.u);
+      ziel = s.u;
+    }
+
+    /* Welche Station liegt unter dem Zeiger? Punkt oder Name, auf dem
+       Handy mit groesserem Fangbereich. Eine Station in einer
+       Sammelstation fuehrt erst zu deren Draufsicht; steht diese schon,
+       zur einzelnen Station. */
+    let schilder = [], ueberOrt = -1;
+    function stationBei(x, y, finger) {
+      if (!letzteM || !CFG.namen) return -1;
+      const r = linc.getBoundingClientRect();
+      x -= r.left; y -= r.top;
+      let beste = -1, abst = finger ? 30 : 18;
+      orte.forEach(function (o, i) {
+        if (!CFG.namen[i]) return;
+        const s = projizieren(letzteM, o);
+        if (!s || s[0] < 0 || s[1] < 0 || s[0] > W || s[1] > H) return;
+        const d = Math.hypot(s[0] - x, s[1] - y);
+        if (d < abst) { abst = d; beste = i; }
+      });
+      if (beste < 0) schilder.forEach(function (q) {
+        if (x > q[1] - 4 && x < q[1] + q[3] + 4 && Math.abs(y - q[2]) < (finger ? 14 : 10)) beste = q[0];
+      });
+      return beste;
+    }
+    function stationsZiel(i) {
+      for (const g in GRUPPEN) {
+        const gi = +g;
+        if (gi !== i && GRUPPEN[g].indexOf(i) >= 0) {
+          // in der Draufsicht oder schon an einer ihrer Stationen
+          const drin = letzteK && !sprung && letzteK.sicht > 0.3 &&
+                       (letzteK.gruppe === GRUPPEN[g] || GRUPPEN[g].indexOf(letzteK.ort) >= 0);
+          return drin ? i : gi;
+        }
+      }
+      return i;
+    }
+    function klickbar(e) {
+      return bereit && gepinnt() && !(e.target.closest &&
+        e.target.closest('.karte-tafel, .karte-zeit, .karte-datum, button, a, video'));
+    }
+    halt.addEventListener('click', function (e) {
+      if (!klickbar(e)) return;
+      const i = stationBei(e.clientX, e.clientY, e.pointerType === 'touch' || (sindFinger && e.pointerType !== 'mouse'));
+      if (i < 0) return;
+      // Der Ring bliebe sonst an der Station haengen, waehrend die Kamera wegfliegt.
+      ueberOrt = -1; halt.classList.remove('ueber-station');
+      springeZu(stationsZiel(i));
+    });
+    let sindFinger = false;
+    halt.addEventListener('pointerdown', function (e) { sindFinger = e.pointerType !== 'mouse'; }, { passive: true });
+    halt.addEventListener('pointermove', function (e) {
+      if (e.pointerType !== 'mouse') return;
+      const i = klickbar(e) ? stationBei(e.clientX, e.clientY, false) : -1;
+      if (i === ueberOrt) return;
+      ueberOrt = i;
+      halt.classList.toggle('ueber-station', i >= 0);
+      if (!laeuft) zeichne(stand);
+    }, { passive: true });
+    halt.addEventListener('pointerleave', function () {
+      if (ueberOrt < 0) return;
+      ueberOrt = -1;
+      halt.classList.remove('ueber-station');
+      if (!laeuft) zeichne(stand);
+    }, { passive: true });
 
     /* ---- Schritt fuer Schritt ----
        Ein Einrasten am Mausrad (ein Wischen, eine Pfeiltaste) faehrt genau
@@ -6341,13 +6534,13 @@
       eigenY = scroller.scrollTop;
     }
     function haltIndex() {
-      const u = fahrt ? fahrt.nach : stand;
+      const u = fahrt ? fahrt.nach : sprung ? sprung.u : stand;
       let b = 0;
       for (let i = 1; i < HALTE.length; i++) if (Math.abs(HALTE[i] - u) < Math.abs(HALTE[b] - u)) b = i;
       return b;
     }
     function stationsSchritt(d) {
-      if (fahrt || !bereit) return false;
+      if (fahrt || sprung || !bereit) return false;
       const j = haltIndex() + d;
       if (j < 0 || j >= HALTE.length) return false;
       fahrt = fahrtBauen(stand, HALTE[j]);
@@ -6357,7 +6550,7 @@
       return true;
     }
     function springeSofort(einheit) {
-      fahrt = null; tempo = 0;
+      fahrt = null; sprung = null; tempo = 0;
       ziel = stand = einheit;
       setzeScroll(einheit);
       zeichne(stand);
@@ -6386,7 +6579,9 @@
       }
       const dt = Math.min(0.05, (jetzt - zuletzt) / 1000);
       zuletzt = jetzt;
-      if (fahrt) {
+      if (sprung && jetzt - sprung.t0 >= sprung.T * 1000) sprungLanden();
+      if (sprung) standGezeichnet = -1;
+      else if (fahrt) {
         stand = fahrtStand(fahrt, jetzt);
         if (jetzt - fahrt.t0 >= fahrt.T * 1000) { stand = ziel = fahrt.nach; fahrt = null; }
       } else folgen(dt);
@@ -6411,7 +6606,7 @@
          springt sofort mit (wie an der Zeitleiste) statt minutenlang
          hinterherzukriechen, und ordnet sich danach an der naechsten
          Station ein. */
-      fahrt = null; tempo = 0;
+      fahrt = null; sprung = null; tempo = 0;
       ziel = stand = zielAusScroll();
       anlaufen();
       clearTimeout(fremdZeit);
@@ -6428,7 +6623,7 @@
     scroller.addEventListener('touchstart', function () { vorGeste = haltIndex(); vorGesteDrin = gepinnt(); }, { passive: true });
     scroller.addEventListener('touchend', function () { touchEnde = performance.now(); }, { passive: true });
     function einordnen() {
-      if (!bereit || fahrt || !viewer.classList.contains('is-active')) return;
+      if (!bereit || fahrt || sprung || !viewer.classList.contains('is-active')) return;
       const u = zielAusScroll();
       if (u <= 0.001 || u >= EINHEITEN - 0.001) {
         // Kurz vor der Karte stehen geblieben, auf sie zu: hineinrasten wie eine Seite im Buch
@@ -6456,7 +6651,7 @@
     function einrasten(amEnde) {
       sperreBis = performance.now() + 900;
       const e = amEnde ? EINHEITEN : 0;
-      fahrt = null; tempo = 0; ziel = stand = e;
+      fahrt = null; sprung = null; tempo = 0; ziel = stand = e;
       scroller.scrollTo({ top: Math.round(yFuer(e)), behavior: 'smooth' });
       zeichne(stand);
       anlaufen();
