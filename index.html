@@ -1241,6 +1241,19 @@
     max-height: 100%;
   }
   .stage-wrap.fs-ersatz .aura { display: none; }
+  /* Gross: aus der Projektschau startet der Film fensterfuellend (Groesse
+     und Lage setzt das Skript), beim ersten Scrollen gleitet er an seinen
+     Platz -- wie der Hero-Film auf der Startseite. */
+  .stage-wrap.gross { display: flex; align-items: center; justify-content: center; background: #000; }
+  .stage-wrap.gross .viewer-stage { flex: none; }
+  .stage-wrap.gross .aura { display: none; }
+  .stage-wrap.gleitet { z-index: 6; }
+  .stage-wrap.gleitet .aura { opacity: 0; }
+  .gross-schwarz {
+    position: fixed; inset: 0; z-index: 5; background: #000; pointer-events: none;
+    transition: opacity 0.9s var(--ease);
+  }
+  .gross-schwarz.weg { opacity: 0; }
   /* Im Vollbild ist die Steuerung die einzige Ausstiegsmoeglichkeit -- sie
      darf sich dort nicht erst beim Ueberfahren zeigen. */
   .stage-wrap:fullscreen .stage-ui,
@@ -1652,7 +1665,7 @@
           <div class="schau-halt" id="schau-halt">
         <div class="schau-buehne" id="schau-buehne" data-hof-sammler>
         <div class="schau-platz aura-host" data-viewer="v2" data-titel="The Same Gray"
-             data-gattung="Porträtfilm · Schottland" data-film="1" aria-hidden="false">
+             data-gattung="Kurzfilm · Schottland" data-film="1" aria-hidden="false">
           <img src="Images/web/thumbnails/thumbnailsamegrey-2400.webp"
                srcset="Images/web/thumbnails/thumbnailsamegrey-800.webp 800w, Images/web/thumbnails/thumbnailsamegrey-1200.webp 1200w, Images/web/thumbnails/thumbnailsamegrey-1600.webp 1600w, Images/web/thumbnails/thumbnailsamegrey-2400.webp 2400w"
                sizes="(prefers-reduced-motion: reduce) calc(100vw - 32px), min(calc((100vw - 32px) * 0.88), 80vh)"
@@ -1746,8 +1759,8 @@
             <div class="card-preview"><img src="Images/web/stephen-am-strand-400.webp" srcset="Images/web/stephen-am-strand-400.webp 400w, Images/web/stephen-am-strand-800.webp 800w" sizes="(min-width: 760px) 132px, (max-width: 620px) 96px, 112px" alt="" loading="lazy" decoding="async"></div>
             <div class="card-info">
               <div class="card-titleline">
-                <span class="name">[Filmtitel]</span>
-                <span class="type">Porträtfilm · Schottland</span>
+                <span class="name">The Same Gray</span>
+                <span class="type">Kurzfilm · Schottland</span>
               </div>
               <p class="card-teaser">[Ein-Satz-Teaser — Text fehlt mir noch]</p>
             </div>
@@ -1954,7 +1967,7 @@
       </div>
       </div>
       <div class="viewer-head">
-        <span class="eyebrow">Porträtfilm · Schottland</span>
+        <span class="eyebrow">Kurzfilm · Schottland</span>
         <h2 id="v2-title">The Same Gray</h2>
       </div>
       <div class="viewer-text">
@@ -2761,6 +2774,7 @@
 
     function umschalten() {
       if (laeuft) return;
+      if (wrap._grossWeg) wrap._grossWeg(false);
       laeuft = true;
       wrap.classList.add('fs-zu');
 
@@ -2985,10 +2999,8 @@
     if (busy) return;
     const viewer = document.getElementById(trigger.dataset.viewer);
     if (!viewer) return;
-    /* "direkt" kommt von der Projektschau: von dort aus fuehrt "Ansehen"
-       nicht auf die Projektseite, sondern gleich ins Vollbild des Films.
-       Die Projektseite wird trotzdem ganz normal geoeffnet -- sie liegt dann
-       hinter dem Vollbild, und genau dort landet man beim Verlassen. */
+    /* "direkt" kommt von der Projektschau: von dort aus startet der Film
+       fensterfuellend, die Projektseite liegt darunter (siehe grossStarten). */
     const direkt = trigger.dataset.direkt === '1';
     busy = true;
     current = viewer;
@@ -3035,21 +3047,16 @@
       viewer.querySelectorAll('.aura-host').forEach(buildAura);
       viewer.querySelector('.viewer-scroll').scrollTop = 0;
 
-      /* Jetzt, hinter der gerade aufgehenden Blende, ins Vollbild. Der Film
-         haengt schon seit dem Klick drin, die Buehne hat also eine Groesse
-         und laesst sich einpassen.
-         Der Aufruf liegt rund 900 ms nach dem Klick. Das ist noch innerhalb
-         der Zeitspanne, in der ein Browser eine Vollbildanfrage als vom
-         Nutzer ausgeloest anerkennt; wird sie dennoch abgelehnt, faengt der
-         Ersatz aus vollbild() das ab und es sieht gleich aus.
-         Ohne Film (Schottland hat noch keine Video-Kennung) bleibt es bei der
-         Projektseite -- ein Vollbild ohne Inhalt waere eine schwarze Flaeche. */
+      /* Jetzt, hinter der gerade aufgehenden Blende, gross starten (siehe
+         grossStarten): der Film fuellt das Fenster, beim ersten Scrollen
+         gleitet er an seinen Platz. Frueher ging es hier ins echte Vollbild
+         -- das lehnten Browser ab, weil die Anfrage 900 ms nach dem Klick
+         nicht mehr als vom Nutzer ausgeloest galt, und man sah den Film
+         klein auf der Projektseite. Ohne Film bleibt es bei der Projektseite. */
       if (direkt) {
         const wrap = viewer.querySelector('.stage-wrap');
         const stage = viewer.querySelector('.viewer-stage');
-        if (wrap && wrap._fsUm && stage && stage.classList.contains('has-video')) {
-          wrap._fsUm();
-        }
+        if (wrap && stage && stage.classList.contains('has-video')) grossStarten(viewer);
       }
 
       setTimeout(function () {
@@ -3058,6 +3065,114 @@
         if (closeBtn) closeBtn.focus({ preventScroll: true });
       }, FRAME_MS);
     }, SHUT_MS);
+  }
+
+  /* Aus der Projektschau ("Ansehen") startet der Film gross: die Buehne
+     fuellt das ganze Fenster, schwarz um den Film -- wie der Hero-Film oben
+     auf der Startseite. Beim ersten Scrollen gleitet er an seinen Platz auf
+     der Projektseite, und darunter kommt der Rest. */
+  function grossStarten(viewer) {
+    const sc = viewer.querySelector('.viewer-scroll');
+    const wrap = viewer.querySelector('.stage-wrap');
+    const stage = viewer.querySelector('.viewer-stage');
+    const frame = stage && stage.querySelector('iframe');
+    if (!sc || !wrap || !stage || !frame) return;
+    let an = true, tY = null;
+    function leeren() {
+      wrap.style.marginTop = ''; wrap.style.marginLeft = '';
+      wrap.style.width = ''; wrap.style.height = '';
+    }
+    function messen() {
+      if (!an) return;
+      leeren();
+      /* Gemessen gegen den Anfang der Bildlaufflaeche. Die Projektseite
+         gleitet beim Oeffnen noch 16 px nach oben -- diese Verschiebung
+         wird herausgerechnet, sonst stuende der Film danach zu hoch. */
+      const r = wrap.getBoundingClientRect(), s = sc.getBoundingClientRect();
+      const inner = wrap.parentElement;
+      let dy = 0;
+      try { const t = getComputedStyle(inner).transform; if (t && t !== 'none') dy = new DOMMatrix(t).m42; } catch (e) {}
+      wrap.style.marginTop = (s.top + sc.clientTop - sc.scrollTop - (r.top - dy)).toFixed(1) + 'px';
+      wrap.style.marginLeft = (s.left + sc.clientLeft - r.left).toFixed(1) + 'px';
+      wrap.style.width = sc.clientWidth + 'px';
+      wrap.style.height = sc.clientHeight + 'px';
+      passeBuehne(wrap, stage, true);
+      fitFrame(stage, frame, UEBERZOOM);
+    }
+    /* Die erste Bewegung nach unten setzt nur den Film an seinen Platz und
+       scrollt die Seite nicht gleich mit -- sonst kaeme er oben angeschnitten
+       an. Danach scrollt alles ganz normal. */
+    function rad(e) { if (e.deltaY > 0) { if (e.cancelable) e.preventDefault(); weg(true); } }
+    function fingerAn(e) { tY = e.touches[0].clientY; }
+    function finger(e) {
+      if (tY !== null && tY - e.touches[0].clientY > 8) {
+        if (e.cancelable) e.preventDefault();
+        // Der Rest dieses Wischens scrollt auch nicht mit, erst das naechste.
+        function halten(f) { if (f.cancelable) f.preventDefault(); }
+        function los() {
+          sc.removeEventListener('touchmove', halten);
+          sc.removeEventListener('touchend', los); sc.removeEventListener('touchcancel', los);
+        }
+        sc.addEventListener('touchmove', halten, { passive: false });
+        sc.addEventListener('touchend', los); sc.addEventListener('touchcancel', los);
+        weg(true);
+      }
+    }
+    function rollt() { if (sc.scrollTop > 6) weg(true); }
+    function taste(e) {
+      if (current === viewer && ['ArrowDown', 'PageDown', 'End'].indexOf(e.key) >= 0) { e.preventDefault(); weg(true); }
+    }
+    function aus() {
+      sc.removeEventListener('wheel', rad);
+      sc.removeEventListener('touchstart', fingerAn);
+      sc.removeEventListener('touchmove', finger);
+      sc.removeEventListener('scroll', rollt);
+      document.removeEventListener('keydown', taste);
+      window.removeEventListener('resize', messen);
+      wrap._grossWeg = null;
+    }
+    function weg(sanft) {
+      if (!an) return;
+      an = false;
+      aus();
+      const a = stage.getBoundingClientRect();
+      wrap.classList.remove('gross');
+      leeren();
+      passeBuehne(wrap, stage, false);
+      if (frame.isConnected) fitFrame(stage, frame, UEBERZOOM);
+      if (!sanft || reducedMotion) return;
+      /* Die Buehne springt an ihren Platz und wird von dort aus so
+         verschoben und vergroessert, dass sie genau so dasteht wie eben --
+         dann gleitet sie zurueck, und das Schwarz drumherum blendet aus. */
+      sc.scrollTop = 0;
+      const b = stage.getBoundingClientRect();
+      if (!b.width) return;
+      const schwarz = document.createElement('div');
+      schwarz.className = 'gross-schwarz';
+      schwarz.setAttribute('aria-hidden', 'true');
+      sc.appendChild(schwarz);
+      wrap.classList.add('gleitet');
+      stage.style.transformOrigin = '0 0';
+      stage.style.transform = 'translate(' + (a.left - b.left).toFixed(1) + 'px, ' + (a.top - b.top).toFixed(1) + 'px) scale(' + (a.width / b.width).toFixed(4) + ')';
+      void stage.offsetWidth;
+      stage.style.transition = 'transform 0.9s var(--ease)';
+      stage.style.transform = '';
+      schwarz.classList.add('weg');
+      setTimeout(function () {
+        schwarz.remove();
+        wrap.classList.remove('gleitet');
+        stage.style.transition = ''; stage.style.transformOrigin = '';
+      }, 1000);
+    }
+    wrap.classList.add('gross');
+    messen();
+    sc.addEventListener('wheel', rad, { passive: false });
+    sc.addEventListener('touchstart', fingerAn, { passive: true });
+    sc.addEventListener('touchmove', finger, { passive: false });
+    sc.addEventListener('scroll', rollt, { passive: true });
+    document.addEventListener('keydown', taste);
+    window.addEventListener('resize', messen);
+    wrap._grossWeg = weg;
   }
 
   function closeProject() {
@@ -3085,6 +3200,8 @@
     viewer.classList.remove('is-active');
 
     setTimeout(function () {
+      const gw = viewer.querySelector('.stage-wrap');
+      if (gw && gw._grossWeg) gw._grossWeg(false);
       viewer.hidden = true;
       page.classList.remove('is-hidden');
       body.classList.remove('is-viewing');
