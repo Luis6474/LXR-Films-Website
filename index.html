@@ -4302,8 +4302,12 @@
       /* "schnitt": eine schraege Kante, die die Nordwest-Ecke des klaren
          Gebiets abschneidet (von Punkt zu Punkt, Laenge/Breite) -- dort
          rueckt der Nebel naeher an Neist Point und The Storr heran. */
-      nebel: { klar: [-6.88, 55.95, -4.65, 57.8], schnitt: [[-6.95, 57.58], [-6.3, 57.83]],
-               weich: 110, farbe: [0.42, 0.47, 0.52],
+      /* "rund": Radius (km), mit dem die Ecken des klaren Gebiets gerundet
+         sind -- der Nebel kommt dann von allen Seiten wie um eine Lichtung,
+         nicht als Vorhang von links und rechts. Oben (Norden) rueckt er
+         nur wenig naeher. Duester: dunkles Schiefergrau. */
+      nebel: { klar: [-6.88, 55.95, -4.65, 57.64], schnitt: [[-6.95, 57.58], [-6.3, 57.83]],
+               rund: 55, weich: 110, farbe: [0.25, 0.285, 0.32],
                lagen: [[40, 0.42], [170, 0.3], [420, 0.2]] },
       ueberhoehung: 3.2,
       grund: [0.016, 0.03, 0.05],
@@ -5040,9 +5044,13 @@
       const vs = 'attribute vec2 aW; uniform mat4 uM; uniform float uQ; uniform float uZ; varying vec3 vW;' +
         'void main(){ vW = vec3(aW / uQ, uZ); gl_Position = uM * vec4(vW, 1.0); }';
       const fs = GENAU +
-        'uniform sampler2D uRausch; uniform vec4 uKlar; uniform vec3 uSchnitt; uniform float uWeich; uniform float uT; uniform vec2 uVersatz; uniform float uDichte;' +
+        'uniform sampler2D uRausch; uniform vec4 uKlar; uniform float uRund; uniform vec3 uSchnitt; uniform float uWeich; uniform float uT; uniform vec2 uVersatz; uniform float uDichte;' +
         'uniform float uRandLage; uniform vec3 uFarbe; uniform vec3 uBoden; uniform vec2 uRand; varying vec3 vW;' +
         'float tx(vec2 q){ return texture2D(uRausch, q).r; }' +
+        // Abstand zum klaren Gebiet (Kasten mit gerundeten Ecken, innen negativ), dazu die schraege Kante
+        'float klar(vec2 q){ vec2 m = (uKlar.xy + uKlar.zw) * 0.5, h = (uKlar.zw - uKlar.xy) * 0.5 - uRund;' +
+        '  vec2 a = abs(q - m) - h;' +
+        '  return max(length(max(a, 0.0)) + min(max(a.x, a.y), 0.0) - uRund, dot(uSchnitt.xy, q) - uSchnitt.z); }' +
         'void main(){' +
         '  vec2 p = vW.xy;' +
         '  vec2 t = vec2(uT * 0.0011, uT * 0.0005);' +
@@ -5052,17 +5060,25 @@
         // Boden unter dem tiefsten Meer: fuellt, wo das Meer tiefer ist als die letzte Stufe
         '  if (uRandLage > 1.5) { gl_FragColor = vec4(uBoden, 1.0); return; }' +
         '  if (uRandLage > 0.5) {' +
-        '    float r = max(abs(p.x) / uRand.x, abs(p.y) / uRand.y) + (tx(p * 0.006 + t) - 0.5) * 0.05;' +
+        // weit innen gar nicht erst ins Rauschen greifen (es verschiebt r um hoechstens 0,025)
+        // gerundet (Superellipse): zu den Ecken hin frueher dicht, kein gerader Vorhang
+        '    vec2 rr = abs(p) / uRand; rr *= rr;' +
+        '    float r = sqrt(sqrt(dot(rr, rr)));' +
+        '    if (r < 0.73) discard;' +
+        '    r += (tx(p * 0.006 + t) - 0.5) * 0.05;' +
         '    float ra = smoothstep(0.76, 0.92, r);' +
         '    if (ra <= 0.0) discard;' +
         '    gl_FragColor = vec4(uFarbe, ra);' +
         '    return;' +
         '  }' +
+        /* Tief im klaren Gebiet sofort verwerfen, vor jedem Texturzugriff:
+           die Verwirbelung verschiebt den Punkt um hoechstens 30 * Wurzel 2. */
+        '  if (klar(p) < -43.0) discard;' +
         // die Grenze des klaren Gebiets verwirbelt: Schwaden statt Kante
         '  vec2 w = vec2(tx(p * 0.0042 + uVersatz + t), tx(p * 0.0042 - t + uVersatz + 0.37)) - 0.5;' +
         '  vec2 pw = p + w * 60.0;' +
         // Abstand zum klaren Gebiet: Kasten, dazu die schraege Kante
-        '  float d = max(length(max(max(uKlar.xy - pw, pw - uKlar.zw), 0.0)), dot(uSchnitt.xy, pw) - uSchnitt.z);' +
+        '  float d = klar(pw);' +
         '  if (d <= 0.0) discard;' +
         '  float feld = smoothstep(0.0, uWeich, d);' +
         // Schwaden in drei Groessen, die feineren ziehen schneller
@@ -5070,7 +5086,7 @@
         '  float s = tx(q + t * 1.6) * 0.55 + tx(q * 2.3 - t * 2.4 + 0.21) * 0.3 + tx(q * 5.1 + t * 3.5 + 0.6) * 0.15;' +
         '  float sw = smoothstep(0.3, 0.78, s);' +
         // hellere Kuppen, dunklere Taeler -- Licht im Nebel
-        '  vec3 c = uFarbe * (0.62 + 0.62 * sw);' +
+        '  vec3 c = uFarbe * (0.6 + 0.5 * sw);' +
         '  float a = feld * mix(0.28, 1.0, sw);' +
         '  gl_FragColor = vec4(c, min(1.0, a) * uDichte);' +
         '}';
@@ -5106,7 +5122,7 @@
         const pr = glProgramm(q[0], q[1]);
         if (!gl.getProgramParameter(pr, gl.LINK_STATUS)) return;
         const n = { prog: pr, loc: {} };
-        ['uM', 'uQ', 'uZ', 'uRausch', 'uKlar', 'uSchnitt', 'uWeich', 'uT', 'uVersatz', 'uDichte', 'uRandLage', 'uFarbe', 'uBoden', 'uRand'].forEach(function (x) {
+        ['uM', 'uQ', 'uZ', 'uRausch', 'uKlar', 'uRund', 'uSchnitt', 'uWeich', 'uT', 'uVersatz', 'uDichte', 'uRandLage', 'uFarbe', 'uBoden', 'uRand'].forEach(function (x) {
           n.loc[x] = gl.getUniformLocation(pr, x);
         });
         n.aW = gl.getAttribLocation(pr, 'aW');
@@ -5133,6 +5149,7 @@
         gl.useProgram(pr);
         gl.uniform1i(n.loc.uRausch, 2);
         gl.uniform1f(n.loc.uQ, D.kopf.q);
+        gl.uniform1f(n.loc.uRund, N.rund || 0);
         gl.uniform4f(n.loc.uKlar, Math.min(a[0], b[0]), Math.min(a[1], b[1]), Math.max(a[0], b[0]), Math.max(a[1], b[1]));
         // Schraege Kante: die Normale zeigt vom klaren Gebiet weg.
         let sn = [0, 0, 1e9];
@@ -6447,7 +6464,7 @@
       return i;
     }
     function klickbar(e) {
-      return bereit && gepinnt() && !(e.target.closest &&
+      return bereit && (reducedMotion || gepinnt()) && !(e.target.closest &&
         e.target.closest('.karte-tafel, .karte-zeit, .karte-datum, button, a, video'));
     }
     halt.addEventListener('click', function (e) {
@@ -6994,7 +7011,11 @@
       const aktiv = viewer.classList.contains('is-active');
       if (aktiv && !warAktiv) laden();
       // Geschlossen: Videos der Tafel sofort still, nicht erst nach der Blende
-      if (!aktiv && warAktiv) medienAnhalten();
+      if (!aktiv && warAktiv) {
+        medienAnhalten();
+        // Ein Direktflug, der beim Schliessen noch lief, ist damit angekommen.
+        if (sprung) { stand = ziel = sprung.u; sprung = null; }
+      }
       warAktiv = aktiv;
       if (!aktiv && viewer.hidden) freigeben();
     }).observe(viewer, { attributes: true, attributeFilter: ['class', 'hidden'] });
@@ -7006,13 +7027,13 @@
          laenger, die Scrollposition in Pixeln bliebe aber stehen -- man
          landete Tage weiter, zwischen zwei Stationen. Steht man in der
          Karte, bleibt man an derselben Station. */
-      const drin = stand > 0.001 && stand < EINHEITEN - 0.001, station = haltIndex();
+      const drin = !!sprung || (stand > 0.001 && stand < EINHEITEN - 0.001), station = haltIndex();
       groesse();
       // Die Tafel nach der neuen Groesse -- vorher rechnete sie mit der alten.
       if (folge.length) tafelSetzen();
       vorbereiten(W, H);
       if (drin) {
-        fahrt = null; tempo = 0;
+        fahrt = null; sprung = null; tempo = 0;
         ziel = stand = HALTE[Math.min(station, HALTE.length - 1)];
         setzeScroll(stand);
         clearTimeout(fremdZeit);
