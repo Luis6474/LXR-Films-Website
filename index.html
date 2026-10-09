@@ -41,29 +41,19 @@
        den Stämmen: sehr tief, entsättigt, im Kern grün mit einem kühlen Zug
        ins Blaue. Genau das ist die Fläche, die hier ausserhalb der Lichthöfe
        steht -- Moos und Nadelgrün sind die Lichter des Bildes, nicht sein Grund.
-       Vorher stand hier ein reines Dunkelblau (#071224). */
-    /* Dunkler und ins Blaugruene verschoben. Vorher #0b1614 -- das war
-       gruendominant (22 Gruen zu 20 Blau). Jetzt fuehrt Blau (21 zu 15), und
-       die Helligkeit faellt von 17,7 auf 13,7, also rund ein Fuenftel.
-       Zusammen mit der entfernten Vignette ergibt das insgesamt einen
-       ruhigeren, tieferen Grund -- die Vignette hatte die Raender zwar
-       abgedunkelt, aber als Form, nicht als Ton. */
+       Blau fuehrt knapp vor Gruen; die Tiefe kommt aus dem Ton, nicht aus
+       einer Vignette. */
     --bg: #050f15;
     --bg-deep: #03080c;
     --text: #e6eae8;
-    /* Angehoben von #8d9792. Der Schatten an den Buchstaben hat vorher den
-       Grund unter jeder Zeile mit abgedunkelt und damit einen Teil des
-       Kontrasts geliefert. Ohne ihn lag der zurueckgenommene Fliesstext im
-       hellsten Lichthof nur noch bei 2,6:1 statt der noetigen 4,5:1.
-       Die Abstufung zum hellen Text (#e6eae8) bleibt deutlich erkennbar --
-       die Hierarchie traegt also weiter, nur eben ueber einen Wert, der auch
-       auf einem aufgehellten Grund noch lesbar ist. */
+    /* Zurueckgenommener Text: hell genug fuer 4,5:1 auch im hellsten
+       Lichthof (ohne Textschatten), und doch klar vom hellen Text abgesetzt. */
     --text-dim: #b8c0bb;
     --line: #242e2a;
     --accent: #7f8f88;
     --col: 720px;
     --wide: 1120px;
-    --bar-h: 30px;                                  /* nur noch Innenabstand */
+    --bar-h: 30px;                                  /* Innenabstand */
     --ease: cubic-bezier(0.65, 0, 0.35, 1);         /* langsame Kamerafahrt */
     --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
     --ease-dock: cubic-bezier(0.72, 0, 0.16, 1);  /* Umschalten, kein Mitschrumpfen */
@@ -87,19 +77,13 @@
   /* Tiefe statt flacher Fläche */
   body::before {
     content: ""; position: fixed; inset: 0; z-index: -1;
-    /* Der aeussere Halt steht jetzt auf reinem Schwarz statt auf dem
-       Dunkelblau #03080c. Betroffen ist nur das Ende des Verlaufs -- oben
-       bleibt es #0d1a22, in der Mitte der Grundton. Die Ecken und der untere
-       Rand laufen also wirklich aus, statt auf einem blauen Sockel stehen zu
-       bleiben. Die Sterne liegen darueber und bleiben sichtbar: gegen Schwarz
-       setzt sich selbst der schwaechste noch ab.
-       --bg-deep bleibt unveraendert, es traegt weiter die Projektseiten. */
+    /* Oben #0d1a22, in der Mitte der Grundton, aussen reines Schwarz: Ecken
+       und unterer Rand laufen wirklich aus. Die Sterne liegen darueber. */
     background:
       radial-gradient(140% 90% at 50% 0%, #0d1a22 0%, var(--bg) 45%, #000 100%);
   }
 
-  /* Schnitt 400 statt 500. Noto Serif traegt bei grossen Graden auch im
-     Normalschnitt genug Gewicht; 500 wirkte in der Ueberschrift satt. */
+  /* Schnitt 400: Noto Serif traegt bei grossen Graden genug Gewicht. */
   h1, h2, h3 { font-family: 'Noto Serif', Georgia, serif; font-weight: 400; line-height: 1.18; margin: 0; }
   p { margin: 0; }
   img { display: block; width: 100%; height: 100%; object-fit: cover; }
@@ -132,21 +116,16 @@
   }
   .js .reveal-media.show { opacity: 1; transform: none; filter: none; }
 
-  /* Bildkasten: der innere Rahmen ist höher als der Ausschnitt, damit die
-     Kamerafahrt Spielraum hat, ohne je einen Rand freizulegen. */
-  /* Der innere Rahmen ist hoeher als der Ausschnitt, damit die Kamerafahrt
-     Spielraum hat. Jeder Prozentpunkt hier kostet aber Bild: man sieht immer
-     nur die Mitte. Frueher -8 % (also 16 % hoeher) -- das hat bei Portraets
-     den Kopf gekappt. Jetzt -3 %, passend zum kleineren Fahrweg unten. */
+  /* Bildkasten: der innere Rahmen ist 6 % hoeher als der Ausschnitt, damit
+     die Kamerafahrt Spielraum hat. Mehr kappt bei Portraets den Kopf. */
   .media-move {
     position: absolute; inset: -3% 0;
     will-change: transform;
   }
   .media-move > img { width: 100%; height: 100%; object-fit: cover; }
 
-  /* Sehr langsame Eigenbewegung, damit Standbilder wie laufendes Material wirken. */
-  /* Beginnt bei 100 % -- vorher waren schon im Ruhezustand 5 % Bild weg, und
-     am Ende der Bewegung 13 %. Die Bewegung bleibt, der Beschnitt faellt weg. */
+  /* Sehr langsame Eigenbewegung, damit Standbilder wie laufendes Material
+     wirken. Beginnt bei 100 %, damit im Ruhezustand nichts beschnitten ist. */
   @keyframes drift {
     from { transform: scale(1)     translate3d(0, 0, 0); }
     to   { transform: scale(1.055) translate3d(-0.8%, -0.6%, 0); }
@@ -158,68 +137,25 @@
   .holds .standout { position: sticky; top: 46vh; }
 
   /* ---------- Lichthof ----------
-     Bilder und Filme sollen den dunklen Grund um sich herum farbig aufhellen,
-     statt als Kachel darin zu liegen. Der Schein ist kein geschaetzter Farbwert,
-     sondern das Bild selbst: eine zweite Kopie, stark unscharf und etwas groesser
-     dahintergelegt. Damit stimmt die Farbe immer -- auch wenn ein Bild getauscht
-     wird. Die Kopie liegt bereits im Zwischenspeicher des Browsers, kostet also
-     keinen zusaetzlichen Ladevorgang. */
+     Bilder und Filme hellen den dunklen Grund um sich herum in ihrer eigenen
+     Farbe auf, statt als Kachel darin zu liegen. Der Hof ist ein reiner
+     Farbverlauf; die Farbe liest das Skript einmal aus dem Bild aus. Kein
+     weichgezeichnetes Bild: das kostete pro Bild rund 37 MB Grafikspeicher
+     und fuehrte zu Flackern und schwarzen Rechtecken. */
   .aura-host { position: relative; }
-  /* Der Lichthof war bisher eine zweite, stark weichgezeichnete Kopie des
-     Bildes. Optisch schoen, aber die Rechnung dahinter war masslos: bei 1000 %
-     Groesse sind das 4460x2100 Bildpunkte, die mit 300 px Radius weichgezeichnet
-     werden -- rund 37 MB Grafikspeicher pro Bild, viermal auf der Seite.
-     Zusammen mit den Vollbild-Ebenen der Drehunschaerfe war der Grafikspeicher
-     voll; sichtbar wurde das als Flackern, Ruckeln und kurz aufblitzenden
-     schwarzen Rechtecken.
-
-     Jetzt ist es ein reiner Farbverlauf. Die Farbe wird weiterhin aus dem Bild
-     selbst genommen (siehe Skript) -- sie ist also genauso echt wie vorher,
-     nur einmal ausgelesen statt in jedem Einzelbild neu weichgezeichnet.
-     Kostet keine Textur und keinen Weichzeichner. */
   .aura {
     position: absolute;
-    /* 640 % statt 1000 %: als Verlauf kostet die Flaeche keine Weichzeichnung
-       mehr, aber sie muss weiterhin gefuellt werden. 640 % sind rund 2850 px
-       Reichweite -- mehr als genug und nicht einmal halb so viel Flaeche. */
-    /* Reichweite zurueckgenommen: 640 % -> 400 % -> 240 % (Ueberstand pro
-       Seite 150 % -> 70 % der Bildgroesse). Bei 400 % reichte der Hof neben
-       schmalen Bildern im Fliesstext (etwa 550 px breit) noch weit in den
-       Seitenrand hinein -- gemessen bei 1920 px Fensterbreite stand dort
-       ein Streifen mit Mittelwert 40-47 statt der ueblichen 10-15, sichtbar
-       als diffuser Schein, der die Sterne im ganzen Randbereich ertraenkt
-       hat ("Lichtverschmutzung"). Die Verhaeltnisse innerhalb des Hofs
-       bleiben gleich -- er ist am Bild unveraendert hell, er hoert nur
-       naeher dran auf. */
-    /* Im Gegenzug zum schwaecheren Textschein ein Stueck grosszuegiger:
-       70 % -> 90 % Ueberstand je Seite. Noch klar unter den 150 %, die
-       urspruenglich die Randbereiche zugedunstet haben. */
-    /* Ueberstand je Seite in Prozent der Bildgroesse (Regler: hofUeber). */
+    /* Ueberstand je Seite in Prozent der Bildgroesse (Regler: hofUeber),
+       standardmaessig 90 %: der Kasten ist damit 280 % so gross wie das Bild.
+       Weiter ausgreifend dunstet der Hof neben schmalen Bildern den ganzen
+       Seitenrand zu und ertraenkt dort die Sterne. */
     left: calc(var(--hof-ueber, 90) * -1%); top: calc(var(--hof-ueber, 90) * -1%);
     width: calc(100% + var(--hof-ueber, 90) * 2%); height: calc(100% + var(--hof-ueber, 90) * 2%);
-    /* z-index -1 statt 0: damit liegt der Hof in derselben unteren Ebene wie
-       Korn und Sterne -- und die Sterne koennen UEBER ihn gelegt werden.
-       Nur so laesst sich ihre Sichtbarkeit an die oertliche Helligkeit
-       koppeln (siehe .sterne). Sichtbar aendert das nichts: der Hof lag auch
-       vorher hinter Bild und Text, er liegt jetzt nur zusaetzlich hinter dem
-       Sektionsschein. */
+    /* z-index -1: in derselben unteren Ebene wie Korn und Sterne, damit die
+       Sterne ueber ihm liegen und an hellen Stellen verschwinden (.sterne). */
     z-index: -1; pointer-events: none;
-    /* Die Flaeche bleibt bei 640 %. Weiter zu greifen bringt nichts, kostet
-       aber Grafikspeicher -- und knapper Grafikspeicher war genau die Ursache
-       des frueheren Flackerns.
-
-       Entscheidend ist ohnehin nicht die Groesse, sondern die Verteilung.
-       Gemessen war der alte Verlauf naemlich gar kein Verlauf: 40 px neben dem
-       Bild lag die Helligkeit bei 83, nach 240 px immer noch bei 81. Das ist
-       eine Flaeche, kein Schein -- und eine gleichmaessig aufgehellte Flaeche
-       ist genau das, was als "grau" wahrgenommen wird.
-       Jetzt sind es 114 direkt am Bild und 52 nach 640 px. Am Bild also rund
-       ein Drittel heller als vorher, weit draussen etwas dunkler. Der Hof
-       leuchtet damit sichtbar aus dem Bild heraus, statt die ganze Seite
-       flaechig anzuheben -- und der Waldton bleibt dort stehen, wo kein Bild
-       in der Naehe ist. */
-    /* Zusaetzlich faellt der Verlauf frueher ab. Der Hof bleibt am Bild
-       genauso hell wie bisher -- er hoert nur eher auf. */
+    /* Am Bild hell, nach aussen rasch abfallend: ein Schein, der aus dem Bild
+       leuchtet, keine gleichmaessig aufgehellte (graue) Flaeche. */
     background: radial-gradient(closest-side,
       rgba(var(--glow, 140,150,160), 1) 0%,
       rgba(var(--glow, 140,150,160), var(--hof-s1, 0.85)) 8%,
@@ -239,14 +175,11 @@
      hin. */
   .aura.on { opacity: var(--hof-deck, 0.8); }
 
-  /* Eine zweite, kleinere Lage ueber dem oberen Bildrand. Sie kommt nur dann
-     dazu, wenn im oberen Bildteil wirklich eine Lichtquelle steht -- bei
-     "The Mountains" die Schiffslampe. Ein Bild leuchtet nicht in einem Ton;
-     der Schein ueber der Lampe ist warm, waehrend der Rest des Hofes kuehl
-     bleibt.
-     Der Mittelpunkt liegt bei 42 % der Hoehe: der Kasten ist 640 % hoch und
-     sitzt 270 % ueber dem Bild, 270/640 ist genau die obere Bildkante. Der
-     Schein steht damit auf der Kante und laeuft nach oben aus. */
+  /* Eine zweite, kleinere Lage fuer eine Lichtquelle im oberen Bildteil --
+     bei "The Mountains" die Schiffslampe: warm, waehrend der Rest des Hofes
+     kuehl bleibt. Der Mittelpunkt liegt bei 42 % der Kastenhoehe, beim
+     Standard-Ueberstand von 90 % also gut ein Viertel unter der oberen
+     Bildkante; sichtbar ist der Teil, der ueber das Bild hinaus ausläuft. */
   .aura-lampe {
     background: radial-gradient(40% 34% at 50% 42%,
       rgba(var(--lampe, 240,220,170), 0.85) 0%,
@@ -259,45 +192,22 @@
   .aura-lampe.on { opacity: var(--lampe-deck, 0.34); }
 
 
-  /* Das Lichtfeld an der Maus ist entfernt. Es war die letzte Stelle, an
-     der die Helligkeit des Grundes von etwas anderem abhing als vom Bild:
-     eine Maske um den Zeiger, die den Rest der Flaeche um 14 % abgesenkt hat.
-     Jetzt kommt alles Licht im Hintergrund aus den Lichthoefen der Bilder --
-     je weiter weg ein Punkt liegt, desto dunkler wird er, bis hin zum
-     schwarzen Rand des Verlaufs. Die Sterne leuchten nur ihre eigene Flaeche
-     aus und heben nichts an. Mit der Ebene entfallen auch die Zeigerspur im
-     Skript und eine bildschirmfuellende backdrop-filter-Kopie je Einzelbild. */
+  /* Alles Licht im Hintergrund kommt aus den Lichthoefen der Bilder; es gibt
+     bewusst kein Lichtfeld am Mauszeiger. */
 
   /* ---------- Sternenhimmel ----------
-     Zwei Lagen mit unterschiedlich grossen Kacheln. Eine einzelne Kachel
-     wuerde sich alle paar hundert Bildpunkte sichtbar wiederholen; zwei Lagen
-     mit teilerfremden Kantenlaengen (600 und 437) decken sich erst nach rund
-     260 000 Bildpunkten wieder -- also nie auf einem Bildschirm.
-     Liegt wie das Korn unter dem Inhalt: Sterne gehoeren an den Himmel, nicht
-     auf die Fotos. */
-  /* Die Kacheln sind deckend -- einfach uebereinandergelegt wuerde die obere
-     die untere verdecken. Mit "lighten" ergibt sich dagegen der hellere von
-     allen dreien: Grund, Kachel A, Kachel B.
-     Kantenlaengen 600 und 437 sind teilerfremd; das Muster wiederholt sich
-     erst nach rund 260 000 Bildpunkten, also nie auf einem Bildschirm. */
+     Zwei deckende Kacheln mit teilerfremden Kantenlaengen (600 und 437): das
+     Muster wiederholt sich erst nach rund 260 000 Bildpunkten. Liegt wie das
+     Korn unter dem Inhalt -- Sterne gehoeren an den Himmel, nicht auf Fotos. */
   .sterne {
     position: fixed; inset: 0; z-index: -1; pointer-events: none;
     background-repeat: repeat;
-    /* Nimmt je Bildpunkt den helleren von Stern und Grund. Wo ein Lichthof
-       liegt, ist der Grund heller als der Stern -- der Stern verschwindet
-       dort. Auf dunklem Grund gewinnt der Stern. Damit haengt die
-       Sichtbarkeit an der oertlichen Helligkeit, statt gleichmaessig ueber
-       die Flaeche zu liegen.
-       Die Ebenen stehen dafuer am Ende des Dokuments: unter gleichem z-index
-       entscheidet die Reihenfolge, und sie muessen nach den Lichthoefen
-       kommen -- sonst gibt es nichts, wogegen sie sich vergleichen koennten. */
+    /* Je Bildpunkt der hellere von Stern und Grund: wo ein Lichthof liegt,
+       verschwindet der Stern. Dafuer steht die Ebene am Ende des Dokuments --
+       bei gleichem z-index muss sie nach den Lichthoefen kommen. */
     mix-blend-mode: lighten;
-    /* Beide Kacheln auf EINER Ebene: sie verrechnen sich schon beim Malen
-       untereinander mit "lighten" (background-blend-mode), die Ebene dann
-       mit dem Grund. max(Grund, max(A, B)) ist dasselbe wie vorher
-       max(max(Grund, A), B) mit zwei Ebenen -- nur muss die Grafikkarte
-       beim Scrollen jetzt einen Mischschritt ueber den ganzen Schirm
-       weniger rechnen. */
+    /* Beide Kacheln auf einer Ebene, untereinander ebenfalls "lighten":
+       ein Mischschritt ueber den ganzen Schirm statt zwei. */
     background-image: var(--sterne-a, none), var(--sterne-b, none);
     background-size: 600px 600px, 437px 437px;
     background-position: 0 0, 137px 89px;
@@ -309,44 +219,28 @@
      transform in diskreten Schritten -> läuft auf dem Compositor, kein
      Repaint pro Frame, daher ruckelfrei. */
   .grain {
-    /* Nur so gross wie noetig: das Bild wird hoechstens um eine Kachelbreite
-       verschoben, also reicht Fenster plus zwei Kacheln. Vorher war die Flaeche
-       doppelt so breit UND doppelt so hoch wie das Fenster -- die vierfache
-       Flaeche als dauerhaft vorgehaltene Ebene.
-       Kein will-change: eine laufende transform-Animation wird ohnehin auf der
-       Grafikkarte gerechnet. Erzwungene Ebenen kosten hier nur Speicher, und
-       knapper Grafikspeicher ist genau das, was einzelne Kacheln flackern
-       laesst. */
+    /* Fenster plus eine Kachel je Seite: weiter als eine Kachelbreite wird
+       nie verschoben. Kein will-change -- die laufende Animation liegt ohnehin
+       auf der Grafikkarte, erzwungene Ebenen kosten nur Speicher, und knapper
+       Grafikspeicher laesst Kacheln flackern. */
     position: fixed;
     top: calc(-1 * var(--grain-size)); left: calc(-1 * var(--grain-size));
     width: calc(100% + 2 * var(--grain-size));
     height: calc(100% + 2 * var(--grain-size));
-    /* z-index -1 statt 500. Damit liegt das Korn zwar noch ueber dem
-       Hintergrundverlauf (der steht ebenfalls auf -1, aber frueher im
-       Dokument), aber UNTER allem, was im normalen Fluss steht: Fotos, Text,
-       Karten. Vorher lag es als oberste Ebene ueber der ganzen Seite und damit
-       zwangslaeufig auch auf jedem Bild.
-       Der Hero-Film brauchte dafuer bisher eine eigene Ausnahme (z-index 505,
-       siehe unten) -- die ist jetzt nur noch Beiwerk, weil ihn ohnehin nichts
-       mehr ueberlagert. */
+    /* z-index -1: ueber dem Hintergrundverlauf (gleicher Wert, frueher im
+       Dokument), aber unter allem im normalen Fluss -- kein Korn auf Fotos,
+       Text und Karten. */
     z-index: -1; pointer-events: none;
     background-repeat: repeat;
     background-size: var(--grain-size) var(--grain-size);
     animation: grainShift var(--grain-rate) steps(1) infinite;
   }
-  /* Zwei Lagen mit unterschiedlichen Kacheln, weil ein Mischmodus allein nicht
-     über den ganzen Tonwertumfang trägt.
-     "overlay" moduliert Mitteltöne (Fotos, Hero) kräftig, wird in fast schwarzen
-     Flächen aber rechnerisch nahezu null -- deshalb wirkte das Korn auf Bildern
-     stark und im Hintergrund gar nicht.
-     Die zweite Lage nutzt daher eine überwiegend schwarze Kachel mit vereinzelten
-     hellen Körnern: Schwarz lässt den Untergrund unverändert, nur die Körner
-     treten hervor. Das bringt den Hintergrund auf ein ähnliches Kornniveau wie
-     die Fotos, ohne die Schwärzen aufzuhellen. */
-  /* Staerke bewusst in der Mitte zwischen den beiden Extremen: das erste
-     Mass war im Hintergrund nicht zu sehen, das zweite zu aufdringlich. */
-  /* 0,105 -- der Weg war 0,155 (Ausgangsfassung), dann 0,135, jetzt hierher.
-     Das Korn soll auf dem Grund zu ahnen sein und nicht ins Bild treten. */
+  /* Zwei Lagen, weil ein Mischmodus allein nicht ueber den ganzen
+     Tonwertumfang traegt: "overlay" moduliert Mitteltoene, wird in fast
+     schwarzen Flaechen aber nahezu null. Die zweite Lage -- weisse Koerner auf
+     Schwarz -- bringt Korn auf den dunklen Grund, ohne die Schwaerzen
+     aufzuhellen. Das Korn soll auf dem Grund zu ahnen sein, nicht ins Bild
+     treten. */
   .grain-mid { background-image: var(--grain-mid-img); mix-blend-mode: overlay; opacity: var(--korn-mitte, 0.105); }
   .grain-dark {
     /* Weisse Koerner mit Deckkraft statt "screen" -- rechnerisch dasselbe,
@@ -355,13 +249,9 @@
     opacity: var(--korn-tiefe, 0.07);
     animation-delay: calc(var(--grain-rate) / -2);   /* versetzt, damit sich beide Lagen nicht decken */
   }
-  /* Zwoelf Schritte je halber Sekunde: das Korn wechselt 24-mal pro Sekunde,
-     also so oft wie Einzelbilder im Kino. Bei den vorherigen elf Wechseln pro
-     Sekunde las sich die Bewegung als Stottern. Die Spruenge sind bewusst
-     unregelmaessig, damit nichts als gleitende Textur wahrgenommen wird. */
-  /* Verschoben wird in Kachelbreiten, nie weiter als eine ganze Kachel -- das
-     Muster wiederholt sich ohnehin, mehr Weg braucht es nicht. Zwoelf Schritte
-     je halber Sekunde ergeben 24 Wechsel pro Sekunde, also Kinobildrate. */
+  /* Zwoelf Schritte je halber Sekunde: 24 Wechsel pro Sekunde wie im Kino
+     (weniger liest sich als Stottern). Die Spruenge sind unregelmaessig und
+     nie weiter als eine Kachel, damit nichts als gleitende Textur wirkt. */
   @keyframes grainShift {
     0%    { transform: translate3d(0, 0, 0); }
     8.3%  { transform: translate3d(calc(var(--grain-size) * -0.73), calc(var(--grain-size) *  0.41), 0); }
@@ -383,36 +273,23 @@
      Stufen. Ueber tausend Bildpunkte verteilt liegt dadurch alle paar Pixel
      eine Stufe -- sichtbar als Ring. Gemessen: ohne Gegenmittel liegen 39 %
      der Strecke in solchen Plateaus.
-     Das bewegte Korn verdeckt das zwar, aber nur scheinbar: es wechselt 24-mal
-     pro Sekunde und mittelt sich fuer das Auge weg, die Stufen kommen darunter
-     wieder zum Vorschein. Diese Lage steht deshalb still. Sie ist so schwach,
-     dass man sie nicht als Muster wahrnimmt -- sie bricht nur die Stufen. */
+     Das bewegte Korn mittelt sich fuer das Auge weg und hilft nicht; diese
+     Lage steht still und ist so schwach, dass man sie nicht als Muster sieht.
+     Wie das Korn nur auf dem Hintergrund -- auf Fotos gibt es keine Stufen. */
   .dither {
-    /* Gleicher Grund wie beim Korn: gehoert auf den Hintergrund, nicht auf die
-       Bilder. Die Stufen, die es bricht, entstehen ohnehin nur in den weit
-       gezogenen Verlaeufen -- auf einem Foto gibt es nichts zu brechen. */
     position: fixed; inset: 0; z-index: -1; pointer-events: none;
     background-image: var(--grain-dark-img);
     background-repeat: repeat;
     background-size: var(--grain-size) var(--grain-size);
-    /* Normal statt "screen": die Kachel traegt weisse Koerner mit Deckkraft,
-       das ergibt dasselbe Bild ohne eigenen Mischschritt. */
     opacity: 0.075;
   }
 
   /* ---------- Teelicht ----------
      Die einzige verbliebene Erinnerung an eine Filmvorfuehrung: ein warmes,
-     unruhiges Licht, das ueber der Seite atmet -- wie eine Kerze, die im Raum
-     steht. Die senkrechten Laufstreifen sind bewusst entfallen; sie waren das
-     Technische an dem Effekt, der Rest ist das Lebendige.
-
-     Warm statt kalt: vorher lag hier ein blaeuliches Weiss, das wie eine
-     Leuchtstoffroehre wirkte. Eine Flamme ist bernsteinfarben, und sie
-     leuchtet nicht gleichmaessig -- deshalb ein Verlauf statt einer Flaeche.
-     Der Verlauf kostet keine zusaetzliche Ebene und keinen Weichzeichner.
-
-     Liegt auf derselben Ebene wie das Korn und damit UNTER den Videoflaechen --
-     Filme bleiben unangetastet. */
+     unruhiges Licht, das ueber der Seite atmet -- wie eine Kerze im Raum.
+     Bernsteinfarben und als Verlauf, nicht gleichmaessig wie eine
+     Leuchtstoffroehre. Liegt unter den Videoflaechen: Filme bleiben
+     unangetastet. */
   .zucken {
     position: fixed; inset: 0; z-index: 502; pointer-events: none;
     background: radial-gradient(125% 105% at 50% 64%,
@@ -455,9 +332,8 @@
   .lb-top { top: 0; }
   .lb-bottom { bottom: 0; }
   body.lb-shut .lb-bar { height: 52vh; }
-  /* Die Blende faehrt jetzt vollstaendig auf. Der schmale bleibende Rahmen war
-     als Kinoformat gedacht, hat aber am unteren Rand die Bildlaufleiste der
-     Projektansicht verdeckt und wie ein Anzeigefehler gewirkt. */
+  /* Die Blende faehrt vollstaendig auf: ein bleibender Rahmen verdeckte die
+     Bildlaufleiste der Projektansicht und wirkte wie ein Anzeigefehler. */
   body.lb-framed .lb-bar { height: 0; transition-duration: 0.8s; }
 
   /* ---------- Seite ---------- */
@@ -467,16 +343,12 @@
      aufzumachen; das haengende Zitat bleibt dadurch klebend. */
   .page { transition: opacity 0.6s var(--ease); overflow-x: clip; }
   .page.is-hidden { opacity: 0; pointer-events: none; }
-  /* Ist eine Projektseite ganz aufgegangen, liegt sie deckend ueber allem.
-     Korn, Sterne und Dither der Startseite liefen darunter weiter und
-     kosteten in jedem Bild ihre Mischschritte ueber den ganzen Schirm, ohne
-     dass man etwas davon sah. Sie ruhen jetzt, bis die Projektseite wieder
-     schliesst. Gesetzt wird das erst, wenn sie voll deckt, aufgehoben,
-     bevor sie ausblendet -- zu sehen ist davon nichts. */
+  /* Deckt eine Projektseite ganz, ruhen Korn, Sterne und Dither der
+     Startseite darunter (unsichtbare Mischschritte ueber den ganzen Schirm).
+     Gesetzt erst, wenn sie voll deckt, aufgehoben, bevor sie ausblendet. */
   body.bg-ruht .grain, body.bg-ruht .dither, body.bg-ruht .sterne { display: none; }
-  /* Ebenso die Bewegungen auf der Startseite: die langsame Drift der Bilder
-     und das Laufband. Angehalten statt abgeschaltet -- beim Zurueckkommen
-     laufen sie an derselben Stelle weiter, es springt nichts. */
+  /* Ebenso Drift und Laufband -- angehalten, nicht abgeschaltet, damit beim
+     Zurueckkommen nichts springt. */
   body.bg-ruht .page .drift, body.bg-ruht .page .marquee-track { animation-play-state: paused; }
   body.is-viewing { overflow: hidden; }
 
@@ -496,20 +368,14 @@
        Ganz oben auf der Seite steht er dafuer etwas tief -- das ist der
        gewollte Tausch, denn dort ist der Film ohnehin noch bildfuellend. */
     --dock-drop: 0px;
-    /* Gar kein Beschneiden mehr. Hier stand overflow-x: clip, weil der
-       Lichthof breiter war als das Fenster. Safari koppelt die zweite Achse
-       aber mit und schnitt dadurch auch senkrecht ab -- sichtbar als harte
-       waagerechte Kante auf Hoehe der Hero-Unterkante. Auf dem iPad gemeldet,
-       in Chrome nicht reproduzierbar (dort gemessener Sprung: 0,17).
-       Der Lichthof ist jetzt auf Fensterbreite gedeckelt und die Laufschrift
-       beschneidet sich selbst -- damit braucht es hier nichts mehr, und die
-       Kante kann auf keinem Browser mehr entstehen. */
+    /* Nicht beschneiden: Safari koppelt bei overflow-x: clip die zweite Achse
+       mit und schnitt senkrecht ab (harte Kante an der Hero-Unterkante, auf
+       dem iPad). Lichthof und Laufschrift begrenzen sich selbst. */
     overflow: visible;
   }
 
-  /* Zentriert über inset+margin statt über transform: ein transform würde einen
-     eigenen Zeichenkontext aufspannen, und der Film käme nicht mehr über die
-     Kornschicht (z-index 500). */
+  /* Zentriert ueber inset+margin, nicht transform: ein transform spannt einen
+     eigenen Zeichenkontext auf, und der Film kaeme nicht mehr ueber das Korn. */
   .hero-frame {
     position: absolute; inset: 0; margin: auto;
     width: 100%; height: 100%;
@@ -517,13 +383,9 @@
     transition: width 820ms var(--ease-dock), height 820ms var(--ease-dock),
                 top 820ms var(--ease-dock);
   }
-  /* Beide Masse so gewaehlt, dass 16:9 erhalten bleibt -- egal ob die Breite
-     oder die Hoehe des Fensters der engere Wert ist. Sonst wuerde der Film je
-     nach Bildschirm anders beschnitten. */
-  /* top + margin:auto statt transform -- ein transform wuerde einen eigenen
-     Zeichenkontext aufspannen und der Film kaeme nicht mehr ueber die
-     Kornschicht. Bei top = 2x Versatz und bottom = 0 teilen die automatischen
-     Raender den Rest so auf, dass die Oberkante genau um den Versatz sinkt. */
+  /* Beide Masse halten 16:9, egal ob Breite oder Hoehe des Fensters enger
+     ist. Gesenkt ueber top + margin:auto (kein transform, siehe oben): bei
+     top = 2x Versatz und bottom = 0 sinkt die Oberkante genau um den Versatz. */
   .hero.is-docked { --dock-drop: 9vh; }
   .hero-frame.is-docked {
     width: min(78vw, 145.8vh); height: min(43.875vw, 82vh);
@@ -559,29 +421,17 @@
      Dadurch ist die Farbe echt aus dem Bild genommen, nicht geraten. */
   .hero-aura {
     position: absolute; inset: 0; margin: auto;
-    /* Deutlich groesser als das Video: der Schein soll sich weit verteilen und
-       dabei nach aussen ruhig abnehmen, statt als heller Fleck am Rand zu
-       sitzen. */
-    /* Frueher 620vw breit: bei 1920 Punkten Fensterbreite waren das 11904 x 3769
-       Bildpunkte = rund 179 MB Grafikspeicher, fuer EINE Ebene. Die Quelle ist
-       aber ein 32x18 Punkte kleines Feld -- das ist schon maximal weich, die
-       Weichzeichnung rechnete an etwas ohne Details. Jetzt knapp ein Fuenftel
-       der Flaeche und ein Bruchteil des Radius, bei gleichem Aussehen. */
-    /* Auf Fensterbreite gedeckelt: alles jenseits von 100vw liegt ohnehin
-       ausserhalb des Bildschirms, bringt also nichts -- zwang den Hero aber
-       zum Beschneiden. Genau daran hing die Kante. */
+    /* Groesser als das Video, damit der Schein weit und ruhig auslaeuft --
+       aber hoechstens fensterbreit (mehr ist unsichtbar und zwang den Hero
+       zum Beschneiden). Die Quelle ist ein 32x18-Feld; eine groessere Flaeche
+       kostete nur Grafikspeicher. */
     width: min(100vw, 182vh); height: min(150vh, 115vw);
-    /* z-index 0 statt 1: der Schein reicht jetzt unter den Hero hinaus und
-       wuerde sonst ueber dem Text des naechsten Abschnitts liegen. Bei 0 liegt
-       er in derselben Ebene wie die folgenden Abschnitte, aber davor in der
-       Reihenfolge -- also dahinter. */
+    /* z-index 0: der Schein reicht unter den Hero hinaus und liegt so hinter
+       dem Text des naechsten Abschnitts. */
     z-index: 0;
-    /* Weichzeichnung, Saettigung und Helligkeit rechnet das Skript direkt in
-       die Leinwand, in einem Achtel der Aufloesung. Als CSS-Filter hat die
-       Grafikkarte die 70 px Weichzeichnung ueber die ganze Flaeche in jedem
-       Einzelbild neu gerechnet, sobald sich auf der Seite etwas bewegte.
-       Ein so weicher Schein hat keine Einzelheiten, die beim Hochziehen
-       verloren gehen koennten -- er sieht gleich aus. */
+    /* Weichzeichnung, Saettigung und Helligkeit rechnet das Skript einmal in
+       die Leinwand (Achtel-Aufloesung) -- als CSS-Filter lief die 70-px-
+       Weichzeichnung in jedem Einzelbild neu. */
     opacity: 0; transition: opacity 1400ms var(--ease);
     pointer-events: none;
     /* Der Verlauf beginnt fast in der Mitte abzunehmen: langes, weiches
@@ -596,9 +446,8 @@
   .hero-content {
     position: absolute; inset: 0; z-index: 507;
     display: flex; flex-direction: column; align-items: center; justify-content: center;
-    /* max-width in "ch" bezieht sich auf die Schriftgröße DIESES Elements,
-       nicht auf die der Überschrift -- damit war die Spalte viel zu schmal
-       und die Headline brach in Einzelwörter um. Daher feste Breite. */
+    /* Feste Breite statt "ch": ch bezoege sich auf die Schrift dieses
+       Elements, und die Headline braeche in Einzelwoerter um. */
     padding: 0 22px; text-align: center;
     animation: heroIn 1.8s 0.4s var(--ease) both;
     transition: opacity 520ms var(--ease);
@@ -620,38 +469,19 @@
     color: var(--text);
   }
   .hero-content h1 {
-    /* Kleiner und einzeilig. Vorher 4em (72 px am Desktop) und dadurch
-       zwangslaeufig zweizeilig -- nicht wegen der Schriftgroesse, sondern
-       wegen des 900-px-Kastens aus ".hero-content > *". Der ist hier
-       aufgehoben, die Zeile darf so breit werden, wie sie braucht.
-       Bei 2,5em (45 px) ist die Zeile rund 900 px breit. Kleiner heisst
-       hier laenger einzeilig -- der Umbruch rutscht nach unten. Ganz ohne
-       Umbruch geht es aber nicht: 35 Zeichen auf einem Telefon in eine Zeile
-       hiessen 19 px Schrift, also kleiner als der Fliesstext. */
+    /* Einzeilig, so weit es geht: der 900-px-Kasten aus ".hero-content > *"
+       ist hier aufgehoben. Auf dem Telefon bricht die Zeile trotzdem um --
+       einzeilig hiesse dort Schrift kleiner als der Fliesstext. */
     /* Schnitt 300 nur hier, nicht fuer h1/h2/h3 allgemein: die
        Abschnittsueberschriften stehen bei rund 24 px und waeren in 300 zu
        zart -- Korn und Lichthof fressen die Haarstriche dort stellenweise auf.
        Bei 45 px traegt der leichte Schnitt dagegen muehelos. */
     font-family: 'Belleza', 'Noto Serif', Georgia, serif;
     font-weight: 400;
-    /* Sperrung und Einzeiligkeit ziehen gegeneinander: mehr Sperrung heisst
-       laengere Zeile heisst frueherer Umbruch. Gemessen am Desktop (45 px):
-         0,10em ->  868 px Zeile, einzeilig bis 660 px Fensterbreite
-         0,14em ->  931 px Zeile, einzeilig bis 660 px
-         0,18em ->  994 px Zeile, einzeilig bis 760 px
-         0,22em -> 1057 px Zeile, einzeilig bis 900 px
-       0,18em ist die letzte Stufe, bei der die Zeile optisch zusammenhaelt --
-       darueber driften die Woerter auseinander. Der Umbruch bei 760 px liegt
-       weit unter jedem Laptop.
-       Der vw-Anteil sinkt mit steigender Sperrung mit (4,3 -> 3,9), sonst
-       frisst die laengere Zeile den einzeiligen Bereich auf. */
-    /* Belleza laeuft deutlich schmaler als Boldonse: gemessen 19,83 gegen
-       25,65 mal die Schriftgroesse fuer dieselbe Zeile, also knapp ein
-       Viertel weniger. Derselbe Grad waere damit optisch kleiner geworden.
-       Die Werte gehen deshalb mit hoch -- 2,8em -> 3,6em und 3,6vw -> 4,6vw,
-       am Desktop also rund 66 px statt 51 px.
-       Nachgemessen bleibt die Zeile damit einzeilig bis hinunter zu 560 px
-       Fensterbreite; darunter greift ohnehin die eigene Regel fuers Handy. */
+    /* Sperrung 0,18em: die weiteste, bei der die Zeile noch zusammenhaelt;
+       mehr Sperrung heisst laengere Zeile und frueheren Umbruch. Rund 66 px am
+       Desktop, einzeilig bis etwa 560 px Fensterbreite, darunter greift die
+       Regel fuers Handy. */
     font-size: clamp(1.6em, 4.6vw, 3.6em);
     letter-spacing: 0.18em;
     max-width: none;
@@ -694,24 +524,17 @@
   .m-group { display: flex; align-items: center; }
   .m-word {
     font-family: 'Belleza', 'Noto Serif', Georgia, serif; font-weight: 400;
-    /* Mitgezogen mit dem Hero-Titel: die Laufschrift ist dieselbe Zeile im
-       angedockten Zustand. Sie behaelt ihr Verhaeltnis von 80 % zum grossen
-       Titel (4em/3,2em, dann 3em/2,4em, jetzt 2,5em/2em); Schnitt und Groesse
-       unterschiedlich zu lassen, faellt beim Umschalten auf. */
+    /* Dieselbe Zeile wie der Hero-Titel im angedockten Zustand: gleicher
+       Schnitt, gleiche Sperrung, kleinerer Grad -- Abweichungen fallen beim
+       Umschalten auf. */
     font-size: clamp(1.2em, 2.8vw, 2.3em);
     letter-spacing: 0.18em; line-height: 1.28; white-space: nowrap;
     color: #f2f5f7;
-    /* Der weiche Hof (12 px) ist raus -- er war als dunkler Streifen hinter der
-       Zeile zu sehen, vor allem dort, wo der Film dahinter hell wird.
-       Geblieben ist nur die harte Kante direkt am Buchstaben. Sie traegt keinen
-       sichtbaren Schatten, haelt die Serifen aber gegen das bewegte Bild.
-       Ganz weglassen geht hier nicht: anders als der Fliesstext steht diese
-       Zeile nicht auf einer ruhigen Flaeche, sondern auf einem Film, dessen
+    /* Nur eine harte Kante am Buchstaben, kein weicher Hof (der stand als
+       dunkler Streifen im Bild). Sie haelt die Serifen gegen den Film, dessen
        Helligkeit sich von Bild zu Bild aendert. */
     text-shadow: 0 1px 2px rgba(4,7,10,0.78);
-    /* Der Abstand zwischen zwei Durchlaeufen ist jetzt reine Luft. Vorher stand
-       dort ein Trennpunkt, dessen Groesse sich an der Umgebung (17 px) statt an
-       der Zeile (58 px) bemass -- er wirkte als kleiner Fleck, nicht als Zeichen. */
+    /* Zwischen zwei Durchlaeufen nur Luft, kein Trennzeichen. */
     padding-right: 1.9em;
   }
   @keyframes marquee {
@@ -725,14 +548,11 @@
      Jede Sektion trägt einen weichen Lichtschein auf der Textseite -- das gibt
      der Fläche Tiefe, statt sie flach dunkel stehen zu lassen. */
   .band { position: relative; padding: 124px 0; }
-  /* Der Schein haengt am Textblock, nicht an der Sektion. Vorher sass er bei
-     20 % bzw. 82 % der SEKTIONSbreite -- also der Fensterbreite --, der Text
-     aber in einer mittig gesetzten Spalte von hoechstens var(--wide). Auf
-     einem breiten Bildschirm lag der Hof damit links neben dem Text im
-     Leeren. Jetzt steht die Mitte jedes Kreises auf einer festen Stelle des
-     Textes, auf jedem Bildschirm.
-     z-index -1 innerhalb von .band-text (das dort einen eigenen Zeichen-
-     kontext hat): unter der Schrift, sonst unveraendert. */
+  /* Der Schein haengt am Textblock, nicht an der Sektion: so steht jeder
+     Kreis auf jedem Bildschirm an derselben Stelle des Textes. Echte Kreise
+     mit fester Reichweite, keine Ellipsen nach Sektionsgroesse.
+     z-index -1 innerhalb von .band-text (eigener Zeichenkontext): unter der
+     Schrift. */
   .band-text::before, .band-text::after {
     content: ""; position: absolute; pointer-events: none; z-index: -1;
     border-radius: 50%;
@@ -748,9 +568,6 @@
     left: 78%; top: 72%; width: calc(2 * var(--r)); height: calc(2 * var(--r));
     background: radial-gradient(closest-side, rgba(112,152,142,var(--textschein-b, 0.045)), transparent 100%);
   }
-  /* Weiterhin echte Kreise mit fester Reichweite (keine Ellipsen, die an
-     Breite und Hoehe der Sektion haengen und waagerecht kaum abfallen), mit
-     Ende bei 100 % und in der Staerke 0,065/0,045 wie zuvor. */
   .band.lead-band { padding: 140px 0 124px; }
   .band-inner { position: relative; max-width: var(--wide); margin: 0 auto; padding: 0 22px; }
 
@@ -763,10 +580,7 @@
 
   /* Asymmetrisch: Text sitzt links, rechts bleibt bewusst Luft (oder ein Bild). */
   .band-grid { display: grid; grid-template-columns: 1fr; gap: 44px; }
-  /* Hier lag ein Schatten an den Buchstaben, der den Grund abdunkeln sollte.
-     Er war als dunkler Hof um jede Zeile sichtbar und ist wieder raus.
-     Den Kontrast traegt jetzt der Grund selbst: der Schein der Textsektionen
-     ist schwaecher gefasst und der Grundton tiefer als zuvor.
+  /* Kein Textschatten: den Kontrast traegt der tiefe Grund.
      z-index 1: sonst laege der Schein der Bildspalte darueber, weil die Bilder
      spaeter im Dokument stehen. */
   .band-text { max-width: 46ch; position: relative; z-index: 1; }
@@ -915,36 +729,18 @@
   /* --- Karussell --- */
   .schau.ist-karussell .schau-lauf {
     position: relative;
-    /* eine Bildschirmhoehe zum Stehenbleiben, dazu je Uebergang eine Strecke */
-    /* 84dvh -> 30dvh je Film. Ein Radschritt ist rund 100 px; vorher
-       brauchte ein Wechsel sieben bis acht davon, jetzt zwei bis drei --
-       und schon der erste setzt die Drehung in Gang (siehe Nachziehen). */
-    /* Zusaetzlich eine Ruhezone von 0,45 Segmentlaengen (--puffer) hinter dem
-       letzten Film. Ohne sie endete die Fahrt genau dort, wo das letzte
-       Titelbild sein Ziel erreicht -- und weil das Bild ueber eine gedaempfte
-       Feder nachzieht statt dem Scrollen sofort zu folgen, war der Bereich
-       zu Ende, bevor es sichtbar zur Ruhe gekommen war: die Seite scrollte
-       schon weiter, waehrend das Bild noch von der Seite hereinkam. */
-    /* Die Strecke je Film haengt an svh, der Hoehe MIT eingeblendeter
-       Adressleiste, und nicht an dvh. dvh aendert sich auf dem Handy
-       waehrend des Scrollens, wenn die Leiste ein- und ausfaehrt -- damit
-       wanderten alle Filmpositionen mitten in der Bewegung um bis zu
-       ein Zehntel, und die Rastpunkte stimmten nicht mehr. */
+    /* Eine Bildschirmhoehe zum Stehenbleiben, dazu je Film 30 % Hoehe
+       (zwei bis drei Radschritte). Dahinter eine Ruhezone (--puffer), damit
+       das nachfedernde letzte Bild zur Ruhe kommt, bevor die Seite weiterlaeuft.
+       Die Strecke haengt an svh, nicht dvh: dvh aendert sich auf dem Handy
+       beim Scrollen mit der Adressleiste, und die Rastpunkte wanderten. */
     --schau-schritt: 30vh;
     height: calc(100dvh + (var(--schritte, 3) + var(--puffer, 0.45)) * var(--schau-schritt));
   }
   @supports (height: 1svh) { .schau.ist-karussell .schau-lauf { --schau-schritt: 30svh; } }
   .schau.ist-karussell .schau-halt {
-    /* Kleiner: mal 0,8. Vorher fuellte das Bild fast die ganze Breite und
-       stand damit zu prominent im Vordergrund -- das Karussell soll ein
-       Element auf der Seite sein, keine eigene Buehne. */
-    /* Noch einmal kleiner -- aber nur dort, wo Platz ist. Die Grenze haengt
-       jetzt an der Fensterhoehe (55 %), nicht mehr als Faktor an allem: ein
-       Faktor hatte auch das Handy mitgeschrumpft, wo ohnehin schon die
-       Breite begrenzt (229 px breit auf einem 390er Telefon). So bleibt es
-       dort formatfuellend, und am PC steht das Bild bei rund 55 % der Hoehe. */
-    /* Kleiner: 55 % -> 45 % der Fensterhoehe am PC, auf dem Handy 88 % der
-       Breite statt der vollen. */
+    /* Das Karussell ist ein Element der Seite, keine eigene Buehne: am PC
+       45 % der Fensterhoehe, auf dem Handy 88 % der Breite. */
     --schau-h: min(calc((100vw - 32px) * 0.88 * 9 / 16), calc(0.45 * 100dvh));
     position: sticky; top: 0;
     height: 100dvh;
@@ -961,10 +757,6 @@
     /* Die Hoehe fuehrt, die Breite folgt dem Format. Andersherum -- Breite
        setzen und die Hoehe abklemmen -- kippt das Format, weil eine gesetzte
        Breite vom Seitenverhaeltnis nicht mehr zurueckgerechnet wird. */
-    /* Groesser: vorher hoechstens 630 px hoch und 22 px Rand je Seite.
-       Jetzt 16 px Rand, oben und unten nur so viel Luft, wie die Zeile mit
-       "Ansehen" braucht, und keine feste Obergrenze mehr -- das Bild nimmt,
-       was das Fenster hergibt. */
     height: var(--schau-h);
     width: auto;
   }
@@ -1071,10 +863,8 @@
     padding: calc(var(--bar-h) + 46px) 22px calc(var(--bar-h) + 72px);
   }
 
-  /* Hier lag eine eigene Kornschicht in jedem Bildkasten der Projektansicht --
-     auf der Buehne und auf jedem Foto des Rasters. Sie ist ersatzlos raus:
-     die Fotos tragen jetzt gar kein Korn mehr, nur noch der Grund dahinter
-     (.viewer-grain, liegt unter .viewer-scroll und damit unter dem Inhalt). */
+  /* Fotos tragen kein Korn; nur der Grund dahinter (.viewer-grain, unter
+     .viewer-scroll und damit unter dem Inhalt). */
   .viewer-inner {
     max-width: var(--wide); margin: 0 auto;
     opacity: 0; transform: translateY(16px);
@@ -1091,11 +881,8 @@
      Das iframe wird per JS exakt 16:9 gehalten und formatfüllend darübergelegt --
      dadurch verschwinden von YouTube eingebackene Balken außerhalb des Rahmens. */
   .viewer-stage.has-video { aspect-ratio: var(--ar, 16 / 9); }
-  /* Das Standbild bleibt stehen, solange der Player laedt. Vorher wurde es
-     schon beim Einhaengen des iframes ausgeblendet -- und weil die Buehne
-     schwarz hinterlegt ist, sah man bis zum ersten Bild eine schwarze Flaeche.
-     Gemessen waren das rund fuenf Sekunden. Ausgeblendet wird jetzt erst bei
-     "is-playing", also wenn nachweislich Bild kommt. */
+  /* Das Standbild bleibt stehen, bis nachweislich Bild kommt ("is-playing");
+     sonst stuende bis zu fuenf Sekunden eine schwarze Buehne da. */
   .viewer-stage.has-video img { opacity: 1; transition: opacity 0.8s var(--ease); }
   .viewer-stage.is-playing img { opacity: 0; }
   .viewer-stage iframe {
@@ -1105,8 +892,8 @@
     pointer-events: none;      /* keine Klicks ins Video -> kein Absprung zu YouTube */
     opacity: 0; transition: opacity 0.7s var(--ease);
   }
-  /* Der Player wird erst sichtbar, wenn der Film wirklich läuft. Vorher steht
-     das Standbild -- so blitzt weder YouTubes Ladekreis noch dessen Play-Symbol auf. */
+  /* Der Player wird erst sichtbar, wenn der Film wirklich läuft -- so blitzt
+     weder YouTubes Ladekreis noch dessen Play-Symbol auf. */
   .viewer-stage.is-playing iframe { opacity: 1; }
 
   /* Zurueckhaltender Hinweis, dass etwas passiert: eine Linie, die unten einmal
@@ -1138,12 +925,9 @@
   .viewer-stage:hover .stage-ui,
   .stage-ui:focus-within,
   .stage-ui.sichtbar { opacity: 1; }
-  /* Ohne Kasten. Vorher stand hier dreimal ein gerahmtes Feld mit Versalien
-     -- auf einem laufenden Film die einzige Stelle der Seite, die nach
-     Bedienoberflaeche aussah. Jetzt nur noch die Zeichen selbst, die Flaeche
-     bleibt mit 44 px unveraendert gross.
-     Der Schatten ersetzt den Rahmen als Kontrastgeber: ein weisses Zeichen
-     auf einem hellen Einzelbild waere sonst nicht zu sehen. */
+  /* Ohne Kasten, nur die Zeichen selbst -- gerahmte Felder sahen auf dem
+     Film nach Bedienoberflaeche aus. Die Trefferflaeche bleibt 44 px gross;
+     der Schatten haelt ein weisses Zeichen auf hellem Einzelbild sichtbar. */
   .stage-btn {
     width: 44px; height: 44px; padding: 0;
     display: flex; align-items: center; justify-content: center;
@@ -1188,19 +972,10 @@
     width: 100%; height: 100%;
     background: #000;
   }
-  /* Frueher stand hier "max-width: calc(100vh * var(--ar))" und
-     "max-height: 100vh". Beide Grenzen haengen an derselben Zahl -- faellt
-     100vh kleiner aus als die Flaeche, die das Vollbild wirklich hat, dann
-     schrumpft die Buehne in BEIDEN Richtungen im gleichen Verhaeltnis. Genau
-     so entsteht der umlaufend gleich breite schwarze Rand, der aussieht, als
-     waere der Film ein Stueck herausgezoomt.
-     Und genau das passiert auf dem Handy: vh meint dort die Hoehe des
-     Fensters, wie es beim Aufbau der Seite gemessen wurde -- nicht die des
-     Vollbilds, das gerade erst aufgegangen ist, und schon gar nicht die nach
-     einer Drehung ins Querformat.
-     Jetzt wird nur noch in Prozent des Elternkastens gerechnet. Der ist im
-     Vollbild die Flaeche selbst, also immer richtig, ohne Umweg ueber eine
-     Zahl, die von aussen kommt. */
+  /* Nur in Prozent des Elternkastens, der im Vollbild die Flaeche selbst ist.
+     Kein vh: auf dem Handy meint vh die Fensterhoehe beim Seitenaufbau, nicht
+     die des Vollbilds oder nach dem Drehen -- der Film saesse dann mit
+     umlaufendem schwarzem Rand wie herausgezoomt. */
   .stage-wrap:fullscreen .viewer-stage {
     width: 100%;
     max-width: 100%;
@@ -1414,10 +1189,6 @@
     transition: opacity 0.7s var(--ease), transform 0.7s var(--ease);
   }
   .karte-zeit i.ist-an { opacity: 0.8; transform: scaleY(1.7); }
-  /* Karte ueberspringen: gut sichtbar, im warmen Ton der Route, mit einem
-     leisen Aufleuchten, wenn die Karte erscheint -- vorher war der Knopf so
-     zurueckgenommen, dass man ihn uebersah und sich ueber die Laenge der
-     Reise aergerte, obwohl man sie haette ueberspringen koennen. */
   /* Vor und zurueck zum Anklicken -- fuer Touchpad, Laptop ohne Maus und
      alle, die das Mausrad nicht als Bedienung erkennen. */
   .karte:focus { outline: none; }
@@ -1433,6 +1204,9 @@
   .karte.ist-bereit .karte-schritt { opacity: 1; }
   .karte-schritt:hover { background: rgba(240, 206, 156, 0.2); border-color: rgba(255, 226, 190, 0.8); }
   .karte-schritt:disabled { opacity: 0.25 !important; cursor: default; }
+  /* Karte ueberspringen: gut sichtbar, im warmen Ton der Route, mit einem
+     leisen Aufleuchten, wenn die Karte erscheint -- wer ihn uebersieht,
+     aergert sich ueber die Laenge der Reise. */
   .karte-weiter {
     position: absolute; top: max(20px, 3dvh); right: 16px;
     display: inline-flex; align-items: center; gap: 10px;
@@ -1493,8 +1267,8 @@
   }
 
   .viewer-grid { display: grid; grid-template-columns: 1fr; gap: 12px; margin: 52px 0; }
-  /* 2:1 statt 16:10 -- die Filmkader sind breit (bis 2,13:1). Bei 16:10
-     schnitt der Rahmen links und rechts rund ein Viertel des Bildes weg. */
+  /* 2:1, weil die Filmkader breit sind (bis 2,13:1); schmaler schnitte der
+     Rahmen seitlich viel Bild weg. */
   .viewer-grid > * { position: relative; aspect-ratio: 2 / 1; overflow: hidden; }
 
   .viewer-process {
@@ -2570,6 +2344,7 @@
 
   let current = null;
   let busy = false;
+  let oeffner = null;   // was den Fokus hatte, als die Projektansicht aufging
   let ruheZeit = null, heroPausiert = false;
 
   /* ---------- Video ----------
@@ -3024,6 +2799,12 @@
       (trigger.classList.contains('schau-platz') && trigger.dataset.film !== '0');
     busy = true;
     current = viewer;
+    /* Solange die Projektansicht offen ist, ist die Startseite fuer Tastatur
+       und Screenreader nicht da (inert): Tab bleibt in der Ansicht, statt in
+       der unsichtbaren Seite dahinter zu landen. Beim Schliessen kehrt der
+       Fokus dorthin zurueck, von wo aus sie geoeffnet wurde. */
+    oeffner = document.activeElement !== body ? document.activeElement : trigger;
+    page.inert = true;
 
     // Farbwelt des Projekts uebernehmen -- die Blende ist nicht schwarz,
     // sondern faehrt bereits im Ton des Films zu.
@@ -3223,8 +3004,11 @@
       const gw = viewer.querySelector('.stage-wrap');
       if (gw && gw._grossWeg) gw._grossWeg(false);
       viewer.hidden = true;
+      page.inert = false;
       page.classList.remove('is-hidden');
       body.classList.remove('is-viewing');
+      if (oeffner && oeffner.isConnected && oeffner.focus) oeffner.focus({ preventScroll: true });
+      oeffner = null;
       // ... und dann ganz raus, zurueck zum normalen Seitenformat
       body.classList.remove('lb-shut');
       current = null;
@@ -7174,7 +6958,11 @@
           if (medienOrt < 0) setTimeout(function () { vorladen(0); }, 1500);
         }
         requestAnimationFrame(function () { wurzel.classList.add('ist-bereit'); });
-      }).catch(function () { wurzel.hidden = true; });
+      }).catch(function (e) {
+        // Ohne Karte geht die Seite weiter; die Ursache steht in der Konsole.
+        console.warn('Reisekarte "' + wurzel.dataset.karte + '" nicht geladen:', e);
+        wurzel.hidden = true;
+      });
     }
 
     /* Ueberspringen: sofort ans Ende der Karte, ohne die ganze Reise im
