@@ -4304,10 +4304,10 @@
          rueckt der Nebel naeher an Neist Point und The Storr heran. */
       /* "rund": Radius (km), mit dem die Ecken des klaren Gebiets gerundet
          sind -- der Nebel kommt dann von allen Seiten wie um eine Lichtung,
-         nicht als Vorhang von links und rechts. Oben (Norden) rueckt er
-         nur wenig naeher. Duester: dunkles Schiefergrau. */
-      nebel: { klar: [-6.88, 55.95, -4.65, 57.64], schnitt: [[-6.95, 57.58], [-6.3, 57.83]],
-               rund: 55, weich: 110, farbe: [0.25, 0.285, 0.32],
+         nicht als Vorhang von links und rechts. Von Norden rueckt er bis
+         nah an Skye heran. Duester: dunkles Schiefergrau. */
+      nebel: { klar: [-6.88, 55.95, -4.65, 57.56], schnitt: [[-6.95, 57.58], [-6.3, 57.83]],
+               rund: 70, nord: 2.5, weich: 110, farbe: [0.25, 0.285, 0.32],
                lagen: [[40, 0.42], [170, 0.3], [420, 0.2]] },
       ueberhoehung: 3.2,
       grund: [0.016, 0.03, 0.05],
@@ -5044,12 +5044,14 @@
       const vs = 'attribute vec2 aW; uniform mat4 uM; uniform float uQ; uniform float uZ; varying vec3 vW;' +
         'void main(){ vW = vec3(aW / uQ, uZ); gl_Position = uM * vec4(vW, 1.0); }';
       const fs = GENAU +
-        'uniform sampler2D uRausch; uniform vec4 uKlar; uniform float uRund; uniform vec3 uSchnitt; uniform float uWeich; uniform float uT; uniform vec2 uVersatz; uniform float uDichte;' +
+        'uniform sampler2D uRausch; uniform vec4 uKlar; uniform float uRund; uniform vec2 uNord; uniform vec3 uSchnitt; uniform float uWeich; uniform float uT; uniform vec2 uVersatz; uniform float uDichte;' +
         'uniform float uRandLage; uniform vec3 uFarbe; uniform vec3 uBoden; uniform vec2 uRand; varying vec3 vW;' +
         'float tx(vec2 q){ return texture2D(uRausch, q).r; }' +
         // Abstand zum klaren Gebiet (Kasten mit gerundeten Ecken, innen negativ), dazu die schraege Kante
         'float klar(vec2 q){ vec2 m = (uKlar.xy + uKlar.zw) * 0.5, h = (uKlar.zw - uKlar.xy) * 0.5 - uRund;' +
         '  vec2 a = abs(q - m) - h;' +
+        // nach Norden wird der Nebel schneller dicht (uNord.x: Vorzeichen von Norden, .y: Faktor)
+        '  if ((q.y - m.y) * uNord.x > 0.0) a.y *= uNord.y;' +
         '  return max(length(max(a, 0.0)) + min(max(a.x, a.y), 0.0) - uRund, dot(uSchnitt.xy, q) - uSchnitt.z); }' +
         'void main(){' +
         '  vec2 p = vW.xy;' +
@@ -5062,8 +5064,8 @@
         '  if (uRandLage > 0.5) {' +
         // weit innen gar nicht erst ins Rauschen greifen (es verschiebt r um hoechstens 0,025)
         // gerundet (Superellipse): zu den Ecken hin frueher dicht, kein gerader Vorhang
-        '    vec2 rr = abs(p) / uRand; rr *= rr;' +
-        '    float r = sqrt(sqrt(dot(rr, rr)));' +
+        '    vec2 rr = abs(p) / uRand; rr = rr * rr * rr;' +
+        '    float r = pow(rr.x + rr.y, 0.3333);' +
         '    if (r < 0.73) discard;' +
         '    r += (tx(p * 0.006 + t) - 0.5) * 0.05;' +
         '    float ra = smoothstep(0.76, 0.92, r);' +
@@ -5071,16 +5073,23 @@
         '    gl_FragColor = vec4(uFarbe, ra);' +
         '    return;' +
         '  }' +
-        /* Tief im klaren Gebiet sofort verwerfen, vor jedem Texturzugriff:
-           die Verwirbelung verschiebt den Punkt um hoechstens 30 * Wurzel 2. */
-        '  if (klar(p) < -43.0) discard;' +
+        /* Auch im klaren Gebiet treiben vereinzelt leichte Fetzen, wo ein
+           grobes, langsames Rauschen hoch ist. Wo keiner treibt und die
+           Grenze weit ist, wird sofort verworfen -- mit nur einem
+           Texturzugriff (die Verwirbelung verschiebt den Punkt um
+           hoechstens 30 * Wurzel 2). */
+        '  float sd = klar(p);' +
+        '  float fl = smoothstep(0.6, 0.8, tx(p * 0.004 + uVersatz * 0.7 + t * 0.5));' +
+        '  float rand = 43.0 * max(1.0, uNord.y);' +
+        '  if (sd < -rand && fl <= 0.0) discard;' +
+        '  vec2 w = vec2(0.0); float feld = 0.0;' +
+        '  if (sd >= -rand) {' +
         // die Grenze des klaren Gebiets verwirbelt: Schwaden statt Kante
-        '  vec2 w = vec2(tx(p * 0.0042 + uVersatz + t), tx(p * 0.0042 - t + uVersatz + 0.37)) - 0.5;' +
-        '  vec2 pw = p + w * 60.0;' +
-        // Abstand zum klaren Gebiet: Kasten, dazu die schraege Kante
-        '  float d = klar(pw);' +
-        '  if (d <= 0.0) discard;' +
-        '  float feld = smoothstep(0.0, uWeich, d);' +
+        '    w = vec2(tx(p * 0.0042 + uVersatz + t), tx(p * 0.0042 - t + uVersatz + 0.37)) - 0.5;' +
+        '    feld = smoothstep(0.0, uWeich, klar(p + w * 60.0));' +
+        '  }' +
+        '  feld = max(feld, 0.3 * fl);' +
+        '  if (feld <= 0.0) discard;' +
         // Schwaden in drei Groessen, die feineren ziehen schneller
         '  vec2 q = p * 0.0105 + uVersatz * 1.7 + w * 0.35;' +
         '  float s = tx(q + t * 1.6) * 0.55 + tx(q * 2.3 - t * 2.4 + 0.21) * 0.3 + tx(q * 5.1 + t * 3.5 + 0.6) * 0.15;' +
@@ -5122,7 +5131,7 @@
         const pr = glProgramm(q[0], q[1]);
         if (!gl.getProgramParameter(pr, gl.LINK_STATUS)) return;
         const n = { prog: pr, loc: {} };
-        ['uM', 'uQ', 'uZ', 'uRausch', 'uKlar', 'uRund', 'uSchnitt', 'uWeich', 'uT', 'uVersatz', 'uDichte', 'uRandLage', 'uFarbe', 'uBoden', 'uRand'].forEach(function (x) {
+        ['uM', 'uQ', 'uZ', 'uRausch', 'uKlar', 'uRund', 'uNord', 'uSchnitt', 'uWeich', 'uT', 'uVersatz', 'uDichte', 'uRandLage', 'uFarbe', 'uBoden', 'uRand'].forEach(function (x) {
           n.loc[x] = gl.getUniformLocation(pr, x);
         });
         n.aW = gl.getAttribLocation(pr, 'aW');
@@ -5149,7 +5158,9 @@
         gl.useProgram(pr);
         gl.uniform1i(n.loc.uRausch, 2);
         gl.uniform1f(n.loc.uQ, D.kopf.q);
-        gl.uniform1f(n.loc.uRund, N.rund || 0);
+        gl.uniform2f(n.loc.uNord, geo(0, 58)[1] > geo(0, 57)[1] ? 1 : -1, N.nord || 1);
+        // Der Radius darf das Gebiet nicht ueberragen, sonst schrumpft es zum Kreis.
+        gl.uniform1f(n.loc.uRund, Math.min(N.rund || 0, 0.95 * Math.abs(b[0] - a[0]) / 2, 0.95 * Math.abs(b[1] - a[1]) / 2));
         gl.uniform4f(n.loc.uKlar, Math.min(a[0], b[0]), Math.min(a[1], b[1]), Math.max(a[0], b[0]), Math.max(a[1], b[1]));
         // Schraege Kante: die Normale zeigt vom klaren Gebiet weg.
         let sn = [0, 0, 1e9];
