@@ -4618,10 +4618,21 @@
       return Math.max(i === k.ort ? k.sicht : 0, imGebiet(k, i) ? 0.7 * k.sicht : 0, k.alleHell * 0.55);
     }
     // Rechts bleibt Platz fuer die Ortsnamen, die neben den Punkten stehen.
-    function frei(W, H) {
-      if (tafelLinks > 0) return [Math.max(0.3 * W, tafelLinks - 0.12 * W), H];
-      if (tafelUnten > 0) return [W, Math.max(0.25 * H, freiUnten - tafelUnten)];
+    // Freie Flaeche neben (quer) bzw. unter (hochkant) der Tafel m.
+    function frei(W, H, m) {
+      if (!m) m = { links: tafelLinks, unten: tafelUnten, frei: freiUnten };
+      if (m.links > 0) return [Math.max(0.3 * W, m.links - 0.12 * W), H];
+      if (m.unten > 0) return [W, Math.max(0.25 * H, m.frei - m.unten)];
       return [W, H];
+    }
+    /* Masse der Tafel je Station, gemessen, sobald ihre Bilder gesetzt
+       sind. Die Kamera richtet sich danach schon im Anflug -- vorher rueckte
+       sie erst beim Einblenden der Tafel zur Seite, und beim Abflug wieder
+       zurueck: ein Schwenk in eine andere Richtung als die Fahrt. */
+    let masse = {};
+    function mass(i) {
+      if (i < 0 || !(CFG.medien && CFG.medien[i] && CFG.medien[i].length)) return { links: 0, unten: 0, frei: 0 };
+      return masse[i] || vermessen(i) || { links: tafelLinks, unten: tafelUnten, frei: freiUnten };
     }
     /* Sammelstation: von oben, Norden oben, mit allen Stationen des Gebiets
        im Bild. Steht die Bildtafel (s = ihre Sichtbarkeit), passt die
@@ -4632,11 +4643,14 @@
       const pkte = glieder(i).map(function (j) { return orte[j]; });
       const c0 = einpassen(pkte, DRAUF, 0, 1.4, W, H);
       if (!s) return c0;
-      const f = frei(W, H);
+      const f = frei(W, H, mass(i));
       const c1 = einpassen(pkte, DRAUF, 0, 1.3, W, H, f[0] / W, f[1] / H);
       return { x: mix(c0.x, c1.x, s), y: mix(c0.y, c1.y, s), z: 0,
                dist: logMix(c0.dist, c1.dist, s), pitch: DRAUF, bearing: 0 };
     }
+
+    // Wo die Kamera an einem Ort steht (eine Sammelstation: mit Tafel daneben).
+    function kamFuer(i) { return glieder(i) ? gruppenKam(i, W, H, 1) : kams[i]; }
 
     function vorbereiten(W, H) {
       // Im Hochformat sieht eine steile Schraegsicht vor allem Horizont;
@@ -4761,13 +4775,22 @@
       if (CFG.ueberflug) {
         const g = Math.min(1, fl.u1 / CFG.ueberflug);
         const spitze = Math.max(basis, logMix(NAH.dist, Math.max(NAH.dist, uebersicht.dist * 0.9), g));
-        dist = Math.max(dist, logMix(basis, spitze, Math.sin(Math.PI * e)));
+        /* Weiches Maximum (in Logarithmen): ein hartes knickte die Steig-
+           geschwindigkeit dort, wo die Bahn den Ueberblick ueberholt. An
+           Start und Ziel ist es exakt, dort sind beide gleich. */
+        const l1 = Math.log(dist), l2 = Math.log(logMix(basis, spitze, Math.sin(Math.PI * e))), c = 0.25 * Math.sin(Math.PI * e);
+        dist = Math.exp((l1 + l2 + Math.sqrt((l1 - l2) * (l1 - l2) + c * c)) / 2);
         gipfel = Math.max(gipfel, spitze);
       }
-      const oben = Math.max(0, Math.min(1, (dist - basis) / Math.max(1, gipfel - basis)));
+      /* Wie weit oben (0..1), im Verhaeltnis gemessen: erst eine Verdopplung
+         des Abstands gilt als ganz oben. Bei kurzen Spruengen (in einer
+         Sammelstation) kippte die Neigung sonst in drei Bildern um. */
+      const oben = Math.max(0, Math.min(1, Math.log(dist / basis) / Math.max(Math.LN2, Math.log(gipfel / basis))));
       k.x = mix(A.x, B.x, anteil); k.y = mix(A.y, B.y, anteil); k.z = mix(A.z, B.z, anteil);
       k.dist = dist; k.pitch = mix(mix(A.pitch, B.pitch, anteil), 22, glatt(Math.min(1, oben * 1.3)));
-      k.bearing = winkelMix(bA, bB, stufe(0.2, 0.8, anteil));
+      /* Drehen nach der Zeit, nicht nach dem Weg: der Weg laeuft in der
+         Mitte am schnellsten, dort drehte das Bild mit ueber 200 Grad/s. */
+      k.bearing = winkelMix(bA, bB, stufe(0.1, 0.9, e));
       return anteil;
     }
 
@@ -4777,13 +4800,15 @@
       while (i < phasen.length - 1 && u >= phasen[i].ab + phasen[i].laenge) i++;
       const ph = phasen[i];
       const f = Math.max(0, Math.min(1, (u - ph.ab) / ph.laenge));
-      const k = { namen: 0, dampf: 0, tag: TAGE ? 0 : -1, sicht: 0, ort: -1, weg: -1, wegL: 0, sand: 0, weh: 0, alleHell: 0 };
+      const k = { namen: 0, dampf: 0, tag: TAGE ? 0 : -1, sicht: 0, ort: -1, weg: -1, wegL: 0, sand: 0, weh: 0, alleHell: 0,
+                  vf: 0, vA: -1, vB: -1, vt: 0, kommt: -1 };
       function setze(c) { k.x = c.x; k.y = c.y; k.z = c.z; k.dist = c.dist; k.pitch = c.pitch; k.bearing = c.bearing; }
       if (ph.art === 'start') {
         setze(uebersicht); k.bearing += 3 * f; k.namen = 1;
       } else if (ph.art === 'halt') {
         const n = ph.tagB - ph.tagA + 1, g = glieder(ph.ort);
-        const c = g ? gruppenKam(ph.ort, W, H, tafelSicht) : kams[ph.ort];
+        const c = kamFuer(ph.ort);
+        k.vf = 1; k.vA = k.vB = k.kommt = ph.ort;
         setze({ x: c.x, y: c.y, z: c.z, dist: c.dist, pitch: c.pitch, bearing: c.bearing - 3 + 6 * f });
         k.gruppe = g;
         k.tag = ph.tagA + Math.min(n - 1, Math.floor(f * n));
@@ -4798,6 +4823,7 @@
                 bearing: winkelMix(uebersicht.bearing + 3, c.bearing - 3, e) });
         if (!TAGE) k.tag = f > 0.5 ? 0 : -1;
         k.namen = 1 - stufe(0, 0.5, f);
+        k.vf = e; k.vA = k.vB = k.kommt = 0;
       } else if (ph.art === 'fahrt') {                          // von Ort zu Ort
         /* Ein Kartenflug nach van Wijk & Nuij -- dieselbe Bahn, die grosse
            Kartendienste fuer ihr "Hinfliegen" nehmen: erst steigt die Kamera
@@ -4809,14 +4835,17 @@
            die Strasse entlang -- viel Bewegung dicht ueber dem Gelaende, das
            wirkte wie eine Achterbahn. Oben blickt sie fast senkrecht herab,
            gedreht wird nur dort, wo die Drehung kaum auffaellt. */
-        const w = wege[ph.von], A = kams[ph.von], B = kams[ph.nach];
-        const anteil = fliegen(k, A, B, fluege[ph.von], f, A.bearing + 3, B.bearing - 3);
+        const w = wege[ph.von], A = kamFuer(ph.von), B = kamFuer(ph.nach);
+        const fl = glieder(ph.von) || glieder(ph.nach) ? flugBauen([A.x, A.y], [B.x, B.y], A.dist * BREITE, B.dist * BREITE) : fluege[ph.von];
+        const anteil = fliegen(k, A, B, fl, f, A.bearing + 3, B.bearing - 3);
+        k.vf = 1; k.vA = ph.von; k.vB = k.kommt = ph.nach; k.vt = anteil;
         k.tag = Math.round(mix(ph.tagA, ph.tagB, anteil));
         k.weg = ph.von; k.wegL = w.len * anteil; k.dampf = 1;
         const ga = gruppeVon(ph.von);
         if (ga >= 0) { k.auslaufAb = ga; k.auslauf = gruppeVon(ph.nach) === ga ? 1 : 1 - stufe(0, 0.6, anteil); }
       } else if (ph.art === 'weit') {                           // ins grosse Bild
-        const e = glatt(Math.min(1, f / 0.6)), c = kams[kams.length - 1];
+        const e = glatt(Math.min(1, f / 0.6)), c = kamFuer(kams.length - 1);
+        k.vf = 1 - e; k.vA = k.vB = kams.length - 1;
         setze({ x: mix(c.x, gross.x, e), y: mix(c.y, gross.y, e), z: mix(c.z, 0, e),
                 dist: logMix(c.dist, gross.dist, e), pitch: mix(c.pitch, gross.pitch, e),
                 bearing: winkelMix(c.bearing + 3, gross.bearing, e) });
@@ -5312,7 +5341,7 @@
       schildSchluessel = '';
       if (gl) gl.viewport(0, 0, glc.width, glc.height);
       halt.style.setProperty('--zb', zeit.offsetWidth + 'px');
-      tafelLinks = 0;
+      tafelLinks = 0; masse = {};
       if (W > H * 1.1) for (let el = tafel; el && el !== halt; el = el.offsetParent) tafelLinks += el.offsetLeft;
     }
 
@@ -5345,30 +5374,34 @@
       const P = perspektive(FOV, W / H, k.dist * 0.04, k.dist * 5 + 300);
       return { M: mal(P, V), auge: auge };
     }
-    // Wohin die Kamera tatsaechlich blickt: der Ort, um die Tafel verschoben.
+    /* Versatz auf dem Schirm (Bildpunkte nach links, nach unten), den der
+       Ort zur Tafel hin bekommt: fest je Station, im Flug von der einen zur
+       anderen ueberblendet. Ein Direktflug bringt ihn fertig mit (vPx). */
+    function versatzPx(k) {
+      if (k.vPx) return k.vPx;
+      if (!k.vf) return [0, 0];
+      const a = mass(k.vA), b = mass(k.vB), t = k.vt;
+      function px(m, i) {
+        if (!(m.links > 0)) return 0;
+        const ziel = glieder(i) ? frei(W, H, m)[0] / 2 : Math.min(0.5 * W, m.links - 0.12 * W);
+        return Math.max(0, 0.5 * W - ziel);
+      }
+      function py(m) { return m.unten > 0 ? Math.max(0, Math.max(0.5 * H, (m.unten + m.frei) / 2) - 0.5 * H) : 0; }
+      return [mix(px(a, k.vA), px(b, k.vB), t) * k.vf, mix(py(a), py(b), t) * k.vf];
+    }
+    // Wohin die Kamera tatsaechlich blickt: der Ort, um den Versatz verschoben.
     function versatz(k) {
-      /* Stehen die Fotos rechts, rueckt der Ort so weit nach links, dass er
-         Abstand zu ihnen haelt (am Rechner kaum, auf dem Handy quer mehr). */
-      /* Eine Sammelstation rueckt ganz in die freie Flaeche neben der Tafel.
-         Im Hochformat steht die Tafel oben: der Ort rueckt nach unten, in
-         die Mitte der Flaeche zwischen Tafel und Zeitleiste. */
       const br = k.bearing * Math.PI / 180, ph = k.pitch * Math.PI / 180;
       const fx = Math.sin(br), fy = Math.cos(br);
       let tx = k.x, ty = k.y;
-      if (k.ohneVersatz) return [tx, ty];
-      if (tafelSicht > 0 && tafelLinks > 0) {
-        const ziel = k.gruppe ? frei(W, H)[0] / 2 : Math.min(0.5 * W, tafelLinks - 0.12 * W);
-        const px = (0.5 * W - ziel) * tafelSicht;
-        if (px > 0) {
-          const s = px / (W / 2) * k.dist * Math.tan(FOV / 2) * W / H;
-          tx += fy * s; ty -= fx * s;
-        }
-      } else if (tafelSicht > 0 && tafelUnten > 0) {
-        const py = (Math.max(0.5 * H, (tafelUnten + freiUnten) / 2) - 0.5 * H) * tafelSicht;
-        if (py > 0) {
-          const s = py / (H / 2) * k.dist * Math.tan(FOV / 2) / Math.max(0.35, Math.cos(ph));
-          tx += fx * s; ty += fy * s;
-        }
+      const v = versatzPx(k);
+      if (v[0] > 0) {
+        const s = v[0] / (W / 2) * k.dist * Math.tan(FOV / 2) * W / H;
+        tx += fy * s; ty -= fx * s;
+      }
+      if (v[1] > 0) {
+        const s = v[1] / (H / 2) * k.dist * Math.tan(FOV / 2) / Math.max(0.35, Math.cos(ph));
+        tx += fx * s; ty += fy * s;
       }
       return [tx, ty];
     }
@@ -6170,7 +6203,7 @@
         const b = document.createElement('div');
         b.className = 'karte-bild hat-medium';
         const f = { el: b, video: null, ton: m.ton || false, lief: false, einmal: false,
-                    format: m.hoch && m.video ? 9 / 16 : (function (s) { const p = s.split('/'); return +p[0] / +p[1]; })(m.verhaeltnis || '4 / 3') };
+                    format: formatVon(m) };
         if (m.video) {
           const v = document.createElement('video');
           v.muted = true; v.loop = true; v.playsInline = true;
@@ -6254,8 +6287,47 @@
     }
     /* Je zwei Bilder in einer Zeile, gleich hoch, zusammen so breit wie die
        Tafel. Wird es insgesamt zu hoch, schrumpft alles gleichmaessig. */
+    function formatVon(m) {
+      if (m.hoch && m.video) return 9 / 16;
+      const p = (m.verhaeltnis || '4 / 3').split('/');
+      return +p[0] / +p[1];
+    }
     function tafelSetzen() {
       if (!folge.length) return;
+      const m = tafelMessen(tafel, folge, tafelText);
+      tafelUnten = m.unten; freiUnten = m.frei; tafelLinks = m.links;
+      if (medienOrt >= 0) masse[medienOrt] = m;
+    }
+    /* Masse einer Station, ohne ihre Bilder zu laden: eine unsichtbare
+       zweite Tafel mit ihrem Text und leeren Feldern im Format der Bilder.
+       So weiss die Kamera schon beim Abflug, wo der Ort am Ziel steht. */
+    let probe = null;
+    function vermessen(i) {
+      const liste = CFG.medien && CFG.medien[i];
+      if (!liste || !liste.length || !halter.clientWidth) return null;
+      if (!probe) {
+        probe = document.createElement('div');
+        probe.className = 'karte-tafel';
+        probe.style.visibility = 'hidden';
+        probe.setAttribute('aria-hidden', 'true');
+        halter.appendChild(probe);
+      }
+      probe.textContent = '';
+      const text = CFG.texte && CFG.texte[i];
+      probe.classList.toggle('mit-text', !!text);
+      let tx = null;
+      if (text) {
+        tx = document.createElement('p');
+        tx.className = 'karte-text';
+        tx.textContent = text;
+        probe.appendChild(tx);
+      }
+      const fo = liste.map(function (m) { return { el: document.createElement('div'), format: formatVon(m) }; });
+      masse[i] = tafelMessen(probe, fo, tx);
+      probe.textContent = '';
+      return masse[i];
+    }
+    function tafelMessen(tafel, folge, tafelText) {
       const B = tafel.clientWidth || 300, L = 10;
       const quer = W > H * 1.1;
       /* Im Hochformat stehen Text und Bilder oben; mit Text darf die Tafel
@@ -6329,11 +6401,10 @@
         y += hs[zi] + L;
       });
       tafel.style.height = (y - L).toFixed(1) + 'px';
-      tafelUnten = quer ? 0 : oben + y - L;
-      freiUnten = unten;
       // Mit Text ist die Tafel auf dem Handy quer breiter: neu messen.
-      tafelLinks = 0;
-      if (quer) for (let el = tafel; el && el !== halt; el = el.offsetParent) tafelLinks += el.offsetLeft;
+      let links = 0;
+      if (quer) for (let el = tafel; el && el !== halt; el = el.offsetParent) links += el.offsetLeft;
+      return { links: links, unten: quer ? 0 : oben + y - L, frei: unten };
     }
     function spiele(f, an, staerke) {
       const v = f.video;
@@ -6386,19 +6457,24 @@
     }
 
     let bereit = false;
-    function zeichne(u, zeitS) {
+    function zeichne(u, zeitS, jetzt) {
       if (!bereit) return;
+      if (jetzt === undefined) jetzt = performance.now();
       if (zeitS === undefined) zeitS = reducedMotion ? 0 : (performance.now() / 1000) % 100000;
-      const k = sprung ? sprungZustand(performance.now()) : zustand(u);
+      let k = sprung ? sprungZustand(jetzt) : zustand(u);
+      /* Die Bilder der Station, auf die es zugeht, schon setzen, solange
+         keine Tafel zu sehen ist: dann kennt die Kamera deren Masse schon
+         im Anflug und kommt gleich richtig an. */
+      if (k.kommt >= 0 && k.kommt !== medienOrt && tafelSicht < 0.01 && k.sicht <= 0.01 &&
+          CFG.medien && CFG.medien[k.kommt]) {
+        setzeMedien(k.kommt);
+        k = sprung ? sprungZustand(jetzt) : zustand(u);
+      }
       zeigeTag(k.tag);
       medienZeigen(k);
-      /* Sammelstation: den Ausschnitt erst jetzt rechnen, mit der Tafel
-         dieses Bildes -- zustand() kannte nur die des vorigen, und nach
-         einem Sprung (Zeitleiste, reduzierte Bewegung) lag dann ein Ort
-         ausserhalb des Bildes. Neigung und Drehung bleiben aus zustand(). */
-      if (k.gruppe) { const c = gruppenKam(k.ort, W, H, tafelSicht); k.x = c.x; k.y = c.y; k.z = c.z; k.dist = c.dist; }
       const cam = kamera(k);
       letzteK = k; letzteM = cam.M;
+      if (wurzel.kartenProtokoll) wurzel.kartenProtokoll.push({ t: jetzt, k: { x: k.x, y: k.y, dist: k.dist, pitch: k.pitch, bearing: k.bearing }, M: cam.M.slice(), sprung: !!sprung, ort: k.ort });
       kompassSetzen(k);
       landschaft(k, cam, zeitS);
       linien(k, cam, zeitS);
@@ -6412,21 +6488,37 @@
        blenden aus, unterwegs erscheint nichts; erst am Ziel kommen dessen
        Bilder und Text, wie bei jeder Ankunft. Das Datum springt sofort. */
     let sprung = null, letzteK = null, letzteM = null;
+    // Fuer Tests der Kamerabahn: Orte, Groesse, Namen (kartenProtokoll = [] sammelt jedes Bild).
+    wurzel.kartenInfo = function () { return { orte: orte, W: W, H: H, namen: CFG.namen || [], M: letzteM ? Array.from(letzteM) : null, ort: letzteK ? letzteK.ort : -1 }; };
     function sprungZustand(jetzt) {
       const s = sprung, f = Math.min(1, (jetzt - s.t0) / 1000 / s.T);
       const a = s.von, aus = 1 - stufe(0, 0.25, f);
-      const k = { namen: a.namen * aus, dampf: 0, tag: s.tag, sicht: a.sicht * aus, ort: a.ort,
+      const nach = s.ziel(), e = losUndAus(f);
+      const k = { namen: a.namen * aus, dampf: 0, tag: s.tag, sicht: a.sicht * aus, ort: a.ort, kommt: s.ort,
                   weg: s.ort - 1, wegL: 1e9, sand: a.sand * aus, weh: a.weh * aus, alleHell: a.alleHell * aus,
-                  auslauf: mix(a.auslauf || 0, s.zAus, stufe(0, 1, f)), auslaufAb: a.auslauf ? a.auslaufAb : s.zAb,
-                  ohneVersatz: true };
-      /* Sofort los, ruhig ankommen. Der Versatz fuer die Tafel ist schon im
-         Startpunkt: blendet die Tafel aus, rueckte das Bild sonst erst zur
-         Seite und flog dann in eine andere Richtung weiter. */
-      fliegen(k, a, s.nach, s.fl, f, a.bearing, s.nach.bearing, mix(glatt(f), 1 - Math.pow(1 - f, 3), 0.75));
+                  auslauf: mix(a.auslauf || 0, s.zAus, stufe(0, 1, f)), auslaufAb: a.auslauf ? a.auslaufAb : s.zAb };
+      /* Sofort los, ruhig ankommen. Der Versatz zur Tafel geht vom alten
+         zum neuen ueber -- der neue erst spaet, seine Masse stehen erst fest,
+         wenn die alte Tafel ausgeblendet ist. */
+      const vB = versatzPx({ vf: 1, vA: s.ort, vB: s.ort, vt: 0 }), w = stufe(0.45, 1, e);
+      k.vPx = [mix(s.vA[0], vB[0], w), mix(s.vA[1], vB[1], w)];
+      fliegen(k, a, nach, flugBauen([a.x, a.y], [nach.x, nach.y], a.dist * BREITE, nach.dist * BREITE), f, a.bearing, nach.bearing, e);
       // Gedreht wird erst beim Sinken ueber dem Ziel: dreht sich das Bild
       // unterwegs, aendert sich auf dem Schirm die Richtung des Flugs.
-      k.bearing = winkelMix(a.bearing, s.nach.bearing, stufe(0.6, 1, f));
+      k.bearing = winkelMix(a.bearing, nach.bearing, stufe(0.6, 1, f));
       return k;
+    }
+    /* Verlauf des Direktflugs: Geschwindigkeit (1 - e^(-f/tau)) * (1 - f)^2,
+       aufintegriert. Faehrt sofort los, aber in den ersten ~150 ms weich an
+       (vorher sprang die Geschwindigkeit im ersten Bild von null auf voll),
+       und kommt langsam an. */
+    function losUndAus(f) {
+      const tau = 0.05;
+      function B(x) {
+        const F = function (y) { return -tau * Math.exp(-y / tau) * ((1 - y) * (1 - y) - 2 * tau * (1 - y) + 2 * tau * tau); };
+        return (1 - Math.pow(1 - x, 3)) / 3 - (F(x) - F(0));
+      }
+      return B(f) / B(1);
     }
     function sprungDauer() {
       // so lange wie eine gewoehnliche Fahrt von Station zu Station (Median)
@@ -6441,18 +6533,19 @@
       if (!ph || j >= HALTE.length) return;
       if (!fahrt && !sprung && Math.abs(stand - HALTE[j]) < 0.002) return;   // schon da
       if (reducedMotion) { springeSofort(HALTE[j]); return; }
-      const c = kams[ort], a = letzteK, va = versatz(a);
-      const nach = { x: c.x, y: c.y, z: c.z, dist: c.dist, pitch: c.pitch, bearing: c.bearing - 3 };
+      const a = letzteK;
+      // Ziel: wie der Halt beginnt (Sammelstation mit Tafel daneben).
+      function zielKam() { const c = kamFuer(ort); return { x: c.x, y: c.y, z: c.z, dist: c.dist, pitch: c.pitch, bearing: c.bearing - 3 }; }
       // Ankunft am Anfang des Halts; dessen erste Haelfte (Bilder blenden ein) faehrt danach normal.
       const rein = (HALTE[j] - ph.ab) / ph.laenge * phasenZeit(ph);
       fahrt = null; tempo = 0;
       const zk = zustand(ph.ab);           // so steht es bei der Landung
-      sprung = { zAus: zk.auslauf || 0, zAb: zk.auslaufAb, t0: performance.now(), T: Math.max(1.2, sprungDauer() - rein), ort: ort, tag: ph.tagA,
-                 ab: ph.ab, u: HALTE[j], nach: nach,
-                 von: { x: va[0], y: va[1], z: a.z, dist: a.dist, pitch: a.pitch, bearing: a.bearing,
+      sprung = { zAus: zk.auslauf || 0, zAb: zk.auslaufAb, ziel: zielKam, vA: versatzPx(a), t0: performance.now(), T: Math.max(1.2, sprungDauer() - rein), ort: ort, tag: ph.tagA,
+                 ab: ph.ab, u: HALTE[j],
+                 von: { x: a.x, y: a.y, z: a.z, dist: a.dist, pitch: a.pitch, bearing: a.bearing,
                         namen: a.namen, sicht: a.sicht, ort: a.ort, sand: a.sand, weh: a.weh, alleHell: a.alleHell,
                         auslauf: a.auslauf, auslaufAb: a.auslaufAb },
-                 fl: flugBauen([va[0], va[1]], [nach.x, nach.y], a.dist * BREITE, nach.dist * BREITE) };
+               };
       ziel = HALTE[j];
       setzeScroll(ziel);
       vorladen(ort);
@@ -6571,7 +6664,7 @@
       return { t0: performance.now(), T: T, stuecke: stuecke, nach: b };
     }
     function fahrtStand(f, jetzt) {
-      const u = Math.min(1, (jetzt - f.t0) / 1000 / f.T);
+      const u = Math.max(0, Math.min(1, (jetzt - f.t0) / 1000 / f.T));
       let t = (0.5 * u + 0.5 * (0.5 - 0.5 * Math.cos(Math.PI * u))) * f.T;
       for (let i = 0; i < f.stuecke.length; i++) {
         const s = f.stuecke[i];
@@ -6628,7 +6721,12 @@
        fuer die Videos der Tafel. Nur die Bahnkarte bleibt bei rund 30 Bildern,
        ihre Dampfwolken ziehen schneller. */
     let gezeichnet = 0, standGezeichnet = -1;
-    function schleife(jetzt) {
+    function schleife() {
+      /* Eine Uhr fuer alles: Fahrt und Direktflug beginnen mit
+         performance.now() beim Ereignis. Der Zeitstempel des Bildes liegt
+         davor -- damit lief eine Fahrt im ersten Bild ein Stueck rueckwaerts,
+         und beim Uebergang vom Flug zur Fahrt stand die Kamera ein Bild lang. */
+      const jetzt = performance.now();
       if (!bereit || !sichtbar || !viewer.classList.contains('is-active') || document.hidden) {
         laeuft = false; return;
       }
@@ -6641,7 +6739,7 @@
         if (jetzt - fahrt.t0 >= fahrt.T * 1000) { stand = ziel = fahrt.nach; fahrt = null; }
       } else folgen(dt);
       if (stand !== standGezeichnet || jetzt - gezeichnet > (CFG.bahn ? 28 : 62)) {
-        zeichne(stand, (jetzt / 1000) % 100000);
+        zeichne(stand, (jetzt / 1000) % 100000, jetzt);
         gezeichnet = jetzt; standGezeichnet = stand;
         knoepfe();
       }
