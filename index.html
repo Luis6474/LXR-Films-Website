@@ -4765,6 +4765,7 @@
         k.tag = ph.tagA + Math.min(n - 1, Math.floor(f * n));
         k.sicht = stufe(0.1, 0.26, f) * (1 - stufe(0.8, 0.95, f));
         k.ort = ph.ort; k.weg = ph.ort - 1; k.wegL = 1e9; k.dampf = 0.4;
+        if (g && ph.ort < wege.length) { k.auslauf = stufe(0, 0.25, f); k.auslaufAb = ph.ort; }
       } else if (ph.art === 'fahrt' && ph.von < 0) {          // aus der Uebersicht herein
         const e = glatt(f), c = kams[0];
         setze({ x: mix(uebersicht.x, c.x, e), y: mix(uebersicht.y, c.y, e), z: mix(0, c.z, e),
@@ -4787,6 +4788,7 @@
         const anteil = fliegen(k, A, B, fluege[ph.von], f, A.bearing + 3, B.bearing - 3);
         k.tag = Math.round(mix(ph.tagA, ph.tagB, anteil));
         k.weg = ph.von; k.wegL = w.len * anteil; k.dampf = 1;
+        if (glieder(ph.von)) { k.auslauf = 1; k.auslaufAb = ph.von; }
       } else if (ph.art === 'weit') {                           // ins grosse Bild
         const e = glatt(Math.min(1, f / 0.6)), c = kams[kams.length - 1];
         setze({ x: mix(c.x, gross.x, e), y: mix(c.y, gross.y, e), z: mix(c.z, 0, e),
@@ -5433,11 +5435,12 @@
     /* Ein Linienstueck als Rechteck, auf dem Bildschirm um die halbe
        Linienstaerke (plus Rand fuer Glaettung oder Schein) verbreitert.
        Liegt ein Ende hinter der Kamera, wird das Stueck dort abgeschnitten;
-       "uBis" kuerzt die Route auf den gefahrenen Teil. */
+       "uBis" kuerzt die Route auf den gefahrenen Teil; liegt "uVoll"
+       davor, laeuft sie zwischen beiden weich aus. */
     const VS_BAND =
       'attribute vec3 aP0; attribute vec3 aP1; attribute vec2 aEcke; attribute vec2 aL; attribute vec2 aArt;' +
       'uniform mat4 uM; uniform vec2 uPx; uniform float uPR; uniform float uBreite; uniform float uRandPx; uniform float uBis; uniform float uHoch;' +
-      'varying vec2 vA; varying vec2 vB; varying vec2 vW0; varying vec2 vW1; varying vec2 vQ; varying vec2 vArt; varying float vH;' +
+      'varying vec2 vA; varying vec2 vB; varying vec2 vW0; varying vec2 vW1; varying vec2 vQ; varying vec2 vArt; varying vec2 vL; varying float vH;' +
       'void main(){' +
       '  vec4 c0 = uM * vec4(aP0.xy, aP0.z + uHoch, 1.0), c1 = uM * vec4(aP1.xy, aP1.z + uHoch, 1.0);' +
       '  float t0 = 0.0, t1 = 1.0;' +
@@ -5455,14 +5458,15 @@
       '  gl_Position = vec4(s / uPx * 2.0 - 1.0, 0.0, 1.0);' +
       '  vA = s0; vB = s1; vQ = vec2(1.0 / d0.w, 1.0 / d1.w);' +
       '  vW0 = mix(aP0.xy, aP1.xy, t0); vW1 = mix(aP0.xy, aP1.xy, t1); vArt = aArt; vH = hw;' +
+      '  vL = vec2(mix(aL.x, aL.y, t0), mix(aL.x, aL.y, t1));' +
       '}';
     /* Deckung je Bildpunkt: Abstand zum Stueck (mit runden Enden), als
        Anteil eines Bildpunkts, den die Linie bedeckt. Der Schein ist die
        Linie, mit einer Gaussglocke weichgezeichnet. Die Seekarte blendet
        zum Kartenrand hin aus, in denselben acht Stufen wie auf der Leinwand. */
     const FS_BAND = GENAU +
-      'uniform float uModus; uniform float uSigma; uniform vec4 uKanal; uniform vec2 uRand;' +
-      'varying vec2 vA; varying vec2 vB; varying vec2 vW0; varying vec2 vW1; varying vec2 vQ; varying vec2 vArt; varying float vH;' +
+      'uniform float uModus; uniform float uSigma; uniform vec4 uKanal; uniform vec2 uRand; uniform float uVoll; uniform float uBis;' +
+      'varying vec2 vA; varying vec2 vB; varying vec2 vW0; varying vec2 vW1; varying vec2 vQ; varying vec2 vArt; varying vec2 vL; varying float vH;' +
       'float fehler(float x){ float s = sign(x); x = abs(x); float t = 1.0 / (1.0 + 0.3275911 * x);' +
       '  return s * (1.0 - (((((1.061405429 * t - 1.453152027) * t) + 1.421413741) * t - 0.284496736) * t + 0.254829592) * t * exp(-x * x)); }' +
       'void main(){' +
@@ -5471,6 +5475,7 @@
       '  float d = length(p - vA - ab * t), v;' +
       '  if (uModus == 1.0) { float k = 0.70710678 / uSigma; v = 0.5 * (fehler((d + vH) * k) - fehler((d - vH) * k)); }' +
       '  else v = clamp(min(d + 0.5, vH) - max(d - 0.5, -vH), 0.0, 1.0);' +
+      '  if (uVoll < uBis) v *= 1.0 - smoothstep(uVoll, uBis, mix(vL.x, vL.y, t * vQ.y / mix(vQ.x, vQ.y, t)));' +
       '  if (uModus == 2.0) {' +
       '    vec2 w = mix(vW0, vW1, t * vQ.y / mix(vQ.x, vQ.y, t));' +
       '    float a = -vArt.x;' +
@@ -5566,7 +5571,7 @@
       }
       try {
         const u = { max: zwei ? gl.MAX : mm.MAX_EXT, bw: 0, bh: 0 };
-        u.band = programm(VS_BAND, FS_BAND, ['uM', 'uPx', 'uPR', 'uBreite', 'uRandPx', 'uBis', 'uHoch', 'uModus', 'uSigma', 'uKanal', 'uRand'],
+        u.band = programm(VS_BAND, FS_BAND, ['uM', 'uPx', 'uPR', 'uBreite', 'uRandPx', 'uBis', 'uVoll', 'uHoch', 'uModus', 'uSigma', 'uKanal', 'uRand'],
                           ['aP0', 'aP1', 'aEcke', 'aL', 'aArt']);
         u.deck = programm(VS_DECK, FS_DECK, ['uBildA', 'uBildB', 'uPx', 'uFS', 'uFL', 'uFG', 'uFH', 'uDeck'], ['aV']);
         u.sand = programm(VS_SAND, FS_SAND, ['uM', 'uPx', 'uPR', 'uKopf', 'uAltN', 'uWeh', 'uHoch', 'uFarbe'], ['aP', 'aZ', 'aZ2']);
@@ -5703,7 +5708,7 @@
          bewegt sich weiter, die Linien nicht), sind sie Bild fuer Bild
          dieselben und werden aus dem letzten Bild uebernommen. Das spart
          im Stand den groessten Teil der Arbeit fuer die Linien. */
-      const schl = BW + ',' + BH + ',' + PR + ',' + k.sand + ',' + k.namen + ',' + k.weg + ',' + k.wegL + '|' +
+      const schl = BW + ',' + BH + ',' + PR + ',' + k.sand + ',' + k.namen + ',' + k.weg + ',' + k.wegL + ',' + (k.auslauf || 0) + '|' +
                    Array.prototype.join.call(M, ',');
       gl.enable(gl.BLEND);
       if (schl !== u.schluessel) {
@@ -5719,12 +5724,12 @@
         gl.uniform2f(b.loc.uPx, BW, BH); gl.uniform1f(b.loc.uPR, PR); gl.uniform1f(b.loc.uHoch, UEBER_HOCH);
         gl.uniform2f(b.loc.uRand, D.kopf.groesse[0] / 2, D.kopf.groesse[1] / 2);
         gl.uniform1f(b.loc.uSigma, 4.5);
-        function band(puf, von, bis0, breite, bis, modus, kanal) {
+        function band(puf, von, bis0, breite, bis, modus, kanal, voll) {
           if (bis0 <= von) return;
           gl.bindBuffer(gl.ARRAY_BUFFER, puf);
           attrSetzen(b, [['aP0', 3], ['aP1', 3], ['aEcke', 2], ['aL', 2], ['aArt', 2]], 48);
           gl.uniform1f(b.loc.uBreite, breite); gl.uniform1f(b.loc.uRandPx, modus === 1 ? 13.5 : 1);
-          gl.uniform1f(b.loc.uBis, bis); gl.uniform1f(b.loc.uModus, modus);
+          gl.uniform1f(b.loc.uBis, bis); gl.uniform1f(b.loc.uVoll, voll === undefined ? bis : voll); gl.uniform1f(b.loc.uModus, modus);
           gl.uniform4fv(b.loc.uKanal, kanal);
           gl.drawArrays(gl.TRIANGLES, von, bis0 - von);
         }
@@ -5737,12 +5742,19 @@
             for (let i = 0; i < wege.length; i++) band(u.puf.weg, ab(i), u.wegEnde[i], 1 + 0.4 * k.namen, 1e9, 0, etappe(i));
           }
           if (k.weg >= 0) {                                                // Schein -> B.rgb, Route -> B.a
-            const j = Math.min(k.weg, wege.length - 1);
-            const bis = Math.min(kopf, wegAb[j] + k.wegL);
+            let j = Math.min(k.weg, wege.length - 1);
+            const voll = Math.min(kopf, wegAb[j] + Math.min(k.wegL, wege[j].len));
+            let bis = voll;
+            /* Sammelstation: hier hoert die Route nicht an einem Punkt auf
+               (das saehe aus wie ein Ort), sie laeuft ins Gebiet hinein aus. */
+            if (k.auslauf > 0 && k.sand === 0) {
+              const g = k.auslaufAb, ende = wegAb[g] + wege[g].len * 0.6 * k.auslauf;
+              if (ende > voll) { bis = ende; j = Math.max(j, g); }
+            }
             if (bis > 0) {
               gl.bindFramebuffer(gl.FRAMEBUFFER, u.fbs[1]);
-              for (let i = 0; i <= j; i++) band(u.puf.weg, ab(i), u.wegEnde[i], 1.7, bis, 1, etappe(i));
-              band(u.puf.weg, 0, u.wegEnde[j], 1.7, bis, 0, [0, 0, 0, 1]);
+              for (let i = 0; i <= j; i++) band(u.puf.weg, ab(i), u.wegEnde[i], 1.7, bis, 1, etappe(i), voll);
+              band(u.puf.weg, 0, u.wegEnde[j], 1.7, bis, 0, [0, 0, 0, 1], voll);
             }
           }
         }
@@ -6418,7 +6430,8 @@
       const s = sprung, f = Math.min(1, (jetzt - s.t0) / 1000 / s.T);
       const a = s.von, aus = 1 - stufe(0, 0.25, f);
       const k = { namen: a.namen * aus, dampf: 0, tag: s.tag, sicht: a.sicht * aus, ort: a.ort,
-                  weg: s.ort - 1, wegL: 1e9, sand: a.sand * aus, weh: a.weh * aus, alleHell: a.alleHell * aus };
+                  weg: s.ort - 1, wegL: 1e9, sand: a.sand * aus, weh: a.weh * aus, alleHell: a.alleHell * aus,
+                  auslauf: (a.auslauf || 0) * aus, auslaufAb: a.auslaufAb };
       fliegen(k, a, s.nach, s.fl, f, a.bearing, s.nach.bearing);
       return k;
     }
@@ -6443,7 +6456,8 @@
       sprung = { t0: performance.now(), T: Math.max(1.2, sprungDauer() - rein), ort: ort, tag: ph.tagA,
                  ab: ph.ab, u: HALTE[j], nach: nach,
                  von: { x: a.x, y: a.y, z: a.z, dist: a.dist, pitch: a.pitch, bearing: a.bearing,
-                        namen: a.namen, sicht: a.sicht, ort: a.ort, sand: a.sand, weh: a.weh, alleHell: a.alleHell },
+                        namen: a.namen, sicht: a.sicht, ort: a.ort, sand: a.sand, weh: a.weh, alleHell: a.alleHell,
+                        auslauf: a.auslauf, auslaufAb: a.auslaufAb },
                  fl: flugBauen([a.x, a.y], [nach.x, nach.y], a.dist * BREITE, nach.dist * BREITE) };
       ziel = HALTE[j];
       setzeScroll(ziel);
