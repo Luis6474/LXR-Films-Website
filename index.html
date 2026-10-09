@@ -1460,6 +1460,16 @@
      Zeilen und reicht bis in die Fotos. */
   .karte-weiter { white-space: nowrap; }
   @media (max-width: 340px) { .karte-weiter { font-size: 0.74em; letter-spacing: 0.08em; right: 12px; padding-left: 14px; padding-right: 14px; } }
+  /* Kompassnadel: unten links, auf der Hoehe des Datums, leise wie die Karte. */
+  .karte-kompass {
+    position: absolute; left: max(16px, 2.4vw); bottom: calc(max(44px, 7dvh) - 14px);
+    width: 54px; height: 54px; pointer-events: none;
+    color: rgb(255, 236, 212); opacity: 0; transition: opacity 0.8s var(--ease);
+  }
+  .karte.ist-bereit .karte-kompass { opacity: 0.85; }
+  .karte-kompass svg { display: block; width: 100%; height: 100%; overflow: visible; }
+  .karte-kompass text { font: 6.4px 'Libre Caslon Display', Georgia, serif; letter-spacing: 0.5px; }
+  @media (max-width: 600px) { .karte-kompass { width: 44px; height: 44px; } }
   .karte-quelle {
     position: absolute; right: 12px; bottom: 8px; margin: 0;
     font-size: 9px; letter-spacing: 0.02em; color: var(--text-dim); opacity: 0.3;
@@ -4222,7 +4232,7 @@
      und The South (beide Alpen). Alle teilen denselben Motor und dieselben
      Zuege -- gestapelte Hoehenschichten wie Papierlagen mit Tuschkanten,
      die warme Lichtspur der Route, bewegte Wasserlinien wie auf alten
-     Seekarten, Kompasslinien und Gradnetz, die Beschriftung unten, der
+     Seekarten, eine kleine Kompassnadel, die Beschriftung unten, der
      Knopf zum Ueberspringen. Jede hat aber ihre eigene Farbwelt:
      Schottland Nachtblau, The Mountains Tanne und Gletscher, The South
      Dolomitstein und Lagune mit einer Route im Rosa des Alpengluehens.
@@ -4236,7 +4246,7 @@
      Strassenrouten und Seen aus OpenStreetMap; die Einstellungen je Karte
      stehen in werkzeug/karten/. Geladen wird erst, wenn die Projektseite
      aufgeht. Gezeichnet wird mit WebGL ohne Bibliothek, auch Route, Punkte,
-     Sand und Seekarten-Linien; nur die Ortsnamen stehen auf einer 2D-Ebene
+     und Sand; nur die Ortsnamen stehen auf einer 2D-Ebene
      darueber.
 
      Orte und Reihenfolge folgen den Aufnahmeorten und -zeiten der Fotos
@@ -4305,20 +4315,27 @@
       /* "rund": Radius (km), mit dem die Ecken des klaren Gebiets gerundet
          sind -- der Nebel kommt dann von allen Seiten wie um eine Lichtung,
          nicht als Vorhang von links und rechts. Von Norden rueckt er bis
-         nah an Skye heran. Duester: dunkles Schiefergrau. */
+         nah an Skye heran. Die Farbe: ein graues Blau, heller als die
+         Berge, damit der Nebel als eigene Schicht ueber ihnen liegt. */
+      /* "unten", "oben": Baender am Bildrand, [Breite ohne Nebel, Breite
+         ganz] -- unten flach herein, oben Schwaden; beide mittel dicht. */
       nebel: { klar: [-7.3, 55.95, -4.65, 57.54], schnitt: [[-6.95, 57.58], [-6.3, 57.83]],
-               rund: 35, nord: 4, weich: 110, farbe: [0.12, 0.155, 0.205],
+               rund: 35, nord: 4, weich: 110, farbe: [0.2, 0.225, 0.26],
+               unten: [56.02, 55.72], oben: [57.42, 57.78],
                lagen: [[40, 0.42], [170, 0.3], [420, 0.2]] },
       ueberhoehung: 3.2,
       grund: [0.016, 0.03, 0.05],
-      land: [[0.08, 0.105, 0.14], [0.11, 0.145, 0.195], [0.17, 0.215, 0.28], [0.45, 0.5, 0.57]],
+      /* Land: Taeler tief blau, nach oben heller und grauer -- Berge setzen
+         sich ab, statt im selben Blau zu verschwimmen. "ruhe": wie stark
+         die Stufen aus der Ferne zusammenruecken (sonst 0,55), "meerTief":
+         das tiefe Meer nur halb so dunkel wie sonst, ohne schwarze Becken. */
+      land: [[0.062, 0.086, 0.122], [0.1, 0.133, 0.178], [0.2, 0.228, 0.265], [0.5, 0.52, 0.545]],
+      ruhe: 0.2, meerTief: 0.55,
       wasser: [0.032, 0.054, 0.084],
       linien: { meer: [0.56, 0.6, 0.62, 0.07], ufer: [0.88, 0.84, 0.74, 0.55], land: [0.74, 0.73, 0.67, 0.13] },
       tinte: '226, 216, 190', tinteGl: [0.84, 0.82, 0.74],
       route: { hell: '255, 222, 178', schein: '255, 170, 90', leise: '240, 200, 150', sand: '250, 214, 168',
                ort: '255, 196, 130', ring: '255, 226, 190', punkt: '255, 236, 212' },
-      gradnetz: [-8.5, -3, 55.5, 58.5],
-      kompass: [-7.05, 57.02],
       nah: [34, 42],                         // Kameraabstand an den Orten (quer / hochkant), km
       ueberflug: 40,                         // ab so vielen km Strecke steigt der Flug bis zur ganzen Uebersicht
       wellen: [0.7, 3.2, 2.6, 8.0]          // Abstand fein/grob (km), Abklingen fein/grob (km)
@@ -4358,8 +4375,6 @@
       tinte: '214, 230, 232', tinteGl: [0.82, 0.92, 0.94],
       route: { hell: '255, 216, 156', schein: '255, 168, 80', leise: '240, 204, 150', sand: '250, 216, 166',
                ort: '255, 196, 120', ring: '255, 226, 186', punkt: '255, 238, 210' },
-      gradnetz: [8, 14.5, 46, 55],
-      kompass: [12.45, 47.87],               // mitten im Chiemsee
       wellen: [0.22, 0.9, 0.8, 2.5]
     },
     /* The South: warmer Stein -- Umbra in den Taelern, Terrakotta an den
@@ -4379,8 +4394,6 @@
       tinte: '236, 212, 176', tinteGl: [0.92, 0.84, 0.72],
       route: { hell: '255, 208, 198', schein: '240, 118, 118', leise: '240, 182, 172', sand: '250, 200, 190',
                ort: '255, 168, 158', ring: '255, 216, 208', punkt: '255, 234, 228' },
-      gradnetz: [10.5, 13.5, 45, 47.5],
-      kompass: [12.85, 45.25],               // in der Adria vor Venedig
       wellen: [0.5, 2.4, 2.0, 6.0]
     },
     /* Track of Time: mit der Bäderbahn Molli von Kühlungsborn West nach
@@ -4410,8 +4423,6 @@
       tinte: '224, 184, 130', tinteGl: [0.88, 0.72, 0.5],
       route: { hell: '255, 196, 130', schein: '255, 110, 30', leise: '230, 170, 110', sand: '240, 190, 140',
                ort: '255, 150, 70', ring: '255, 210, 160', punkt: '255, 230, 200' },
-      gradnetz: [11.6, 12.05, 54.05, 54.2], gradnetzSchritt: 0.05,
-      kompass: [11.83, 54.175], kompassR: 0.6,   // in der Ostsee vor Heiligendamm
       sandSchritt: 0.012,
       wellen: [0.12, 0.5, 0.45, 1.4]
     }
@@ -4504,6 +4515,17 @@
     let kams = [];
     const GRUPPEN = CFG.gruppen || {};
     function glieder(i) { return GRUPPEN[i] || null; }
+    // Zu welcher Sammelstation ein Ort gehoert (sie selbst eingeschlossen), sonst -1.
+    function gruppeVon(i) {
+      for (const g in GRUPPEN) if (GRUPPEN[g].indexOf(i) >= 0) return +g;
+      return -1;
+    }
+    // Wie weit das Licht ins Gebiet reicht: drei Viertel bis zum fernsten Ort.
+    function gruppenRadius(g) {
+      let r = 1;
+      GRUPPEN[g].forEach(function (i) { r = Math.max(r, Math.hypot(orte[i][0] - orte[g][0], orte[i][1] - orte[g][1])); });
+      return r * 0.75;
+    }
     let uebersicht = null, gross = null;
     const NAH = { dist: 24, pitch: 56 };
 
@@ -4724,9 +4746,11 @@
 
     /* Ein Flug von Kamera A nach B (fl aus flugBauen, f von 0 bis 1);
        setzt die Kamera in k und gibt zurueck, wie weit sie am Boden ist. */
-    function fliegen(k, A, B, fl, f, bA, bB) {
-      const s = fl.S * glatt(f);
-      const anteil = fl.u1 > 0 ? fl.u(s) / fl.u1 : glatt(f);
+    // e: Verlauf der Fahrt (0..1); ohne Angabe sanft an- und auslaufend.
+    function fliegen(k, A, B, fl, f, bA, bB, e) {
+      if (e === undefined) e = glatt(f);
+      const s = fl.S * e;
+      const anteil = fl.u1 > 0 ? fl.u(s) / fl.u1 : e;
       let dist = fl.w(s) / BREITE, gipfel = fl.wMax / BREITE;
       // Abstand am Boden der Fahrt: nah, bei einer Sammelstation hoeher.
       const basis = logMix(A.dist, B.dist, anteil);
@@ -4737,7 +4761,7 @@
       if (CFG.ueberflug) {
         const g = Math.min(1, fl.u1 / CFG.ueberflug);
         const spitze = Math.max(basis, logMix(NAH.dist, Math.max(NAH.dist, uebersicht.dist * 0.9), g));
-        dist = Math.max(dist, logMix(basis, spitze, Math.sin(Math.PI * glatt(f))));
+        dist = Math.max(dist, logMix(basis, spitze, Math.sin(Math.PI * e)));
         gipfel = Math.max(gipfel, spitze);
       }
       const oben = Math.max(0, Math.min(1, (dist - basis) / Math.max(1, gipfel - basis)));
@@ -4765,7 +4789,8 @@
         k.tag = ph.tagA + Math.min(n - 1, Math.floor(f * n));
         k.sicht = stufe(0.1, 0.26, f) * (1 - stufe(0.8, 0.95, f));
         k.ort = ph.ort; k.weg = ph.ort - 1; k.wegL = 1e9; k.dampf = 0.4;
-        if (g && ph.ort < wege.length) { k.auslauf = stufe(0, 0.25, f); k.auslaufAb = ph.ort; }
+        const ga = gruppeVon(ph.ort);
+        if (ga >= 0) { k.auslaufAb = ga; k.auslauf = ph.ort === ga ? stufe(0, 0.25, f) : 1; }
       } else if (ph.art === 'fahrt' && ph.von < 0) {          // aus der Uebersicht herein
         const e = glatt(f), c = kams[0];
         setze({ x: mix(uebersicht.x, c.x, e), y: mix(uebersicht.y, c.y, e), z: mix(0, c.z, e),
@@ -4788,7 +4813,8 @@
         const anteil = fliegen(k, A, B, fluege[ph.von], f, A.bearing + 3, B.bearing - 3);
         k.tag = Math.round(mix(ph.tagA, ph.tagB, anteil));
         k.weg = ph.von; k.wegL = w.len * anteil; k.dampf = 1;
-        if (glieder(ph.von)) { k.auslauf = 1; k.auslaufAb = ph.von; }
+        const ga = gruppeVon(ph.von);
+        if (ga >= 0) { k.auslaufAb = ga; k.auslauf = gruppeVon(ph.nach) === ga ? 1 : 1 - stufe(0, 0.6, anteil); }
       } else if (ph.art === 'weit') {                           // ins grosse Bild
         const e = glatt(Math.min(1, f / 0.6)), c = kams[kams.length - 1];
         setze({ x: mix(c.x, gross.x, e), y: mix(c.y, gross.y, e), z: mix(c.z, 0, e),
@@ -4951,18 +4977,32 @@
       const ein = zwei ? 'in' : 'attribute', raus = zwei ? 'out' : 'varying', rein = zwei ? 'in' : 'varying';
       const vs = kopfV + ein + ' vec2 aW; uniform mat4 uM; uniform float uQ; uniform float uZ; ' + raus + ' vec3 vW;' +
         'void main(){ vW = vec3(aW / uQ, uZ); gl_Position = uM * vec4(vW, 1.0); }';
-      const fs = kopfF + 'precision highp float;' +
-        'uniform sampler2D uAbst; uniform vec2 uGroesse; uniform float uKm; uniform float uT;' +
+      const fs = kopfF + 'precision highp float;' + '\n#define TX ' + (zwei ? 'texture' : 'texture2D') + '\n' +
+        'uniform sampler2D uAbst; uniform vec2 uGroesse; uniform vec2 uTexN; uniform float uKm; uniform float uT;' +
         'uniform vec3 uAuge; uniform vec2 uNebel; uniform vec2 uHalb; uniform vec2 uMitte; uniform vec4 uWelle; uniform vec3 uTinte; uniform vec2 uRand;' +
         rein + ' vec3 vW;' + (zwei ? 'out vec4 aus;' : '') +
+        /* Eine Linie ist immer gut einen Bildpunkt breit, auch ganz von
+           nahem -- frueher wuchs sie mit dem Abstand der Linien mit und
+           wurde beim Heranzoomen breit und unscharf. */
         'float linie(float p){ float w = fwidth(p); float a = abs(fract(p + 0.5) - 0.5);' +
-        '  return (1.0 - smoothstep(0.0, 0.02 + w * 1.3, a)) * (1.0 - smoothstep(0.1, 0.28, w)); }' +
+        '  return (1.0 - smoothstep(0.35 * w, 1.35 * w, a)) * (1.0 - smoothstep(0.1, 0.28, w)); }' +
+        /* Das Abstandsbild ist grob (rund 340 m je Punkt). Linear gelesen
+           knicken die Linien an jedem Bildpunkt, von nahem laufen sie dann
+           ineinander; kubisch (B-Spline aus vier Zugriffen) liegen sie glatt. */
+        'float abst(vec2 uv){ vec2 st = uv * uTexN - 0.5, i = floor(st), f = st - i;' +
+        '  vec2 f2 = f * f, f3 = f2 * f;' +
+        '  vec2 w0 = (1.0 - 3.0 * f + 3.0 * f2 - f3) / 6.0, w1 = (4.0 - 6.0 * f2 + 3.0 * f3) / 6.0;' +
+        '  vec2 w2 = (1.0 + 3.0 * f + 3.0 * f2 - 3.0 * f3) / 6.0, w3 = f3 / 6.0;' +
+        '  vec2 g0 = w0 + w1, g1 = w2 + w3;' +
+        '  vec2 h0 = (i - 0.5 + w1 / g0) / uTexN, h1 = (i + 1.5 + w3 / g1) / uTexN;' +
+        '  return g0.y * (g0.x * TX(uAbst, h0).r + g1.x * TX(uAbst, vec2(h1.x, h0.y)).r)' +
+        '       + g1.y * (g0.x * TX(uAbst, vec2(h0.x, h1.y)).r + g1.x * TX(uAbst, h1).r); }' +
         'float zuf(vec2 i){ return fract(sin(dot(i, vec2(127.1, 311.7))) * 43758.5453); }' +
         'float rausch(vec2 p){ vec2 i = floor(p), f = fract(p); f = f * f * (3.0 - 2.0 * f);' +
         '  return mix(mix(zuf(i), zuf(i + vec2(1.0, 0.0)), f.x), mix(zuf(i + vec2(0.0, 1.0)), zuf(i + vec2(1.0, 1.0)), f.x), f.y); }' +
         'void main(){' +
         '  vec2 uv = vec2(vW.x / uGroesse.x + 0.5, 0.5 - vW.y / uGroesse.y);' +
-        '  float d = ' + (zwei ? 'texture' : 'texture2D') + '(uAbst, uv).r * uKm;' +
+        '  float d = abst(uv) * uKm;' +
         '  if (d < 0.06) discard;' +
         '  float fein = linie(d / uWelle.x - uT * 0.071) * exp(-d / uWelle.z);' +
         '  float grob = linie(d / uWelle.y - uT * 0.022) * exp(-d / uWelle.w);' +
@@ -4984,7 +5024,7 @@
         const pr = glProgramm(q[0], q[1]);
         if (!gl.getProgramParameter(pr, gl.LINK_STATUS)) return;
         const m = { prog: pr, loc: {} };
-        ['uM', 'uQ', 'uZ', 'uAbst', 'uGroesse', 'uKm', 'uT', 'uAuge', 'uNebel', 'uHalb', 'uMitte', 'uWelle', 'uTinte', 'uRand'].forEach(function (n) {
+        ['uM', 'uQ', 'uZ', 'uAbst', 'uGroesse', 'uTexN', 'uKm', 'uT', 'uAuge', 'uNebel', 'uHalb', 'uMitte', 'uWelle', 'uTinte', 'uRand'].forEach(function (n) {
           m.loc[n] = gl.getUniformLocation(pr, n);
         });
         m.aW = gl.getAttribLocation(pr, 'aW');
@@ -5005,6 +5045,7 @@
         gl.uniform1i(m.loc.uAbst, 0);
         gl.uniform2f(m.loc.uGroesse, D.kopf.groesse[0], D.kopf.groesse[1]);
         gl.uniform1f(m.loc.uKm, D.kopf.texKm);
+        gl.uniform2f(m.loc.uTexN, D.kopf.tex[0], D.kopf.tex[1]);
         gl.uniform1f(m.loc.uQ, D.kopf.q);
         gl.uniform4fv(m.loc.uWelle, CFG.wellen);
         gl.uniform3fv(m.loc.uTinte, CFG.tinteGl);
@@ -5061,7 +5102,7 @@
       const vs = 'attribute vec2 aW; uniform mat4 uM; uniform float uQ; uniform float uZ; varying vec3 vW;' +
         'void main(){ vW = vec3(aW / uQ, uZ); gl_Position = uM * vec4(vW, 1.0); }';
       const fs = GENAU +
-        'uniform sampler2D uRausch; uniform vec4 uKlar; uniform float uRund; uniform vec2 uNord; uniform vec3 uSchnitt; uniform float uWeich; uniform float uT; uniform vec2 uVersatz; uniform float uDichte;' +
+        'uniform sampler2D uRausch; uniform vec4 uKlar; uniform float uRund; uniform vec2 uNord; uniform vec3 uSchnitt; uniform float uWeich; uniform float uT; uniform vec2 uVersatz; uniform float uDichte; uniform vec4 uBand;' +
         'uniform float uRandLage; uniform vec3 uFarbe; uniform vec3 uBoden; uniform vec2 uRand; varying vec3 vW;' +
         'float tx(vec2 q){ return texture2D(uRausch, q).r; }' +
         // Abstand zum klaren Gebiet (Kasten mit gerundeten Ecken, innen negativ), dazu die schraege Kante
@@ -5072,7 +5113,8 @@
         '  return max(length(max(a, 0.0)) + min(max(a.x, a.y), 0.0) - uRund, dot(uSchnitt.xy, q) - uSchnitt.z); }' +
         'void main(){' +
         '  vec2 p = vW.xy;' +
-        '  vec2 t = vec2(uT * 0.0011, uT * 0.0005);' +
+        // sichtbar ziehend, vor allem nach Osten
+        '  vec2 t = vec2(uT * 0.0042, uT * 0.0017);' +
         /* Randlage: liegt ueber allen Bergen und wird zum Rand hin ganz dicht,
            in der Nebelfarbe selbst -- dicht schon bei 92-95 % der Daten,
            also bevor sie enden, und darueber hinaus bis weit ins Leere. */
@@ -5098,26 +5140,35 @@
            Texturzugriff (die Verwirbelung verschiebt den Punkt um
            hoechstens 30 * Wurzel 2). */
         '  float sd = klar(p);' +
-        // gestreckt: lange Schwaden, die quer ueber Land und Wasser ziehen
-        '  float fl = smoothstep(0.5, 0.74, tx(p * vec2(0.0028, 0.0075) + uVersatz * 0.7 + t * 0.5));' +
+        /* gestreckt: lange Schwaden, die quer ueber Land und Wasser ziehen --
+           so klein und so viele, dass auch im Ausschnitt einer Station
+           (oder auf dem iPad) immer welche zu sehen sind */
+        '  float fl = smoothstep(0.42, 0.64, tx(p * vec2(0.006, 0.0115) + uVersatz * 0.7 + t * 0.6));' +
+        /* Baender am unteren und oberen Bildrand: mehr als die Schwaden, aber
+           kein dichter Nebel. uBand: Breite, ab der es beginnt, und 1/Strecke
+           bis ganz -- unten (xy) und oben (zw). */
+        '  float bd = max(smoothstep(0.0, 1.0, clamp((p.y - uBand.x) * uBand.y, 0.0, 1.0)),' +
+        '                 smoothstep(0.0, 1.0, clamp((p.y - uBand.z) * uBand.w, 0.0, 1.0)));' +
         '  float rand = 43.0 * max(1.0, uNord.y);' +
-        '  if (sd < -rand && fl <= 0.0) discard;' +
+        '  if (sd < -rand && fl <= 0.0 && bd <= 0.0) discard;' +
         '  vec2 w = vec2(0.0); float feld = 0.0;' +
         '  if (sd >= -rand) {' +
         // die Grenze des klaren Gebiets verwirbelt: Schwaden statt Kante
         '    w = vec2(tx(p * 0.0042 + uVersatz + t), tx(p * 0.0042 - t + uVersatz + 0.37)) - 0.5;' +
         '    feld = smoothstep(0.0, uWeich, klar(p + w * 60.0));' +
         '  }' +
-        '  feld = max(feld, 0.55 * fl);' +
+        '  feld = max(feld, 0.9 * fl);' +
+        '  if (bd > 0.0) feld = max(feld, bd * (0.4 + 0.5 * smoothstep(0.3, 0.66, tx(p * vec2(0.0035, 0.009) + uVersatz * 1.3 - t * 0.8))));' +
         '  if (feld <= 0.0) discard;' +
         // Schwaden in drei Groessen, die feineren ziehen schneller
         '  vec2 q = p * vec2(0.009, 0.0135) + uVersatz * 1.7 + w * 0.35;' +
-        '  float s = tx(q + t * 1.6) * 0.55 + tx(q * 2.3 - t * 2.4 + 0.21) * 0.3 + tx(q * 5.1 + t * 3.5 + 0.6) * 0.15;' +
-        '  float sw = smoothstep(0.32, 0.74, s);' +
-        // hellere Kuppen, dunklere Taeler -- Licht im Nebel
-        // duestere Taeler, hellere Schwadenkaemme: Struktur wie echter Seenebel
-        '  vec3 c = uFarbe * mix(0.7, 1.9, sw * sw);' +
-        '  float a = feld * mix(0.12, 1.0, sw);' +
+        '  float s = tx(q + t * 1.6) * 0.4 + tx(q * 2.3 - t * 2.4 + 0.21) * 0.35 + tx(q * 5.1 + t * 3.5 + 0.6) * 0.25;' +
+        '  float sw = smoothstep(0.3, 0.72, s);' +
+        /* Hellere Schwadenkaemme, dazwischen duenner Nebel -- aber kein Loch:
+           wo er fast ganz aufriss, schien das dunkle Meer in grossen, seltsam
+           geformten Flecken durch, wie riesiger Seetang. */
+        '  vec3 c = uFarbe * (mix(0.84, 1.4, sw) + 0.3 * fl);' +
+        '  float a = feld * mix(0.45, 1.0, sw);' +
         '  gl_FragColor = vec4(c, min(1.0, a) * uDichte);' +
         '}';
       return [vs, fs];
@@ -5152,7 +5203,7 @@
         const pr = glProgramm(q[0], q[1]);
         if (!gl.getProgramParameter(pr, gl.LINK_STATUS)) return;
         const n = { prog: pr, loc: {} };
-        ['uM', 'uQ', 'uZ', 'uRausch', 'uKlar', 'uRund', 'uNord', 'uSchnitt', 'uWeich', 'uT', 'uVersatz', 'uDichte', 'uRandLage', 'uFarbe', 'uBoden', 'uRand'].forEach(function (x) {
+        ['uM', 'uQ', 'uZ', 'uRausch', 'uKlar', 'uRund', 'uNord', 'uSchnitt', 'uWeich', 'uT', 'uVersatz', 'uDichte', 'uBand', 'uRandLage', 'uFarbe', 'uBoden', 'uRand'].forEach(function (x) {
           n.loc[x] = gl.getUniformLocation(pr, x);
         });
         n.aW = gl.getAttribLocation(pr, 'aW');
@@ -5196,8 +5247,16 @@
         }
         gl.uniform3f(n.loc.uSchnitt, sn[0], sn[1], sn[2]);
         gl.uniform1f(n.loc.uWeich, N.weich);
+        // Baender unten und oben: [Breite ohne Nebel, Breite ganz] (Grad)
+        function band(b) {
+          if (!b) return [0, 0];
+          const y0 = geo(0, b[0])[1], y1 = geo(0, b[1])[1];
+          return [y0, 1 / (y1 - y0)];
+        }
+        const bu = band(N.unten), bo = band(N.oben);
+        gl.uniform4f(n.loc.uBand, bu[0], bu[1], bo[0], bo[1]);
         gl.uniform3fv(n.loc.uFarbe, N.farbe);
-        gl.uniform3fv(n.loc.uBoden, GRUND);
+        gl.uniform3fv(n.loc.uBoden, schichtFarbe(D.kopf.stufen[0], 1));
         gl.uniform2f(n.loc.uRand, D.kopf.groesse[0] / 2, D.kopf.groesse[1] / 2);
         nebel = n;
       } catch (e) { nebel = null; }
@@ -5269,7 +5328,8 @@
     function schichtFarbe(lev, hoechste) {
       if (lev < 0) {
         const t = Math.min(1, -lev / 150);
-        return [0, 1, 2].map(function (c) { return mix(MEER_FLACH[c], GRUND[c] * 1.15, Math.pow(t, 0.7)); });
+        // "meerTief": wie weit das tiefste Meer zum Dunkel des Grundes geht
+        return [0, 1, 2].map(function (c) { return mix(MEER_FLACH[c], GRUND[c] * 1.15, Math.pow(t, 0.7) * (CFG.meerTief || 1)); });
       }
       const t = Math.pow(lev / hoechste, 0.9) * (LAND.length - 1);
       const k = Math.min(LAND.length - 2, Math.floor(t)), f = t - k;
@@ -5279,12 +5339,23 @@
     function kamera(k) {
       const br = k.bearing * Math.PI / 180, ph = k.pitch * Math.PI / 180;
       const fx = Math.sin(br), fy = Math.cos(br);
+      const t = versatz(k), tx = t[0], ty = t[1];
+      const auge = [tx - k.dist * Math.sin(ph) * fx, ty - k.dist * Math.sin(ph) * fy, k.z + k.dist * Math.cos(ph)];
+      const V = blickAuf(auge, [tx, ty, k.z], [fx, fy, 0]);
+      const P = perspektive(FOV, W / H, k.dist * 0.04, k.dist * 5 + 300);
+      return { M: mal(P, V), auge: auge };
+    }
+    // Wohin die Kamera tatsaechlich blickt: der Ort, um die Tafel verschoben.
+    function versatz(k) {
       /* Stehen die Fotos rechts, rueckt der Ort so weit nach links, dass er
          Abstand zu ihnen haelt (am Rechner kaum, auf dem Handy quer mehr). */
       /* Eine Sammelstation rueckt ganz in die freie Flaeche neben der Tafel.
          Im Hochformat steht die Tafel oben: der Ort rueckt nach unten, in
          die Mitte der Flaeche zwischen Tafel und Zeitleiste. */
+      const br = k.bearing * Math.PI / 180, ph = k.pitch * Math.PI / 180;
+      const fx = Math.sin(br), fy = Math.cos(br);
       let tx = k.x, ty = k.y;
+      if (k.ohneVersatz) return [tx, ty];
       if (tafelSicht > 0 && tafelLinks > 0) {
         const ziel = k.gruppe ? frei(W, H)[0] / 2 : Math.min(0.5 * W, tafelLinks - 0.12 * W);
         const px = (0.5 * W - ziel) * tafelSicht;
@@ -5299,10 +5370,7 @@
           tx += fx * s; ty += fy * s;
         }
       }
-      const auge = [tx - k.dist * Math.sin(ph) * fx, ty - k.dist * Math.sin(ph) * fy, k.z + k.dist * Math.cos(ph)];
-      const V = blickAuf(auge, [tx, ty, k.z], [fx, fy, 0]);
-      const P = perspektive(FOV, W / H, k.dist * 0.04, k.dist * 5 + 300);
-      return { M: mal(P, V), auge: auge };
+      return [tx, ty];
     }
 
     function landschaft(k, cam, zeitS) {
@@ -5329,7 +5397,7 @@
         // ruhiges Relief statt vieler Flecken. Von nahem volle Terrassen.
         const fb = schichtFarbe(s.lev, S[n - 1].lev);
         if (s.lev > 0) {
-          const mi = schichtFarbe(S[n - 1].lev * 0.3, S[n - 1].lev), ru = (1 - fern) * 0.55;
+          const mi = schichtFarbe(S[n - 1].lev * 0.3, S[n - 1].lev), ru = (1 - fern) * (CFG.ruhe === undefined ? 0.55 : CFG.ruhe);
           gl.uniform3f(loc.uF, mix(fb[0], mi[0], ru), mix(fb[1], mi[1], ru), mix(fb[2], mi[2], ru));
         } else gl.uniform3fv(loc.uF, fb);
         gl.uniform1f(loc.uA, 1);
@@ -5405,7 +5473,7 @@
     }
 
     /* ---- Linien, Sand und Orte auf der Grafikkarte ----
-       Route, Gradnetz, Kompasslinien, Sand und Ortspunkte lagen bisher auf
+       Route, Sand und Ortspunkte lagen bisher auf
        einer 2D-Leinwand ueber der Karte. Gemessen war das der teuerste Teil
        jedes Einzelbilds: lange, halbdurchsichtige Linien zeichnet der
        Browser dort muehsam, bei 125 % Anzeigegroesse brauchte die Leinwand
@@ -5423,7 +5491,7 @@
        dort doppelt. Das bleibt so -- drei aufeinanderfolgende Etappen liegen
        in drei Kanaelen und addieren sich beim Uebereinanderlegen.
        Ein letzter Schritt legt die Lagen in der alten Reihenfolge ueber die
-       Karte: Seekarte, leise Route, Schein, Route.
+       Karte: leise Route, Schein, Route.
        Auf der Leinwand bleiben nur die Ortsnamen, und bei Track of Time
        Gleis, Dampf und das Uebrige der Route (dort ist die Strecke kurz).
        Kann ein Geraet etwas davon nicht (sehr alte Grafik), bleibt alles
@@ -5462,10 +5530,11 @@
       '}';
     /* Deckung je Bildpunkt: Abstand zum Stueck (mit runden Enden), als
        Anteil eines Bildpunkts, den die Linie bedeckt. Der Schein ist die
-       Linie, mit einer Gaussglocke weichgezeichnet. Die Seekarte blendet
-       zum Kartenrand hin aus, in denselben acht Stufen wie auf der Leinwand. */
+       Linie, mit einer Gaussglocke weichgezeichnet. Hinter "uVoll" (dem
+       Kopf der Route) leuchtet sie nur noch um ein Gebiet herum, nach
+       aussen schwaecher: uAus = Mitte, Radius, Staerke. */
     const FS_BAND = GENAU +
-      'uniform float uModus; uniform float uSigma; uniform vec4 uKanal; uniform vec2 uRand; uniform float uVoll; uniform float uBis;' +
+      'uniform float uModus; uniform float uSigma; uniform vec4 uKanal; uniform vec4 uAus; uniform float uVoll; uniform float uBis;' +
       'varying vec2 vA; varying vec2 vB; varying vec2 vW0; varying vec2 vW1; varying vec2 vQ; varying vec2 vArt; varying vec2 vL; varying float vH;' +
       'float fehler(float x){ float s = sign(x); x = abs(x); float t = 1.0 / (1.0 + 0.3275911 * x);' +
       '  return s * (1.0 - (((((1.061405429 * t - 1.453152027) * t) + 1.421413741) * t - 0.284496736) * t + 0.254829592) * t * exp(-x * x)); }' +
@@ -5475,17 +5544,8 @@
       '  float d = length(p - vA - ab * t), v;' +
       '  if (uModus == 1.0) { float k = 0.70710678 / uSigma; v = 0.5 * (fehler((d + vH) * k) - fehler((d - vH) * k)); }' +
       '  else v = clamp(min(d + 0.5, vH) - max(d - 0.5, -vH), 0.0, 1.0);' +
-      '  if (uVoll < uBis) v *= 1.0 - smoothstep(uVoll, uBis, mix(vL.x, vL.y, t * vQ.y / mix(vQ.x, vQ.y, t)));' +
-      '  if (uModus == 2.0) {' +
-      '    vec2 w = mix(vW0, vW1, t * vQ.y / mix(vQ.x, vQ.y, t));' +
-      '    float a = -vArt.x;' +
-      '    if (vArt.x > 0.0) {' +
-      '      float al = vArt.x * (1.0 - smoothstep(' + (CFG.nebel ? '0.68, 0.86' : '0.88, 0.995') + ', max(abs(w.x) / uRand.x, abs(w.y) / uRand.y)));' +
-      '      if (al <= 0.004) discard;' +
-      '      a = (min(7.0, floor(al / 0.1 * 8.0)) + 0.5) / 8.0 * 0.1;' +
-      '    }' +
-      '    v *= a;' +
-      '  }' +
+      '  if (uVoll < uBis) { float tp = t * vQ.y / mix(vQ.x, vQ.y, t);' +
+      '    if (mix(vL.x, vL.y, tp) > uVoll) v *= uAus.w * (1.0 - smoothstep(0.0, uAus.z, distance(mix(vW0, vW1, tp), uAus.xy))); }' +
       '  gl_FragColor = uKanal * v;' +
       '}';
     /* Die Lagen in der Reihenfolge der Leinwand uebereinander. Bild A:
@@ -5571,7 +5631,7 @@
       }
       try {
         const u = { max: zwei ? gl.MAX : mm.MAX_EXT, bw: 0, bh: 0 };
-        u.band = programm(VS_BAND, FS_BAND, ['uM', 'uPx', 'uPR', 'uBreite', 'uRandPx', 'uBis', 'uVoll', 'uHoch', 'uModus', 'uSigma', 'uKanal', 'uRand'],
+        u.band = programm(VS_BAND, FS_BAND, ['uM', 'uPx', 'uPR', 'uBreite', 'uRandPx', 'uBis', 'uVoll', 'uHoch', 'uModus', 'uSigma', 'uKanal', 'uAus'],
                           ['aP0', 'aP1', 'aEcke', 'aL', 'aArt']);
         u.deck = programm(VS_DECK, FS_DECK, ['uBildA', 'uBildB', 'uPx', 'uFS', 'uFL', 'uFG', 'uFH', 'uDeck'], ['aV']);
         u.sand = programm(VS_SAND, FS_SAND, ['uM', 'uPx', 'uPR', 'uKopf', 'uAltN', 'uWeh', 'uHoch', 'uFarbe'], ['aP', 'aZ', 'aZ2']);
@@ -5579,7 +5639,7 @@
         // Groessere Punkte fuer den Sand kann (fast) jede Grafik; sonst Sand auf der Leinwand.
         u.sandOk = gl.getParameter(gl.ALIASED_POINT_SIZE_RANGE)[1] >= 8;
         u.attrMax = Math.min(16, gl.getParameter(gl.MAX_VERTEX_ATTRIBS));
-        u.puf = { see: gl.createBuffer(), weg: gl.createBuffer(), sand: gl.createBuffer(), ort: gl.createBuffer(), drei: gl.createBuffer() };
+        u.puf = { weg: gl.createBuffer(), sand: gl.createBuffer(), ort: gl.createBuffer(), drei: gl.createBuffer() };
         gl.bindBuffer(gl.ARRAY_BUFFER, u.puf.drei);
         gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1, -1, 3, -1, -1, 3]), gl.STATIC_DRAW);
         u.bilder = [gl.createTexture(), gl.createTexture()];
@@ -5611,26 +5671,6 @@
         });
         return f;
       }
-      // Seekarte: Gradnetz, Kompasslinien und der kleine Ring -- dieselben
-      // Linien wie in seekarte(). Deckkraft < 0: fest, ohne Ausblenden.
-      const sk = [];
-      const G = CFG.gradnetz, GS = CFG.gradnetzSchritt || 0.5;
-      for (let lon = G[0]; lon <= G[1] + 1e-6; lon += GS) sk.push([geo(lon, G[2] - GS / 5), geo(lon, G[3] + GS / 5), 0, 0, 0.075, 0.6]);
-      for (let lat = G[2]; lat <= G[3] + 1e-6; lat += GS) {
-        for (let lon = G[0]; lon < G[1] - 1e-6; lon += GS) sk.push([geo(lon, lat), geo(lon + GS, lat), 0, 0, 0.075, 0.6]);
-      }
-      const K = geo(CFG.kompass[0], CFG.kompass[1]), KR = CFG.kompassR || 6;
-      for (let j = 0; j < 32; j++) {
-        const a = j / 32 * 2 * Math.PI, haupt = j % 4 === 0;
-        const L = (haupt ? 1.0 : 0.72) * Math.max(halb[0], halb[1]) * 1.6;
-        sk.push([[K[0] + Math.sin(a) * KR, K[1] + Math.cos(a) * KR, 0], [K[0] + Math.sin(a) * L, K[1] + Math.cos(a) * L, 0],
-                 0, 0, haupt ? 0.085 : 0.045, 0.6]);
-      }
-      const ring = -0.16 * randWeg(K);
-      for (let j = 0; j < 48; j++) {
-        const a = j / 48 * 2 * Math.PI, b = (j + 1) / 48 * 2 * Math.PI;
-        sk.push([[K[0] + Math.sin(a) * KR, K[1] + Math.cos(a) * KR, 0], [K[0] + Math.sin(b) * KR, K[1] + Math.cos(b) * KR, 0], 0, 0, ring, 0.8]);
-      }
       // Route: jedes Stueck mit der Weglaenge ab Reisebeginn.
       const rt = [], ende = [];
       wege.forEach(function (w, j) {
@@ -5646,16 +5686,15 @@
           sd.push(p[0], p[1], p[2], wegAb[j] + l, zufall(i, 1), zufall(i, 2), zufall(i, 3), zufall(i, 4), zufall(i, 5));
         }
       });
-      ueberGeo = { see: stuecke(sk), weg: stuecke(rt), wegEnde: ende, sand: new Float32Array(sd) };
+      ueberGeo = { weg: stuecke(rt), wegEnde: ende, sand: new Float32Array(sd) };
       ueberNeu = true;
     }
 
     function ueberHochladen() {
       const u = ueber, g = ueberGeo;
-      gl.bindBuffer(gl.ARRAY_BUFFER, u.puf.see); gl.bufferData(gl.ARRAY_BUFFER, g.see, gl.STATIC_DRAW);
       gl.bindBuffer(gl.ARRAY_BUFFER, u.puf.weg); gl.bufferData(gl.ARRAY_BUFFER, g.weg, gl.STATIC_DRAW);
       gl.bindBuffer(gl.ARRAY_BUFFER, u.puf.sand); gl.bufferData(gl.ARRAY_BUFFER, g.sand, gl.STATIC_DRAW);
-      u.nSee = g.see.length / 12; u.nWeg = g.weg.length / 12; u.wegEnde = g.wegEnde; u.nSand = g.sand.length / 9;
+      u.nWeg = g.weg.length / 12; u.wegEnde = g.wegEnde; u.nSand = g.sand.length / 9;
       u.schluessel = null;   // neue Formen: Linienbilder neu zeichnen
       ueberNeu = false;
     }
@@ -5708,7 +5747,7 @@
          bewegt sich weiter, die Linien nicht), sind sie Bild fuer Bild
          dieselben und werden aus dem letzten Bild uebernommen. Das spart
          im Stand den groessten Teil der Arbeit fuer die Linien. */
-      const schl = BW + ',' + BH + ',' + PR + ',' + k.sand + ',' + k.namen + ',' + k.weg + ',' + k.wegL + ',' + (k.auslauf || 0) + '|' +
+      const schl = BW + ',' + BH + ',' + PR + ',' + k.sand + ',' + k.namen + ',' + k.weg + ',' + k.wegL + ',' + (k.auslauf || 0) + ',' + k.auslaufAb + '|' +
                    Array.prototype.join.call(M, ',');
       gl.enable(gl.BLEND);
       if (schl !== u.schluessel) {
@@ -5722,7 +5761,6 @@
         gl.useProgram(b.prog);
         gl.uniformMatrix4fv(b.loc.uM, false, M);
         gl.uniform2f(b.loc.uPx, BW, BH); gl.uniform1f(b.loc.uPR, PR); gl.uniform1f(b.loc.uHoch, UEBER_HOCH);
-        gl.uniform2f(b.loc.uRand, D.kopf.groesse[0] / 2, D.kopf.groesse[1] / 2);
         gl.uniform1f(b.loc.uSigma, 4.5);
         function band(puf, von, bis0, breite, bis, modus, kanal, voll) {
           if (bis0 <= von) return;
@@ -5735,7 +5773,6 @@
         }
         function etappe(i) { return [i % 3 === 0 ? 1 : 0, i % 3 === 1 ? 1 : 0, i % 3 === 2 ? 1 : 0, 0]; }
         function ab(i) { return i ? u.wegEnde[i - 1] : 0; }
-        band(u.puf.see, 0, u.nSee, 0, 1e9, 2, [0, 0, 0, 1]);            // Seekarte -> A.a
         if (!CFG.bahn) {
           const kopf = GESAMT * (1 - k.sand);
           if (k.sand < 1) {                                                // leise Route -> A.rgb
@@ -5746,10 +5783,12 @@
             const voll = Math.min(kopf, wegAb[j] + Math.min(k.wegL, wege[j].len));
             let bis = voll;
             /* Sammelstation: hier hoert die Route nicht an einem Punkt auf
-               (das saehe aus wie ein Ort), sie laeuft ins Gebiet hinein aus. */
+               (das saehe aus wie ein Ort). Alle Wege im Gebiet leuchten
+               schon, von seiner Mitte aus nach aussen immer schwaecher. */
             if (k.auslauf > 0 && k.sand === 0) {
-              const g = k.auslaufAb, ende = wegAb[g] + wege[g].len * 0.6 * k.auslauf;
-              if (ende > voll) { bis = ende; j = Math.max(j, g); }
+              const z = orte[k.auslaufAb];
+              gl.uniform4f(b.loc.uAus, z[0], z[1], gruppenRadius(k.auslaufAb), k.auslauf);
+              bis = GESAMT; j = wege.length - 1;
             }
             if (bis > 0) {
               gl.bindFramebuffer(gl.FRAMEBUFFER, u.fbs[1]);
@@ -5848,88 +5887,12 @@
     // Feste Zufallswerte je Korn, damit der Sand beim Scrollen nicht flimmert.
     function zufall(i, s) { const v = Math.sin(i * 127.1 + s * 311.7) * 43758.5453; return v - Math.floor(v); }
 
-    /* ---- Seekarte ----
-       Zwei Zeichen alter Seekarten, abstrakt gehalten, ohne Schnoerkel:
-       ein zartes Gradnetz (jeder halbe Grad) und ein Stern aus Kompass-
-       linien, die aus einem Punkt im Meer westlich von Skye ueber die Karte
-       laufen -- so haben Navigatoren Kurse abgelesen. Beides sehr leise, zum
-       Rand hin ausgeblendet wie die Karte selbst. */
+    // Laenge/Breite in Kartenkoordinaten (km).
     function geo(lon, lat) {
       const s = Math.sin(lat * Math.PI / 180);
       const y = 0.5 - Math.log((1 + s) / (1 - s)) / (4 * Math.PI);
       return [(lon + 180) / 360 * D.kopf.c - D.kopf.ursprung[0], -y * D.kopf.c - D.kopf.ursprung[1], 0];
     }
-    function randWeg(p) {
-
-      const e = Math.max(Math.abs(p[0]) / (D.kopf.groesse[0] / 2), Math.abs(p[1]) / (D.kopf.groesse[1] / 2));
-      return 1 - stufe(0.88, 0.995, e);
-    }
-    /* Eine Linie in Stuecken, jedes mit eigener Deckkraft (Ausblenden zum
-       Rand). Die Stuecke werden nach Deckkraft in acht Toepfe sortiert und
-       je Topf mit EINEM Strich gezeichnet -- statt rund 1300 einzelner
-       Striche je Bild nur noch acht. */
-    const TOEPFE = 8;
-    let topf = [];
-    function kartenLinie(M, a, b, n, deck) {
-      let vor = projizieren(M, a), vp = a;
-      for (let i = 1; i <= n; i++) {
-        const f = i / n, p = [mix(a[0], b[0], f), mix(a[1], b[1], f), 0];
-        const s = projizieren(M, p);
-        if (s && vor) {
-          const al = deck * randWeg([(p[0] + vp[0]) / 2, (p[1] + vp[1]) / 2]);
-          if (al > 0.004) {
-            const k = Math.min(TOEPFE - 1, Math.floor(al / 0.1 * TOEPFE));
-            topf[k].push(vor[0], vor[1], s[0], s[1]);
-          }
-        }
-        vor = s; vp = p;
-      }
-    }
-    function toepfeZeichnen() {
-      for (let k = 0; k < TOEPFE; k++) {
-        const z = topf[k];
-        if (!z.length) continue;
-        ctx2.strokeStyle = 'rgba(' + CFG.tinte + ',' + ((k + 0.5) / TOEPFE * 0.1).toFixed(4) + ')';
-        ctx2.beginPath();
-        for (let i = 0; i < z.length; i += 4) { ctx2.moveTo(z[i], z[i + 1]); ctx2.lineTo(z[i + 2], z[i + 3]); }
-        ctx2.stroke();
-      }
-    }
-    let kompass = null;
-    function seekarte(M) {
-      ctx2.lineWidth = 0.6;
-      topf = [];
-      for (let k = 0; k < TOEPFE; k++) topf.push([]);
-      const G = CFG.gradnetz;
-      const GS = CFG.gradnetzSchritt || 0.5;
-      for (let lon = G[0]; lon <= G[1] + 1e-6; lon += GS) kartenLinie(M, geo(lon, G[2] - GS / 5), geo(lon, G[3] + GS / 5), 24, 0.075);
-      for (let lat = G[2]; lat <= G[3] + 1e-6; lat += GS) {
-        for (let lon = G[0]; lon < G[1] - 1e-6; lon += GS) kartenLinie(M, geo(lon, lat), geo(lon + GS, lat), 3, 0.075);
-      }
-      if (!kompass) kompass = geo(CFG.kompass[0], CFG.kompass[1]);
-      const K = kompass, KR = CFG.kompassR || 6;
-      for (let j = 0; j < 32; j++) {
-        const a = j / 32 * 2 * Math.PI, haupt = j % 4 === 0;
-        // Laenge nach der Groesse der Reise, damit die Linien jede Karte queren.
-        const L = (haupt ? 1.0 : 0.72) * Math.max(halb[0], halb[1]) * 1.6;
-        kartenLinie(M, [K[0] + Math.sin(a) * KR, K[1] + Math.cos(a) * KR, 0],
-                       [K[0] + Math.sin(a) * L, K[1] + Math.cos(a) * L, 0], 26, haupt ? 0.085 : 0.045);
-      }
-      toepfeZeichnen();
-      // kleiner Ring im Ursprung der Linien
-      ctx2.lineWidth = 0.8;
-      ctx2.beginPath();
-      let ok = false;
-      for (let j = 0; j <= 48; j++) {
-        const a = j / 48 * 2 * Math.PI;
-        const s = projizieren(M, [K[0] + Math.sin(a) * KR, K[1] + Math.cos(a) * KR, 0]);
-        if (!s) { ok = false; continue; }
-        if (ok) ctx2.lineTo(s[0], s[1]); else { ctx2.moveTo(s[0], s[1]); ok = true; }
-      }
-      ctx2.strokeStyle = 'rgba(' + CFG.tinte + ',' + (0.16 * randWeg(K)).toFixed(3) + ')';
-      ctx2.stroke();
-    }
-
     /* ---- Gleis (Track of Time) ----
        Die Strecke wie auf einem alten Streckenplan: ein dunkles Band mit
        Schwellen, an jedem Halt ein Querstrich. Vorne, wo der Zug gerade
@@ -6015,7 +5978,6 @@
       ctx2.setTransform(PR, 0, 0, PR, 0, 0);
       ctx2.clearRect(0, 0, W, H);
       ctx2.lineCap = 'round'; ctx2.lineJoin = 'round';
-      if (!ueber) seekarte(M);
       /* Route. Solange sie nicht zuruecklaeuft: ganz kaum sichtbar, der
          gefahrene Teil hell mit leichtem Schein. Am Ende laeuft die helle
          Linie vom letzten Ort her zurueck zum ersten; was sie hinter sich
@@ -6154,6 +6116,29 @@
     const tafel = document.createElement('div');
     tafel.className = 'karte-tafel';
     halter.appendChild(tafel);
+    /* Kompassnadel statt Gradnetz: zeigt nach Norden, dreht sich mit der
+       Kamera und neigt sich mit ihr. Nur angedeutet -- eine schmale Nadel,
+       ein feiner Ring, ein kleines N in der Schrift der Ortsnamen. */
+    const kompass = document.createElement('div');
+    kompass.className = 'karte-kompass';
+    kompass.setAttribute('aria-hidden', 'true');
+    kompass.innerHTML = '<svg viewBox="-24 -24 48 48"><g>' +
+      '<circle r="15.5" fill="none" stroke="currentColor" stroke-opacity="0.2" stroke-width="0.6"/>' +
+      '<path d="M15.5 0h2.6M-15.5 0h-2.6M0 15.5v2.6" stroke="currentColor" stroke-opacity="0.32" stroke-width="0.6"/>' +
+      '<path d="M0-13.5L2 0H-2Z" fill="currentColor" fill-opacity="0.82"/>' +
+      '<path d="M0 13.5L2 0H-2Z" fill="none" stroke="currentColor" stroke-opacity="0.38" stroke-width="0.55" stroke-linejoin="round"/>' +
+      '<text y="-18.6" text-anchor="middle" fill="currentColor" fill-opacity="0.75">N</text>' +
+      '</g></svg>';
+    halt.appendChild(kompass);
+    const kompassNadel = kompass.querySelector('g');
+    let kompassStand = '';
+    function kompassSetzen(k) {
+      const d = (-k.bearing).toFixed(1), n = (k.pitch * 0.8).toFixed(1);
+      if (d + n === kompassStand) return;
+      kompassStand = d + n;
+      kompassNadel.setAttribute('transform', 'rotate(' + d + ')');
+      kompass.style.transform = 'perspective(260px) rotateX(' + n + 'deg)';
+    }
     let medienOrt = -2, folge = [], tonGewollt = true, tafelText = null;
     function tonKnopfSetzen(f) {
       if (!f.knopf) return;
@@ -6414,6 +6399,7 @@
       if (k.gruppe) { const c = gruppenKam(k.ort, W, H, tafelSicht); k.x = c.x; k.y = c.y; k.z = c.z; k.dist = c.dist; }
       const cam = kamera(k);
       letzteK = k; letzteM = cam.M;
+      kompassSetzen(k);
       landschaft(k, cam, zeitS);
       linien(k, cam, zeitS);
     }
@@ -6431,8 +6417,15 @@
       const a = s.von, aus = 1 - stufe(0, 0.25, f);
       const k = { namen: a.namen * aus, dampf: 0, tag: s.tag, sicht: a.sicht * aus, ort: a.ort,
                   weg: s.ort - 1, wegL: 1e9, sand: a.sand * aus, weh: a.weh * aus, alleHell: a.alleHell * aus,
-                  auslauf: (a.auslauf || 0) * aus, auslaufAb: a.auslaufAb };
-      fliegen(k, a, s.nach, s.fl, f, a.bearing, s.nach.bearing);
+                  auslauf: mix(a.auslauf || 0, s.zAus, stufe(0, 1, f)), auslaufAb: a.auslauf ? a.auslaufAb : s.zAb,
+                  ohneVersatz: true };
+      /* Sofort los, ruhig ankommen. Der Versatz fuer die Tafel ist schon im
+         Startpunkt: blendet die Tafel aus, rueckte das Bild sonst erst zur
+         Seite und flog dann in eine andere Richtung weiter. */
+      fliegen(k, a, s.nach, s.fl, f, a.bearing, s.nach.bearing, mix(glatt(f), 1 - Math.pow(1 - f, 3), 0.75));
+      // Gedreht wird erst beim Sinken ueber dem Ziel: dreht sich das Bild
+      // unterwegs, aendert sich auf dem Schirm die Richtung des Flugs.
+      k.bearing = winkelMix(a.bearing, s.nach.bearing, stufe(0.6, 1, f));
       return k;
     }
     function sprungDauer() {
@@ -6448,17 +6441,18 @@
       if (!ph || j >= HALTE.length) return;
       if (!fahrt && !sprung && Math.abs(stand - HALTE[j]) < 0.002) return;   // schon da
       if (reducedMotion) { springeSofort(HALTE[j]); return; }
-      const c = kams[ort], a = letzteK;
+      const c = kams[ort], a = letzteK, va = versatz(a);
       const nach = { x: c.x, y: c.y, z: c.z, dist: c.dist, pitch: c.pitch, bearing: c.bearing - 3 };
       // Ankunft am Anfang des Halts; dessen erste Haelfte (Bilder blenden ein) faehrt danach normal.
       const rein = (HALTE[j] - ph.ab) / ph.laenge * phasenZeit(ph);
       fahrt = null; tempo = 0;
-      sprung = { t0: performance.now(), T: Math.max(1.2, sprungDauer() - rein), ort: ort, tag: ph.tagA,
+      const zk = zustand(ph.ab);           // so steht es bei der Landung
+      sprung = { zAus: zk.auslauf || 0, zAb: zk.auslaufAb, t0: performance.now(), T: Math.max(1.2, sprungDauer() - rein), ort: ort, tag: ph.tagA,
                  ab: ph.ab, u: HALTE[j], nach: nach,
-                 von: { x: a.x, y: a.y, z: a.z, dist: a.dist, pitch: a.pitch, bearing: a.bearing,
+                 von: { x: va[0], y: va[1], z: a.z, dist: a.dist, pitch: a.pitch, bearing: a.bearing,
                         namen: a.namen, sicht: a.sicht, ort: a.ort, sand: a.sand, weh: a.weh, alleHell: a.alleHell,
                         auslauf: a.auslauf, auslaufAb: a.auslaufAb },
-                 fl: flugBauen([a.x, a.y], [nach.x, nach.y], a.dist * BREITE, nach.dist * BREITE) };
+                 fl: flugBauen([va[0], va[1]], [nach.x, nach.y], a.dist * BREITE, nach.dist * BREITE) };
       ziel = HALTE[j];
       setzeScroll(ziel);
       vorladen(ort);
