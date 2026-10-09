@@ -4319,19 +4319,27 @@
          Berge, damit der Nebel als eigene Schicht ueber ihnen liegt. */
       /* "unten", "oben": Baender am Bildrand, [Breite ohne Nebel, Breite
          ganz] -- unten flach herein, oben Schwaden; beide mittel dicht. */
-      nebel: { klar: [-7.3, 55.95, -4.65, 57.54], schnitt: [[-6.95, 57.58], [-6.3, 57.83]],
-               rund: 35, nord: 4, weich: 110, farbe: [0.2, 0.225, 0.26],
-               unten: [56.02, 55.72], oben: [57.42, 57.78],
-               lagen: [[40, 0.42], [170, 0.3], [420, 0.2]] },
+      /* "schwelle": wie hoch das Nebelfeld sein muss, damit dort Nebel liegt
+         -- im klaren Gebiet (vereinzelte Baenke) und draussen (fast
+         geschlossen). "lagen": Hoehe (m), Deckkraft, Schwelle +/-: die
+         unterste Lage deckt am meisten, die hoechste am wenigsten, so
+         ragen Berge heraus. "wind": km/s. */
+      nebel: { klar: [-7.9, 55.95, -4.65, 57.54], schnitt: [[-6.95, 57.58], [-6.3, 57.83]],
+               rund: 35, nord: 4, weich: 110, farbe: [0.3, 0.33, 0.37],
+               unten: [56.02, 55.72], oben: [57.42, 57.78], schwelle: [0.7, 0.51], wind: 0.6,
+               lagen: [[40, 0.92, -0.02], [170, 0.8, 0.01], [420, 0.65, 0.04]] },
+      meerFlach: true,
+      /* Papierschatten: Laenge (Anteil des Kameraabstands), Deckkraft, Farbe */
+      schatten: [0.005, 0.3, 0.0, 0.008, 0.02],
       ueberhoehung: 3.2,
       grund: [0.016, 0.03, 0.05],
       /* Land: Taeler tief blau, nach oben heller und grauer -- Berge setzen
          sich ab, statt im selben Blau zu verschwimmen. "ruhe": wie stark
          die Stufen aus der Ferne zusammenruecken (sonst 0,55), "meerTief":
          das tiefe Meer nur halb so dunkel wie sonst, ohne schwarze Becken. */
-      land: [[0.062, 0.086, 0.122], [0.1, 0.133, 0.178], [0.2, 0.228, 0.265], [0.5, 0.52, 0.545]],
-      ruhe: 0.2, meerTief: 0.55,
-      wasser: [0.032, 0.054, 0.084],
+      land: [[0.085, 0.11, 0.15], [0.135, 0.165, 0.21], [0.24, 0.265, 0.3], [0.52, 0.54, 0.565]],
+      landKurve: 0.65, ruhe: 0.2, meerTief: 0,
+      wasser: [0.014, 0.025, 0.04],
       linien: { meer: [0.56, 0.6, 0.62, 0.07], ufer: [0.88, 0.84, 0.74, 0.55], land: [0.74, 0.73, 0.67, 0.13] },
       tinte: '226, 216, 190', tinteGl: [0.84, 0.82, 0.74],
       route: { hell: '255, 222, 178', schein: '255, 170, 90', leise: '240, 200, 150', sand: '250, 214, 168',
@@ -4866,6 +4874,7 @@
     /* ---- WebGL: die Landschaft ---- */
     let gl = null, prog = null, loc = {}, puf = {}, W = 1, H = 1, PR = 1, ctx2 = null;
     const GRUND = CFG.grund;
+    let NORDY = 1;      // +1, wenn Norden in Weltkoordinaten nach +y zeigt (gesetzt mit den Daten)
     /* Wohin die Karte in der Ferne und am Rand ausblendet: mit Seenebel in
        den Nebel, sonst ins Dunkel des Grundes. Schwarz soll bei Nebel nirgends
        zu sehen sein, auch nicht hinter dem Rand der Kartendaten. */
@@ -4934,8 +4943,8 @@
     }
 
     const LAND_VS =
-        'attribute vec2 aP; uniform mat4 uM; uniform float uZ; uniform float uQ; varying vec3 vW;' +
-        'void main(){ vec3 w = vec3(aP / uQ, uZ); vW = w; gl_Position = uM * vec4(w, 1.0); }';
+        'attribute vec2 aP; uniform mat4 uM; uniform float uZ; uniform float uQ; uniform vec2 uVers; varying vec3 vW;' +
+        'void main(){ vec3 w = vec3(aP / uQ + uVers, uZ); vW = w; gl_Position = uM * vec4(w, 1.0); }';
     const LAND_FS =
         '#ifdef GL_FRAGMENT_PRECISION_HIGH\nprecision highp float;\n#else\nprecision mediump float;\n#endif\n' +
         'uniform vec3 uF; uniform float uA; uniform vec3 uAuge; uniform vec3 uGrund; uniform vec2 uNebel; uniform vec2 uHalb; uniform vec2 uMitte; uniform vec2 uRand; varying vec3 vW;' +
@@ -4957,7 +4966,7 @@
       prog = glProgramm(LAND_VS, LAND_FS);
       if (!gl.getProgramParameter(prog, gl.LINK_STATUS)) return false;
       gl.useProgram(prog);
-      ['uM', 'uZ', 'uQ', 'uF', 'uA', 'uAuge', 'uGrund', 'uNebel', 'uHalb', 'uMitte', 'uRand'].forEach(function (n) {
+      ['uM', 'uZ', 'uQ', 'uVers', 'uF', 'uA', 'uAuge', 'uGrund', 'uNebel', 'uHalb', 'uMitte', 'uRand'].forEach(function (n) {
         loc[n] = gl.getUniformLocation(prog, n);
       });
       loc.aP = gl.getAttribLocation(prog, 'aP');
@@ -4973,6 +4982,7 @@
       gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, puf.l);
       gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, D.lin, gl.STATIC_DRAW);
 
+      NORDY = geo(0, 58)[1] > geo(0, 57)[1] ? 1 : -1;
       meerStarten();
       nebelStarten();
       ueberStarten();
@@ -5132,8 +5142,8 @@
         'void main(){ vW = vec3(aW / uQ, uZ); gl_Position = uM * vec4(vW, 1.0); }';
       const fs = GENAU +
         'uniform sampler2D uRausch; uniform vec4 uKlar; uniform float uRund; uniform vec2 uNord; uniform vec3 uSchnitt; uniform float uWeich; uniform float uT; uniform vec2 uVersatz; uniform float uDichte; uniform vec4 uBand;' +
-        'uniform float uRandLage; uniform vec3 uFarbe; uniform vec3 uBoden; uniform vec2 uRand; varying vec3 vW;' +
-        'float tx(vec2 q){ return texture2D(uRausch, q).r; }' +
+        'uniform float uRandLage; uniform vec3 uFarbe; uniform vec3 uBoden; uniform vec2 uRand; uniform vec2 uDrift; uniform vec2 uWind; uniform vec3 uSchwelle; uniform vec2 uLicht; varying vec3 vW;' +
+        'vec4 T(vec2 q){ return texture2D(uRausch, q); }' +
         // Abstand zum klaren Gebiet (Kasten mit gerundeten Ecken, innen negativ), dazu die schraege Kante
         'float klar(vec2 q){ vec2 m = (uKlar.xy + uKlar.zw) * 0.5, h = (uKlar.zw - uKlar.xy) * 0.5 - uRund;' +
         '  vec2 a = abs(q - m) - h;' +
@@ -5142,86 +5152,90 @@
         '  return max(length(max(a, 0.0)) + min(max(a.x, a.y), 0.0) - uRund, dot(uSchnitt.xy, q) - uSchnitt.z); }' +
         'void main(){' +
         '  vec2 p = vW.xy;' +
-        // sichtbar ziehend, vor allem nach Osten
-        '  vec2 t = vec2(uT * 0.0042, uT * 0.0017);' +
-        /* Randlage: liegt ueber allen Bergen und wird zum Rand hin ganz dicht,
-           in der Nebelfarbe selbst -- dicht schon bei 92-95 % der Daten,
-           also bevor sie enden, und darueber hinaus bis weit ins Leere. */
-        // Boden unter dem tiefsten Meer: fuellt, wo das Meer tiefer ist als die letzte Stufe
+        // Boden unter dem tiefsten Meer, in dessen Farbe
         '  if (uRandLage > 1.5) { gl_FragColor = vec4(uBoden, 1.0); return; }' +
+        /* Nebelbaenke statt Schleier: ein Feld aus weichem, richtungslosem
+           Rauschen (kein Raster), vom Wind getragen und in sich verwirbelt --
+           die Verwirbelung zieht langsamer und in eigener Richtung, so
+           veraendern die Baenke beim Ziehen ihre Form, statt starr zu gleiten.
+           Wo das Feld ueber einer Schwelle liegt, ist dichter Nebel, sonst
+           nichts: klare Luft behaelt ihren vollen Kontrast. Im klaren Gebiet
+           liegt die Schwelle hoch (vereinzelte Baenke und Schwaden), draussen
+           niedrig (der Nebel schliesst sich, zum Rand hin ganz). */
+        '  vec2 a = p - uDrift, d1 = vec2(-uWind.y, uWind.x);' +
+        // in Windrichtung gestreckt: lange Schwaden
+        '  vec2 s = vec2(dot(a, uWind) * 0.55, dot(a, d1));' +
+        '  vec4 v = T(s * 0.0024 + uVersatz * 0.31 + uT * vec2(0.0013, -0.0008));' +
+        '  vec2 q = s * 0.012 + uVersatz + (v.rg - 0.5) * 0.7;' +
+        /* Randlage: ueber allen Bergen, zum Rand der Daten hin ganz dicht
+           (gerundet, dicht schon bevor sie enden) -- innen aus denselben
+           Baenken wie draussen auf dem Meer, kein gleichfoermiger Schleier. */
         '  if (uRandLage > 0.5) {' +
-        // weit innen gar nicht erst ins Rauschen greifen (es verschiebt r um hoechstens 0,025)
-        // gerundet (Superellipse): zu den Ecken hin frueher dicht, kein gerader Vorhang
         '    vec2 rr = abs(p) / uRand; rr = rr * rr * rr;' +
-        '    float r = pow(rr.x + rr.y, 0.3333);' +
-        '    if (r < 0.73) discard;' +
-        '    float nr = tx(p * 0.006 + t);' +
-        '    r += (nr - 0.5) * 0.05;' +
-        '    float ra = smoothstep(0.76, 0.92, r);' +
-        '    if (ra <= 0.0) discard;' +
-        // auch der dichte Rand nicht flach: leicht wolkig
-        '    gl_FragColor = vec4(uFarbe * (0.8 + 0.5 * tx(p * 0.013 - t * 1.4 + 0.3)), ra);' +
+        '    float r = pow(rr.x + rr.y, 0.3333) + (v.b - 0.5) * 0.06;' +
+        '    if (r < 0.7) discard;' +
+        '    float ra = smoothstep(0.7, 1.02, r);' +
+        '    float th = mix(0.86, -0.2, ra);' +
+        '    float n = 0.5 * T(q * 0.45 + 0.13).b + 0.3 * T(mat2(0.8, -0.6, 0.6, 0.8) * q + 0.37).a + 0.2 * T(mat2(-0.28, 0.96, -0.96, -0.28) * q * 2.43 + 0.61).g;' +
+        '    float f = smoothstep(th - 0.02, th + 0.12, n);' +
+        '    if (f <= 0.0) discard;' +
+        // auch wo er ganz geschlossen ist, nicht flach: Ballen hell, dazwischen dunkler
+        '    gl_FragColor = vec4(uFarbe * (0.6 + 0.35 * smoothstep(th, th + 0.25, n) + 0.5 * (n - 0.5)), f);' +
         '    return;' +
         '  }' +
-        /* Auch im klaren Gebiet treiben vereinzelt leichte Fetzen, wo ein
-           grobes, langsames Rauschen hoch ist. Wo keiner treibt und die
-           Grenze weit ist, wird sofort verworfen -- mit nur einem
-           Texturzugriff (die Verwirbelung verschiebt den Punkt um
-           hoechstens 30 * Wurzel 2). */
-        '  float sd = klar(p);' +
-        /* gestreckt: lange Schwaden, die quer ueber Land und Wasser ziehen --
-           so klein und so viele, dass auch im Ausschnitt einer Station
-           (oder auf dem iPad) immer welche zu sehen sind */
-        '  float fl = smoothstep(0.42, 0.64, tx(p * vec2(0.006, 0.0115) + uVersatz * 0.7 + t * 0.6));' +
-        /* Baender am unteren und oberen Bildrand: mehr als die Schwaden, aber
-           kein dichter Nebel. uBand: Breite, ab der es beginnt, und 1/Strecke
-           bis ganz -- unten (xy) und oben (zw). */
+        '  float sd = klar(p) + (v.b - 0.5) * 110.0;' +
+        '  float dd = smoothstep(-30.0, uWeich, sd);' +
+        // Baender am unteren und oberen Rand: dort schliesst er sich frueher
         '  float bd = max(smoothstep(0.0, 1.0, clamp((p.y - uBand.x) * uBand.y, 0.0, 1.0)),' +
         '                 smoothstep(0.0, 1.0, clamp((p.y - uBand.z) * uBand.w, 0.0, 1.0)));' +
-        '  float rand = 43.0 * max(1.0, uNord.y);' +
-        '  if (sd < -rand && fl <= 0.0 && bd <= 0.0) discard;' +
-        '  vec2 w = vec2(0.0); float feld = 0.0;' +
-        '  if (sd >= -rand) {' +
-        // die Grenze des klaren Gebiets verwirbelt: Schwaden statt Kante
-        '    w = vec2(tx(p * 0.0042 + uVersatz + t), tx(p * 0.0042 - t + uVersatz + 0.37)) - 0.5;' +
-        '    feld = smoothstep(0.0, uWeich, klar(p + w * 60.0));' +
-        '  }' +
-        '  feld = max(feld, 0.9 * fl);' +
-        '  if (bd > 0.0) feld = max(feld, bd * (0.4 + 0.5 * smoothstep(0.3, 0.66, tx(p * vec2(0.0035, 0.009) + uVersatz * 1.3 - t * 0.8))));' +
-        '  if (feld <= 0.0) discard;' +
-        // Schwaden in drei Groessen, die feineren ziehen schneller
-        '  vec2 q = p * vec2(0.009, 0.0135) + uVersatz * 1.7 + w * 0.35;' +
-        '  float s = tx(q + t * 1.6) * 0.4 + tx(q * 2.3 - t * 2.4 + 0.21) * 0.35 + tx(q * 5.1 + t * 3.5 + 0.6) * 0.25;' +
-        '  float sw = smoothstep(0.3, 0.72, s);' +
-        /* Hellere Schwadenkaemme, dazwischen duenner Nebel -- aber kein Loch:
-           wo er fast ganz aufriss, schien das dunkle Meer in grossen, seltsam
-           geformten Flecken durch, wie riesiger Seetang. */
-        '  vec3 c = uFarbe * (mix(0.84, 1.4, sw) + 0.3 * fl);' +
-        '  float a = feld * mix(0.45, 1.0, sw);' +
-        '  gl_FragColor = vec4(c, min(1.0, a) * uDichte);' +
+        '  float th = mix(uSchwelle.x, uSchwelle.y, max(dd, 0.75 * bd)) + uSchwelle.z;' +
+        // grosse Baenke, darin mittlere Ballen, am Rand feine Fransen
+        '  float n0 = T(q * 0.45 + 0.13).b;' +
+        // die feineren Lagen heben das Feld um hoechstens etwa 0,43: vorher verwerfen
+        '  if (0.5 * n0 + 0.43 < th) discard;' +
+        '  float n1 = T(mat2(0.8, -0.6, 0.6, 0.8) * q + 0.37).a;' +
+        '  float n = 0.5 * n0 + 0.3 * n1 + 0.2 * T(mat2(-0.28, 0.96, -0.96, -0.28) * q * 2.43 + 0.61).g;' +
+        '  float f = smoothstep(th - 0.02, th + 0.12, n);' +
+        '  if (f <= 0.0) discard;' +
+        // Licht von Nordwesten auf den Ballen: oben hell, zur Schattenseite dunkler
+        '  float hl = clamp((n1 - T(mat2(0.8, -0.6, 0.6, 0.8) * q + 0.37 + uLicht).a) * 7.0, -0.35, 0.35);' +
+        '  float dick = smoothstep(th, th + 0.25, n);' +
+        '  vec3 c = uFarbe * (0.72 + 0.42 * dick + hl);' +
+        '  gl_FragColor = vec4(c, f * mix(0.55, 1.0, dick) * uDichte);' +
         '}';
       return [vs, fs];
     }
-    /* Rauschen fuer die Schwaden, einmal vorab gerechnet und nahtlos
-       kachelbar: im Shader kostet es dann nur ein paar Texturzugriffe statt
-       vieler Rechnungen je Bildpunkt. Werterauschen in vier Oktaven. */
+    /* Rauschen fuer den Nebel, einmal vorab gerechnet und nahtlos
+       kachelbar: weisses Rauschen, dreimal mit einem Kasten weichgezeichnet
+       (das ist fast ein Gauss) -- richtungslos, ohne das Raster, das das
+       alte Werterauschen in Quadraten zeigte. Vier unabhaengige Felder in
+       den vier Farbkanaelen: Verwirbelung und drei Groessen. Auf gleiche
+       Streuung gebracht, damit Schwellen ueberall gleich wirken. */
     function nebelRauschen(N) {
-      const out = new Uint8Array(N * N);
-      const gitter = [8, 16, 32, 64], gew = [0.5, 0.27, 0.15, 0.08];
+      const out = new Uint8Array(N * N * 4), r = 7;
       let saat = 7;
       function zz() { saat = (saat * 16807) % 2147483647; return saat / 2147483647; }
-      const werte = gitter.map(function (g) { const v = new Float32Array(g * g); for (let i = 0; i < v.length; i++) v[i] = zz(); return v; });
-      for (let y = 0; y < N; y++) for (let x = 0; x < N; x++) {
-        let sum = 0;
-        gitter.forEach(function (g, o) {
-          const fx = x / N * g, fy = y / N * g, ix = Math.floor(fx), iy = Math.floor(fy);
-          let ux = fx - ix, uy = fy - iy;
-          ux = ux * ux * (3 - 2 * ux); uy = uy * uy * (3 - 2 * uy);
-          const v = werte[o], a = v[iy * g + ix], b = v[iy * g + (ix + 1) % g];
-          const c = v[((iy + 1) % g) * g + ix], e = v[((iy + 1) % g) * g + (ix + 1) % g];
-          sum += gew[o] * mix(mix(a, b, ux), mix(c, e, ux), uy);
-        });
-        out[y * N + x] = Math.round(sum * 255);
+      const a = new Float32Array(N * N), b = new Float32Array(N * N);
+      function kasten(von, nach, dx, dy) {
+        for (let z = 0; z < N; z++) {
+          let sum = 0;
+          for (let j = -r; j <= r; j++) { const k = (j + N) % N; sum += von[dx ? z * N + k : k * N + z]; }
+          for (let x = 0; x < N; x++) {
+            nach[dx ? z * N + x : x * N + z] = sum / (2 * r + 1);
+            const raus = (x - r + N) % N, rein = (x + r + 1) % N;
+            sum += von[dx ? z * N + rein : rein * N + z] - von[dx ? z * N + raus : raus * N + z];
+          }
+        }
+      }
+      for (let c = 0; c < 4; c++) {
+        for (let i = 0; i < N * N; i++) a[i] = zz();
+        for (let d = 0; d < 3; d++) { kasten(a, b, 1, 0); kasten(b, a, 0, 1); }
+        let m = 0, q = 0;
+        for (let i = 0; i < N * N; i++) m += a[i];
+        m /= N * N;
+        for (let i = 0; i < N * N; i++) q += (a[i] - m) * (a[i] - m);
+        const sd = Math.sqrt(q / (N * N)) || 1;
+        for (let i = 0; i < N * N; i++) out[i * 4 + c] = Math.max(0, Math.min(255, Math.round((0.5 + (a[i] - m) / sd * 0.2) * 255)));
       }
       return out;
     }
@@ -5232,7 +5246,8 @@
         const pr = glProgramm(q[0], q[1]);
         if (!gl.getProgramParameter(pr, gl.LINK_STATUS)) return;
         const n = { prog: pr, loc: {} };
-        ['uM', 'uQ', 'uZ', 'uRausch', 'uKlar', 'uRund', 'uNord', 'uSchnitt', 'uWeich', 'uT', 'uVersatz', 'uDichte', 'uBand', 'uRandLage', 'uFarbe', 'uBoden', 'uRand'].forEach(function (x) {
+        ['uM', 'uQ', 'uZ', 'uRausch', 'uKlar', 'uRund', 'uNord', 'uSchnitt', 'uWeich', 'uT', 'uVersatz', 'uDichte', 'uBand', 'uRandLage', 'uFarbe', 'uBoden', 'uRand',
+         'uDrift', 'uWind', 'uSchwelle', 'uLicht'].forEach(function (x) {
           n.loc[x] = gl.getUniformLocation(pr, x);
         });
         n.aW = gl.getAttribLocation(pr, 'aW');
@@ -5249,7 +5264,8 @@
         gl.activeTexture(gl.TEXTURE2);
         gl.bindTexture(gl.TEXTURE_2D, n.tex);
         gl.pixelStorei(gl.UNPACK_ALIGNMENT, 1);
-        gl.texImage2D(gl.TEXTURE_2D, 0, gl.LUMINANCE, 128, 128, 0, gl.LUMINANCE, gl.UNSIGNED_BYTE, nebelRauschen(128));
+        gl.pixelStorei(gl.UNPACK_ALIGNMENT, 4);
+        gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, 128, 128, 0, gl.RGBA, gl.UNSIGNED_BYTE, nebelRauschen(128));
         gl.generateMipmap(gl.TEXTURE_2D);
         gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR_MIPMAP_LINEAR);
         gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
@@ -5286,37 +5302,67 @@
         gl.uniform4f(n.loc.uBand, bu[0], bu[1], bo[0], bo[1]);
         gl.uniform3fv(n.loc.uFarbe, N.farbe);
         gl.uniform3fv(n.loc.uBoden, schichtFarbe(D.kopf.stufen[0], 1));
+        // Licht von Nordwesten, in Rauschkoordinaten (grob: ein Stueck gegen den Wind gedreht)
+        gl.uniform2f(n.loc.uLicht, -0.012, 0.012 * NORDY);
         gl.uniform2f(n.loc.uRand, D.kopf.groesse[0] / 2, D.kopf.groesse[1] / 2);
         nebel = n;
       } catch (e) { nebel = null; }
     }
-    function nebelZeichnen(cam, zeitS, k) {
+    // Boden unter dem tiefsten Meer, im Dunkel des Meeres: vor allem anderen.
+    function nebelBoden(cam) {
       if (!nebel) return;
       const n = nebel;
       gl.useProgram(n.prog);
       gl.uniformMatrix4fv(n.loc.uM, false, new Float32Array(cam.M));
-      gl.activeTexture(gl.TEXTURE2); gl.bindTexture(gl.TEXTURE_2D, n.tex); gl.activeTexture(gl.TEXTURE0);
       gl.enableVertexAttribArray(n.aW);
-      /* Erst der Boden unter dem tiefsten Meer, im Dunkel des Grundes: der
-         Hintergrund ist jetzt Nebel, und wo das Meer tiefer ist als die
-         letzte Stufe, schien er sonst als helle Flaeche durch. */
       gl.bindBuffer(gl.ARRAY_BUFFER, n.randPuf);
       gl.vertexAttribPointer(n.aW, 2, gl.FLOAT, false, 0, 0);
       gl.uniform1f(n.loc.uRandLage, 2);
-      gl.uniform1f(n.loc.uZ, (D.kopf.stufen[0] - 50) / 1000 * 2.0);
+      gl.uniform1f(n.loc.uZ, CFG.meerFlach ? -0.002 : (D.kopf.stufen[0] - 50) / 1000 * 2.0);
       gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
+      if (n.aW !== loc.aP) gl.disableVertexAttribArray(n.aW);
+      gl.useProgram(prog);
+      gl.enableVertexAttribArray(loc.aP);
+    }
+    /* Wind: im Mittel vom Atlantik (aus Westsuedwest), die Richtung
+       schwankt langsam. Der Versatz ist das Integral -- stetig, auch wenn
+       die Richtung wechselt. */
+    function wind(t) {
+      const v = CFG.nebel.wind || 0.6, A = 0.4, T1 = 140;
+      const b0 = 0.3, c = Math.cos(b0), s = Math.sin(b0);
+      const g = t * v, h = v * A * T1 * (1 - Math.cos(t / T1));
+      const w = b0 + A * Math.sin(t / T1);
+      return { drift: [c * g - s * h, (s * g + c * h) * NORDY], dir: [Math.cos(w), Math.sin(w) * NORDY] };
+    }
+    function nebelZeichnen(cam, zeitS, k) {
+      if (!nebel) return;
+      const n = nebel, N = CFG.nebel;
+      gl.useProgram(n.prog);
+      gl.uniformMatrix4fv(n.loc.uM, false, new Float32Array(cam.M));
+      gl.activeTexture(gl.TEXTURE2); gl.bindTexture(gl.TEXTURE_2D, n.tex); gl.activeTexture(gl.TEXTURE0);
+      gl.enableVertexAttribArray(n.aW);
       gl.uniform1f(n.loc.uRandLage, 0);
       gl.bindBuffer(gl.ARRAY_BUFFER, n.puf);
       gl.vertexAttribPointer(n.aW, 2, gl.SHORT, false, 0, 0);
       gl.enable(gl.BLEND); gl.depthMask(false);
-      CFG.nebel.lagen.forEach(function (l, j) {
+      const sw = N.schwelle || [0.68, 0.5];
+      N.lagen.forEach(function (l, j) {
+        // die Lagen ziehen unterschiedlich schnell (Windscherung), auf demselben Feld
+        const w = wind(zeitS * (1 + 0.18 * j));
+        gl.uniform2f(n.loc.uDrift, w.drift[0], w.drift[1]);
+        gl.uniform2f(n.loc.uWind, w.dir[0], w.dir[1]);
         gl.uniform1f(n.loc.uZ, l[0] / 1000 * UEBERHOEHUNG);
         gl.uniform1f(n.loc.uDichte, l[1]);
-        gl.uniform1f(n.loc.uT, zeitS * (1 + 0.45 * j));
-        gl.uniform2f(n.loc.uVersatz, 0.53 * j, 0.29 * j);
+        gl.uniform3f(n.loc.uSchwelle, sw[0], sw[1], l[2] || 0);
+        gl.uniform1f(n.loc.uT, zeitS);
+        gl.uniform2f(n.loc.uVersatz, 0.013 * j, 0.007 * j);
         gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
       });
       // Randlage ueber dem hoechsten Berg (Ben Nevis 1,35 km), ganz deckend
+      const w = wind(zeitS);
+      gl.uniform2f(n.loc.uDrift, w.drift[0], w.drift[1]);
+      gl.uniform2f(n.loc.uWind, w.dir[0], w.dir[1]);
+      gl.uniform2f(n.loc.uVersatz, 0.05, 0.03);
       gl.bindBuffer(gl.ARRAY_BUFFER, n.randPuf);
       gl.vertexAttribPointer(n.aW, 2, gl.FLOAT, false, 0, 0);
       gl.uniform1f(n.loc.uRandLage, 1);
@@ -5360,7 +5406,8 @@
         // "meerTief": wie weit das tiefste Meer zum Dunkel des Grundes geht
         return [0, 1, 2].map(function (c) { return mix(MEER_FLACH[c], GRUND[c] * 1.15, Math.pow(t, 0.7) * (CFG.meerTief || 1)); });
       }
-      const t = Math.pow(lev / hoechste, 0.9) * (LAND.length - 1);
+      // "landKurve" < 1 spreizt die niedrigen Hoehen: Kuestenland hebt sich vom Meer ab
+      const t = Math.pow(lev / hoechste, CFG.landKurve || 0.9) * (LAND.length - 1);
       const k = Math.min(LAND.length - 2, Math.floor(t)), f = t - k;
       return [0, 1, 2].map(function (c) { return mix(LAND[k][c], LAND[k + 1][c], f); });
     }
@@ -5442,6 +5489,26 @@
         gl.drawElements(gl.TRIANGLES, s.t[1] - s.t[0], gl.UNSIGNED_SHORT, s.t[0] * 2);
         gl.disable(gl.POLYGON_OFFSET_FILL);
       }
+      /* Wie geschnittenes Papier: jede Stufe wirft einen schmalen Schatten
+         nach Suedosten auf die darunter (Licht von Nordwesten). Gezeichnet
+         wird ihre Flaeche, verschoben, knapp ueber der Stufe darunter; wo sie
+         selbst liegt, verdeckt die Tiefe den Schatten. So stehen die Berge
+         klar gestuft da, statt zu einem Brei zu verschwimmen. */
+      function schatten(S, i, k) {
+        const c = CFG.schatten, l = c[0] * k.dist;
+        gl.enable(gl.BLEND); gl.depthMask(false);
+        gl.uniform3f(loc.uF, c[2], c[3], c[4]);
+        gl.uniform1f(loc.uA, c[1] * Math.max(0.35, fern));
+        gl.uniform2f(loc.uVers, 0.72 * l, -0.69 * l * NORDY);
+        gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, puf.t);
+        for (let j = i + 1; j < S.length; j++) {
+          gl.uniform1f(loc.uZ, hoehe(S[j - 1]) + 0.004 * UEBERHOEHUNG);
+          gl.bindBuffer(gl.ARRAY_BUFFER, puf.v);
+          gl.vertexAttribPointer(loc.aP, 2, gl.SHORT, false, 0, S[j].v[0] * 4);
+          gl.drawElements(gl.TRIANGLES, S[j].t[1] - S[j].t[0], gl.UNSIGNED_SHORT, S[j].t[0] * 2);
+        }
+        gl.uniform2f(loc.uVers, 0, 0);
+      }
       function kante(s) {
         gl.uniform1f(loc.uZ, hoehe(s));
         gl.bindBuffer(gl.ARRAY_BUFFER, puf.v);
@@ -5455,9 +5522,16 @@
         gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, puf.l);
         gl.drawElements(gl.LINES, s.l[1] - s.l[0], gl.UNSIGNED_SHORT, s.l[0] * 2);
       }
-      // Der Meeresgrund wie gehabt von tief nach flach, je Stufe Flaeche und Kante.
+      /* Das Meer: bei "meerFlach" eine einzige dunkle Flaeche ohne
+         Tiefenstufen -- Leere und Weite statt Flecken. Die Becken und
+         Kanten des Meeresgrunds wirkten wie riesiger Seetang. Sonst der
+         Meeresgrund wie gehabt von tief nach flach, je Stufe Flaeche und
+         Kante. Der Boden darunter kommt zuerst: zuletzt gezeichnet, schnitt
+         er in die Wasserlinien. */
+      nebelBoden(cam);
       let i = 0;
-      for (; i < n && S[i].lev < 0; i++) { flaeche(S[i]); kante(S[i]); }
+      if (CFG.meerFlach) { while (i < n && S[i].lev < 0) i++; }
+      else for (; i < n && S[i].lev < 0; i++) { flaeche(S[i]); kante(S[i]); }
       // Zwischen Meeresgrund und Land: das bewegte Wasser.
       if (i < n && S[i].lev === 0) wasser(k, cam, zeitS);
       /* Das Land dagegen von OBEN nach unten. Jede Stufe deckt alles, was
@@ -5468,6 +5542,7 @@
          Die Kanten kommen danach -- die Tiefe verdeckt sie genau dort, wo
          vorher die naechste Stufe sie uebermalt hat. Das Bild bleibt gleich. */
       for (let j = n - 1; j >= i; j--) flaeche(S[j]);
+      if (CFG.schatten) schatten(S, i, k);
       for (let j = i; j < n; j++) kante(S[j]);
       gl.depthMask(true);
       seenZeichnen(k, cam, zeitS);
