@@ -4938,33 +4938,33 @@
         '  vec2 p = vW.xy;' +
         // Boden unter dem tiefsten Meer, in dessen Farbe
         '  if (uRandLage > 1.5) { gl_FragColor = vec4(uBoden, 1.0); return; }' +
-        /* Nebelbaenke statt Schleier: ein Feld aus weichem, richtungslosem
-           Rauschen (kein Raster), vom Wind getragen und in sich verwirbelt --
-           die Verwirbelung zieht langsamer und in eigener Richtung, so
-           veraendern die Baenke beim Ziehen ihre Form, statt starr zu gleiten.
-           Wo das Feld ueber einer Schwelle liegt, ist dichter Nebel, sonst
-           nichts: klare Luft behaelt ihren vollen Kontrast. Im klaren Gebiet
-           liegt die Schwelle hoch (vereinzelte Baenke und Schwaden), draussen
-           niedrig (der Nebel schliesst sich, zum Rand hin ganz). */
+        /* Seenebel, keine Wolken: eine flache Schicht ohne Licht und
+           Schatten, in Windrichtung zu langen Fasern gezogen. Ein Feld aus
+           weichem, richtungslosem Rauschen (kein Raster), vom Wind getragen
+           und in sich verwirbelt -- die Verwirbelung zieht langsamer und in
+           eigener Richtung, so veraendern die Schwaden beim Ziehen ihre Form.
+           Wo das Feld ueber einer Schwelle liegt, liegt Nebel, der zum Rand
+           hin weich ausduennt; sonst nichts: klare Luft behaelt ihren vollen
+           Kontrast. Im klaren Gebiet liegt die Schwelle hoch (vereinzelte
+           Schwaden), draussen niedrig, und dort schliesst sich der Nebel
+           zusaetzlich zu einer durchgehenden Decke. */
         '  vec2 a = p - uDrift, d1 = vec2(-uWind.y, uWind.x);' +
-        // in Windrichtung gestreckt: lange Schwaden
-        '  vec2 s = vec2(dot(a, uWind) * 0.55, dot(a, d1));' +
+        // in Windrichtung lang gezogen: Fasern statt Ballen
+        '  vec2 s = vec2(dot(a, uWind) * 0.42, dot(a, d1));' +
         '  vec4 v = T(s * 0.0024 + uVersatz * 0.31 + uT * vec2(0.0013, -0.0008));' +
-        '  vec2 q = s * 0.012 + uVersatz + (v.rg - 0.5) * 0.7;' +
+        '  vec2 q = s * 0.012 + uVersatz + (v.rg - 0.5) * 0.5;' +
+        // feine Fasern in Windrichtung: innen nie ganz gleichmaessig
+        '  float fa = T(vec2(s.x * 0.006, s.y * 0.02) + (v.rg - 0.5) * 0.4 + uVersatz * 2.0 + uT * vec2(0.0021, 0.0)).a;' +
         /* Randlage: ueber allen Bergen, zum Rand der Daten hin ganz dicht
-           (gerundet, dicht schon bevor sie enden) -- innen aus denselben
-           Baenken wie draussen auf dem Meer, kein gleichfoermiger Schleier. */
+           (gerundet, dicht schon bevor sie enden), mit derselben Faserung. */
         '  if (uRandLage > 0.5) {' +
         '    vec2 rr = abs(p) / uRand; rr = rr * rr * rr;' +
-        '    float r = pow(rr.x + rr.y, 0.3333) + (v.b - 0.5) * 0.06;' +
-        '    if (r < 0.7) discard;' +
-        '    float ra = smoothstep(0.7, 1.02, r);' +
-        '    float th = mix(0.86, -0.2, ra);' +
-        '    float n = 0.5 * T(q * 0.45 + 0.13).b + 0.3 * T(mat2(0.8, -0.6, 0.6, 0.8) * q + 0.37).a + 0.2 * T(mat2(-0.28, 0.96, -0.96, -0.28) * q * 2.43 + 0.61).g;' +
-        '    float f = smoothstep(th - 0.02, th + 0.12, n);' +
+        '    float r = pow(rr.x + rr.y, 0.3333);' +
+        '    if (r < 0.62) discard;' +
+        '    float n = 0.6 * T(q * 0.45 + 0.13).b + 0.4 * fa;' +
+        '    float f = smoothstep(0.68, 0.92, r + (n - 0.5) * 0.16);' +
         '    if (f <= 0.0) discard;' +
-        // auch wo er ganz geschlossen ist, nicht flach: Ballen hell, dazwischen dunkler
-        '    gl_FragColor = vec4(uFarbe * (0.6 + 0.35 * smoothstep(th, th + 0.25, n) + 0.5 * (n - 0.5)), f);' +
+        '    gl_FragColor = vec4(uFarbe * (0.84 + 0.36 * (n - 0.5)), f);' +
         '    return;' +
         '  }' +
         '  float sd = klar(p) + (v.b - 0.5) * 110.0;' +
@@ -4972,20 +4972,21 @@
         // Baender am unteren und oberen Rand: dort schliesst er sich frueher
         '  float bd = max(smoothstep(0.0, 1.0, clamp((p.y - uBand.x) * uBand.y, 0.0, 1.0)),' +
         '                 smoothstep(0.0, 1.0, clamp((p.y - uBand.z) * uBand.w, 0.0, 1.0)));' +
-        '  float th = mix(uSchwelle.x, uSchwelle.y, max(dd, 0.75 * bd)) + uSchwelle.z;' +
-        // grosse Baenke, darin mittlere Ballen, am Rand feine Fransen
+        '  float dicht = max(dd, 0.75 * bd);' +
+        '  float th = mix(uSchwelle.x, uSchwelle.y, dicht) + uSchwelle.z;' +
+        // draussen die durchgehende Decke, zur klaren Luft hin auslaufend
+        '  float decke = smoothstep(0.6, 1.0, dd) * mix(0.4, 0.9, fa);' +
+        // grosse Schwaden, darin mittlere, am Rand feine Fransen
         '  float n0 = T(q * 0.45 + 0.13).b;' +
         // die feineren Lagen heben das Feld um hoechstens etwa 0,43: vorher verwerfen
-        '  if (0.5 * n0 + 0.43 < th) discard;' +
-        '  float n1 = T(mat2(0.8, -0.6, 0.6, 0.8) * q + 0.37).a;' +
-        '  float n = 0.5 * n0 + 0.3 * n1 + 0.2 * T(mat2(-0.28, 0.96, -0.96, -0.28) * q * 2.43 + 0.61).g;' +
-        '  float f = smoothstep(th - 0.02, th + 0.12, n);' +
+        '  if (0.5 * n0 + 0.43 < th - 0.08 && decke <= 0.0) discard;' +
+        '  float n = 0.5 * n0 + 0.3 * T(mat2(0.8, -0.6, 0.6, 0.8) * q + 0.37).a + 0.2 * T(mat2(-0.28, 0.96, -0.96, -0.28) * q * 2.43 + 0.61).g;' +
+        // weich auslaufend, die Fasern zerfransen den Rand
+        '  float f = smoothstep(th - 0.08, th + 0.2, n + 0.12 * (fa - 0.5));' +
+        '  f = max(f * mix(0.6, 1.0, fa), decke);' +
         '  if (f <= 0.0) discard;' +
-        // Licht von Nordwesten auf den Ballen: oben hell, zur Schattenseite dunkler
-        '  float hl = clamp((n1 - T(mat2(0.8, -0.6, 0.6, 0.8) * q + 0.37 + uLicht).a) * 7.0, -0.35, 0.35);' +
-        '  float dick = smoothstep(th, th + 0.25, n);' +
-        '  vec3 c = uFarbe * (0.72 + 0.42 * dick + hl);' +
-        '  gl_FragColor = vec4(c, f * mix(0.55, 1.0, dick) * uDichte);' +
+        '  vec3 c = uFarbe * (0.86 + 0.14 * f + 0.2 * (fa - 0.5));' +
+        '  gl_FragColor = vec4(c, f * uDichte);' +
         '}';
       return [vs, fs];
     }
