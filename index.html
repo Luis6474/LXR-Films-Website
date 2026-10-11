@@ -4115,13 +4115,20 @@
                unten: [56.02, 55.72], oben: [57.58, 57.86], hoch: 0.07, schwelle: [0.7, 0.51], wind: 0.6,
                lagen: [[40, 0.92, -0.02], [170, 0.8, 0.01], [420, 0.65, 0.04]], dunst: 0.55 },
       meerFlach: true,
-      /* Papierschatten: Laenge (Anteil des Kameraabstands), Deckkraft, Farbe.
-         Schmal und scharf wie bei geschnittenem Papier; die Stufen sind
-         duenn (25 Lagen, siehe werkzeug/karten/schottland.json) -- dicke
-         Stufen mit breitem Schatten wirkten wie Lego, eine Hangschattierung
-         darueber wie Knete. */
-      schatten: [0.003, 0.28, 0.0, 0.008, 0.02],
-      ueberhoehung: 3.2,
+      /* Papierschatten der Stufen: Laenge (Anteil des Kameraabstands),
+         Deckkraft, Farbe. Nur noch, wenn das Gelaende (unten) nicht laedt. */
+      /* Gelaende: keine gestapelten Hoehenplatten mehr, sondern eine
+         durchgehende Landschaft -- ein Netz, dessen Hoehe an jedem Punkt aus
+         dem Hoehenmodell kommt, darauf eine Schattierung aus feinen Hoehen-
+         daten (rund 40 m im Gebiet der Reise, Licht von Nordwesten, Taeler
+         dunkler). Gebaut von werkzeug/gelaende_bau.py: je Bereich ein
+         Formbild (Hoehe, Abstand zur Kueste) und ein Schattenbild. "rand":
+         Weltkoordinaten (km) links, oben, rechts, unten; "netz": Felder je
+         Seite. "licht": Tiefe der Schatten, Staerke des Lichts, Glanz der Grate. */
+      gelaende: { basis: 'daten/schottland', hmax: 1350, sdfKm: 1.5, licht: [0.4, 0.25, 0.05, 1.4],
+                  innen: { rand: [-151.637, 82.38, 63.738, -128.204], netz: 1024 },
+                  aussen: { rand: [-221.457, 197.711, 221.457, -197.878], netz: 384 } },
+      ueberhoehung: 1.8,
       grund: [0.016, 0.03, 0.05],
       /* Land: Taeler tief blau, nach oben heller und grauer -- Berge setzen
          sich ab, statt im selben Blau zu verschwimmen. "ruhe": wie stark
@@ -4309,6 +4316,7 @@
     }
 
     let D = null;                       // Daten nach dem Laden
+    let GEL = null;                     // Gelaende (Bilder und Hoehen), wenn die Karte eins hat
     let phasen = [], EINHEITEN = 12;
     let fluege = [], kurse = [], wege = [], wegAb = [], GESAMT = 0, orte = [], blick = [], mitte = [0, 0], halb = [100, 100];
     // Kamera je Station: nah und schraeg, bei einer Sammelstation von oben.
@@ -4459,9 +4467,22 @@
       NAH.pitch = hoch ? 42 : 56;
       const nah = CFG.nah || [24, 30];
       NAH.dist = hoch ? nah[1] : nah[0];
-      orte = D.orte.map(function (o) { return [o[0], o[1], o[2] * UEBERHOEHUNG]; });
+      /* Mit Gelaende liegen Orte und Route auf seiner Hoehe; die Route wird
+         dazu fein unterteilt, damit sie ueber Kuppen und durch Taeler
+         laeuft statt geradeaus hindurch. */
+      function boden(p) { return GEL ? Math.max(0, gelaendeHoehe(p[0], p[1])) / 1000 * UEBERHOEHUNG : p[2] * UEBERHOEHUNG; }
+      function dichter(w) {
+        if (!GEL) return w;
+        const r = [w[0]];
+        for (let i = 1; i < w.length; i++) {
+          const a = w[i - 1], b = w[i], m = Math.ceil(Math.hypot(b[0] - a[0], b[1] - a[1]) / 0.25);
+          for (let j = 1; j <= m; j++) r.push([mix(a[0], b[0], j / m), mix(a[1], b[1], j / m), 0]);
+        }
+        return r;
+      }
+      orte = D.orte.map(function (o) { return [o[0], o[1], boden(o)]; });
       wege = D.wege.map(function (w) {
-        return wegAus(w.map(function (p) { return [p[0], p[1], p[2] * UEBERHOEHUNG]; }));
+        return wegAus(dichter(w).map(function (p) { return [p[0], p[1], boden(p)]; }));
       });
       wegAb = []; GESAMT = 0; halte = null;
       wege.forEach(function (w) { wegAb.push(GESAMT); GESAMT += w.len; });
@@ -4685,6 +4706,14 @@
 
     /* ---- WebGL: die Landschaft ---- */
     let gl = null, prog = null, loc = {}, puf = {}, W = 1, H = 1, PR = 1, ctx2 = null;
+    /* Guete-Stufen fuer schwache Rechner: Anteil der Aufloesung, mit der die
+       Grafikkarte zeichnet, und wie fein das Netz des Gelaendes ist.
+       Kommt die Fahrt nicht ueber rund 50 Bilder je Sekunde, geht es eine
+       Stufe herunter (siehe guete()). GPR ist das Verhaeltnis Zeichenpuffer
+       zu CSS-Pixeln. Die Ortsnamen bleiben immer scharf. Die zweite Zahl:
+       jeder wievielte Punkt des Gelaendenetzes. */
+    const GUETE = [[1, 1], [0.8, 1], [0.66, 2], [0.5, 2], [0.4, 4]];
+    let gStufe = 0, GPR = 1;
     const GRUND = CFG.grund;
     let NORDY = 1;      // +1, wenn Norden in Weltkoordinaten nach +y zeigt (gesetzt mit den Daten)
     /* Wohin die Karte in der Ferne und am Rand ausblendet: mit Seenebel in
@@ -4735,6 +4764,7 @@
       const liste = [[LAND_VS, LAND_FS]];
       if (zwei || gl.getExtension('OES_standard_derivatives')) liste.push(meerQuellen(zwei));
       if (CFG.nebel) liste.push(nebelQuellen());
+      if (CFG.gelaende && (zwei || gl.getExtension('OES_standard_derivatives'))) liste.push(gelaendeQuellen(zwei));
       const hp = gl.getShaderPrecisionFormat(gl.FRAGMENT_SHADER, gl.HIGH_FLOAT);
       if ((zwei || gl.getExtension('EXT_blend_minmax')) && hp && hp.precision >= 23) {
         liste.push([VS_BAND, FS_BAND], [VS_DECK, FS_DECK], [VS_SAND, FS_SAND], [VS_ORT, FS_ORT]);
@@ -4802,6 +4832,7 @@
       NORDY = geo(0, 58)[1] > geo(0, 57)[1] ? 1 : -1;
       meerStarten();
       nebelStarten();
+      gelaendeStarten();
       ueberStarten();
       gl.useProgram(prog);
       gl.uniform1f(loc.uQ, D.kopf.q);
@@ -5225,12 +5256,13 @@
     function groesse() {
       PR = Math.min(2, window.devicePixelRatio || 1);
       W = halt.clientWidth || 1; H = halt.clientHeight || 1;
-      const bw = Math.round(W * PR), bh = Math.round(H * PR);
+      GPR = PR * GUETE[gStufe][0];
+      const bw = Math.round(W * GPR), bh = Math.round(H * GPR);
       /* Die Zeichenflaeche der Grafikkarte nur bei echter Aenderung neu
          anlegen: jedes Setzen von width/height legt ihre Puffer (mit
          Kantenglaettung) neu an und wartet dabei auf die Grafikkarte. */
       if (glc.width !== bw || glc.height !== bh) { glc.width = bw; glc.height = bh; }
-      linc.width = bw; linc.height = bh;
+      linc.width = Math.round(W * PR); linc.height = Math.round(H * PR);
       schildSchluessel = '';
       if (gl) gl.viewport(0, 0, glc.width, glc.height);
       halt.style.setProperty('--zb', zeit.offsetWidth + 'px');
@@ -5298,6 +5330,244 @@
         tx += fx * s; ty += fy * s;
       }
       return [tx, ty];
+    }
+
+    /* ---- Gelaende ----
+       Zwei Netze: innen (wo die Reise spielt) fein, aussen grob, mit einem
+       Loch, wo das innere liegt. Die Hoehe jedes Punkts liest der
+       Vertex-Shader aus dem Formbild; Farbe nach Hoehe, Licht aus dem
+       Schattenbild, die Kueste aus dem Abstandsfeld -- glatt und scharf
+       bei jeder Naehe, mit einer feinen Linie in Tusche. */
+    let gel = null;
+    function gelaendeQuellen(zwei) {
+      const kopf = zwei ? '#version 300 es\n' : '';
+      const kopfF = zwei ? '#version 300 es\n' : '#extension GL_OES_standard_derivatives : enable\n';
+      const ein = zwei ? 'in' : 'attribute', raus = zwei ? 'out' : 'varying', rein = zwei ? 'in' : 'varying';
+      const TX = zwei ? 'texture' : 'texture2D';
+      const vs = kopf + ein + ' vec2 aG; uniform mat4 uM; uniform vec4 uBox; uniform sampler2D uForm; uniform float uHz; uniform float uSdf;' +
+        raus + ' vec2 vUV; ' + raus + ' vec3 vW;' +
+        /* Zur Kueste hin laeuft das Netz auf Meereshoehe aus (auf 400 m):
+           sonst lag die Uferlinie mal hoch, mal tief im Dreieck, das Ufer
+           stand von der Seite als Saegeblatt da. */
+        'void main(){ vUV = aG; vec4 f = ' + (zwei ? 'textureLod(uForm, aG, 0.0)' : 'texture2D(uForm, aG)') + ';' +
+        '  float h = f.r * smoothstep(0.0, 0.4, (f.g * 255.0 - 128.0) / 127.0 * uSdf);' +
+        '  vW = vec3(mix(uBox.x, uBox.z, aG.x), mix(uBox.y, uBox.w, aG.y), h * uHz + 0.004);' +
+        '  gl_Position = uM * vec4(vW, 1.0); }';
+      const fs = kopfF + 'precision highp float;' +
+        'uniform sampler2D uForm; uniform sampler2D uRel; uniform sampler2D uFarben; uniform sampler2D uKueste; uniform vec4 uKanal; uniform float uSdf; uniform vec4 uLoch;' +
+        'uniform vec3 uAuge; uniform vec3 uGrund; uniform vec2 uNebel; uniform vec2 uRand; uniform vec4 uUfer; uniform vec4 uLicht;' +
+        rein + ' vec2 vUV; ' + rein + ' vec3 vW;' + (zwei ? 'out vec4 aus;' : '') +
+        'void main(){' +
+        // aussen: wo das innere Netz liegt, nichts zeichnen
+        '  if (vW.x > uLoch.x && vW.x < uLoch.z && vW.y < uLoch.y && vW.y > uLoch.w) discard;' +
+        '  vec4 f = ' + TX + '(uForm, vUV);' +
+        // Kueste aus dem feinen Kuestenbild (Grau), sonst aus dem Formbild (Gruen)
+        '  float sd = (dot(' + TX + '(uKueste, vUV), uKanal) * 255.0 - 128.0) / 127.0 * uSdf;' +
+        '  float w = max(fwidth(sd), 1e-5);' +
+        '  float land = smoothstep(-0.5 * w, 0.5 * w, sd);' +
+        '  if (land < 0.01) discard;' +
+        '  vec3 c = ' + TX + '(uFarben, vec2(f.r, 0.5)).rgb;' +
+        /* Schattenbild: 0,4375 ist ebenes Land. Darunter Schatten (die Farbe
+           geht ins Dunkel), darueber Licht (sie wird heller). */
+        '  float s = ' + TX + '(uRel, vUV).r / 0.4375;' +
+        // Kontrast nur in den Schatten: verstaerkte Lichter machten helle Gipfel fast weiss.
+        '  s = min(s, 1.0 + (s - 1.0) * uLicht.w) ;' +
+        '  c *= mix(uLicht.x, 1.0, clamp(s, 0.0, 1.0)) + uLicht.y * max(s - 1.0, 0.0);' +
+        '  c += uLicht.z * vec3(0.16, 0.17, 0.19) * max(s - 1.15, 0.0);' +
+        /* Uferlinie: ein Pixel breit und halb so kraeftig wie die alte
+           Stufenkante -- die feine Kueste hat viel mehr Buchten, kraeftiger
+           umrahmt sie jede Insel und macht der Route Konkurrenz. */
+        '  float u = 1.0 - smoothstep(0.25 * w, 0.85 * w, abs(sd - 0.7 * w));' +
+        '  c = mix(c, uUfer.rgb, u * uUfer.a * 0.45);' +
+        '  float n = smoothstep(uNebel.x, uNebel.y, length(vW - uAuge));' +
+        '  float e = smoothstep(' + KANTE + ', 0.995, max(abs(vW.x) / uRand.x, abs(vW.y) / uRand.y));' +
+        '  float m = max(n, e);' +
+        '  ' + (zwei ? 'aus' : 'gl_FragColor') + ' = vec4(mix(c, uGrund, m), land * (1.0 - 0.7 * m));' +
+        '}';
+      return [vs, fs];
+    }
+    // Hoehe (m) an einem Weltpunkt, aus dem feinsten Bereich, der ihn hat.
+    function gelaendeHoehe(x, y) {
+      const B = [GEL.innen, GEL.aussen];
+      for (let i = 0; i < 2; i++) {
+        const b = B[i], r = b.rand;
+        const u = (x - r[0]) / (r[2] - r[0]), v = (y - r[1]) / (r[3] - r[1]);
+        if (u < 0 || u > 1 || v < 0 || v > 1) continue;
+        const N = b.n, H = b.hoehen;
+        const px = Math.min(N - 1.001, Math.max(0, u * N - 0.5)), py = Math.min(N - 1.001, Math.max(0, v * N - 0.5));
+        const ix = Math.floor(px), iy = Math.floor(py), fx = px - ix, fy = py - iy;
+        const a = mix(H[iy * N + ix], H[iy * N + ix + 1], fx), c = mix(H[(iy + 1) * N + ix], H[(iy + 1) * N + ix + 1], fx);
+        return mix(a, c, fy) / 255 * CFG.gelaende.hmax;
+      }
+      return 0;
+    }
+    // Bilder laden; die Hoehen des Formbilds (Rot) fuer Orte und Route auslesen.
+    function gelaendeLaden() {
+      const G = CFG.gelaende;
+      function bild(name) {
+        return new Promise(function (fertig, fehler) {
+          const i = new Image();
+          i.onload = function () { fertig(i); }; i.onerror = function () { fehler(new Error(name)); };
+          i.src = G.basis + name;
+        });
+      }
+      /* Am Rechner das Schattenbild des Reisegebiets in doppelter Groesse
+         (8192 Punkte, rund 25 m): die Kamera kommt an den Stationen so nah,
+         dass die einfache Groesse weich wirkt. Auf Handy und Tablet die
+         einfache -- ein Viertel des Speichers. */
+      const gross = !matchMedia('(pointer: coarse)').matches && Math.max(screen.width, screen.height) * (window.devicePixelRatio || 1) >= 1900;
+      const namen = ['-form-innen.png', gross ? '-relief-innen-gross.webp' : '-relief-innen.webp', '-form-aussen.png', '-relief-aussen.webp', '-abstand.png'];
+      if (gross) namen.push('-kueste-innen.png');      // die Kueste in doppelter Feinheit
+      return Promise.all(namen.map(bild)).then(function (b) {
+        function bereich(form, rel, e) {
+          const n = form.naturalWidth, cv = document.createElement('canvas');
+          cv.width = cv.height = n;
+          const c = cv.getContext('2d', { willReadFrequently: true });
+          c.drawImage(form, 0, 0);
+          const px = c.getImageData(0, 0, n, n).data, h = new Uint8Array(n * n);
+          for (let i = 0; i < n * n; i++) h[i] = px[i * 4];
+          // Auf Handy und Tablet ein groeberes Netz (das Licht kommt aus dem Bild, nicht aus dem Netz).
+          return { form: form, rel: rel, rand: e.rand, netz: gross ? e.netz : 4 * Math.round(e.netz * 0.15), n: n, hoehen: h };
+        }
+        // Abstand zum Ufer fuer die Wasserlinien, passend zu dieser Kueste
+        const ab = b[4], cv = document.createElement('canvas');
+        cv.width = ab.naturalWidth; cv.height = ab.naturalHeight;
+        const c = cv.getContext('2d', { willReadFrequently: true });
+        c.drawImage(ab, 0, 0);
+        const px = c.getImageData(0, 0, cv.width, cv.height).data, abstand = new Uint8Array(cv.width * cv.height);
+        for (let i = 0; i < abstand.length; i++) abstand[i] = px[i * 4];
+        const innen = bereich(b[0], b[1], G.innen);
+        if (b[5]) innen.kueste = b[5];
+        return { innen: innen, aussen: bereich(b[2], b[3], G.aussen), abstand: abstand, abstandN: [cv.width, cv.height] };
+      });
+    }
+    function gelaendeStarten() {
+      gel = null;
+      if (!GEL) return;
+      const zwei = glZwei();
+      if (!zwei && !gl.getExtension('OES_standard_derivatives')) return;
+      const q = gelaendeQuellen(zwei), pr = glProgramm(q[0], q[1]);
+      if (!gl.getProgramParameter(pr, gl.LINK_STATUS)) return;
+      const g = { prog: pr, loc: {}, teile: [] };
+      ['uM', 'uBox', 'uForm', 'uHz', 'uRel', 'uFarben', 'uKueste', 'uKanal', 'uSdf', 'uLoch', 'uAuge', 'uGrund', 'uNebel', 'uRand', 'uUfer', 'uLicht'].forEach(function (n) {
+        g.loc[n] = gl.getUniformLocation(pr, n);
+      });
+      g.aG = gl.getAttribLocation(pr, 'aG');
+      const an = gl.getExtension('EXT_texture_filter_anisotropic');
+      // grau: nur ein Kanal (das Schattenbild) -- ein Drittel des Speichers
+      function textur(quelle, breite, grau) {
+        const t = gl.createTexture(), f = grau ? gl.LUMINANCE : gl.RGB;
+        gl.bindTexture(gl.TEXTURE_2D, t);
+        gl.pixelStorei(gl.UNPACK_ALIGNMENT, 1);
+        if (breite) gl.texImage2D(gl.TEXTURE_2D, 0, f, breite, 1, 0, f, gl.UNSIGNED_BYTE, quelle);
+        else gl.texImage2D(gl.TEXTURE_2D, 0, f, f, gl.UNSIGNED_BYTE, quelle);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+        if (breite) gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+        else {
+          gl.generateMipmap(gl.TEXTURE_2D);
+          gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR_MIPMAP_LINEAR);
+          if (an) gl.texParameterf(gl.TEXTURE_2D, an.TEXTURE_MAX_ANISOTROPY_EXT, Math.min(8, gl.getParameter(an.MAX_TEXTURE_MAX_ANISOTROPY_EXT)));
+        }
+        return t;
+      }
+      // Farbe nach Hoehe: wie die Stufen bisher, nur stufenlos.
+      const fb = new Uint8Array(256 * 3), hoechste = D.kopf.stufen[D.kopf.stufen.length - 1];
+      for (let i = 0; i < 256; i++) {
+        const c = schichtFarbe(Math.max(0.5, Math.min(hoechste, i / 255 * CFG.gelaende.hmax)), hoechste);
+        for (let j = 0; j < 3; j++) fb[i * 3 + j] = Math.round(Math.max(0, Math.min(1, c[j])) * 255);
+      }
+      g.farben = textur(fb, 256);
+      /* Netz: Punkte als Anteil 0..1 (16 Bit), Dreiecke in Stuecken zu
+         hoechstens 65 536 Punkten. Dazu groebere Netze aus jedem zweiten
+         und jedem vierten Punkt (fuer schwache Rechner): dafuer ist die
+         Zahl der Zeilen je Stueck durch vier teilbar. */
+      function netz(b, loch) {
+        const N = b.netz + 1, pos = new Uint16Array(N * N * 2);
+        for (let y = 0; y < N; y++) for (let x = 0; x < N; x++) {
+          pos[(y * N + x) * 2] = Math.round(x / (N - 1) * 65535); pos[(y * N + x) * 2 + 1] = Math.round(y / (N - 1) * 65535);
+        }
+        const r = b.rand, idx = { 1: [], 2: [], 4: [] }, stuecke = [];
+        let zeilen = Math.floor(65536 / N) - 1; zeilen -= zeilen % 4;
+        function drin(x, y) {
+          if (!loch) return false;
+          const wx = mix(r[0], r[2], x / (N - 1)), wy = mix(r[1], r[3], y / (N - 1));
+          return wx > loch[0] && wx < loch[2] && wy < loch[1] && wy > loch[3];
+        }
+        for (let y0 = 0; y0 < N - 1; y0 += zeilen) {
+          const y1 = Math.min(N - 1, y0 + zeilen), st = { v: y0 * N };
+          [1, 2, 4].forEach(function (k) {
+            const l = idx[k], von = l.length;
+            for (let y = y0; y + k <= y1; y += k) for (let x = 0; x + k <= N - 1; x += k) {
+              if (drin(x, y) && drin(x + k, y) && drin(x, y + k) && drin(x + k, y + k)) continue;
+              const a = (y - y0) * N + x, c = a + k * N;
+              l.push(a, c, a + k, a + k, c, c + k);
+            }
+            st[k] = [von, l.length];
+          });
+          stuecke.push(st);
+        }
+        const t = { b: b, pv: gl.createBuffer(), pt: {}, stuecke: stuecke, form: textur(b.form), rel: textur(b.rel, 0, true) };
+        t.kueste = b.kueste ? textur(b.kueste, 0, true) : t.form;
+        gl.bindBuffer(gl.ARRAY_BUFFER, t.pv); gl.bufferData(gl.ARRAY_BUFFER, pos, gl.STATIC_DRAW);
+        [1, 2, 4].forEach(function (k) {
+          t.pt[k] = gl.createBuffer();
+          gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, t.pt[k]); gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, new Uint16Array(idx[k]), gl.STATIC_DRAW);
+        });
+        return t;
+      }
+      const ri = GEL.innen.rand, ra = GEL.aussen.rand;
+      g.teile.push(netz(GEL.innen, null));
+      // Das Loch im aeusseren Netz liegt etwas innerhalb des inneren Bereichs: am Rand ueberlappen beide.
+      const zx = (ra[2] - ra[0]) / GEL.aussen.netz * 1.5, zy = (ra[1] - ra[3]) / GEL.aussen.netz * 1.5;
+      g.teile.push(netz(GEL.aussen, [ri[0] + zx, ri[1] - zy, ri[2] - zx, ri[3] + zy]));
+      gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, puf.t);
+      gel = g;
+    }
+    function gelaendeZeichnen(k, cam) {
+      const g = gel, L = g.loc, G = CFG.gelaende, ri = GEL.innen.rand;
+      gl.useProgram(g.prog);
+      gl.uniformMatrix4fv(L.uM, false, new Float32Array(cam.M));
+      gl.uniform3fv(L.uAuge, cam.auge);
+      gl.uniform2f(L.uNebel, k.dist * 1.3, k.dist * 3.4);
+      gl.uniform3fv(L.uGrund, FERNE);
+      gl.uniform2f(L.uRand, D.kopf.groesse[0] / 2, D.kopf.groesse[1] / 2);
+      gl.uniform1f(L.uHz, G.hmax / 1000 * UEBERHOEHUNG);
+      gl.uniform1f(L.uSdf, G.sdfKm);
+      /* Kontrast der Schattierung nach Abstand: an der Station kraeftig (sonst
+         wirken flache Huegel im dunklen Grundton wie Teig), in der
+         Uebersicht weich (dort sind es viele kleine Grate, kraeftig sahen
+         sie aus wie zerknitterte Folie). */
+      const ab = uebersicht ? Math.max(0, Math.min(1, Math.log(k.dist / NAH.dist) / Math.log(uebersicht.dist / NAH.dist))) : 1;
+      gl.uniform4f(L.uLicht, G.licht[0], G.licht[1], G.licht[2], mix(G.licht[3], 1, ab));
+      const u = CFG.linien.ufer;
+      gl.uniform4f(L.uUfer, u[0], u[1], u[2], u[3]);
+      gl.uniform1i(L.uForm, 0); gl.uniform1i(L.uRel, 1); gl.uniform1i(L.uFarben, 2); gl.uniform1i(L.uKueste, 3);
+      gl.activeTexture(gl.TEXTURE2); gl.bindTexture(gl.TEXTURE_2D, g.farben);
+      gl.enable(gl.BLEND); gl.depthMask(true);
+      gl.enableVertexAttribArray(g.aG);
+      g.teile.forEach(function (t, i) {
+        const r = t.b.rand, l = i ? ri : [1e9, -1e9, -1e9, 1e9];
+        gl.uniform4f(L.uBox, r[0], r[1], r[2], r[3]);
+        gl.uniform4f(L.uLoch, l[0], l[1], l[2], l[3]);
+        gl.activeTexture(gl.TEXTURE3); gl.bindTexture(gl.TEXTURE_2D, t.kueste);
+        if (t.kueste === t.form) gl.uniform4f(L.uKanal, 0, 1, 0, 0); else gl.uniform4f(L.uKanal, 1, 0, 0, 0);
+        gl.activeTexture(gl.TEXTURE1); gl.bindTexture(gl.TEXTURE_2D, t.rel);
+        gl.activeTexture(gl.TEXTURE0); gl.bindTexture(gl.TEXTURE_2D, t.form);
+        gl.bindBuffer(gl.ARRAY_BUFFER, t.pv);
+        const schritt = GUETE[gStufe][1];
+        gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, t.pt[schritt]);
+        t.stuecke.forEach(function (s) {
+          const d = s[schritt];
+          gl.vertexAttribPointer(g.aG, 2, gl.UNSIGNED_SHORT, true, 0, s.v * 4);
+          gl.drawElements(gl.TRIANGLES, d[1] - d[0], gl.UNSIGNED_SHORT, d[0] * 2);
+        });
+      });
+      if (g.aG !== loc.aP) gl.disableVertexAttribArray(g.aG);
+      gl.useProgram(prog);
+      gl.enableVertexAttribArray(loc.aP);
+      gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, puf.t);
     }
 
     function landschaft(k, cam, zeitS) {
@@ -5388,9 +5658,12 @@
          an der Tiefe, dass ein Punkt schon bedeckt ist, und ueberspringt ihn.
          Die Kanten kommen danach -- die Tiefe verdeckt sie genau dort, wo
          vorher die naechste Stufe sie uebermalt hat. Das Bild bleibt gleich. */
-      for (let j = n - 1; j >= i; j--) flaeche(S[j]);
-      if (CFG.schatten) schatten(S, i, k);
-      for (let j = i; j < n; j++) kante(S[j]);
+      if (gel) gelaendeZeichnen(k, cam);
+      else {
+        for (let j = n - 1; j >= i; j--) flaeche(S[j]);
+        if (CFG.schatten) schatten(S, i, k);
+        for (let j = i; j < n; j++) kante(S[j]);
+      }
       gl.depthMask(true);
       seenZeichnen(k, cam, zeitS);
       nebelZeichnen(cam, zeitS, k);
@@ -5702,7 +5975,7 @@
          bewegt sich weiter, die Linien nicht), sind sie Bild fuer Bild
          dieselben und werden aus dem letzten Bild uebernommen. Das spart
          im Stand den groessten Teil der Arbeit fuer die Linien. */
-      const schl = BW + ',' + BH + ',' + PR + ',' + k.sand + ',' + k.namen + ',' + k.weg + ',' + k.wegL + ',' + (k.auslauf || 0) + ',' + k.auslaufAb + '|' +
+      const schl = BW + ',' + BH + ',' + GPR + ',' + k.sand + ',' + k.namen + ',' + k.weg + ',' + k.wegL + ',' + (k.auslauf || 0) + ',' + k.auslaufAb + '|' +
                    Array.prototype.join.call(M, ',');
       gl.enable(gl.BLEND);
       if (schl !== u.schluessel) {
@@ -5715,7 +5988,7 @@
         const b = u.band;
         gl.useProgram(b.prog);
         gl.uniformMatrix4fv(b.loc.uM, false, M);
-        gl.uniform2f(b.loc.uPx, BW, BH); gl.uniform1f(b.loc.uPR, PR); gl.uniform1f(b.loc.uHoch, UEBER_HOCH);
+        gl.uniform2f(b.loc.uPx, BW, BH); gl.uniform1f(b.loc.uPR, GPR); gl.uniform1f(b.loc.uHoch, UEBER_HOCH);
         gl.uniform1f(b.loc.uSigma, 4.5);
         function band(puf, von, bis0, breite, bis, modus, kanal, voll) {
           if (bis0 <= von) return;
@@ -5778,7 +6051,7 @@
           const s = u.sand;
           gl.useProgram(s.prog);
           gl.uniformMatrix4fv(s.loc.uM, false, M);
-          gl.uniform2f(s.loc.uPx, BW, BH); gl.uniform1f(s.loc.uPR, PR); gl.uniform1f(s.loc.uHoch, UEBER_HOCH);
+          gl.uniform2f(s.loc.uPx, BW, BH); gl.uniform1f(s.loc.uPR, GPR); gl.uniform1f(s.loc.uHoch, UEBER_HOCH);
           gl.uniform1f(s.loc.uKopf, GESAMT * (1 - k.sand)); gl.uniform1f(s.loc.uAltN, GESAMT * 0.3);
           gl.uniform1f(s.loc.uWeh, k.weh); gl.uniform3fv(s.loc.uFarbe, F.sand);
           gl.bindBuffer(gl.ARRAY_BUFFER, u.puf.sand);
@@ -5800,7 +6073,7 @@
         if (n) {
           const oe = u.ort;
           gl.useProgram(oe.prog);
-          gl.uniform2f(oe.loc.uPx, BW, BH); gl.uniform1f(oe.loc.uPR, PR);
+          gl.uniform2f(oe.loc.uPx, BW, BH); gl.uniform1f(oe.loc.uPR, GPR);
           gl.uniform3fv(oe.loc.uOrt, F.ort); gl.uniform3fv(oe.loc.uRing, F.ring); gl.uniform3fv(oe.loc.uPunkt, F.punkt);
           gl.bindBuffer(gl.ARRAY_BUFFER, u.puf.ort);
           gl.bufferData(gl.ARRAY_BUFFER, q.subarray(0, n * 5), gl.DYNAMIC_DRAW);
@@ -6645,6 +6918,35 @@
        fuer die Videos der Tafel. Nur die Bahnkarte bleibt bei rund 30 Bildern,
        ihre Dampfwolken ziehen schneller. */
     let gezeichnet = 0, standGezeichnet = -1;
+    /* Guete nach dem, was ankommt: Abstaende der Bilder, solange die
+       Kamera faehrt. Liegt die Mitte von 12 Abstaenden ueber 20 ms (unter
+       50 Bildern je Sekunde, auch wenn nebenher ein Spiel die Grafikkarte
+       belegt), zeichnet die Karte eine Stufe groeber. Laeuft sie spaeter
+       wieder im Takt des Bildschirms (Takt: der kleinste Abstand im Stand),
+       geht es eine Stufe hinauf -- auf eine Stufe, die schon einmal zu
+       langsam war, aber fruehestens nach 20 Sekunden (sonst wechselte die
+       Schaerfe hin und her). */
+    const Q = { fahrt: [], stand: [], takt: 17, vorher: -1, gut: 0, sperre: 0, seit: 0 };
+    function guete(jetzt, faehrt) {
+      const d = Q.vorher > 0 ? jetzt - Q.vorher : 0;
+      Q.vorher = jetzt;
+      if (!d) return;                                         // erstes Bild nach dem Anlaufen
+      const liste = faehrt ? Q.fahrt : Q.stand;
+      liste.push(d);
+      if (liste.length < 12) return;
+      const m = liste.slice().sort(function (a, b) { return a - b; })[6];
+      liste.length = 0;
+      /* Im Stand wird nur jedes vierte Bild gezeichnet, die Abstaende
+         liegen sonst beim Takt des Bildschirms. Liegen sie auch dort ueber
+         40 ms, ist der Rechner schon mit dem Stand ueberfordert. */
+      if (!faehrt) { Q.takt = Math.min(Q.takt, m); if (m < 40) return; }
+      if (m > Math.max(20, Q.takt * 1.35) && gStufe < GUETE.length - 1) {
+        gStufe = Math.min(GUETE.length - 1, gStufe + (m > 60 ? 2 : 1));   // sehr langsam: zwei Stufen
+        Q.sperre = gStufe; Q.seit = jetzt; Q.gut = 0; groesse();
+      } else if (m < Q.takt * 1.12 && gStufe > 0 && (gStufe > Q.sperre || jetzt - Q.seit > 20000)) {
+        if (++Q.gut >= 3) { gStufe--; Q.gut = 0; groesse(); }
+      } else Q.gut = 0;
+    }
     function schleife(bild) {
       /* Die Uhr ist der Zeitstempel des Bildes, also der Takt, in dem es
          erscheint. performance.now() beim Zeichnen schwankt um einige
@@ -6667,6 +6969,7 @@
         stand = fahrtStand(fahrt, jetzt);
         if (jetzt - fahrt.t0 >= fahrt.T * 1000) { stand = ziel = fahrt.nach; fahrt = null; }
       } else folgen(dt);
+      guete(jetzt, stand !== standGezeichnet || !!sprung);
       if (stand !== standGezeichnet || jetzt - gezeichnet > (CFG.bahn ? 28 : 62)) {
         zeichne(stand, (jetzt / 1000) % 100000, jetzt);
         gezeichnet = jetzt; standGezeichnet = stand;
@@ -6676,7 +6979,7 @@
     }
     function anlaufen() {
       if (laeuft || !bereit || reducedMotion) return;
-      laeuft = true; zuletzt = performance.now();
+      laeuft = true; zuletzt = performance.now(); Q.vorher = -1;
       requestAnimationFrame(schleife);
     }
     function anstossen() {
@@ -6997,11 +7300,17 @@
           }, warte);
         });
       }
+      // Das Gelaende laedt gleichzeitig; fehlt es, bleibt die Karte gestuft.
+      const gelaende = CFG.gelaende ? gelaendeLaden().catch(function (e) { console.warn('Gelaende nicht geladen:', e); return null; }) : null;
       fetch(CFG.datei).then(function (r) {
         if (!r.ok) throw new Error('Karte ' + r.status);
         return r.arrayBuffer();
       }).then(ruhig).then(entpacken).then(ruhig).then(function (buf) {
         D = lesen(buf);
+        return gelaende;
+      }).then(function (g) {
+        GEL = g || null;
+        if (GEL && GEL.abstandN[0] === D.kopf.tex[0] && GEL.abstandN[1] === D.kopf.tex[1]) D.tex = GEL.abstand;
         return ruhig();
       }).then(function () {
         // Erst die Groesse, dann der Kontext -- sonst wird er gleich wieder umgebaut.
