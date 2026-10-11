@@ -4113,8 +4113,10 @@
                unten: [56.02, 55.72], oben: [57.42, 57.78], schwelle: [0.7, 0.51], wind: 0.6,
                lagen: [[40, 0.92, -0.02], [170, 0.8, 0.01], [420, 0.65, 0.04]] },
       meerFlach: true,
-      /* Papierschatten: Laenge (Anteil des Kameraabstands), Deckkraft, Farbe */
-      schatten: [0.005, 0.3, 0.0, 0.008, 0.02],
+      /* Papierschatten: Laenge (Anteil des Kameraabstands), Deckkraft, Farbe,
+         Stufen des weichen Auslaufs. "papier": Staerke der Papierstruktur. */
+      schatten: [0.006, 0.3, 0.0, 0.008, 0.02, 5],
+      papier: 0.4,
       ueberhoehung: 3.2,
       grund: [0.016, 0.03, 0.05],
       /* Land: Taeler tief blau, nach oben heller und grauer -- Berge setzen
@@ -4124,7 +4126,7 @@
       land: [[0.085, 0.11, 0.15], [0.135, 0.165, 0.21], [0.24, 0.265, 0.3], [0.52, 0.54, 0.565]],
       landKurve: 0.65, ruhe: 0.2, meerTief: 0,
       wasser: [0.014, 0.025, 0.04],
-      linien: { meer: [0.56, 0.6, 0.62, 0.07], ufer: [0.88, 0.84, 0.74, 0.55], land: [0.74, 0.73, 0.67, 0.13] },
+      linien: { meer: [0.56, 0.6, 0.62, 0.07], ufer: [0.88, 0.84, 0.74, 0.55], land: [0.74, 0.73, 0.67, 0.08] },
       tinte: '226, 216, 190', tinteGl: [0.84, 0.82, 0.74],
       route: { hell: '255, 222, 178', schein: '255, 170, 90', leise: '240, 200, 150', sand: '250, 214, 168',
                ort: '255, 196, 130', ring: '255, 226, 190', punkt: '255, 236, 212' },
@@ -4656,7 +4658,7 @@
     }
 
     /* ---- WebGL: die Landschaft ---- */
-    let gl = null, prog = null, loc = {}, puf = {}, W = 1, H = 1, PR = 1, ctx2 = null;
+    let gl = null, prog = null, papierTex = null, loc = {}, puf = {}, W = 1, H = 1, PR = 1, ctx2 = null;
     const GRUND = CFG.grund;
     let NORDY = 1;      // +1, wenn Norden in Weltkoordinaten nach +y zeigt (gesetzt mit den Daten)
     /* Wohin die Karte in der Ferne und am Rand ausblendet: mit Seenebel in
@@ -4726,13 +4728,26 @@
       });
     }
 
+    /* Wo Land und Meer zum Rand ihrer Daten hin ausblenden. Mit Seenebel
+       erst ganz aussen: dort liegt schon die dichte Randlage, und das
+       Rechteck schimmerte sonst als gerade Linie durch den Nebel. */
+    const KANTE = CFG.nebel ? '0.96' : '0.88';
     const LAND_VS =
         'attribute vec2 aP; uniform mat4 uM; uniform float uZ; uniform float uQ; uniform vec2 uVers; varying vec3 vW;' +
         'void main(){ vec3 w = vec3(aP / uQ + uVers, uZ); vW = w; gl_Position = uM * vec4(w, 1.0); }';
     const LAND_FS =
         '#ifdef GL_FRAGMENT_PRECISION_HIGH\nprecision highp float;\n#else\nprecision mediump float;\n#endif\n' +
         'uniform vec3 uF; uniform float uA; uniform vec3 uAuge; uniform vec3 uGrund; uniform vec2 uNebel; uniform vec2 uHalb; uniform vec2 uMitte; uniform vec2 uRand; varying vec3 vW;' +
+        'uniform sampler2D uPapierT; uniform float uPapier;' +
         'void main(){' +
+        '  vec3 c = uF;' +
+        /* Papier statt Kunststoff: feine Fasern und leichte Flecken in jeder
+           Stufe, auf der Karte festgemacht. Aus der Ferne mitteln sie sich
+           (Mipmaps) von selbst weg. */
+        '  if (uPapier > 0.0) {' +
+        '    float fa = texture2D(uPapierT, vW.xy * 0.35).r, fl = texture2D(uPapierT, vW.xy * 0.045 + 0.31).b;' +
+        '    c *= 1.0 + uPapier * ((fa - 0.5) * 0.6 + (fl - 0.5));' +
+        '  }' +
         '  float n = smoothstep(uNebel.x, uNebel.y, length(vW - uAuge));' +
         /* Die Karte hat keinen Rand: um die Reise herum loest sie sich im
            Grund auf, wie ein Bild, das aus dem Dunkel kommt. */
@@ -4740,9 +4755,9 @@
            Teil des Bildes schwarz, die Karte klein und rund wie ein Globus.
            Die Karte fuellt jetzt das Bild und laeuft nur ganz am Rand ihrer
            Daten weich aus. */
-        '  float e = smoothstep(0.88, 0.995, max(abs(vW.x) / uRand.x, abs(vW.y) / uRand.y));' +
+        '  float e = smoothstep(' + KANTE + ', 0.995, max(abs(vW.x) / uRand.x, abs(vW.y) / uRand.y));' +
         '  float m = max(n, e);' +
-        '  gl_FragColor = vec4(mix(uF, uGrund, m), uA * (1.0 - 0.7 * m));' +
+        '  gl_FragColor = vec4(mix(c, uGrund, m), uA * (1.0 - 0.7 * m));' +
         '}';
 
     function glStarten() {
@@ -4750,7 +4765,7 @@
       prog = glProgramm(LAND_VS, LAND_FS);
       if (!gl.getProgramParameter(prog, gl.LINK_STATUS)) return false;
       gl.useProgram(prog);
-      ['uM', 'uZ', 'uQ', 'uVers', 'uF', 'uA', 'uAuge', 'uGrund', 'uNebel', 'uHalb', 'uMitte', 'uRand'].forEach(function (n) {
+      ['uM', 'uZ', 'uQ', 'uVers', 'uF', 'uA', 'uAuge', 'uGrund', 'uNebel', 'uHalb', 'uMitte', 'uRand', 'uPapierT', 'uPapier'].forEach(function (n) {
         loc[n] = gl.getUniformLocation(prog, n);
       });
       loc.aP = gl.getAttribLocation(prog, 'aP');
@@ -4774,6 +4789,22 @@
       gl.uniform1f(loc.uQ, D.kopf.q);
       gl.uniform3fv(loc.uGrund, FERNE);
       gl.uniform2f(loc.uRand, D.kopf.groesse[0] / 2, D.kopf.groesse[1] / 2);
+      // Papierstruktur auf Einheit 3 (die anderen Einheiten nutzen Meer, Nebel, Bilder)
+      gl.uniform1i(loc.uPapierT, 3);
+      gl.uniform1f(loc.uPapier, CFG.papier || 0);
+      if (CFG.papier) {
+        papierTex = gl.createTexture();
+        gl.activeTexture(gl.TEXTURE3);
+        gl.bindTexture(gl.TEXTURE_2D, papierTex);
+        gl.pixelStorei(gl.UNPACK_ALIGNMENT, 4);
+        gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, 256, 256, 0, gl.RGBA, gl.UNSIGNED_BYTE, nebelRauschen(256, [1, 3, 6, 6]));
+        gl.generateMipmap(gl.TEXTURE_2D);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR_MIPMAP_LINEAR);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.REPEAT);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.REPEAT);
+        gl.activeTexture(gl.TEXTURE0);
+      }
       gl.clearColor(FERNE[0], FERNE[1], FERNE[2], 1);
       gl.enable(gl.DEPTH_TEST);
       gl.depthFunc(gl.LEQUAL);
@@ -4833,7 +4864,7 @@
         '  float n2 = rausch(vW.xy * 0.09 - vec2(uT * 0.025, -uT * 0.02));' +
         '  float leben = 0.55 + 0.6 * n + 0.25 * n2;' +
         '  float weg = 1.0 - max(smoothstep(uNebel.x, uNebel.y, length(vW - uAuge)),' +
-        '                        smoothstep(0.88, 0.995, max(abs(vW.x) / uRand.x, abs(vW.y) / uRand.y)));' +
+        '                        smoothstep(' + KANTE + ', 0.995, max(abs(vW.x) / uRand.x, abs(vW.y) / uRand.y)));' +
         '  float a = ((0.22 * fein + 0.15 * grob) * leben + 0.035 * n * n) * weg;' +
         '  ' + (zwei ? 'aus' : 'gl_FragColor') + ' = vec4(uTinte, a);' +
         '}';
@@ -4934,10 +4965,12 @@
         // die feinen Stufen, im Mittel 0.0965
         'float fein(vec2 q){ return 0.096 * T(R1 * q * 3.81 + 0.19).b + 0.06 * T(R2 * q * 7.7 + 0.83).a + 0.037 * T(R1 * q * 15.6 + 0.47).g; }' +
         // Abstand zum klaren Gebiet (Kasten mit gerundeten Ecken, innen negativ), dazu die schraege Kante
-        'float klar(vec2 q){ vec2 m = (uKlar.xy + uKlar.zw) * 0.5, h = (uKlar.zw - uKlar.xy) * 0.5 - uRund;' +
+        'float klar(vec2 q, float w){ vec2 m = (uKlar.xy + uKlar.zw) * 0.5, h = (uKlar.zw - uKlar.xy) * 0.5 - uRund;' +
         '  vec2 a = abs(q - m) - h;' +
-        // nach Norden wird der Nebel schneller dicht (uNord.x: Vorzeichen von Norden, .y: Faktor)
-        '  if ((q.y - m.y) * uNord.x > 0.0) a.y *= uNord.y;' +
+        /* nach Norden wird der Nebel schneller dicht (uNord.x: Vorzeichen von
+           Norden, .y: Faktor) -- so steil, dass seine Front eine gerade Linie
+           wurde; w (km) verschiebt sie dort zu Buchten und Zungen */
+        '  if ((q.y - m.y) * uNord.x > 0.0) a.y = (a.y - w) * uNord.y;' +
         '  return max(length(max(a, 0.0)) + min(max(a.x, a.y), 0.0) - uRund, dot(uSchnitt.xy, q) - uSchnitt.z); }' +
         'void main(){' +
         '  vec2 p = vW.xy;' +
@@ -4960,6 +4993,10 @@
         '  vec2 q = s * 0.012 + uVersatz + (v.rg - 0.5) * 0.5;' +
         // zweite, kleinere Verwirbelung: rollt die Schwaden ein
         '  q += (T(q * 1.3 + 0.71 - uT * vec2(0.0011, 0.0007)).rg - 0.5) * 0.14;' +
+        /* Welle fuer die Raender (Formen von etwa 5 bis 15 km): das grobe v
+           ist so gross, dass es eine Front nur als Ganzes verschob -- sie
+           blieb eine Linie wie mit dem Lineal. */
+        '  float wl = 0.6 * T(s * 0.008 + 0.21).g + 0.4 * T(s * 0.02 + 0.53).r;' +
         /* Randlage: ueber allen Bergen, zum Rand der Daten hin ganz dicht
            (gerundet, dicht schon bevor sie enden), mit derselben Textur. */
         '  if (uRandLage > 0.5) {' +
@@ -4967,13 +5004,15 @@
         '    float r = pow(rr.x + rr.y, 0.3333);' +
         '    if (r < 0.6) discard;' +
         '    float n = grob(q) + fein(q);' +
-        '    float f = smoothstep(0.68, 0.92, r + (n - 0.5) * 0.4);' +
+        /* ihr Rand folgt der rechteckigen Datengrenze und war oben eine Linie
+           wie mit dem Lineal: deshalb kraeftig wellig, ganz aussen sicher dicht */
+        '    float w = clamp((v.b - 0.5) * 0.3 + (wl - 0.5) * 0.5, -0.15, 0.1);' +
+        '    float f = max(smoothstep(0.76, 0.94, r + w + (n - 0.5) * 0.3), smoothstep(0.93, 0.98, r));' +
         '    if (f <= 0.0) discard;' +
         '    gl_FragColor = vec4(uFarbe * (0.84 + 0.45 * (n - 0.5) + 0.7 * (fein(q * 1.7 + 0.29) - 0.0965)), f);' +
         '    return;' +
         '  }' +
-        // Grenze wellig: der Ort selbst wird verschoben, so bleibt sie auch im Norden, wo der Nebel schneller dicht wird, keine gerade Front
-        '  float sd = klar(p + (v.rg - 0.5) * vec2(60.0, 45.0)) + (v.b - 0.5) * 110.0;' +
+        '  float sd = klar(p, 36.0 * smoothstep(0.25, 0.75, wl) - 4.0) + (v.b - 0.5) * 110.0 + (wl - 0.5) * 40.0;' +
         '  float dd = smoothstep(-30.0, uWeich, sd);' +
         // Baender am unteren und oberen Rand: dort schliesst er sich frueher
         '  float bd = max(smoothstep(0.0, 1.0, clamp((p.y - uBand.x) * uBand.y, 0.0, 1.0)),' +
@@ -5004,8 +5043,9 @@
        alte Werterauschen in Quadraten zeigte. Vier unabhaengige Felder in
        den vier Farbkanaelen: Verwirbelung und drei Groessen. Auf gleiche
        Streuung gebracht, damit Schwellen ueberall gleich wirken. */
-    function nebelRauschen(N) {
-      const out = new Uint8Array(N * N * 4), r = 7;
+    function nebelRauschen(N, radien) {
+      const out = new Uint8Array(N * N * 4);
+      let r = 7;
       let saat = 7;
       function zz() { saat = (saat * 16807) % 2147483647; return saat / 2147483647; }
       const a = new Float32Array(N * N), b = new Float32Array(N * N);
@@ -5021,6 +5061,7 @@
         }
       }
       for (let c = 0; c < 4; c++) {
+        if (radien) r = radien[c];
         for (let i = 0; i < N * N; i++) a[i] = zz();
         for (let d = 0; d < 3; d++) { kasten(a, b, 1, 0); kasten(b, a, 0, 1); }
         let m = 0, q = 0;
@@ -5289,14 +5330,21 @@
         const c = CFG.schatten, l = c[0] * k.dist;
         gl.enable(gl.BLEND); gl.depthMask(false);
         gl.uniform3f(loc.uF, c[2], c[3], c[4]);
-        gl.uniform1f(loc.uA, c[1] * Math.max(0.35, fern));
-        gl.uniform2f(loc.uVers, 0.72 * l, -0.69 * l * NORDY);
+        /* "schatten"[5]: in wie vielen Stufen er auslaeuft -- dunkel an der
+           Kante, nach aussen heller, wie bei Papier; ein hartes, gleich
+           dunkles Band wirkte wie Kunststoffplatten. */
+        const m = c[5] || 1;
+        gl.uniform1f(loc.uA, c[1] * Math.max(0.35, fern) * (m > 1 ? 1.4 / m : 1));
         gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, puf.t);
-        for (let j = i + 1; j < S.length; j++) {
-          gl.uniform1f(loc.uZ, hoehe(S[j - 1]) + 0.004 * UEBERHOEHUNG);
-          gl.bindBuffer(gl.ARRAY_BUFFER, puf.v);
-          gl.vertexAttribPointer(loc.aP, 2, gl.SHORT, false, 0, S[j].v[0] * 4);
-          gl.drawElements(gl.TRIANGLES, S[j].t[1] - S[j].t[0], gl.UNSIGNED_SHORT, S[j].t[0] * 2);
+        for (let s = 1; s <= m; s++) {
+          const ls = m > 1 ? l * 1.5 * s / m : l;
+          gl.uniform2f(loc.uVers, 0.72 * ls, -0.69 * ls * NORDY);
+          for (let j = i + 1; j < S.length; j++) {
+            gl.uniform1f(loc.uZ, hoehe(S[j - 1]) + 0.004 * UEBERHOEHUNG);
+            gl.bindBuffer(gl.ARRAY_BUFFER, puf.v);
+            gl.vertexAttribPointer(loc.aP, 2, gl.SHORT, false, 0, S[j].v[0] * 4);
+            gl.drawElements(gl.TRIANGLES, S[j].t[1] - S[j].t[0], gl.UNSIGNED_SHORT, S[j].t[0] * 2);
+          }
         }
         gl.uniform2f(loc.uVers, 0, 0);
       }
