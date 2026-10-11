@@ -4926,8 +4926,13 @@
         'void main(){ vW = vec3(aW / uQ, uZ); gl_Position = uM * vec4(vW, 1.0); }';
       const fs = GENAU +
         'uniform sampler2D uRausch; uniform vec4 uKlar; uniform float uRund; uniform vec2 uNord; uniform vec3 uSchnitt; uniform float uWeich; uniform float uT; uniform vec2 uVersatz; uniform float uDichte; uniform vec4 uBand;' +
-        'uniform float uRandLage; uniform vec3 uFarbe; uniform vec3 uBoden; uniform vec2 uRand; uniform vec2 uDrift; uniform vec2 uWind; uniform vec3 uSchwelle; uniform vec2 uLicht; varying vec3 vW;' +
+        'uniform float uRandLage; uniform vec3 uFarbe; uniform vec3 uBoden; uniform vec2 uRand; uniform vec2 uDrift; uniform vec2 uWind; uniform vec3 uSchwelle; varying vec3 vW;' +
         'vec4 T(vec2 q){ return texture2D(uRausch, q); }' +
+        // Stufen gegeneinander gedreht, damit sich kein Raster abzeichnet
+        'const mat2 R1 = mat2(0.8, -0.6, 0.6, 0.8); const mat2 R2 = mat2(-0.28, 0.96, -0.96, -0.28);' +
+        'float grob(vec2 q){ return 0.4 * T(q * 0.45 + 0.13).b + 0.25 * T(R1 * q * 0.92 + 0.37).a + 0.155 * T(R2 * q * 1.87 + 0.61).g; }' +
+        // die feinen Stufen, im Mittel 0.0965
+        'float fein(vec2 q){ return 0.096 * T(R1 * q * 3.81 + 0.19).b + 0.06 * T(R2 * q * 7.7 + 0.83).a + 0.037 * T(R1 * q * 15.6 + 0.47).g; }' +
         // Abstand zum klaren Gebiet (Kasten mit gerundeten Ecken, innen negativ), dazu die schraege Kante
         'float klar(vec2 q){ vec2 m = (uKlar.xy + uKlar.zw) * 0.5, h = (uKlar.zw - uKlar.xy) * 0.5 - uRund;' +
         '  vec2 a = abs(q - m) - h;' +
@@ -4939,54 +4944,57 @@
         // Boden unter dem tiefsten Meer, in dessen Farbe
         '  if (uRandLage > 1.5) { gl_FragColor = vec4(uBoden, 1.0); return; }' +
         /* Seenebel, keine Wolken: eine flache Schicht ohne Licht und
-           Schatten, in Windrichtung zu langen Fasern gezogen. Ein Feld aus
-           weichem, richtungslosem Rauschen (kein Raster), vom Wind getragen
-           und in sich verwirbelt -- die Verwirbelung zieht langsamer und in
-           eigener Richtung, so veraendern die Schwaden beim Ziehen ihre Form.
-           Wo das Feld ueber einer Schwelle liegt, liegt Nebel, der zum Rand
-           hin weich ausduennt; sonst nichts: klare Luft behaelt ihren vollen
-           Kontrast. Im klaren Gebiet liegt die Schwelle hoch (vereinzelte
-           Schwaden), draussen niedrig, und dort schliesst sich der Nebel
-           zusaetzlich zu einer durchgehenden Decke. */
+           Schatten. Das Feld ist ein Rauschen in sechs Stufen, von grossen
+           Schwaden bis zu Fasern von wenigen Bildpunkten -- erst die feinen
+           Stufen geben dem Nebel seine Textur, sonst wirkt er unscharf.
+           Vom Wind getragen und zweifach verwirbelt: die Schwaden rollen sich
+           ein und aendern beim Ziehen ihre Form. Wo das Feld ueber einer
+           Schwelle liegt, liegt Nebel, der Rand franst in feinen Fasern aus;
+           sonst nichts: klare Luft behaelt ihren vollen Kontrast. Im klaren
+           Gebiet liegt die Schwelle hoch (vereinzelte Schwaden), draussen
+           niedrig, dort schliesst sich der Nebel zu einer Decke. */
         '  vec2 a = p - uDrift, d1 = vec2(-uWind.y, uWind.x);' +
-        // in Windrichtung lang gezogen: Fasern statt Ballen
-        '  vec2 s = vec2(dot(a, uWind) * 0.42, dot(a, d1));' +
+        // in Windrichtung etwas gezogen
+        '  vec2 s = vec2(dot(a, uWind) * 0.6, dot(a, d1));' +
         '  vec4 v = T(s * 0.0024 + uVersatz * 0.31 + uT * vec2(0.0013, -0.0008));' +
         '  vec2 q = s * 0.012 + uVersatz + (v.rg - 0.5) * 0.5;' +
-        // feine Fasern in Windrichtung: innen nie ganz gleichmaessig
-        '  float fa = T(vec2(s.x * 0.006, s.y * 0.02) + (v.rg - 0.5) * 0.4 + uVersatz * 2.0 + uT * vec2(0.0021, 0.0)).a;' +
+        // zweite, kleinere Verwirbelung: rollt die Schwaden ein
+        '  q += (T(q * 1.3 + 0.71 - uT * vec2(0.0011, 0.0007)).rg - 0.5) * 0.14;' +
         /* Randlage: ueber allen Bergen, zum Rand der Daten hin ganz dicht
-           (gerundet, dicht schon bevor sie enden), mit derselben Faserung. */
+           (gerundet, dicht schon bevor sie enden), mit derselben Textur. */
         '  if (uRandLage > 0.5) {' +
         '    vec2 rr = abs(p) / uRand; rr = rr * rr * rr;' +
         '    float r = pow(rr.x + rr.y, 0.3333);' +
-        '    if (r < 0.62) discard;' +
-        '    float n = 0.6 * T(q * 0.45 + 0.13).b + 0.4 * fa;' +
-        '    float f = smoothstep(0.68, 0.92, r + (n - 0.5) * 0.16);' +
+        '    if (r < 0.6) discard;' +
+        '    float n = grob(q) + fein(q);' +
+        '    float f = smoothstep(0.68, 0.92, r + (n - 0.5) * 0.4);' +
         '    if (f <= 0.0) discard;' +
-        '    gl_FragColor = vec4(uFarbe * (0.84 + 0.36 * (n - 0.5)), f);' +
+        '    gl_FragColor = vec4(uFarbe * (0.84 + 0.45 * (n - 0.5) + 0.7 * (fein(q * 1.7 + 0.29) - 0.0965)), f);' +
         '    return;' +
         '  }' +
-        '  float sd = klar(p) + (v.b - 0.5) * 110.0;' +
+        // Grenze wellig: der Ort selbst wird verschoben, so bleibt sie auch im Norden, wo der Nebel schneller dicht wird, keine gerade Front
+        '  float sd = klar(p + (v.rg - 0.5) * vec2(60.0, 45.0)) + (v.b - 0.5) * 110.0;' +
         '  float dd = smoothstep(-30.0, uWeich, sd);' +
         // Baender am unteren und oberen Rand: dort schliesst er sich frueher
         '  float bd = max(smoothstep(0.0, 1.0, clamp((p.y - uBand.x) * uBand.y, 0.0, 1.0)),' +
         '                 smoothstep(0.0, 1.0, clamp((p.y - uBand.z) * uBand.w, 0.0, 1.0)));' +
         '  float dicht = max(dd, 0.75 * bd);' +
         '  float th = mix(uSchwelle.x, uSchwelle.y, dicht) + uSchwelle.z;' +
-        // draussen die durchgehende Decke, zur klaren Luft hin auslaufend
-        '  float decke = smoothstep(0.6, 1.0, dd) * mix(0.4, 0.9, fa);' +
-        // grosse Schwaden, darin mittlere, am Rand feine Fransen
-        '  float n0 = T(q * 0.45 + 0.13).b;' +
-        // die feineren Lagen heben das Feld um hoechstens etwa 0,43: vorher verwerfen
-        '  if (0.5 * n0 + 0.43 < th - 0.08 && decke <= 0.0) discard;' +
-        '  float n = 0.5 * n0 + 0.3 * T(mat2(0.8, -0.6, 0.6, 0.8) * q + 0.37).a + 0.2 * T(mat2(-0.28, 0.96, -0.96, -0.28) * q * 2.43 + 0.61).g;' +
-        // weich auslaufend, die Fasern zerfransen den Rand
-        '  float f = smoothstep(th - 0.08, th + 0.2, n + 0.12 * (fa - 0.5));' +
-        '  f = max(f * mix(0.6, 1.0, fa), decke);' +
+        // stufenweise: wo schon die groben Stufen weit unter der Schwelle liegen, sofort verwerfen
+        '  float n = 0.4 * T(q * 0.45 + 0.13).b;' +
+        '  if (n + 0.55 < th - 0.05 && dd < 0.6) discard;' +
+        '  n += 0.25 * T(R1 * q * 0.92 + 0.37).a + 0.155 * T(R2 * q * 1.87 + 0.61).g;' +
+        '  if (n + 0.22 < th - 0.05 && dd < 0.6) discard;' +
+        '  float fe = fein(q);' +
+        '  n += fe;' +
+        // im klaren Gebiet laufen die einzelnen Schwaden weicher aus, keine scharfen Splitter
+        '  float f = smoothstep(th - 0.05, th + 0.13 + 0.12 * (1.0 - dicht), n);' +
+        // draussen die Decke, auch sie aus derselben Textur
+        '  f = max(f, smoothstep(0.6, 1.0, dd) * smoothstep(0.22, 0.6, n));' +
         '  if (f <= 0.0) discard;' +
-        '  vec3 c = uFarbe * (0.86 + 0.14 * f + 0.2 * (fa - 0.5));' +
-        '  gl_FragColor = vec4(c, f * uDichte);' +
+        // dichter heisst heller; die feinen Fasern zeichnen sich im Inneren ab
+        '  vec3 c = uFarbe * (0.84 + 0.26 * smoothstep(th, th + 0.25, n) + 0.8 * (fe - 0.0965));' +
+        '  gl_FragColor = vec4(c, f * mix(0.75, 1.0, smoothstep(th, th + 0.2, n)) * uDichte);' +
         '}';
       return [vs, fs];
     }
@@ -5032,7 +5040,7 @@
         if (!gl.getProgramParameter(pr, gl.LINK_STATUS)) return;
         const n = { prog: pr, loc: {} };
         ['uM', 'uQ', 'uZ', 'uRausch', 'uKlar', 'uRund', 'uNord', 'uSchnitt', 'uWeich', 'uT', 'uVersatz', 'uDichte', 'uBand', 'uRandLage', 'uFarbe', 'uBoden', 'uRand',
-         'uDrift', 'uWind', 'uSchwelle', 'uLicht'].forEach(function (x) {
+         'uDrift', 'uWind', 'uSchwelle'].forEach(function (x) {
           n.loc[x] = gl.getUniformLocation(pr, x);
         });
         n.aW = gl.getAttribLocation(pr, 'aW');
@@ -5087,8 +5095,6 @@
         gl.uniform4f(n.loc.uBand, bu[0], bu[1], bo[0], bo[1]);
         gl.uniform3fv(n.loc.uFarbe, N.farbe);
         gl.uniform3fv(n.loc.uBoden, schichtFarbe(D.kopf.stufen[0], 1));
-        // Licht von Nordwesten, in Rauschkoordinaten (grob: ein Stueck gegen den Wind gedreht)
-        gl.uniform2f(n.loc.uLicht, -0.012, 0.012 * NORDY);
         gl.uniform2f(n.loc.uRand, D.kopf.groesse[0] / 2, D.kopf.groesse[1] / 2);
         nebel = n;
       } catch (e) { nebel = null; }
