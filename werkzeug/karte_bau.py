@@ -8,6 +8,8 @@ Jede Karte hat eine Einstellungsdatei in werkzeug/karten/:
   damit die Route auf der gewuenschten Strecke bleibt), Seen ja/nein.
 
 Aufruf:  python werkzeug/karte_bau.py werkzeug/karten/schottland.json daten/schottland-karte.bin.gz
+Mit WEGE_AUS=<alte Karte.bin.gz> werden deren Routen uebernommen statt neu beim
+Router abgefragt (der liefert sonst bei jedem Bau leicht andere Wege).
 Braucht: numpy pillow scipy contourpy shapely mapbox_earcut"""
 import gzip, io, json, math, os, struct, sys, tempfile, time, urllib.parse, urllib.request
 import numpy as np
@@ -431,7 +433,7 @@ if CFG.get("bahn"):
             bahnhoefe.append([round(wx - ox, 3), round(wy - oy, 3), round(schicht_bei(wx, wy) / 1000, 3), el["tags"]["name"]])
     bahnhoefe.sort(key=lambda b: gl.project(Point(b[0] + ox, b[1] + oy)))
     print("Halte:", ", ".join(b[3] for b in bahnhoefe))
-else:
+elif not os.environ.get("WEGE_AUS"):
     for a, b in zip(CFG["orte"][:-1], CFG["orte"][1:]):
         # "schiene": ein Stueck, das nicht auf der Strasse liegt (nach Sylt
         # geht es ueber den Hindenburgdamm nur mit dem Zug). Der Router
@@ -447,6 +449,17 @@ else:
             co, km, modi = osrm(pk)
         print("%s -> %s: %.0f km, %s" % (a["ort"], b["ort"], km, modi))
         legs.append(weg(co))
+
+# WEGE_AUS=<alte Karte>: die Routen aus einer schon gebauten Karte uebernehmen
+# (der Router liefert sonst bei jedem Bau leicht andere Wege). Nur ihre
+# Hoehen kommen neu, passend zu den Stufen dieses Baus.
+if os.environ.get("WEGE_AUS"):
+    alt = gzip.decompress(open(os.environ["WEGE_AUS"], "rb").read())
+    kl = struct.unpack("<I", alt[:4])[0]
+    alt_kopf = json.loads(alt[16:16 + kl].decode("utf-8"))
+    assert abs(alt_kopf["ursprung"][0] - ox) < 1e-6 and abs(alt_kopf["ursprung"][1] - oy) < 1e-6, "anderer Ausschnitt"
+    legs = [[[p[0], p[1], round(schicht_bei(p[0] + ox, p[1] + oy) / 1000, 3)] for p in leg] for leg in alt_kopf["wege"]]
+    print("Routen aus", os.environ["WEGE_AUS"])
 
 orte = []
 for o in CFG["orte"]:
