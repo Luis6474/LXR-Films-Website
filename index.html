@@ -1787,11 +1787,13 @@
       </section>
       <div class="viewer-grid">
         <div><img src="Images/web/nahaufnahme-stephen-1600.webp" srcset="Images/web/nahaufnahme-stephen-800.webp 800w, Images/web/nahaufnahme-stephen-1200.webp 1200w, Images/web/nahaufnahme-stephen-1600.webp 1600w" sizes="(min-width: 760px) 550px, 100vw" alt="Nahaufnahme des Porträtierten" loading="lazy" decoding="async"></div>
-        <div><img src="Images/web/aufnahme-stephen-im-cottage-1600.webp" srcset="Images/web/aufnahme-stephen-im-cottage-800.webp 800w, Images/web/aufnahme-stephen-im-cottage-1200.webp 1200w, Images/web/aufnahme-stephen-im-cottage-1600.webp 1600w" sizes="(min-width: 760px) 550px, 100vw" alt="Der Porträtierte in seinem Cottage" loading="lazy" decoding="async"></div>
+        <div><img src="Images/web/still-2026-10-11-163506-1-39-2-1600.webp" srcset="Images/web/still-2026-10-11-163506-1-39-2-800.webp 800w, Images/web/still-2026-10-11-163506-1-39-2-1200.webp 1200w, Images/web/still-2026-10-11-163506-1-39-2-1600.webp 1600w" sizes="(min-width: 760px) 550px, 100vw" alt="Der Porträtierte mit Fernrohr in den Dünen" loading="lazy" decoding="async"></div>
         <div><img src="Images/web/highland-cattle-1600.webp" srcset="Images/web/highland-cattle-800.webp 800w, Images/web/highland-cattle-1200.webp 1200w, Images/web/highland-cattle-1600.webp 1600w" sizes="(min-width: 760px) 550px, 100vw" alt="Highland Cattle im Profil" loading="lazy" decoding="async"></div>
         <div><img src="Images/web/schaf-1600.webp" srcset="Images/web/schaf-800.webp 800w, Images/web/schaf-1200.webp 1200w, Images/web/schaf-1600.webp 1600w" sizes="(min-width: 760px) 550px, 100vw" alt="Schaf auf einer Klippe über dem Meer" loading="lazy" decoding="async"></div>
         <div><img src="Images/web/stephen-am-strand-1600.webp" srcset="Images/web/stephen-am-strand-800.webp 800w, Images/web/stephen-am-strand-1200.webp 1200w, Images/web/stephen-am-strand-1600.webp 1600w" sizes="(min-width: 760px) 550px, 100vw" alt="Porträt an der Küste" loading="lazy" decoding="async"></div>
         <div><img src="Images/web/nebelberg-1600.webp" srcset="Images/web/nebelberg-800.webp 800w, Images/web/nebelberg-1200.webp 1200w, Images/web/nebelberg-1600.webp 1600w" sizes="(min-width: 760px) 550px, 100vw" alt="Nebelverhangener Bergrücken" loading="lazy" decoding="async"></div>
+        <div><img src="Images/web/still-2026-10-11-163506-1-12-1-1600.webp" srcset="Images/web/still-2026-10-11-163506-1-12-1-800.webp 800w, Images/web/still-2026-10-11-163506-1-12-1-1200.webp 1200w, Images/web/still-2026-10-11-163506-1-12-1-1600.webp 1600w" sizes="(min-width: 760px) 550px, 100vw" alt="Neist Point mit Leuchtturm über dem grauen Meer" loading="lazy" decoding="async"></div>
+        <div><img src="Images/web/still-2026-10-11-163506-3-8-1-1600.webp" srcset="Images/web/still-2026-10-11-163506-3-8-1-800.webp 800w, Images/web/still-2026-10-11-163506-3-8-1-1200.webp 1200w, Images/web/still-2026-10-11-163506-3-8-1-1600.webp 1600w" sizes="(min-width: 760px) 550px, 100vw" alt="Gemälde eines Hafens mit Segelschiffen" loading="lazy" decoding="async"></div>
       </div>
       <button class="viewer-close">Schließen</button>
     </div>
@@ -4108,15 +4110,18 @@
          geschlossen). "lagen": Hoehe (m), Deckkraft, Schwelle +/-: die
          unterste Lage deckt am meisten, die hoechste am wenigsten, so
          ragen Berge heraus. "wind": km/s. */
-      nebel: { klar: [-7.9, 55.95, -4.65, 57.54], schnitt: [[-6.95, 57.58], [-6.3, 57.83]],
+      nebel: { klar: [-7.9, 55.95, -4.65, 57.63], schnitt: [[-6.95, 57.58], [-6.3, 57.83]],
                rund: 35, nord: 4, weich: 110, farbe: [0.3, 0.33, 0.37],
-               unten: [56.02, 55.72], oben: [57.42, 57.78], schwelle: [0.7, 0.51], wind: 0.6,
-               lagen: [[40, 0.92, -0.02], [170, 0.8, 0.01], [420, 0.65, 0.04]] },
+               unten: [56.02, 55.72], oben: [57.58, 57.86], hoch: 0.07, schwelle: [0.7, 0.51], wind: 0.6,
+               lagen: [[40, 0.92, -0.02], [170, 0.8, 0.01], [420, 0.65, 0.04]], dunst: 0.55 },
       meerFlach: true,
       /* Papierschatten: Laenge (Anteil des Kameraabstands), Deckkraft, Farbe,
-         Stufen des weichen Auslaufs. "papier": Staerke der Papierstruktur. */
-      schatten: [0.006, 0.3, 0.0, 0.008, 0.02, 5],
-      papier: 0.4,
+         Stufen des weichen Auslaufs. */
+      schatten: [0.004, 0.22, 0.0, 0.008, 0.02, 3],
+      /* Hangschattierung aus dem Hoehenmodell (werkzeug/relief_bau.py) und
+         wie stark sie auf den Stufen liegt: ohne sie wirkten die Terrassen
+         wie flache, gestapelte Platten. */
+      relief: { datei: 'daten/schottland-relief.webp', staerke: 1.4 },
       ueberhoehung: 3.2,
       grund: [0.016, 0.03, 0.05],
       /* Land: Taeler tief blau, nach oben heller und grauer -- Berge setzen
@@ -4274,6 +4279,8 @@
 
     function glatt(x) { x = Math.max(0, Math.min(1, x)); return x * x * x * (x * (x * 6 - 15) + 10); }
     function stufe(a, b, x) { const u = Math.max(0, Math.min(1, (x - a) / (b - a))); return u * u * (3 - 2 * u); }
+    // wie stufe, aber auch die Beschleunigung setzt weich ein und aus (kein Ruck)
+    function stufe5(a, b, x) { const u = b > a ? Math.max(0, Math.min(1, (x - a) / (b - a))) : 1; return u * u * u * (u * (6 * u - 15) + 10); }
     function mix(a, b, f) { return a + (b - a) * f; }
     function logMix(a, b, f) { return Math.exp(mix(Math.log(a), Math.log(b), f)); }
     function winkelMix(a, b, f) { const d = ((b - a + 540) % 360) - 180; return a + d * f; }
@@ -4503,6 +4510,11 @@
         const u2 = einpassen(umfeld, 22, kursU, 1, W, H), g2 = einpassen(umfeld, 30, kursU - 8, 1.1, W, H);
         if (u2.dist > uebersicht.dist) uebersicht = u2;
         if (g2.dist > gross.dist) gross = g2;
+        /* "hoch": die Uebersicht blickt um diesen Anteil ihres Abstands
+           weiter nach Norden. Skye rueckt vom oberen Rand weg, darueber
+           bleibt Platz fuer den Nebel, der nur noch seine Nordspitzen
+           streift; unten war ohnehin viel Raum. */
+        if (N.hoch) uebersicht.y += (geo(0, 58)[1] > geo(0, 57)[1] ? 1 : -1) * N.hoch * uebersicht.dist;
       }
       // Die Karte loest sich um die Reise herum im Dunkel auf, nicht am
       // Rand des Datenausschnitts.
@@ -4568,13 +4580,28 @@
          kurzen Wegen entsprechend weniger. */
       if (CFG.ueberflug) {
         const g = Math.min(1, fl.u1 / CFG.ueberflug);
-        const spitze = Math.max(basis, logMix(NAH.dist, Math.max(NAH.dist, uebersicht.dist * 0.9), g));
+        const spitze = logMix(NAH.dist, Math.max(NAH.dist, uebersicht.dist * 0.9), g);
+        const lA = Math.log(A.dist), lB = Math.log(B.dist), lP = Math.max(Math.log(spitze), lA, lB);
+        let l2, c;
+        if (Math.max(lA, lB) < lP - 0.3) {
+          // Von nah zu nah: ein Bogen hinauf zum Ueberblick und wieder hinab.
+          l2 = Math.log(logMix(basis, Math.max(basis, spitze), Math.sin(Math.PI * e)));
+          c = 0.25 * Math.sin(Math.PI * e);
+        } else {
+          /* Liegt Start oder Ziel schon so hoch (Klick aus der Uebersicht),
+             hat die Hoehe genau einen Gipfel und geht sonst nur in eine
+             Richtung. Mit dem Bogen sank die Kamera dort erst, stieg wieder
+             zum Ueberblick und sank erneut: der Zoom pumpte hin und her. */
+          const em = (lP - lA) / Math.max(1e-6, (lP - lA) + (lP - lB));
+          l2 = e < em ? lA + (lP - lA) * stufe5(0, em, e) : lP + (lB - lP) * stufe5(em, 1, e);
+          c = 0.25 * Math.pow(Math.sin(Math.PI * e), 2);
+        }
         /* Weiches Maximum (in Logarithmen): ein hartes knickte die Steig-
            geschwindigkeit dort, wo die Bahn den Ueberblick ueberholt. An
            Start und Ziel ist es exakt, dort sind beide gleich. */
-        const l1 = Math.log(dist), l2 = Math.log(logMix(basis, spitze, Math.sin(Math.PI * e))), c = 0.25 * Math.sin(Math.PI * e);
+        const l1 = Math.log(dist);
         dist = Math.exp((l1 + l2 + Math.sqrt((l1 - l2) * (l1 - l2) + c * c)) / 2);
-        gipfel = Math.max(gipfel, spitze);
+        gipfel = Math.max(gipfel, Math.exp(lP));
       }
       /* Wie weit oben (0..1), im Verhaeltnis gemessen: erst eine Verdopplung
          des Abstands gilt als ganz oben. Bei kurzen Spruengen (in einer
@@ -4658,7 +4685,7 @@
     }
 
     /* ---- WebGL: die Landschaft ---- */
-    let gl = null, prog = null, papierTex = null, loc = {}, puf = {}, W = 1, H = 1, PR = 1, ctx2 = null;
+    let gl = null, prog = null, reliefTex = null, loc = {}, puf = {}, W = 1, H = 1, PR = 1, ctx2 = null;
     const GRUND = CFG.grund;
     let NORDY = 1;      // +1, wenn Norden in Weltkoordinaten nach +y zeigt (gesetzt mit den Daten)
     /* Wohin die Karte in der Ferne und am Rand ausblendet: mit Seenebel in
@@ -4738,16 +4765,12 @@
     const LAND_FS =
         '#ifdef GL_FRAGMENT_PRECISION_HIGH\nprecision highp float;\n#else\nprecision mediump float;\n#endif\n' +
         'uniform vec3 uF; uniform float uA; uniform vec3 uAuge; uniform vec3 uGrund; uniform vec2 uNebel; uniform vec2 uHalb; uniform vec2 uMitte; uniform vec2 uRand; varying vec3 vW;' +
-        'uniform sampler2D uPapierT; uniform float uPapier;' +
+        'uniform sampler2D uReliefT; uniform float uRelief;' +
         'void main(){' +
         '  vec3 c = uF;' +
-        /* Papier statt Kunststoff: feine Fasern und leichte Flecken in jeder
-           Stufe, auf der Karte festgemacht. Aus der Ferne mitteln sie sich
-           (Mipmaps) von selbst weg. */
-        '  if (uPapier > 0.0) {' +
-        '    float fa = texture2D(uPapierT, vW.xy * 0.35).r, fl = texture2D(uPapierT, vW.xy * 0.045 + 0.31).b;' +
-        '    c *= 1.0 + uPapier * ((fa - 0.5) * 0.6 + (fl - 0.5));' +
-        '  }' +
+        /* Die Hangform unter der Stufe: zum Licht (Nordwest) heller, davon
+           weg dunkler. Das Bild deckt genau die Daten der Karte (uRand). */
+        '  if (uRelief > 0.0) c *= 1.0 + uRelief * (texture2D(uReliefT, vec2(0.5 + 0.5 * vW.x / uRand.x, 0.5 - 0.5 * vW.y / uRand.y)).r - 0.502) * 2.0;' +
         '  float n = smoothstep(uNebel.x, uNebel.y, length(vW - uAuge));' +
         /* Die Karte hat keinen Rand: um die Reise herum loest sie sich im
            Grund auf, wie ein Bild, das aus dem Dunkel kommt. */
@@ -4765,7 +4788,7 @@
       prog = glProgramm(LAND_VS, LAND_FS);
       if (!gl.getProgramParameter(prog, gl.LINK_STATUS)) return false;
       gl.useProgram(prog);
-      ['uM', 'uZ', 'uQ', 'uVers', 'uF', 'uA', 'uAuge', 'uGrund', 'uNebel', 'uHalb', 'uMitte', 'uRand', 'uPapierT', 'uPapier'].forEach(function (n) {
+      ['uM', 'uZ', 'uQ', 'uVers', 'uF', 'uA', 'uAuge', 'uGrund', 'uNebel', 'uHalb', 'uMitte', 'uRand', 'uReliefT', 'uRelief'].forEach(function (n) {
         loc[n] = gl.getUniformLocation(prog, n);
       });
       loc.aP = gl.getAttribLocation(prog, 'aP');
@@ -4789,21 +4812,29 @@
       gl.uniform1f(loc.uQ, D.kopf.q);
       gl.uniform3fv(loc.uGrund, FERNE);
       gl.uniform2f(loc.uRand, D.kopf.groesse[0] / 2, D.kopf.groesse[1] / 2);
-      // Papierstruktur auf Einheit 3 (die anderen Einheiten nutzen Meer, Nebel, Bilder)
-      gl.uniform1i(loc.uPapierT, 3);
-      gl.uniform1f(loc.uPapier, CFG.papier || 0);
-      if (CFG.papier) {
-        papierTex = gl.createTexture();
-        gl.activeTexture(gl.TEXTURE3);
-        gl.bindTexture(gl.TEXTURE_2D, papierTex);
-        gl.pixelStorei(gl.UNPACK_ALIGNMENT, 4);
-        gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, 256, 256, 0, gl.RGBA, gl.UNSIGNED_BYTE, nebelRauschen(256, [1, 3, 6, 6]));
-        gl.generateMipmap(gl.TEXTURE_2D);
-        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR_MIPMAP_LINEAR);
-        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
-        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.REPEAT);
-        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.REPEAT);
-        gl.activeTexture(gl.TEXTURE0);
+      /* Reliefbild auf Einheit 3 (die anderen nutzen Meer, Nebel, Bilder).
+         Es kommt nach der Karte; bis dahin bleiben die Stufen glatt. */
+      gl.uniform1i(loc.uReliefT, 3);
+      gl.uniform1f(loc.uRelief, 0);
+      if (CFG.relief) {
+        const bild = new Image();
+        bild.onload = function () {
+          if (!gl) return;
+          reliefTex = gl.createTexture();
+          gl.activeTexture(gl.TEXTURE3);
+          gl.bindTexture(gl.TEXTURE_2D, reliefTex);
+          gl.pixelStorei(gl.UNPACK_ALIGNMENT, 1);
+          gl.texImage2D(gl.TEXTURE_2D, 0, gl.LUMINANCE, gl.LUMINANCE, gl.UNSIGNED_BYTE, bild);
+          gl.pixelStorei(gl.UNPACK_ALIGNMENT, 4);
+          gl.generateMipmap(gl.TEXTURE_2D);
+          gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR_MIPMAP_LINEAR);
+          gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+          gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+          gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+          gl.activeTexture(gl.TEXTURE0);
+        };
+        bild.onerror = function () { console.warn('Reliefbild fehlt: ' + CFG.relief.datei); };
+        bild.src = CFG.relief.datei;
       }
       gl.clearColor(FERNE[0], FERNE[1], FERNE[2], 1);
       gl.enable(gl.DEPTH_TEST);
@@ -4956,7 +4987,7 @@
       const vs = 'attribute vec2 aW; uniform mat4 uM; uniform float uQ; uniform float uZ; varying vec3 vW;' +
         'void main(){ vW = vec3(aW / uQ, uZ); gl_Position = uM * vec4(vW, 1.0); }';
       const fs = GENAU +
-        'uniform sampler2D uRausch; uniform vec4 uKlar; uniform float uRund; uniform vec2 uNord; uniform vec3 uSchnitt; uniform float uWeich; uniform float uT; uniform vec2 uVersatz; uniform float uDichte; uniform vec4 uBand;' +
+        'uniform sampler2D uRausch; uniform vec4 uKlar; uniform float uRund; uniform vec2 uNord; uniform vec3 uSchnitt; uniform float uWeich; uniform float uT; uniform vec2 uVersatz; uniform float uDichte; uniform vec4 uBand; uniform float uDunst;' +
         'uniform float uRandLage; uniform vec3 uFarbe; uniform vec3 uBoden; uniform vec2 uRand; uniform vec2 uDrift; uniform vec2 uWind; uniform vec3 uSchwelle; varying vec3 vW;' +
         'vec4 T(vec2 q){ return texture2D(uRausch, q); }' +
         // Stufen gegeneinander gedreht, damit sich kein Raster abzeichnet
@@ -4987,8 +5018,8 @@
            Gebiet liegt die Schwelle hoch (vereinzelte Schwaden), draussen
            niedrig, dort schliesst sich der Nebel zu einer Decke. */
         '  vec2 a = p - uDrift, d1 = vec2(-uWind.y, uWind.x);' +
-        // in Windrichtung etwas gezogen
-        '  vec2 s = vec2(dot(a, uWind) * 0.6, dot(a, d1));' +
+        // in Windrichtung nur wenig gezogen: staerker wurden Striche daraus
+        '  vec2 s = vec2(dot(a, uWind) * 0.82, dot(a, d1));' +
         '  vec4 v = T(s * 0.0024 + uVersatz * 0.31 + uT * vec2(0.0013, -0.0008));' +
         '  vec2 q = s * 0.012 + uVersatz + (v.rg - 0.5) * 0.5;' +
         // zweite, kleinere Verwirbelung: rollt die Schwaden ein
@@ -5019,21 +5050,33 @@
         '                 smoothstep(0.0, 1.0, clamp((p.y - uBand.z) * uBand.w, 0.0, 1.0)));' +
         '  float dicht = max(dd, 0.75 * bd);' +
         '  float th = mix(uSchwelle.x, uSchwelle.y, dicht) + uSchwelle.z;' +
-        // stufenweise: wo schon die groben Stufen weit unter der Schwelle liegen, sofort verwerfen
+        /* Dunst (nur die unterste Lage): ein dunkler Schleier, der dem Nebel
+           weit voraus ueber dem Wasser liegt und zu ihm hin dichter wird. So
+           geht das Meer in den Nebel ueber, statt dass eine helle Schicht
+           mit Kante darauf liegt. */
+        '  float hz = 0.0;' +
+        '  if (uDunst > 0.0) hz = uDunst * max(smoothstep(-90.0, uWeich, sd + (v.a - 0.5) * 70.0), 0.7 * bd) * (0.7 + 0.6 * v.g);' +
+        '  vec3 hc = uFarbe * 0.5;' +
+        // stufenweise: wo schon die groben Stufen weit unter der Schwelle liegen, sofort verwerfen (nur Dunst)
         '  float n = 0.4 * T(q * 0.45 + 0.13).b;' +
-        '  if (n + 0.55 < th - 0.05 && dd < 0.6) discard;' +
+        '  if (n + 0.55 < th - 0.08 && dd < 0.6) { if (hz < 0.004) discard; gl_FragColor = vec4(hc, hz); return; }' +
         '  n += 0.25 * T(R1 * q * 0.92 + 0.37).a + 0.155 * T(R2 * q * 1.87 + 0.61).g;' +
-        '  if (n + 0.22 < th - 0.05 && dd < 0.6) discard;' +
+        '  if (n + 0.22 < th - 0.08 && dd < 0.6) { if (hz < 0.004) discard; gl_FragColor = vec4(hc, hz); return; }' +
         '  float fe = fein(q);' +
         '  n += fe;' +
         // im klaren Gebiet laufen die einzelnen Schwaden weicher aus, keine scharfen Splitter
-        '  float f = smoothstep(th - 0.05, th + 0.13 + 0.12 * (1.0 - dicht), n);' +
+        '  float f = smoothstep(th - 0.08, th + 0.16 + 0.12 * (1.0 - dicht), n);' +
         // draussen die Decke, auch sie aus derselben Textur
         '  f = max(f, smoothstep(0.6, 1.0, dd) * smoothstep(0.22, 0.6, n));' +
-        '  if (f <= 0.0) discard;' +
-        // dichter heisst heller; die feinen Fasern zeichnen sich im Inneren ab
-        '  vec3 c = uFarbe * (0.84 + 0.26 * smoothstep(th, th + 0.25, n) + 0.8 * (fe - 0.0965));' +
-        '  gl_FragColor = vec4(c, f * mix(0.75, 1.0, smoothstep(th, th + 0.2, n)) * uDichte);' +
+        /* Duenner Nebel ist dunkel und laesst das Wasser durch, erst der
+           dichte Kern wird hell -- er waechst aus dem Dunst, statt als helle
+           Flaeche darauf zu liegen. Die feinen Fasern nur leise im Inneren. */
+        '  float kern = smoothstep(th - 0.02, th + 0.3, n);' +
+        '  vec3 c = uFarbe * (0.7 + 0.4 * kern + 0.4 * (fe - 0.0965));' +
+        '  float fa = f * mix(0.6, 1.0, kern) * uDichte;' +
+        '  float ga = fa + hz * (1.0 - fa);' +
+        '  if (ga < 0.004) discard;' +
+        '  gl_FragColor = vec4((c * fa + hc * hz * (1.0 - fa)) / ga, ga);' +
         '}';
       return [vs, fs];
     }
@@ -5043,7 +5086,7 @@
        alte Werterauschen in Quadraten zeigte. Vier unabhaengige Felder in
        den vier Farbkanaelen: Verwirbelung und drei Groessen. Auf gleiche
        Streuung gebracht, damit Schwellen ueberall gleich wirken. */
-    function nebelRauschen(N, radien) {
+    function nebelRauschen(N) {
       const out = new Uint8Array(N * N * 4);
       let r = 7;
       let saat = 7;
@@ -5061,7 +5104,6 @@
         }
       }
       for (let c = 0; c < 4; c++) {
-        if (radien) r = radien[c];
         for (let i = 0; i < N * N; i++) a[i] = zz();
         for (let d = 0; d < 3; d++) { kasten(a, b, 1, 0); kasten(b, a, 0, 1); }
         let m = 0, q = 0;
@@ -5080,7 +5122,7 @@
         const pr = glProgramm(q[0], q[1]);
         if (!gl.getProgramParameter(pr, gl.LINK_STATUS)) return;
         const n = { prog: pr, loc: {} };
-        ['uM', 'uQ', 'uZ', 'uRausch', 'uKlar', 'uRund', 'uNord', 'uSchnitt', 'uWeich', 'uT', 'uVersatz', 'uDichte', 'uBand', 'uRandLage', 'uFarbe', 'uBoden', 'uRand',
+        ['uM', 'uQ', 'uZ', 'uRausch', 'uKlar', 'uRund', 'uNord', 'uSchnitt', 'uWeich', 'uT', 'uVersatz', 'uDichte', 'uBand', 'uDunst', 'uRandLage', 'uFarbe', 'uBoden', 'uRand',
          'uDrift', 'uWind', 'uSchwelle'].forEach(function (x) {
           n.loc[x] = gl.getUniformLocation(pr, x);
         });
@@ -5188,8 +5230,10 @@
         gl.uniform3f(n.loc.uSchwelle, sw[0], sw[1], l[2] || 0);
         gl.uniform1f(n.loc.uT, zeitS);
         gl.uniform2f(n.loc.uVersatz, 0.013 * j, 0.007 * j);
+        gl.uniform1f(n.loc.uDunst, j ? 0 : N.dunst || 0);
         gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
       });
+      gl.uniform1f(n.loc.uDunst, 0);
       // Randlage ueber dem hoechsten Berg (Ben Nevis 1,35 km), ganz deckend
       const w = wind(zeitS);
       gl.uniform2f(n.loc.uDrift, w.drift[0], w.drift[1]);
@@ -5313,6 +5357,7 @@
           gl.uniform3f(loc.uF, mix(fb[0], mi[0], ru), mix(fb[1], mi[1], ru), mix(fb[2], mi[2], ru));
         } else gl.uniform3fv(loc.uF, fb);
         gl.uniform1f(loc.uA, 1);
+        gl.uniform1f(loc.uRelief, reliefTex && s.lev >= 0 ? CFG.relief.staerke : 0);
         // Jede Schicht zaehlt ihre Punkte ab dem eigenen ersten: 16 Bit reichen.
         gl.bindBuffer(gl.ARRAY_BUFFER, puf.v);
         gl.vertexAttribPointer(loc.aP, 2, gl.SHORT, false, 0, s.v[0] * 4);
@@ -5381,6 +5426,7 @@
          Die Kanten kommen danach -- die Tiefe verdeckt sie genau dort, wo
          vorher die naechste Stufe sie uebermalt hat. Das Bild bleibt gleich. */
       for (let j = n - 1; j >= i; j--) flaeche(S[j]);
+      gl.uniform1f(loc.uRelief, 0);
       if (CFG.schatten) schatten(S, i, k);
       for (let j = i; j < n; j++) kante(S[j]);
       gl.depthMask(true);
@@ -6414,12 +6460,12 @@
       /* Sofort los, ruhig ankommen. Der Versatz zur Tafel geht vom alten
          zum neuen ueber -- der neue erst spaet, seine Masse stehen erst fest,
          wenn die alte Tafel ausgeblendet ist. */
-      const vB = versatzPx({ vf: 1, vA: s.ort, vB: s.ort, vt: 0 }), w = stufe(0.45, 1, e);
+      const vB = versatzPx({ vf: 1, vA: s.ort, vB: s.ort, vt: 0 }), w = stufe5(0.45, 1, e);
       k.vPx = [mix(s.vA[0], vB[0], w), mix(s.vA[1], vB[1], w)];
       fliegen(k, a, nach, flugBauen([a.x, a.y], [nach.x, nach.y], a.dist * BREITE, nach.dist * BREITE), f, a.bearing, nach.bearing, e);
       // Gedreht wird erst beim Sinken ueber dem Ziel: dreht sich das Bild
       // unterwegs, aendert sich auf dem Schirm die Richtung des Flugs.
-      k.bearing = winkelMix(a.bearing, nach.bearing, stufe(0.6, 1, f));
+      k.bearing = winkelMix(a.bearing, nach.bearing, stufe5(0.55, 1, f));
       return k;
     }
     /* Verlauf des Direktflugs: Geschwindigkeit (1 - e^(-f/tau)) * (1 - f)^2,
@@ -6471,6 +6517,8 @@
       sprung = null;
       stand = s.ab;
       fahrt = fahrtBauen(s.ab, s.u);
+      // genau dort weiter, wo der Flug endet: kein Bild Stillstand, kein Sprung
+      fahrt.t0 = s.t0 + s.T * 1000;
       ziel = s.u;
     }
 
@@ -6635,12 +6683,17 @@
        fuer die Videos der Tafel. Nur die Bahnkarte bleibt bei rund 30 Bildern,
        ihre Dampfwolken ziehen schneller. */
     let gezeichnet = 0, standGezeichnet = -1;
-    function schleife() {
-      /* Eine Uhr fuer alles: Fahrt und Direktflug beginnen mit
-         performance.now() beim Ereignis. Der Zeitstempel des Bildes liegt
-         davor -- damit lief eine Fahrt im ersten Bild ein Stueck rueckwaerts,
-         und beim Uebergang vom Flug zur Fahrt stand die Kamera ein Bild lang. */
-      const jetzt = performance.now();
+    function schleife(bild) {
+      /* Die Uhr ist der Zeitstempel des Bildes, also der Takt, in dem es
+         erscheint. performance.now() beim Zeichnen schwankt um einige
+         Millisekunden, je nachdem, was der Hauptthread davor zu tun hatte
+         (Bilder der Tafel laden) -- die Kamera landete dann ungleichmaessig
+         weit, das Bild ruckelte leicht. Fahrt und Flug beginnen mit
+         performance.now() beim Ereignis, der Zeitstempel des naechsten
+         Bildes kann davor liegen: dann zaehlt ihr Anfang, sonst liefe die
+         Kamera im ersten Bild ein Stueck rueckwaerts. */
+      let jetzt = bild > 0 ? bild : performance.now();
+      jetzt = Math.max(jetzt, zuletzt, sprung ? sprung.t0 : 0, fahrt ? fahrt.t0 : 0);
       if (!bereit || !sichtbar || !viewer.classList.contains('is-active') || document.hidden) {
         laeuft = false; return;
       }
