@@ -2345,7 +2345,7 @@
   const EXIT_MS  = 700;  // Blende faehrt beim Schliessen wieder zu
 
   let current = null;
-  let busy = false;
+  let busy = false, spaeter = null;
   let oeffner = null;   // was den Fokus hatte, als die Projektansicht aufging
   let ruheZeit = null, heroPausiert = false;
 
@@ -2790,7 +2790,10 @@
   }
 
   function openProject(trigger) {
-    if (busy) return;
+    /* Nach dem Schliessen ist die Startseite schon zu sehen, waehrend die
+       Blende noch aufgeht -- ein Klick in dieser Zeit wird gemerkt und
+       danach ausgefuehrt, statt still verloren zu gehen. */
+    if (busy) { if (!current) spaeter = trigger; return; }
     const viewer = document.getElementById(trigger.dataset.viewer);
     if (!viewer) return;
     /* "direkt" kommt von der Projektschau: von dort aus startet der Film
@@ -3014,7 +3017,10 @@
       // ... und dann ganz raus, zurueck zum normalen Seitenformat
       body.classList.remove('lb-shut');
       current = null;
-      setTimeout(function () { busy = false; }, FRAME_MS);
+      setTimeout(function () {
+        busy = false;
+        if (spaeter) { const t = spaeter; spaeter = null; openProject(t); }
+      }, FRAME_MS);
     }, EXIT_MS);
   }
 
@@ -4189,6 +4195,9 @@
       tinte: '214, 230, 232', tinteGl: [0.82, 0.92, 0.94],
       route: { hell: '255, 216, 156', schein: '255, 168, 80', leise: '240, 204, 150', sand: '250, 216, 166',
                ort: '255, 196, 120', ring: '255, 226, 186', punkt: '255, 238, 210' },
+      // Sandkoerner am Ende: die Karte ist gut 2,5-mal so gross wie Schottland,
+      // mit dessen Abstand (0,5 km) lag die Spur als dichter Schlauch da.
+      sandSchritt: 1.3,
       wellen: [0.22, 0.9, 0.8, 2.5]
     },
     /* The South: warmer Stein -- Umbra in den Taelern, Terrakotta an den
@@ -4447,6 +4456,7 @@
        sie erst beim Einblenden der Tafel zur Seite, und beim Abflug wieder
        zurueck: ein Schwenk in eine andere Richtung als die Fahrt. */
     let masse = {};
+    let sperren = null;          // Knoepfe ueber der Karte (siehe linien)
     function mass(i) {
       if (i < 0 || !(CFG.medien && CFG.medien[i] && CFG.medien[i].length)) return { links: 0, unten: 0, frei: 0 };
       return masse[i] || vermessen(i) || { links: tafelLinks, unten: tafelUnten, frei: freiUnten };
@@ -4523,7 +4533,10 @@
          Reise laeuft von links nach rechts durchs Bild. */
       const quer = einpassen(alle, 22, -90, 1, W, H).dist < 0.6 * einpassen(alle, 22, 0, 1, W, H).dist;
       const kursU = quer ? -90 : 0;
-      uebersicht = einpassen(alle, 22, kursU, 1.12 + 0.25 * breit, W, H);
+      /* Hochkant liegen oben "Karte ueberspringen", unten Pfeile und Datum
+         ueber der Karte: dort mehr Abstand, sonst stiessen beide Enden der
+         Reise an die Knoepfe und ihre Namen fielen weg. */
+      uebersicht = einpassen(alle, 22, kursU, 1.12 + 0.25 * breit, W, H, 1, W < H ? 0.8 : 1);
       gross = einpassen(alle, 30, kursU - 8, 1.3 + 0.25 * breit, W, H);
       /* Mit Seenebel: Auf schmaleren Schirmen (iPad) fuellte die Route allein
          das Bild, der Nebel laege ganz ausserhalb. Uebersicht und Schlussbild
@@ -5312,7 +5325,7 @@
       schildSchluessel = '';
       if (gl) gl.viewport(0, 0, glc.width, glc.height);
       halt.style.setProperty('--zb', zeit.offsetWidth + 'px');
-      tafelLinks = 0; masse = {};
+      tafelLinks = 0; masse = {}; sperren = null;
       if (W > H * 1.1) for (let el = tafel; el && el !== halt; el = el.offsetParent) tafelLinks += el.offsetLeft;
     }
 
@@ -6362,9 +6375,20 @@
       ctx2.font = '11px "Libre Caslon Display", Georgia, serif';
       ctx2.textBaseline = 'middle';
       if ('letterSpacing' in ctx2) ctx2.letterSpacing = '2px';
-      // Rechts vom Punkt; stoesst der Name an einen anderen oder an den
-      // Bildrand, weicht er nach links, oben oder unten aus.
-      const belegt = [];
+      // Rechts vom Punkt; stoesst der Name an einen anderen, an den Punkt
+      // eines anderen Orts oder an den Bildrand, weicht er nach links, oben
+      // oder unten aus (mit etwas Luft, sonst liefen zwei Namen ineinander).
+      const belegt = [], punkte = orte.map(function (o) { return projizieren(M, o); });
+      /* Knoepfe, Kompass und Datum liegen ueber der Karte: auch dort keine
+         Namen (am Handy stand "Sylt" sonst unter "Karte ueberspringen").
+         Einmal je Groesse gemessen. */
+      if (!sperren) {
+        const r0 = halt.getBoundingClientRect();
+        sperren = Array.from(halt.querySelectorAll('.karte-weiter, .karte-schritt, .karte-kompass, .karte-zeit')).map(function (el) {
+          const r = el.getBoundingClientRect();
+          return [r.left - r0.left - 4, r.top - r0.top - 4, r.right - r0.left + 4, r.bottom - r0.top + 4];
+        }).filter(function (q) { return q[2] - q[0] > 8 && q[3] - q[1] > 8; });
+      }
       let beschriftet = route2d || sand2d;
       schilder = [];
       /* Unter dem Mauszeiger: ein feiner Ring um die Station, ihr Name
@@ -6396,7 +6420,11 @@
         for (let j = 0; j < lagen.length; j++) {
           const x = lagen[j][0], y = lagen[j][1];
           const frei = x > 6 && x + b < W - 6 && belegt.every(function (q) {
-            return x + b < q[0] || x > q[0] + q[2] || y + h / 2 < q[1] - h / 2 || y - h / 2 > q[1] + h / 2;
+            return x + b + 8 < q[0] || x > q[0] + q[2] + 8 || y + h / 2 + 1 < q[1] - h / 2 || y - h / 2 - 1 > q[1] + h / 2;
+          }) && punkte.every(function (p, n) {
+            return n === i || !p || p[0] < x - 5 || p[0] > x + b + 5 || Math.abs(p[1] - y) > h / 2 + 4;
+          }) && sperren.every(function (q) {
+            return x + b < q[0] || x > q[2] || y + h / 2 < q[1] || y - h / 2 > q[3];
           });
           if (frei) { wahl = lagen[j]; break; }
         }
