@@ -5490,13 +5490,18 @@
       });
       g.aG = gl.getAttribLocation(pr, 'aG');
       const an = gl.getExtension('EXT_texture_filter_anisotropic');
-      // grau: nur ein Kanal (das Schattenbild) -- ein Drittel des Speichers
+      /* grau: nur ein Kanal (Schattenbild, Kueste), gelesen wird Rot. Mit
+         WebGL 2 als R8: LUMINANCE legt der Treiber unter Windows (D3D11)
+         als RGBA an, das 8192er Schattenbild belegte so rund 340 MB statt
+         85 MB -- und Chrome hatte keinen Platz mehr fuer die Bilder der
+         Tafel (sie blieben schwarz). */
       function textur(quelle, breite, grau) {
-        const t = gl.createTexture(), f = grau ? gl.LUMINANCE : gl.RGB;
+        const t = gl.createTexture(), f = grau ? (zwei ? gl.RED : gl.LUMINANCE) : gl.RGB;
+        const fi = grau && zwei ? gl.R8 : f;
         gl.bindTexture(gl.TEXTURE_2D, t);
         gl.pixelStorei(gl.UNPACK_ALIGNMENT, 1);
-        if (breite) gl.texImage2D(gl.TEXTURE_2D, 0, f, breite, 1, 0, f, gl.UNSIGNED_BYTE, quelle);
-        else gl.texImage2D(gl.TEXTURE_2D, 0, f, f, gl.UNSIGNED_BYTE, quelle);
+        if (breite) gl.texImage2D(gl.TEXTURE_2D, 0, fi, breite, 1, 0, f, gl.UNSIGNED_BYTE, quelle);
+        else gl.texImage2D(gl.TEXTURE_2D, 0, fi, f, gl.UNSIGNED_BYTE, quelle);
         gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
         gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
         gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
@@ -5560,6 +5565,12 @@
       g.teile.push(netz(GEL.aussen, [ri[0] + zx, ri[1] - zy, ri[2] - zx, ri[3] + zy]));
       gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, puf.t);
       gel = g;
+      /* Die Bilder liegen jetzt als Texturen auf der Grafikkarte. Hielte die
+         Seite sie weiter fest, behielte Chrome sie zusaetzlich entpackt im
+         Speicher (das 8192er allein 256 MB) -- dann fehlte der Platz fuer
+         die Bilder der Tafel, sie blieben schwarze Felder. Nach einem
+         Kontextverlust laedt webglcontextrestored sie neu. */
+      [GEL.innen, GEL.aussen].forEach(function (b) { b.form = b.rel = b.kueste = null; });
     }
     function gelaendeZeichnen(k, cam) {
       const g = gel, L = g.loc, G = CFG.gelaende, ri = GEL.innen.rand;
@@ -6478,8 +6489,13 @@
             tonKnopfSetzen(f);
           }
         } else {
+          /* Nicht decoding = 'async': Chrome zeichnete die Tafel dann
+             teilweise, bevor ein Bild entpackt war, und holte es nicht nach
+             -- die Filmbilder bei Auchindrain blieben schwarze Felder, bis
+             sich irgendetwas an der Tafel aenderte. Die Bilder sind
+             vorgeladen und klein, das Entpacken dauert Millisekunden. */
           const el = document.createElement('img');
-          el.decoding = 'async'; el.alt = '';
+          el.alt = '';
           if (m.srcset) { el.srcset = m.srcset; el.sizes = TAFEL_SIZES; }
           el.src = m.bild;
           b.appendChild(el);
@@ -7398,7 +7414,12 @@
     glc.addEventListener('webglcontextrestored', function () {
       if (!D) return;
       loc = {}; puf = {}; ueberNeu = true;
-      if (glStarten()) { bereit = true; groesse(); zeichne(stand); anlaufen(); }
+      function weiter() { if (glStarten()) { bereit = true; groesse(); zeichne(stand); anlaufen(); } }
+      // Die Bilder des Gelaendes sind nach dem Hochladen freigegeben: neu laden.
+      if (GEL && !GEL.innen.rel) {
+        gelaendeLaden().then(function (g) { GEL.innen = g.innen; GEL.aussen = g.aussen; },
+                             function () { GEL = null; }).then(weiter);
+      } else weiter();
     }, false);
 
     /* Geschlossen haelt die Karte sonst ihre Zeichenpuffer (mit
