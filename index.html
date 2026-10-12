@@ -4115,8 +4115,6 @@
                unten: [56.02, 55.72], oben: [57.58, 57.86], hoch: 0.07, schwelle: [0.7, 0.51], wind: 0.6,
                lagen: [[40, 0.92, -0.02], [170, 0.8, 0.01], [420, 0.65, 0.04]], dunst: 0.55 },
       meerFlach: true,
-      /* Papierschatten der Stufen: Laenge (Anteil des Kameraabstands),
-         Deckkraft, Farbe. Nur noch, wenn das Gelaende (unten) nicht laedt. */
       /* Gelaende: keine gestapelten Hoehenplatten mehr, sondern eine
          durchgehende Landschaft -- ein Netz, dessen Hoehe an jedem Punkt aus
          dem Hoehenmodell kommt, darauf eine Schattierung aus feinen Hoehen-
@@ -4124,7 +4122,8 @@
          dunkler). Gebaut von werkzeug/gelaende_bau.py: je Bereich ein
          Formbild (Hoehe, Abstand zur Kueste) und ein Schattenbild. "rand":
          Weltkoordinaten (km) links, oben, rechts, unten; "netz": Felder je
-         Seite. "licht": Tiefe der Schatten, Staerke des Lichts, Glanz der Grate. */
+         Seite. "licht": Tiefe der Schatten, Staerke des Lichts, Glanz der Grate,
+         Kontrast der Schatten aus der Naehe. */
       gelaende: { basis: 'daten/schottland', hmax: 1350, sdfKm: 1.5, licht: [0.4, 0.25, 0.05, 1.4],
                   innen: { rand: [-151.637, 82.38, 63.738, -128.204], netz: 1024 },
                   aussen: { rand: [-221.457, 197.711, 221.457, -197.878], netz: 384 } },
@@ -4991,7 +4990,16 @@
       const fs = GENAU +
         'uniform sampler2D uRausch; uniform vec4 uKlar; uniform float uRund; uniform vec2 uNord; uniform vec3 uSchnitt; uniform float uWeich; uniform float uT; uniform vec2 uVersatz; uniform float uDichte; uniform vec4 uBand; uniform float uDunst;' +
         'uniform float uRandLage; uniform vec3 uFarbe; uniform vec3 uBoden; uniform vec2 uRand; uniform vec2 uDrift; uniform vec2 uWind; uniform vec3 uSchwelle; varying vec3 vW;' +
+        'uniform sampler2D uFormI; uniform sampler2D uFormA; uniform vec4 uBoxI; uniform vec4 uBoxA; uniform float uHz; uniform float uGel;' +
         'vec4 T(vec2 q){ return texture2D(uRausch, q); }' +
+        /* Hoehe des Gelaendes unter dem Punkt (wie im Gelaende-Netz). Die
+           Nebellagen sind flache Ebenen: wo ein Huegel durch sie stiess,
+           schnitt er sie hart ab wie Pappe. Jetzt laeuft der Nebel aus,
+           bevor das Gelaende ihn erreicht -- er liegt in den Taelern. */
+        'float bodenH(vec2 p){ vec2 ui = (p - uBoxI.xy) / (uBoxI.zw - uBoxI.xy), ua = clamp((p - uBoxA.xy) / (uBoxA.zw - uBoxA.xy), 0.0, 1.0);' +
+        '  float hi = texture2D(uFormI, clamp(ui, 0.0, 1.0)).r, ha = texture2D(uFormA, ua).r;' +
+        '  float drin = step(0.0, ui.x) * step(ui.x, 1.0) * step(0.0, ui.y) * step(ui.y, 1.0);' +
+        '  return mix(ha, hi, drin) * uHz; }' +
         // Stufen gegeneinander gedreht, damit sich kein Raster abzeichnet
         'const mat2 R1 = mat2(0.8, -0.6, 0.6, 0.8); const mat2 R2 = mat2(-0.28, 0.96, -0.96, -0.28);' +
         'float grob(vec2 q){ return 0.4 * T(q * 0.45 + 0.13).b + 0.25 * T(R1 * q * 0.92 + 0.37).a + 0.155 * T(R2 * q * 1.87 + 0.61).g; }' +
@@ -5009,6 +5017,8 @@
         '  vec2 p = vW.xy;' +
         // Boden unter dem tiefsten Meer, in dessen Farbe
         '  if (uRandLage > 1.5) { gl_FragColor = vec4(uBoden, 1.0); return; }' +
+        '  float fz = uGel > 0.5 && uRandLage < 0.5 ? smoothstep(-0.02, 0.2, vW.z - bodenH(p)) : 1.0;' +
+        '  if (fz < 0.004) discard;' +
         /* Seenebel, keine Wolken: eine flache Schicht ohne Licht und
            Schatten. Das Feld ist ein Rauschen in sechs Stufen, von grossen
            Schwaden bis zu Fasern von wenigen Bildpunkten -- erst die feinen
@@ -5061,6 +5071,7 @@
         '  vec3 hc = uFarbe * 0.5;' +
         // stufenweise: wo schon die groben Stufen weit unter der Schwelle liegen, sofort verwerfen (nur Dunst)
         '  float n = 0.4 * T(q * 0.45 + 0.13).b;' +
+        '  hz *= fz;' +
         '  if (n + 0.55 < th - 0.08 && dd < 0.6) { if (hz < 0.004) discard; gl_FragColor = vec4(hc, hz); return; }' +
         '  n += 0.25 * T(R1 * q * 0.92 + 0.37).a + 0.155 * T(R2 * q * 1.87 + 0.61).g;' +
         '  if (n + 0.22 < th - 0.08 && dd < 0.6) { if (hz < 0.004) discard; gl_FragColor = vec4(hc, hz); return; }' +
@@ -5075,7 +5086,7 @@
            Flaeche darauf zu liegen. Die feinen Fasern nur leise im Inneren. */
         '  float kern = smoothstep(th - 0.02, th + 0.3, n);' +
         '  vec3 c = uFarbe * (0.7 + 0.4 * kern + 0.4 * (fe - 0.0965));' +
-        '  float fa = f * mix(0.6, 1.0, kern) * uDichte;' +
+        '  float fa = f * mix(0.6, 1.0, kern) * uDichte * fz;' +
         '  float ga = fa + hz * (1.0 - fa);' +
         '  if (ga < 0.004) discard;' +
         '  gl_FragColor = vec4((c * fa + hc * hz * (1.0 - fa)) / ga, ga);' +
@@ -5125,7 +5136,7 @@
         if (!gl.getProgramParameter(pr, gl.LINK_STATUS)) return;
         const n = { prog: pr, loc: {} };
         ['uM', 'uQ', 'uZ', 'uRausch', 'uKlar', 'uRund', 'uNord', 'uSchnitt', 'uWeich', 'uT', 'uVersatz', 'uDichte', 'uBand', 'uDunst', 'uRandLage', 'uFarbe', 'uBoden', 'uRand',
-         'uDrift', 'uWind', 'uSchwelle'].forEach(function (x) {
+         'uDrift', 'uWind', 'uSchwelle', 'uFormI', 'uFormA', 'uBoxI', 'uBoxA', 'uHz', 'uGel'].forEach(function (x) {
           n.loc[x] = gl.getUniformLocation(pr, x);
         });
         n.aW = gl.getAttribLocation(pr, 'aW');
@@ -5210,8 +5221,23 @@
       const w = b0 + A * Math.sin(t / T1);
       return { drift: [c * g - s * h, (s * g + c * h) * NORDY], dir: [Math.cos(w), Math.sin(w) * NORDY] };
     }
+    /* Die Uhr des Nebels laeuft aus der Naehe langsamer: in Kilometern
+       gleich schnell, zog er an den Stationen zehnmal so schnell ueber den
+       Schirm wie in der Uebersicht (rund 30 statt 3 Bildpunkte je Sekunde)
+       und wirkte gehetzt. Sie wird Bild fuer Bild aufaddiert, so springt
+       der Nebel beim Zoomen nicht. */
+    let nebelUhr = 0, nebelZuletzt = -1;
+    function nebelZeit(zeitS, k) {
+      const dt = nebelZuletzt < 0 ? 0 : zeitS - nebelZuletzt;
+      nebelZuletzt = zeitS;
+      const f = uebersicht ? Math.max(0.15, Math.min(1, Math.pow(k.dist / uebersicht.dist, 0.8))) : 1;
+      if (dt > 0 && dt < 0.5) nebelUhr += dt * f;
+      else if (dt >= 0.5) nebelUhr += 0.5 * f;                // Pause: kein Sprung
+      return nebelUhr;
+    }
     function nebelZeichnen(cam, zeitS, k) {
       if (!nebel) return;
+      zeitS = nebelZeit(zeitS, k);
       const n = nebel, N = CFG.nebel;
       gl.useProgram(n.prog);
       gl.uniformMatrix4fv(n.loc.uM, false, new Float32Array(cam.M));
@@ -5221,6 +5247,16 @@
       gl.bindBuffer(gl.ARRAY_BUFFER, n.puf);
       gl.vertexAttribPointer(n.aW, 2, gl.SHORT, false, 0, 0);
       gl.enable(gl.BLEND); gl.depthMask(false);
+      if (gel) {
+        const ti = gel.teile[0], ta = gel.teile[1], ri = ti.b.rand, ra = ta.b.rand;
+        gl.activeTexture(gl.TEXTURE4); gl.bindTexture(gl.TEXTURE_2D, ti.form);
+        gl.activeTexture(gl.TEXTURE5); gl.bindTexture(gl.TEXTURE_2D, ta.form);
+        gl.activeTexture(gl.TEXTURE0);
+        gl.uniform1i(n.loc.uFormI, 4); gl.uniform1i(n.loc.uFormA, 5);
+        gl.uniform4f(n.loc.uBoxI, ri[0], ri[1], ri[2], ri[3]); gl.uniform4f(n.loc.uBoxA, ra[0], ra[1], ra[2], ra[3]);
+        gl.uniform1f(n.loc.uHz, CFG.gelaende.hmax / 1000 * UEBERHOEHUNG);
+      }
+      gl.uniform1f(n.loc.uGel, gel ? 1 : 0);
       const sw = N.schwelle || [0.68, 0.5];
       N.lagen.forEach(function (l, j) {
         // die Lagen ziehen unterschiedlich schnell (Windscherung), auf demselben Feld
