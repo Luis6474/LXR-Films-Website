@@ -1824,7 +1824,7 @@
       </div>
       <!-- Reisekarte The Mountains. ENTWURF: Orte und Reihenfolge vorlaeufig
            (werkzeug/karten/mountains.json). -->
-      <section class="karte" data-karte="mountains" aria-label="Karte der Reise: Königssee, Hallstatt, Bozen">
+      <section class="karte" data-karte="mountains" aria-label="Karte der Reise: Königssee, Dolomiten, Sylt">
         <div class="karte-lauf">
           <div class="karte-halt">
             <canvas class="karte-gl" aria-hidden="true"></canvas>
@@ -4037,8 +4037,8 @@
 
      Orte und Reihenfolge folgen den Aufnahmeorten und -zeiten der Fotos
      (GPS und Zeitstempel in den Dateien). Orte ohne Foto (bei
-     Lochcarron, Hallstatt) stammen aus der ersten Ortsliste; ihre Tage
-     bzw. ihre Lage in der Reihenfolge sind geschaetzt. */
+     Lochcarron) stammen aus der ersten Ortsliste; ihr Tag ist
+     geschaetzt. */
   // Ein Bild der Karte: 800 und 1600 px breit, als WebP.
   function kbild(basis, verhaeltnis) {
     return { bild: basis + '-800.webp', srcset: basis + '-800.webp 800w, ' + basis + '-1600.webp 1600w',
@@ -4151,28 +4151,27 @@
       datei: 'daten/mountains-karte.bin.gz',
       zeitraum: '5.–30. August 2025',
       // Reihenfolge nach den Aufnahmezeiten (5.-15. August, Sylt am 29./30.).
-      // Hallstatt hat kein Foto: hier nach der Geografie eingeordnet.
-      namen: ['Königssee', 'Reit im Winkl', 'Hintersee', 'Ramsau', 'Hallstatt', 'St. Johann in Ranui', 'Pragser Wildsee',
+      namen: ['Königssee', 'Reit im Winkl', 'Hintersee', 'Ramsau', 'St. Johann in Ranui', 'Pragser Wildsee',
               'Alta Badia', 'Seiser Alm', 'Karersee', 'Seceda', 'Wengen', 'Sylt'],
       medien: {
         0: [kbild(KMO + 'img-4485'), kbild(KMO + 'img-4495'), kbild(KMO + 'img-4496')],
         1: [kbild(KMO + 'img-4521')],
         2: [kbild(KMO + 'img-4533')],
         3: [kbild(KMO + 'img-4546')],
-        5: [kbild(KMO + 'img-4559'), kbild(KMO + 'img-4561')],
-        6: [kbild(KMO + 'img-4576'), kbild(KMO + 'img-4588')],
-        7: [kbild(KMO + 'img-4602'), kbild(KMO + 'img-4605')],
-        8: [kbild(KMO + 'img-4616')],
-        9: [kbild(KMO + 'img-4631', '16 / 9'), kbild(KMO + 'img-4632')],
-        10: [kbild(KMO + 'img-4670'), kbild(KMO + 'img-4672'), kbild(KMO + 'img-4676')],
+        4: [kbild(KMO + 'img-4559'), kbild(KMO + 'img-4561')],
+        5: [kbild(KMO + 'img-4576'), kbild(KMO + 'img-4588')],
+        6: [kbild(KMO + 'img-4602'), kbild(KMO + 'img-4605')],
+        7: [kbild(KMO + 'img-4616')],
+        8: [kbild(KMO + 'img-4631', '16 / 9'), kbild(KMO + 'img-4632')],
+        9: [kbild(KMO + 'img-4670'), kbild(KMO + 'img-4672'), kbild(KMO + 'img-4676')],
         // Die Musikkapelle: Ton erst auf Knopfdruck, dann fuer genau einen Durchlauf.
-        11: [kbild(KMO + 'img-4688'), kbild(KMO + 'img-4690'),
+        10: [kbild(KMO + 'img-4688'), kbild(KMO + 'img-4690'),
              { video: 'video/web/karte-mountains/musikkapelle.mp4', poster: 'video/web/karte-mountains/musikkapelle-poster.jpg',
                verhaeltnis: '16 / 9', ton: 'einmal' }],
-        12: [kbild(KMO + 'img-4737'), kbild(KMO + 'img-4750')]
+        11: [kbild(KMO + 'img-4737'), kbild(KMO + 'img-4750')]
       },
       /* Gelaende wie bei Schottland, aber drei Bereiche: die Alpen von den
-         Dolomiten bis Hallstatt (fein, mit allen Bergseen), Sylt, und die
+         Dolomiten bis Berchtesgaden (fein, mit allen Bergseen), Sylt, und die
          ganze Karte grob. Seen malt der Gelaende-Shader selbst. Gebaut von
          werkzeug/gelaende_bau.py aus werkzeug/karten/mountains.json. */
       /* "sand": Farbe, Staerke, Hoehe (m), ab der er ausklingt, und wo er weg ist --

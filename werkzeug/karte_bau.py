@@ -440,7 +440,15 @@ elif not os.environ.get("WEGE_AUS"):
         # faehrt bis zu dessen Anfang und ab dessen Ende weiter; dazwischen
         # liegen die Gleise aus OpenStreetMap.
         sch = b.get("schiene")
-        if sch:
+        # "seilbahn": der Weg von der Talstation hinauf zum Ort (etwa Seceda).
+        # Hin faehrt der Router bis zur Talstation, zurueck ab dort.
+        if b.get("seilbahn") or a.get("seilbahn"):
+            hin, ab = b.get("seilbahn"), a.get("seilbahn")
+            pk = [ab[0] if ab else a["lngLat"]] + b.get("ueber", []) + [hin[0] if hin else b["lngLat"]]
+            co, km, modi = osrm(pk)
+            co = (ab[::-1] if ab else []) + co + (hin if hin else [])
+            modi = modi | {"seilbahn"}
+        elif sch:
             co1, km1, m1 = osrm([a["lngLat"]] + b.get("ueber", []) + [sch[0]])
             co2, km2, m2 = osrm([sch[-1], b["lngLat"]])
             co, km, modi = co1 + sch + co2, km1 + km2, m1 | m2 | {"schiene"}
