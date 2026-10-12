@@ -6378,7 +6378,8 @@
       if ('letterSpacing' in ctx2) ctx2.letterSpacing = '2px';
       // Rechts vom Punkt; stoesst der Name an einen anderen, an den Punkt
       // eines anderen Orts oder an den Bildrand, weicht er nach links, oben
-      // oder unten aus (mit etwas Luft, sonst liefen zwei Namen ineinander).
+      // oder unten aus (mit etwas Luft, sonst liefen zwei Namen ineinander
+      // oder stuenden so dicht uebereinander, dass sie wie ein Block wirken).
       const belegt = [], punkte = orte.map(function (o) { return projizieren(M, o); });
       /* Knoepfe, Kompass und Datum liegen ueber der Karte: auch dort keine
          Namen (am Handy stand "Sylt" sonst unter "Karte ueberspringen").
@@ -6421,7 +6422,7 @@
         for (let j = 0; j < lagen.length; j++) {
           const x = lagen[j][0], y = lagen[j][1];
           const frei = x > 6 && x + b < W - 6 && belegt.every(function (q) {
-            return x + b + 8 < q[0] || x > q[0] + q[2] + 8 || y + h / 2 + 1 < q[1] - h / 2 || y - h / 2 - 1 > q[1] + h / 2;
+            return x + b + 8 < q[0] || x > q[0] + q[2] + 8 || y + h / 2 + 4 < q[1] - h / 2 || y - h / 2 - 4 > q[1] + h / 2;
           }) && punkte.every(function (p, n) {
             return n === i || !p || p[0] < x - 5 || p[0] > x + b + 5 || Math.abs(p[1] - y) > h / 2 + 4;
           }) && sperren.every(function (q) {
@@ -6686,6 +6687,19 @@
                          * (B - L * z.length) / (summe + f.format) < 80;
           if (z && !schmal && (grenze ? summe + f.format <= grenze : z.length < 2)) z.push(f); else zeilen.push([f]);
         });
+        /* Ausgleichen: vier kleine Bilder ueber einem einzelnen grossen sahen
+           am iPad quer schief aus. Hat die vorletzte Reihe zwei Bilder mehr
+           als die letzte, rueckt ihr letztes nach unten, wenn es dort passt. */
+        for (let zi = zeilen.length - 1; zi > 0; zi--) {
+          const a = zeilen[zi - 1], z = zeilen[zi];
+          while (a.length >= z.length + 2) {
+            const f = a[a.length - 1], neu = [f].concat(z);
+            const summe = neu.reduce(function (s, g) { return s + g.format; }, 0);
+            const kleinst = Math.min.apply(null, neu.map(function (g) { return g.format; }));
+            if (grenze && summe > grenze || kleinst * (B - L * (neu.length - 1)) / summe < 80) break;
+            a.pop(); z.unshift(f);
+          }
+        }
         let hs = zeilen.map(function (z) {
           const summe = z.reduce(function (s, f) { return s + f.format; }, 0);
           const h = (B - L * (z.length - 1)) / summe;
