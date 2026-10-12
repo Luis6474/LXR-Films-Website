@@ -207,5 +207,70 @@
   9.4,
   54.2,
   55.3
- ]
+ ],
+ "gelaende": {
+  "hmax": 4600,
+  "ueberhoehung": 1.35,
+  "relief": 1.0,
+  "weich": 0.0,
+  "bereiche": [
+   {
+    "name": "alpen",
+    "zoom": 12,
+    "box": [
+     11.3,
+     46.25,
+     13.9,
+     47.85
+    ],
+    "form": 2048,
+    "relief": [
+     4096,
+     8192
+    ],
+    "kueste": 4096
+   },
+   {
+    "name": "sylt",
+    "zoom": 12,
+    "box": [
+     8.2,
+     54.68,
+     8.9,
+     55.08
+    ],
+    "form": 1024,
+    "relief": [
+     1024,
+     2048
+    ],
+    "kueste": 2048,
+    "inseln": true
+   }
+  ],
+  "aussen": {
+   "zoom": 8,
+   "form": 1024,
+   "relief": [
+    2048,
+    4096
+   ],
+   "kueste": 2048,
+   "seenBox": [
+    7.6,
+    45.95,
+    14.4,
+    48.3
+   ]
+  },
+  "kueste": [
+   8.2,
+   8.9,
+   54.68,
+   55.08
+  ],
+  "seen": true,
+  "seeMinKm2": 0.02,
+  "seeAussenKm2": 2.0
+ }
 }

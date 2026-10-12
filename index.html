@@ -4171,6 +4171,17 @@
                verhaeltnis: '16 / 9', ton: 'einmal' }],
         12: [kbild(KMO + 'img-4737'), kbild(KMO + 'img-4750')]
       },
+      /* Gelaende wie bei Schottland, aber drei Bereiche: die Alpen von den
+         Dolomiten bis Hallstatt (fein, mit allen Bergseen), Sylt, und die
+         ganze Karte grob. Seen malt der Gelaende-Shader selbst. Gebaut von
+         werkzeug/gelaende_bau.py aus werkzeug/karten/mountains.json. */
+      /* "sand": Farbe, Staerke, Hoehe (m), ab der er ausklingt, und wo er weg ist --
+         nur in Bereichen mit "sand" (Sylt; im Tiefland der Uebersicht wurde er fleckig). */
+      gelaende: { basis: 'daten/mountains', hmax: 4600, sdfKm: 1.5, licht: [0.4, 0.25, 0.05, 1.4], abstand: false,
+                  sand: [0.36, 0.37, 0.32, 0.9, 25, 70],
+                  bereiche: [{ name: 'alpen', rand: [21.263, -326.442, 204.875, -492.282], netz: 1024, gross: true, kueste: true },
+                             { name: 'sylt', rand: [-197.65, 495.409, -148.213, 446.312], netz: 256, gross: true, kueste: true, sand: true }],
+                  aussen: { rand: [-240.225, 522.734, 240.031, -522.734], netz: 384, gross: true, kueste: true } },
       ueberhoehung: 1.35,
       grund: [0.018, 0.035, 0.038],
       land: [[0.05, 0.085, 0.075], [0.08, 0.125, 0.115], [0.15, 0.2, 0.2], [0.34, 0.4, 0.42], [0.86, 0.9, 0.92]],
@@ -5248,7 +5259,7 @@
       gl.vertexAttribPointer(n.aW, 2, gl.SHORT, false, 0, 0);
       gl.enable(gl.BLEND); gl.depthMask(false);
       if (gel) {
-        const ti = gel.teile[0], ta = gel.teile[1], ri = ti.b.rand, ra = ta.b.rand;
+        const ti = gel.teile[0], ta = gel.teile[gel.teile.length - 1], ri = ti.b.rand, ra = ta.b.rand;
         gl.activeTexture(gl.TEXTURE4); gl.bindTexture(gl.TEXTURE_2D, ti.form);
         gl.activeTexture(gl.TEXTURE5); gl.bindTexture(gl.TEXTURE_2D, ta.form);
         gl.activeTexture(gl.TEXTURE0);
@@ -5386,23 +5397,31 @@
            sonst lag die Uferlinie mal hoch, mal tief im Dreieck, das Ufer
            stand von der Seite als Saegeblatt da. */
         'void main(){ vUV = aG; vec4 f = ' + (zwei ? 'textureLod(uForm, aG, 0.0)' : 'texture2D(uForm, aG)') + ';' +
-        '  float h = f.r * smoothstep(0.0, 0.4, (f.g * 255.0 - 128.0) / 127.0 * uSdf);' +
+        // Blau: ein See in der Naehe -- dort nicht zum Meer hinab, der See liegt flach auf seinem Pegel.
+        // (Halbes Blau: eine Insel, siehe "sand".)
+        '  float h = f.r * mix(smoothstep(0.0, 0.4, (f.g * 255.0 - 128.0) / 127.0 * uSdf), 1.0, step(0.75, f.b));' +
         '  vW = vec3(mix(uBox.x, uBox.z, aG.x), mix(uBox.y, uBox.w, aG.y), h * uHz + 0.004);' +
         '  gl_Position = uM * vec4(vW, 1.0); }';
       const fs = kopfF + 'precision highp float;' +
-        'uniform sampler2D uForm; uniform sampler2D uRel; uniform sampler2D uFarben; uniform sampler2D uKueste; uniform vec4 uKanal; uniform float uSdf; uniform vec4 uLoch;' +
-        'uniform vec3 uAuge; uniform vec3 uGrund; uniform vec2 uNebel; uniform vec2 uRand; uniform vec4 uUfer; uniform vec4 uLicht;' +
+        'uniform sampler2D uForm; uniform sampler2D uRel; uniform sampler2D uFarben; uniform sampler2D uKueste; uniform vec4 uKanal; uniform float uSdf; uniform vec4 uLoch[3];' +
+        'uniform vec3 uAuge; uniform vec3 uGrund; uniform vec2 uNebel; uniform vec2 uRand; uniform vec4 uUfer; uniform vec4 uLicht; uniform vec3 uSee; uniform vec4 uSand; uniform vec2 uSandH;' +
         rein + ' vec2 vUV; ' + rein + ' vec3 vW;' + (zwei ? 'out vec4 aus;' : '') +
         'void main(){' +
-        // aussen: wo das innere Netz liegt, nichts zeichnen
-        '  if (vW.x > uLoch.x && vW.x < uLoch.z && vW.y < uLoch.y && vW.y > uLoch.w) discard;' +
+        // aussen: wo ein inneres Netz liegt, nichts zeichnen
+        '  for (int i = 0; i < 3; i++) if (vW.x > uLoch[i].x && vW.x < uLoch[i].z && vW.y < uLoch[i].y && vW.y > uLoch[i].w) discard;' +
         '  vec4 f = ' + TX + '(uForm, vUV);' +
         // Kueste aus dem feinen Kuestenbild (Grau), sonst aus dem Formbild (Gruen)
         '  float sd = (dot(' + TX + '(uKueste, vUV), uKanal) * 255.0 - 128.0) / 127.0 * uSdf;' +
         '  float w = max(fwidth(sd), 1e-5);' +
         '  float land = smoothstep(-0.5 * w, 0.5 * w, sd);' +
-        '  if (land < 0.01) discard;' +
+        // Wasser in einem See (Blau): als Wasserflaeche malen statt weglassen
+        '  float see = step(0.75, f.b) * (1.0 - land);' +
+        '  if (land + see < 0.01) discard;' +
         '  vec3 c = ' + TX + '(uFarben, vec2(f.r, 0.5)).rgb;' +
+        /* Sand: flache Inseln (halbes Blau, etwa Sylt) in einem hellen Ton --
+           im dunklen Grund der Niederungen verschwanden sie sonst ganz. */
+        '  float sa = uSand.a * (1.0 - smoothstep(uSandH.x, uSandH.y, f.r)) * smoothstep(0.3, 0.42, f.b) * (1.0 - smoothstep(0.58, 0.7, f.b));' +
+        '  c = mix(c, uSand.rgb, sa);' +
         /* Schattenbild: 0,4375 ist ebenes Land. Darunter Schatten (die Farbe
            geht ins Dunkel), darueber Licht (sie wird heller). */
         '  float s = ' + TX + '(uRel, vUV).r / 0.4375;' +
@@ -5414,18 +5433,18 @@
            Stufenkante -- die feine Kueste hat viel mehr Buchten, kraeftiger
            umrahmt sie jede Insel und macht der Route Konkurrenz. */
         '  float u = 1.0 - smoothstep(0.25 * w, 0.85 * w, abs(sd - 0.7 * w));' +
-        '  c = mix(c, uUfer.rgb, u * uUfer.a * 0.45);' +
+        '  c = mix(mix(c, uSee, see), uUfer.rgb, u * uUfer.a * 0.45);' +
         '  float n = smoothstep(uNebel.x, uNebel.y, length(vW - uAuge));' +
         '  float e = smoothstep(' + KANTE + ', 0.995, max(abs(vW.x) / uRand.x, abs(vW.y) / uRand.y));' +
         '  float m = max(n, e);' +
-        '  ' + (zwei ? 'aus' : 'gl_FragColor') + ' = vec4(mix(c, uGrund, m), land * (1.0 - 0.7 * m));' +
+        '  ' + (zwei ? 'aus' : 'gl_FragColor') + ' = vec4(mix(c, uGrund, m), (land + see) * (1.0 - 0.7 * m));' +
         '}';
       return [vs, fs];
     }
     // Hoehe (m) an einem Weltpunkt, aus dem feinsten Bereich, der ihn hat.
     function gelaendeHoehe(x, y) {
-      const B = [GEL.innen, GEL.aussen];
-      for (let i = 0; i < 2; i++) {
+      const B = GEL.teile;
+      for (let i = 0; i < B.length; i++) {
         const b = B[i], r = b.rand;
         const u = (x - r[0]) / (r[2] - r[0]), v = (y - r[1]) / (r[3] - r[1]);
         if (u < 0 || u > 1 || v < 0 || v > 1) continue;
@@ -5452,9 +5471,19 @@
          dass die einfache Groesse weich wirkt. Auf Handy und Tablet die
          einfache -- ein Viertel des Speichers. */
       const gross = !matchMedia('(pointer: coarse)').matches && Math.max(screen.width, screen.height) * (window.devicePixelRatio || 1) >= 1900;
-      const namen = ['-form-innen.png', gross ? '-relief-innen-gross.webp' : '-relief-innen.webp', '-form-aussen.png', '-relief-aussen.webp', '-abstand.png'];
-      if (gross) namen.push('-kueste-innen.png');      // die Kueste in doppelter Feinheit
-      return Promise.all(namen.map(bild)).then(function (b) {
+      /* Bereiche: die feinen ("bereiche", bei Schottland nur "innen"), zuletzt
+         "aussen" ueber die ganze Karte. "gross": es gibt ein doppelt so
+         grosses Schattenbild, "kueste": ein feines Kuestenbild (beides nur
+         am Rechner). */
+      const teile = (G.bereiche || [Object.assign({ name: 'innen', gross: true, kueste: true }, G.innen)])
+        .concat([Object.assign({ name: 'aussen' }, G.aussen)]);
+      const liste = [];
+      teile.forEach(function (e) {
+        liste.push(bild('-form-' + e.name + '.png'), bild('-relief-' + e.name + (gross && e.gross ? '-gross' : '') + '.webp'),
+                   gross && e.kueste ? bild('-kueste-' + e.name + '.png') : null);
+      });
+      if (G.abstand !== false) liste.push(bild('-abstand.png'));
+      return Promise.all(liste).then(function (b) {
         function bereich(form, rel, e) {
           const n = form.naturalWidth, cv = document.createElement('canvas');
           cv.width = cv.height = n;
@@ -5463,18 +5492,24 @@
           const px = c.getImageData(0, 0, n, n).data, h = new Uint8Array(n * n);
           for (let i = 0; i < n * n; i++) h[i] = px[i * 4];
           // Auf Handy und Tablet ein groeberes Netz (das Licht kommt aus dem Bild, nicht aus dem Netz).
-          return { form: form, rel: rel, rand: e.rand, netz: gross ? e.netz : 4 * Math.round(e.netz * 0.15), n: n, hoehen: h };
+          return { form: form, rel: rel, rand: e.rand, sand: !!e.sand, netz: gross ? e.netz : 4 * Math.round(e.netz * 0.15), n: n, hoehen: h };
         }
+        const g = { teile: teile.map(function (e, i) {
+          const t = bereich(b[i * 3], b[i * 3 + 1], e);
+          if (b[i * 3 + 2]) t.kueste = b[i * 3 + 2];
+          return t;
+        }) };
         // Abstand zum Ufer fuer die Wasserlinien, passend zu dieser Kueste
-        const ab = b[4], cv = document.createElement('canvas');
-        cv.width = ab.naturalWidth; cv.height = ab.naturalHeight;
-        const c = cv.getContext('2d', { willReadFrequently: true });
-        c.drawImage(ab, 0, 0);
-        const px = c.getImageData(0, 0, cv.width, cv.height).data, abstand = new Uint8Array(cv.width * cv.height);
-        for (let i = 0; i < abstand.length; i++) abstand[i] = px[i * 4];
-        const innen = bereich(b[0], b[1], G.innen);
-        if (b[5]) innen.kueste = b[5];
-        return { innen: innen, aussen: bereich(b[2], b[3], G.aussen), abstand: abstand, abstandN: [cv.width, cv.height] };
+        if (G.abstand !== false) {
+          const ab = b[b.length - 1], cv = document.createElement('canvas');
+          cv.width = ab.naturalWidth; cv.height = ab.naturalHeight;
+          const c = cv.getContext('2d', { willReadFrequently: true });
+          c.drawImage(ab, 0, 0);
+          const px = c.getImageData(0, 0, cv.width, cv.height).data, abstand = new Uint8Array(cv.width * cv.height);
+          for (let i = 0; i < abstand.length; i++) abstand[i] = px[i * 4];
+          g.abstand = abstand; g.abstandN = [cv.width, cv.height];
+        }
+        return g;
       });
     }
     function gelaendeStarten() {
@@ -5485,7 +5520,7 @@
       const q = gelaendeQuellen(zwei), pr = glProgramm(q[0], q[1]);
       if (!gl.getProgramParameter(pr, gl.LINK_STATUS)) return;
       const g = { prog: pr, loc: {}, teile: [] };
-      ['uM', 'uBox', 'uForm', 'uHz', 'uRel', 'uFarben', 'uKueste', 'uKanal', 'uSdf', 'uLoch', 'uAuge', 'uGrund', 'uNebel', 'uRand', 'uUfer', 'uLicht'].forEach(function (n) {
+      ['uM', 'uBox', 'uForm', 'uHz', 'uRel', 'uFarben', 'uKueste', 'uKanal', 'uSdf', 'uLoch', 'uAuge', 'uGrund', 'uNebel', 'uRand', 'uUfer', 'uLicht', 'uSee', 'uSand', 'uSandH'].forEach(function (n) {
         g.loc[n] = gl.getUniformLocation(pr, n);
       });
       g.aG = gl.getAttribLocation(pr, 'aG');
@@ -5534,7 +5569,7 @@
         function drin(x, y) {
           if (!loch) return false;
           const wx = mix(r[0], r[2], x / (N - 1)), wy = mix(r[1], r[3], y / (N - 1));
-          return wx > loch[0] && wx < loch[2] && wy < loch[1] && wy > loch[3];
+          return loch.some(function (l) { return wx > l[0] && wx < l[2] && wy < l[1] && wy > l[3]; });
         }
         for (let y0 = 0; y0 < N - 1; y0 += zeilen) {
           const y1 = Math.min(N - 1, y0 + zeilen), st = { v: y0 * N };
@@ -5558,11 +5593,14 @@
         });
         return t;
       }
-      const ri = GEL.innen.rand, ra = GEL.aussen.rand;
-      g.teile.push(netz(GEL.innen, null));
-      // Das Loch im aeusseren Netz liegt etwas innerhalb des inneren Bereichs: am Rand ueberlappen beide.
-      const zx = (ra[2] - ra[0]) / GEL.aussen.netz * 1.5, zy = (ra[1] - ra[3]) / GEL.aussen.netz * 1.5;
-      g.teile.push(netz(GEL.aussen, [ri[0] + zx, ri[1] - zy, ri[2] - zx, ri[3] + zy]));
+      const innen = GEL.teile.slice(0, -1), A = GEL.teile[GEL.teile.length - 1], ra = A.rand;
+      innen.forEach(function (b) { g.teile.push(netz(b, null)); });
+      // Die Loecher im aeusseren Netz liegen etwas innerhalb der inneren Bereiche: am Rand ueberlappen beide.
+      const zx = (ra[2] - ra[0]) / A.netz * 1.5, zy = (ra[1] - ra[3]) / A.netz * 1.5;
+      g.teile.push(netz(A, innen.map(function (b) { const ri = b.rand; return [ri[0] + zx, ri[1] - zy, ri[2] - zx, ri[3] + zy]; })));
+      // Wo aussen nichts zeichnet: genau die inneren Bereiche (hoechstens drei)
+      g.loecher = new Float32Array(12);
+      for (let i = 0; i < 3; i++) g.loecher.set(innen[i] ? innen[i].rand : [1e9, -1e9, -1e9, 1e9], i * 4);
       gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, puf.t);
       gel = g;
       /* Die Bilder liegen jetzt als Texturen auf der Grafikkarte. Hielte die
@@ -5570,10 +5608,10 @@
          Speicher (das 8192er allein 256 MB) -- dann fehlte der Platz fuer
          die Bilder der Tafel, sie blieben schwarze Felder. Nach einem
          Kontextverlust laedt webglcontextrestored sie neu. */
-      [GEL.innen, GEL.aussen].forEach(function (b) { b.form = b.rel = b.kueste = null; });
+      GEL.teile.forEach(function (b) { b.form = b.rel = b.kueste = null; });
     }
     function gelaendeZeichnen(k, cam) {
-      const g = gel, L = g.loc, G = CFG.gelaende, ri = GEL.innen.rand;
+      const g = gel, L = g.loc, G = CFG.gelaende, letzter = g.teile.length - 1, keins = new Float32Array([1e9, -1e9, -1e9, 1e9, 1e9, -1e9, -1e9, 1e9, 1e9, -1e9, -1e9, 1e9]);
       gl.useProgram(g.prog);
       gl.uniformMatrix4fv(L.uM, false, new Float32Array(cam.M));
       gl.uniform3fv(L.uAuge, cam.auge);
@@ -5590,14 +5628,18 @@
       gl.uniform4f(L.uLicht, G.licht[0], G.licht[1], G.licht[2], mix(G.licht[3], 1, ab));
       const u = CFG.linien.ufer;
       gl.uniform4f(L.uUfer, u[0], u[1], u[2], u[3]);
+      gl.uniform3fv(L.uSee, MEER_FLACH);
+      const sand = G.sand || [0, 0, 0, 0, 0, 1];
+      gl.uniform2f(L.uSandH, sand[4] / G.hmax, sand[5] / G.hmax);
       gl.uniform1i(L.uForm, 0); gl.uniform1i(L.uRel, 1); gl.uniform1i(L.uFarben, 2); gl.uniform1i(L.uKueste, 3);
       gl.activeTexture(gl.TEXTURE2); gl.bindTexture(gl.TEXTURE_2D, g.farben);
       gl.enable(gl.BLEND); gl.depthMask(true);
       gl.enableVertexAttribArray(g.aG);
       g.teile.forEach(function (t, i) {
-        const r = t.b.rand, l = i ? ri : [1e9, -1e9, -1e9, 1e9];
+        const r = t.b.rand;
         gl.uniform4f(L.uBox, r[0], r[1], r[2], r[3]);
-        gl.uniform4f(L.uLoch, l[0], l[1], l[2], l[3]);
+        gl.uniform4fv(L.uLoch, i === letzter ? g.loecher : keins);
+        gl.uniform4f(L.uSand, sand[0], sand[1], sand[2], t.b.sand ? sand[3] : 0);
         gl.activeTexture(gl.TEXTURE3); gl.bindTexture(gl.TEXTURE_2D, t.kueste);
         if (t.kueste === t.form) gl.uniform4f(L.uKanal, 0, 1, 0, 0); else gl.uniform4f(L.uKanal, 1, 0, 0, 0);
         gl.activeTexture(gl.TEXTURE1); gl.bindTexture(gl.TEXTURE_2D, t.rel);
@@ -5723,7 +5765,7 @@
        Ufer in Tusche. */
     function seenZeichnen(k, cam, zeitS) {
       const L = D.kopf.seen;
-      if (!L.length) return;
+      if (!L.length || gel) return;              // mit Gelaende malt dessen Shader die Seen
       L.forEach(function (s) {
         const z = s.lev / 1000 * UEBERHOEHUNG + 0.015;
         gl.uniform1f(loc.uZ, z);
@@ -7362,7 +7404,7 @@
         return gelaende;
       }).then(function (g) {
         GEL = g || null;
-        if (GEL && GEL.abstandN[0] === D.kopf.tex[0] && GEL.abstandN[1] === D.kopf.tex[1]) D.tex = GEL.abstand;
+        if (GEL && GEL.abstandN && GEL.abstandN[0] === D.kopf.tex[0] && GEL.abstandN[1] === D.kopf.tex[1]) D.tex = GEL.abstand;
         return ruhig();
       }).then(function () {
         // Erst die Groesse, dann der Kontext -- sonst wird er gleich wieder umgebaut.
@@ -7416,8 +7458,8 @@
       loc = {}; puf = {}; ueberNeu = true;
       function weiter() { if (glStarten()) { bereit = true; groesse(); zeichne(stand); anlaufen(); } }
       // Die Bilder des Gelaendes sind nach dem Hochladen freigegeben: neu laden.
-      if (GEL && !GEL.innen.rel) {
-        gelaendeLaden().then(function (g) { GEL.innen = g.innen; GEL.aussen = g.aussen; },
+      if (GEL && !GEL.teile[0].rel) {
+        gelaendeLaden().then(function (g) { GEL.teile = g.teile; },
                              function () { GEL = null; }).then(weiter);
       } else weiter();
     }, false);

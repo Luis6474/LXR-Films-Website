@@ -23,6 +23,8 @@ import gzip, json, math, os, struct, sys, tempfile, urllib.request
 import numpy as np
 from PIL import Image
 from scipy import ndimage
+from shapely.geometry import LineString
+from shapely.ops import polygonize, linemerge
 
 CFG = json.load(open(sys.argv[1], encoding="utf-8"))
 roh = gzip.decompress(open(sys.argv[2], "rb").read())
@@ -52,7 +54,8 @@ def dem(z, w, s, e, n):
             f = os.path.join(CACHE, "%d_%d_%d.png" % (z, tx, ty))
             if not os.path.exists(f):
                 url = "https://s3.amazonaws.com/elevation-tiles-prod/terrarium/%d/%d/%d.png" % (z, tx, ty)
-                open(f, "wb").write(urllib.request.urlopen(url).read())
+                open(f + ".teil", "wb").write(urllib.request.urlopen(url).read())
+                os.replace(f + ".teil", f)                   # nie eine halbe Kachel im Speicher
             a = np.asarray(Image.open(f).convert("RGB")).astype(np.float32)
             z_.append(a[..., 0] * 256 + a[..., 1] + a[..., 2] / 256 - 32768)
         zeilen.append(np.hstack(z_))
@@ -68,16 +71,75 @@ def dem(z, w, s, e, n):
     return h, [mx0 * C - OX, -my0 * C - OY, mx1 * C - OX, -my1 * C - OY], pix
 
 
-# Kuestenlinie aus OpenStreetMap (siehe oben, "Kueste")
+KARTE = os.path.splitext(os.path.basename(sys.argv[1]))[0]
+
+
+def overpass(q, art):
+    """OpenStreetMap abfragen (wie in karte_bau.py), die Antwort zwischenspeichern."""
+    import time, urllib.parse
+    cf = os.path.join(CACHE, "%s_gelaende_%s.json" % (art, KARTE))
+    if not os.path.exists(cf) or os.path.getsize(cf) == 0:
+        antwort = None
+        for server in ("https://overpass-api.de/api/interpreter", "https://overpass.private.coffee/api/interpreter",
+                       "https://overpass-api.de/api/interpreter", "https://overpass.kumi.systems/api/interpreter"):
+            try:
+                req = urllib.request.Request(server, data=urllib.parse.urlencode({"data": q}).encode(),
+                                             headers={"User-Agent": "lxr-films-karte/1.0"})
+                antwort = urllib.request.urlopen(req, timeout=400).read()
+                json.loads(antwort)
+                break
+            except Exception as e:
+                print(art, server, "->", e); antwort = None; time.sleep(5)
+        if antwort is None: raise SystemExit("%s nicht abrufbar" % art)
+        open(cf, "wb").write(antwort)
+    return json.load(open(cf, encoding="utf-8"))
+
+
+# Kuestenlinie aus OpenStreetMap (siehe oben, "Kueste"): eine Datei im
+# Zwischenspeicher, oder ein Ausschnitt [West, Ost, Sued, Nord], der bei
+# Overpass abgefragt wird (klein genug, etwa Sylt).
 KUESTE = None
 if G.get("kueste"):
+    if isinstance(G["kueste"], list):
+        kw, ke, ks, kn = G["kueste"]
+        quelle = overpass('[out:json][timeout:120];way["natural"="coastline"](%f,%f,%f,%f);out geom;' % (ks, kw, kn, ke), "kueste")
+    else:
+        quelle = json.load(open(os.path.join(CACHE, G["kueste"]), encoding="utf-8"))
     KUESTE = [[(p["lon"], p["lat"]) for p in el["geometry"]]
-              for el in json.load(open(os.path.join(CACHE, G["kueste"]), encoding="utf-8"))["elements"]
-              if el.get("type") == "way" and len(el.get("geometry", [])) > 1]
+              for el in quelle["elements"] if el.get("type") == "way" and len(el.get("geometry", [])) > 1]
     print("Kueste:", len(KUESTE), "Wege")
 
 
-def bereich(name, z, box, form_px, relief_px):
+def seen_holen(name, box, nur_bekannte):
+    """Seen aus OpenStreetMap als Ringe (Laenge, Breite): je See ein aeusserer
+    Ring und seine Inseln. Im Reisegebiet alle stehenden Gewaesser (auch
+    kleine Bergseen wie der Karersee), in der Uebersicht nur bekannte
+    (mit Wikidata-Eintrag)."""
+    w, s_, e, n = box
+    f = '["natural"="water"]' + ('["wikidata"]' if nur_bekannte else '')
+    osm = overpass('[out:json][timeout:180];(way%s(%f,%f,%f,%f);relation%s(%f,%f,%f,%f););out geom;'
+                   % (f, s_, w, n, e, f, s_, w, n, e), "seen_" + name)
+    aus = []
+    for el in osm["elements"]:
+        t = el.get("tags", {})
+        if t.get("water") in ("river", "stream", "canal", "ditch", "wastewater", "moat", "lock", "stream_pool") or t.get("waterway"):
+            continue
+        if el["type"] == "way":
+            g = el.get("geometry", [])
+            if len(g) > 3: aus.append(([(p["lon"], p["lat"]) for p in g], []))
+        else:
+            ringe = {}
+            for rolle in ("outer", "inner"):
+                st = [LineString([(p["lon"], p["lat"]) for p in m["geometry"]]) for m in el.get("members", [])
+                      if m.get("role") == rolle and m.get("geometry") and len(m["geometry"]) > 1]
+                ringe[rolle] = [list(x.exterior.coords) for x in polygonize(linemerge(st))] if st else []
+            for r in ringe["outer"]:
+                aus.append((r, ringe["inner"]))
+    print("  Seen (%s): %d Flaechen in OpenStreetMap" % (name, len(aus)))
+    return aus
+
+
+def bereich(name, z, box, form_px, relief_px, kueste_px=None, seen=None, see_min_km2=0.02, inseln=False):
     h, rand, pix = dem(z, *box)
     print(name, "Raster", h.shape, "Zoom", z)
     h = ndimage.median_filter(h.astype(np.float32), size=3)
@@ -107,11 +169,44 @@ def bereich(name, z, box, form_px, relief_px):
         for w in KUESTE:
             zeichner.line([pix(*q) for q in w], fill=1, width=2)
         mauer = np.asarray(bild).astype(bool)
-        teile, anzahl = ndimage.label(~mauer)
-        idx = np.arange(1, anzahl + 1)
-        anteil = ndimage.mean(nass.astype(np.float32), labels=teile, index=idx)
-        meer_id = np.zeros(anzahl + 1, bool); meer_id[1:] = anteil > G.get("meerAnteil", 0.12)
-        land = ~meer_id[teile]
+        # Nur im Ausschnitt der Kuestenlinie (bei einem Ausschnitt wie Sylt);
+        # ausserhalb bleibt Land und Meer aus den Hoehen -- sonst hinge dort
+        # alles ohne Mauer zusammen und wuerde gemeinsam Land oder Meer.
+        abschnitt = np.ones(h.shape, bool)
+        if isinstance(G["kueste"], list):
+            kw, ke, ks, kn = G["kueste"]
+            (x0, y0), (x1, y1) = pix(kw, kn), pix(ke, ks)
+            abschnitt[:] = False
+            abschnitt[max(0, int(y0)):max(0, int(y1) + 1), max(0, int(x0)):max(0, int(x1) + 1)] = True
+        if abschnitt.any():
+            teile, anzahl = ndimage.label(abschnitt & ~mauer)
+            idx = np.arange(1, anzahl + 1)
+            anteil = ndimage.mean(nass.astype(np.float32), labels=teile, index=idx)
+            meer_id = np.zeros(anzahl + 1, bool); meer_id[1:] = anteil > G.get("meerAnteil", 0.12)
+            if isinstance(G["kueste"], list):
+                # An flachen Kuesten (Wattenmeer: Sylt und die Marsch liegen
+                # auf 0 bis 5 m) taugt der Anteil auf Meereshoehe nicht. Dort
+                # stimmen die Gebiete ab: OpenStreetMap zeichnet jede Kueste
+                # mit dem Land zur Linken. Ein Punkt knapp links jeder Strecke
+                # zaehlt fuer Land, einer knapp rechts fuer Meer.
+                stimme = np.zeros((anzahl + 1, 2))
+                ab_grad = 3 * km_px / 111.0
+                for w in KUESTE:
+                    for (l0, b0), (l1, b1) in zip(w[:-1], w[1:]):
+                        c = math.cos(math.radians(b0))
+                        dx, dy = (l1 - l0) * c, b1 - b0
+                        lg = math.hypot(dx, dy)
+                        if lg == 0: continue
+                        nx, ny = -dy / lg, dx / lg               # links der Richtung
+                        lm, bm = (l0 + l1) / 2, (b0 + b1) / 2
+                        for seite, vz in ((0, 1), (1, -1)):
+                            px_, py_ = pix(lm + vz * nx * ab_grad / c, bm + vz * ny * ab_grad)
+                            ix, iy = int(px_), int(py_)
+                            if 0 <= iy < h.shape[0] and 0 <= ix < h.shape[1]:
+                                stimme[teile[iy, ix], seite] += 1
+                hat = stimme[1:].sum(1) > 0
+                meer_id[1:] = np.where(hat, stimme[1:, 1] > stimme[1:, 0], meer_id[1:])
+            land = np.where(abschnitt, ~meer_id[teile], land)
         h[~land] = np.minimum(h[~land], 0)
     loch = land & nass
     if name == "aussen" and G.get("abstand"):
@@ -131,10 +226,33 @@ def bereich(name, z, box, form_px, relief_px):
         h[loch] = h[iy[loch], ix[loch]]
         h[loch] = np.maximum(ndimage.gaussian_filter(h, 2)[loch], 1.0)
     print("  Loecher gefuellt: %d Punkte (%.1f km2)" % (loch.sum(), loch.sum() * km_px * km_px))
+    # Seen: flach auf ihrem Pegel (Median der Hoehen darin) und Wasser wie
+    # das Meer -- nur malt der Browser sie selbst als Wasserflaeche (Blau im
+    # Formbild sagt "hier liegt ein See"), statt sie wegzulassen.
+    see = np.zeros(h.shape, bool)
+    if seen:
+        from PIL import ImageDraw
+        for aussen_ring, inseln in seen:
+            # nur im Rechteck um den See zeichnen (es sind tausende Flaechen)
+            pa = [pix(*q) for q in aussen_ring]
+            xs, ys = [q[0] for q in pa], [q[1] for q in pa]
+            x0, y0 = max(0, int(min(xs))), max(0, int(min(ys)))
+            x1, y1 = min(h.shape[1], int(max(xs)) + 2), min(h.shape[0], int(max(ys)) + 2)
+            if x1 <= x0 or y1 <= y0 or (x1 - x0) * (y1 - y0) * km_px * km_px < see_min_km2: continue
+            bild = Image.new("L", (x1 - x0, y1 - y0), 0); zz = ImageDraw.Draw(bild)
+            zz.polygon([(q[0] - x0, q[1] - y0) for q in pa], fill=1)
+            for r in inseln: zz.polygon([(q[0] - x0, q[1] - y0) for q in (pix(*p) for p in r)], fill=0)
+            m = np.asarray(bild).astype(bool) & land[y0:y1, x0:x1]
+            if m.sum() * km_px * km_px < see_min_km2: continue
+            ausschnitt = h[y0:y1, x0:x1]
+            ausschnitt[m] = float(np.median(ausschnitt[m]))
+            see[y0:y1, x0:x1] |= m
+        print("  Seen: %.1f km2" % (see.sum() * km_px * km_px))
+    trocken = land & ~see
     # Kueste als Abstand (km, im Land positiv): bilinear gelesen ergibt das
     # bei jeder Naehe eine glatte, scharfe Kante; leicht geglaettet, damit
     # die Treppen des Rasters nicht als Zacken stehen bleiben.
-    sdf = (ndimage.distance_transform_edt(land) - ndimage.distance_transform_edt(~land)) * km_px
+    sdf = (ndimage.distance_transform_edt(trocken) - ndimage.distance_transform_edt(~trocken)) * km_px
     sdf = ndimage.gaussian_filter(sdf, G.get("kuesteWeich", 1.2))
 
     # Licht: von Nordwesten, dazu ein weiches Himmelslicht. Die Hoehen
@@ -175,10 +293,27 @@ def bereich(name, z, box, form_px, relief_px):
     form = np.zeros((form_px, form_px, 3), np.uint8)
     form[..., 0] = np.clip(hf / HMAX * 255 + 0.5, 0, 255)
     form[..., 1] = np.clip(128 + sf / SDF_KM * 127 + 0.5, 0, 255)
+    if inseln:
+        # Halbes Blau (128): Inseln -- Land, das den Rand des Bereichs nicht
+        # beruehrt. Schmale Landbruecken (Hindenburgdamm) zaehlen dafuer
+        # nicht, sonst hinge Sylt am Festland. Der Browser malt dort Sand.
+        offen = ndimage.binary_opening(trocken, iterations=max(2, int(0.08 / km_px)))
+        teile_i, _ = ndimage.label(offen)
+        rand_ids = np.unique(np.concatenate([teile_i[0], teile_i[-1], teile_i[:, 0], teile_i[:, -1]]))
+        insel = (teile_i > 0) & ~np.isin(teile_i, rand_ids)
+        insel = ndimage.binary_dilation(insel, iterations=max(2, int(0.08 / km_px)) + 2) & trocken
+        ib = auf(insel.astype(np.float32), form_px, 1) > 0.5
+        form[..., 2] = np.where(ndimage.binary_dilation(ib, iterations=2), 128, 0)
+        print("  Inseln: %.0f km2" % (insel.sum() * km_px * km_px))
+    if see.any():
+        # Blau: See in der Naehe (etwas breiter als der See, damit sein Ufer
+        # sicher darin liegt); dort laeuft das Netz nicht zum Meer hinab.
+        sb = auf(see.astype(np.float32), form_px, 1) > 0.02
+        form[..., 2] = np.where(ndimage.binary_dilation(sb, iterations=3), 255, form[..., 2])
     Image.fromarray(form, "RGB").save(ZIEL + "-form-%s.png" % name, optimize=True)
-    if G.get(name, {}).get("kueste"):
+    if kueste_px:
         # Kueste fein (fuer den Rechner): nur das Abstandsfeld, in eigener Groesse
-        kp = G[name]["kueste"]
+        kp = kueste_px
         kf = np.clip(128 + auf(sdf, kp, 1) / SDF_KM * 127 + 0.5, 0, 255).astype(np.uint8)
         Image.fromarray(kf, "L").save(ZIEL + "-kueste-%s.png" % name, optimize=True)
         print("  ", ZIEL + "-kueste-%s.png" % name, os.path.getsize(ZIEL + "-kueste-%s.png" % name), "Bytes")
@@ -187,8 +322,21 @@ def bereich(name, z, box, form_px, relief_px):
     return {"rand": [round(v, 3) for v in rand]}
 
 
+# Bereiche: "bereiche" (Liste, je mit "name"), oder wie bei Schottland ein
+# "innen". Dazu immer "aussen" ueber die ganze Karte. "seen": Seen aus
+# OpenStreetMap, in den Bereichen alle ab "seeMinKm2", aussen nur bekannte
+# ab "seeAussenKm2" (im Ausschnitt "seenBox" des Aussenbereichs).
+BEREICHE = G.get("bereiche") or [dict(G["innen"], name="innen")]
 aus = {"hmax": HMAX, "sdfKm": G.get("sdfKm", 1.5)}
-aus["innen"] = bereich("innen", G["innen"]["zoom"], G["innen"]["box"], G["innen"]["form"], G["innen"]["relief"])
-aus["aussen"] = bereich("aussen", G["aussen"]["zoom"], CFG["ausschnitt"][0:1] + [CFG["ausschnitt"][2], CFG["ausschnitt"][1], CFG["ausschnitt"][3]],
-                        G["aussen"]["form"], G["aussen"]["relief"])
+NUR = os.environ.get("NUR", "").split(",") if os.environ.get("NUR") else None   # z.B. NUR=sylt: nur diese Bereiche neu
+for b in BEREICHE:
+    if NUR and b["name"] not in NUR: continue
+    sn = seen_holen(b["name"], b["box"], False) if G.get("seen") else None
+    aus[b["name"]] = bereich(b["name"], b["zoom"], b["box"], b["form"], b["relief"], b.get("kueste"),
+                             sn, G.get("seeMinKm2", 0.02), b.get("inseln", False))
+A = G["aussen"]
+if NUR and "aussen" not in NUR: print(json.dumps(aus)); sys.exit()
+box_a = CFG["ausschnitt"][0:1] + [CFG["ausschnitt"][2], CFG["ausschnitt"][1], CFG["ausschnitt"][3]]
+sn = seen_holen("aussen", A.get("seenBox", box_a), True) if G.get("seen") else None
+aus["aussen"] = bereich("aussen", A["zoom"], box_a, A["form"], A["relief"], A.get("kueste"), sn, G.get("seeAussenKm2", 2.0))
 print(json.dumps(aus))
