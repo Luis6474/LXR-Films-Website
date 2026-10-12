@@ -1156,6 +1156,7 @@
     min-height: 34px; padding: 0 14px; border-radius: 999px; cursor: pointer;
     font: inherit; font-size: 0.72em; letter-spacing: 0.12em;
     color: #fff; background: rgba(0, 0, 0, 0.5); border: 1px solid rgba(255, 255, 255, 0.35);
+    white-space: nowrap;
   }
   .karte-ton:focus-visible { outline: 1px solid var(--accent); outline-offset: 2px; }
   /* Hochkant-Video: schmaler, sonst waere es hoeher als das Bild. */
@@ -6679,7 +6680,11 @@
         folge.forEach(function (f) {
           const z = zeilen[zeilen.length - 1];
           const summe = z ? z.reduce(function (s, g) { return s + g.format; }, 0) : 0;
-          if (z && (grenze ? summe + f.format <= grenze : z.length < 2)) z.push(f); else zeilen.push([f]);
+          /* Kein Bild schmaler als 80 px: am Handy war das Hochkant-Video
+             bei Neist Point neben zwei Fotos sonst kaum 50 px breit. */
+          const schmal = z && Math.min(f.format, Math.min.apply(null, z.map(function (g) { return g.format; })))
+                         * (B - L * z.length) / (summe + f.format) < 80;
+          if (z && !schmal && (grenze ? summe + f.format <= grenze : z.length < 2)) z.push(f); else zeilen.push([f]);
         });
         let hs = zeilen.map(function (z) {
           const summe = z.reduce(function (s, f) { return s + f.format; }, 0);
