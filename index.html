@@ -1171,6 +1171,9 @@
     white-space: nowrap;
   }
   .karte-ton:focus-visible { outline: 1px solid var(--accent); outline-offset: 2px; }
+  /* Auf schmalen Bildern (unter 110 px) ragte der Knopf rechts hinaus. */
+  .knapp .karte-ton { left: 50%; transform: translateX(-50%); padding: 0 8px; font-size: 0.62em; letter-spacing: 0.05em; }
+  .winzig .karte-ton { min-height: 26px; padding: 0 5px; font-size: 0.52em; letter-spacing: 0; bottom: 5px; }
   /* Hochkant-Video: schmaler, sonst waere es hoeher als das Bild. */
 
   /* Das Datum: die Zeitachse der ganzen Sequenz. Zwei Lagen uebereinander,
@@ -4125,10 +4128,10 @@
         0: 'Erste Station. Stephen Corrall getroffen, am 17. bis spät in die Nacht das Township vorbereitet. Dreh am 18. von 7 bis 13 Uhr, die Innenaufnahmen. Das Tageslicht reichte nicht, also haben wir uns die Morgensonne mit einem Lichtsetup selbst gebaut.',
         1: 'Weiterfahrt am Nachmittag des 18. Gedreht in den Bergen der Halbinsel und in der Blauen Stunde an der Küste.',
         2: 'Schwarz-Weiß-Aufnahmen von Stephen als Gestrandetem, in den Hügeln und vor allem am Strand, bei Sonne. Dazu Farbaufnahmen aus der Gegenwart, ebenfalls am Strand: Stephen als Fischer und Stephen, der aufs Meer schaut. Dort war das Wetter schlechter.',
-        3: 'Ab dem 20. auf Skye. Mit Drohne und Teleobjektiv: Tiere, Nebel, Meer.',
-        4: 'Berge im Nebel beim Old Man of Storr, zu sehen ganz am Anfang des Films.',
-        5: 'Viele Kormorane. Hier ist auch die Eröffnungsszene entstanden.',
-        6: 'Die Szene, in der Wasser geschöpft wird. Auf Wiesen im Nebel, bei strömendem Regen.'
+        3: 'Ab dem 20. auf Skye. Mit Drohne und Teleobjektiv: Tiere, Nebel, Meer. Es hat jeden Tag geregnet, dazu kamen schwere Stürme, und genau das hat uns die besten Motive gebracht.',
+        4: 'Nebel und starker Wind am Old Man of Storr, und deshalb hier besonders gute Drohnenaufnahmen. Die Berge im Nebel sind ganz am Anfang des Films zu sehen. In der Nähe haben wir mit dem 600-mm-Teleobjektiv Highland Cattle gefilmt.',
+        5: 'Mehrere Tage hier, mit Übernachtung vor Ort. Besonders schwere Stürme. Wir haben versucht, mitten im Sturm mit der Drohne zu filmen, aber es ging nicht. Stattdessen haben wir mit dem 14-mm-Weitwinkel auf der Kamera gedreht, und daraus ist die Eröffnungsszene des Films geworden. Viele Wildvögel, vor allem Kormorane. Wale haben wir vergeblich zu sichten versucht.',
+        6: 'Hier wollten wir eigentlich zu einem Cottage fahren und dort drehen, aber der Weg war unbefahrbar. Also haben wir improvisiert: die Aufnahmen von Stephen am Fluss und die Szene, in der er Wasser schöpft, auf Wiesen im Nebel, bei strömendem Regen. Dazu extrem viele Midges, die berüchtigten schottischen Stechmücken.'
       },
       /* Seenebel: um die Reise herum bleibt es klar ("klar": West, Sued,
          Ost, Nord in Grad), nach aussen zieht Nebel auf -- die Aeusseren
@@ -5166,21 +5169,21 @@
         '  float fa = f * mix(0.6, 1.0, kern) * uDichte * fz;' +
         /* Aus der Naehe (uNah 1) fuellte eine einzelne Schwade von 10 bis
            20 km den ganzen Schirm -- ein weicher, heller Klecks wie ein Ei.
-           Dort tritt an ihre Stelle die feine Struktur: duenne, in
-           Windrichtung gezogene Fahnen von einigen hundert Metern, die nur
-           liegen, wo das grobe Feld Nebel traegt. Die grobe Form bleibt als
-           Huelle, sichtbar ist nur noch das feine Muster in ihr. */
+           Dort tritt an ihre Stelle eine feinere Struktur in der groben
+           Huelle. Nicht in Windrichtung gezogen: parallele Fahnen liefen in
+           der Schraegsicht auf einen Fluchtpunkt zu und sahen aus wie
+           Lichtstrahlen oder Abgase. Stattdessen runde, weiche Baenke in drei
+           Groessen (etwa 2 km bis 500 m) ueber einem duennen Schleier, in
+           neutralem Grau -- das Blaugrau der Uebersicht wurde ueber dem
+           dunklen Wasser gruen- und blaustichig wie Benzindampf. Der dunkle
+           Dunst tritt aus der Naehe fast ganz zurueck. */
         '  if (uNah > 0.0) {' +
-        '    vec2 qq = q * vec2(0.45, 1.0);' +
-        '    float m = 0.5 * T(qq * 6.3 + 0.19).b + 0.3 * T(R1 * qq * 13.1 + 0.83).a + 0.2 * T(R2 * qq * 27.0 + 0.47).g;' +
-        '    float hu = smoothstep(th - 0.25, th + 0.2, n);' +
-        /* Wirkte trotzdem wie duesterer Dampf: graue Flecken mit dunklem Hof.
-           Jetzt ein heller, weicher Schleier in der Huelle, in dem die Fahnen
-           nur sanft dichter werden; der dunkle Dunst tritt aus der Naehe fast
-           ganz zurueck. */
-        '    float fn = (0.2 * hu + 0.26 * smoothstep(0.4, 0.92, m) * hu) * uDichte * fz;' +
+        '    float m = 0.55 * T(q * 2.6 + 0.19).b + 0.3 * T(R1 * q * 5.3 + 0.83).a + 0.15 * T(R2 * q * 10.7 + 0.47).g;' +
+        '    float hu = smoothstep(th - 0.3, th + 0.25, n);' +
+        '    float fn = (0.14 + 0.3 * smoothstep(0.4, 0.82, m)) * hu * uDichte * fz;' +
         '    fa = mix(fa, fn, uNah); hz *= 1.0 - 0.85 * uNah;' +
-        '    c = mix(c, uFarbe * (0.95 + 0.3 * smoothstep(0.45, 0.9, m)), uNah);' +
+        '    vec3 grau = vec3(dot(uFarbe, vec3(0.3333)));' +
+        '    c = mix(c, grau * (1.0 + 0.22 * smoothstep(0.45, 0.85, m)), uNah);' +
         '  }' +
         '  float ga = fa + hz * (1.0 - fa);' +
         '  if (ga < 0.004) discard;' +
@@ -6822,17 +6825,17 @@
          rund 300 px), wird der Text knapper gefasst und laesst sich in sich
          scrollen -- er bleibt vollstaendig, und nichts legt sich ueber
          Zeitleiste und Knoepfe. */
-      if (tafelText) {
+      const gesamtH = hoechstens;
+      function textSetzen(platz) {
+        if (!tafelText) return 0;
         tafelText.style.maxHeight = '';
         tafelText.classList.remove('eng');
-        const platz = hoechstens - 56 - 14;
         if (tafelText.offsetHeight > platz) {
           tafelText.style.maxHeight = Math.max(44, platz) + 'px';
           tafelText.classList.add('eng');
         }
+        return tafelText.offsetHeight + 14;
       }
-      const textH = tafelText ? tafelText.offsetHeight + 14 : 0;
-      hoechstens = Math.max(tafelText ? 40 : 60, hoechstens - textH);
       /* "zeile": wie breit eine Zeile hoechstens wird, als Summe der
          Seitenverhaeltnisse ihrer Bilder. So passen drei Handyfotos oder
          Foto, Hochkant-Video und Filmbild nebeneinander, zwei breite
@@ -6875,13 +6878,37 @@
         }, 0);
         return { zeilen: zeilen, hs: hs, flaeche: flaeche };
       }
-      let lage = packen(CFG.zeile || 0);
-      /* Auf sehr flachen Schirmen schrumpfen mehrere Reihen zu Briefmarken;
-         dann ist eine einzige Reihe groesser. Genommen wird, was die Bilder
-         groesser zeigt (nur bei Karten mit "zeile"). */
-      if (CFG.zeile && lage.zeilen.length > 1) {
-        const eine = packen(1e9);
-        if (eine.flaeche > lage.flaeche) lage = eine;
+      // schmalstes Bild nach dem Einpassen in die Hoehe
+      function schmalstes(l) {
+        return Math.min.apply(null, l.zeilen.map(function (z, zi) {
+          return Math.min.apply(null, z.map(function (f) { return f.format * l.hs[zi]; }));
+        }));
+      }
+      function anordnen() {
+        let l = packen(CFG.zeile || 0);
+        /* Auf sehr flachen Schirmen schrumpfen mehrere Reihen zu Briefmarken;
+           dann ist eine einzige Reihe groesser. Genommen wird, was die Bilder
+           groesser zeigt (nur bei Karten mit "zeile") -- aber zuerst die
+           Anordnung, in der kein Bild unter 80 px schmal wird. */
+        if (CFG.zeile && l.zeilen.length > 1) {
+          const eine = packen(1e9), a = schmalstes(l) >= 80, b = schmalstes(eine) >= 80;
+          if (b && !a || a === b && eine.flaeche > l.flaeche) l = eine;
+        }
+        return l;
+      }
+      /* Die 80 px gelten auch nach dem Einpassen in die Hoehe: mit langem
+         Text (Neist Point am kleinen Handy) schrumpften die Bilder danach
+         auf 60 px. Dann bekommt der Text schrittweise weniger Hoehe und
+         rollt in sich, bis die Bilder passen -- hoechstens bis auf 40 % (quer,
+         wo die Hoehe ohnehin knapp ist: bis auf drei Zeilen). */
+      let platz = gesamtH - 56 - 14, textH, lage;
+      for (let n = 0; ; n++) {
+        textH = textSetzen(platz);
+        hoechstens = Math.max(tafelText ? 40 : 60, gesamtH - textH);
+        lage = anordnen();
+        const enger = Math.max(quer ? 56 : gesamtH * 0.4, Math.min(platz, textH - 14) * 0.85);
+        if (!tafelText || n >= 10 || schmalstes(lage) >= 80 || enger >= platz - 1) break;
+        platz = enger;
       }
       const zeilen = lage.zeilen, hs = lage.hs;
       let y = textH;
@@ -6892,6 +6919,8 @@
           const w = f.format * hs[zi];
           f.el.style.left = x.toFixed(1) + 'px'; f.el.style.top = y.toFixed(1) + 'px';
           f.el.style.width = w.toFixed(1) + 'px'; f.el.style.height = hs[zi].toFixed(1) + 'px';
+          f.el.classList.toggle('knapp', w < 110);
+          f.el.classList.toggle('winzig', w < 70);
           x += w + L;
         });
         y += hs[zi] + L;
@@ -6958,6 +6987,7 @@
       if (jetzt === undefined) jetzt = performance.now();
       if (zeitS === undefined) zeitS = reducedMotion ? 0 : (performance.now() / 1000) % 100000;
       let k = sprung ? sprungZustand(jetzt) : zustand(u);
+      if (dreh && !sprung) k.bearing += dreh;
       /* Die Bilder der Station, auf die es zugeht, schon setzen, solange
          keine Tafel zu sehen ist: dann kennt die Kamera deren Masse schon
          im Anflug und kommt gleich richtig an. */
@@ -6965,6 +6995,7 @@
           CFG.medien && CFG.medien[k.kommt]) {
         setzeMedien(k.kommt);
         k = sprung ? sprungZustand(jetzt) : zustand(u);
+        if (dreh && !sprung) k.bearing += dreh;
       }
       zeigeTag(k.tag);
       medienZeigen(k);
@@ -6984,6 +7015,7 @@
        blenden aus, unterwegs erscheint nichts; erst am Ziel kommen dessen
        Bilder und Text, wie bei jeder Ankunft. Das Datum springt sofort. */
     let sprung = null, letzteK = null, letzteM = null;
+    let dreh = 0, drehAn = 0;             // Dauerdrehung am Ort, siehe drehen()
     // Fuer Tests der Kamerabahn: Orte, Groesse, Namen (kartenProtokoll = [] sammelt jedes Bild).
     wurzel.kartenInfo = function () { return { orte: orte, W: W, H: H, namen: CFG.namen || [], M: letzteM ? Array.from(letzteM) : null, ort: letzteK ? letzteK.ort : -1 }; };
     function sprungZustand(jetzt) {
@@ -7030,6 +7062,7 @@
       if (!fahrt && !sprung && Math.abs(stand - HALTE[j]) < 0.002) return;   // schon da
       if (reducedMotion) { springeSofort(HALTE[j]); return; }
       const a = letzteK;
+      dreh = 0; drehAn = 0;                 // steckt schon in a.bearing
       // Ziel: wie der Halt beginnt (Sammelstation mit Tafel daneben).
       function zielKam() { const c = kamFuer(ort); return { x: c.x, y: c.y, z: c.z, dist: c.dist, pitch: c.pitch, bearing: c.bearing - 3 }; }
       // Ankunft am Anfang des Halts; dessen erste Haelfte (Bilder blenden ein) faehrt danach normal.
@@ -7219,6 +7252,28 @@
        fuer die Videos der Tafel. Nur die Bahnkarte bleibt bei rund 30 Bildern,
        ihre Dampfwolken ziehen schneller. */
     let gezeichnet = 0, standGezeichnet = -1;
+    /* Dauerdrehung am Ort: steht die Kamera an einer Station, kreist sie
+       ohne Ende langsam um den Punkt (1,2 Grad je Sekunde, gut fuenf
+       Minuten fuer eine Runde) -- vorher drehte sie sich nur, solange die
+       Fahrt in den Halt lief, und blieb dann mit einem Mal stehen. Sie
+       laeuft ueber 2,5 s weich an. Geht es weiter, laeuft der Rest (auf
+       hoechstens eine halbe Runde gekuerzt) in rund zwei Sekunden aus;
+       ein Flug per Klick startet ohnehin von der gedrehten Kamera aus. */
+    const DREH_GRAD = 1.2;
+    function drehen(dt) {
+      const ruht = !sprung && !fahrt && stand === ziel && letzteK && letzteK.ort >= 0 && letzteK.sicht > 0.9;
+      if (ruht) {
+        drehAn = Math.min(1, drehAn + dt / 2.5);
+        dreh += dt * DREH_GRAD * drehAn * drehAn * (3 - 2 * drehAn);
+      } else {
+        drehAn = 0;
+        if (dreh) {
+          dreh = ((dreh % 360) + 540) % 360 - 180;
+          dreh *= Math.exp(-dt / 0.6);
+          if (Math.abs(dreh) < 0.01) dreh = 0;
+        }
+      }
+    }
     /* Guete nach dem, was ankommt: Abstaende der Bilder, solange die
        Kamera faehrt. Liegt die Mitte von 12 Abstaenden ueber 20 ms (unter
        50 Bildern je Sekunde, auch wenn nebenher ein Spiel die Grafikkarte
@@ -7270,8 +7325,10 @@
         stand = fahrtStand(fahrt, jetzt);
         if (jetzt - fahrt.t0 >= fahrt.T * 1000) { stand = ziel = fahrt.nach; fahrt = null; }
       } else folgen(dt);
+      if (!reducedMotion) drehen(dt);
       guete(jetzt, stand !== standGezeichnet || !!sprung);
-      if (stand !== standGezeichnet || jetzt - gezeichnet > (CFG.bahn ? 28 : 62)) {
+      // Waehrend der Drehung jedes Bild: in jedem vierten ruckelte sie.
+      if (stand !== standGezeichnet || dreh || jetzt - gezeichnet > (CFG.bahn ? 28 : 62)) {
         zeichne(stand, (jetzt / 1000) % 100000, jetzt);
         gezeichnet = jetzt; standGezeichnet = stand;
         knoepfe();
