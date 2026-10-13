@@ -3624,8 +3624,32 @@
       });
     }
 
-    if (src.complete && src.naturalWidth) anlegen(src);
-    else src.addEventListener('load', function () { anlegen(src); }, { once: true });
+    /* Farbe aus einer 32x32 kleinen Fassung, die der Browser abseits des
+       Hauptthreads entpackt und verkleinert. Vorher wurde das grosse Bild
+       (bis 2400 px) direkt in die kleine Leinwand gezeichnet -- das zwang es
+       beim Auslesen auf dem Hauptthread zu entpacken: gemessen 660 ms bei
+       gedrosselter CPU, Aussetzer bis 350 ms genau dann, wenn die
+       Projektschau beim Heranscrollen ihre Bilder nachlud (am iPad
+       ruckelten die Titelbilder). Ohne createImageBitmap oder bei einem
+       Fehler wie bisher. */
+    function klein() {
+      if (host._auraLaeuft) return;
+      host._auraLaeuft = true;
+      // Aus der Datei (kommt aus dem Cache): aus dem Bildelement entpackt
+      // Chrome auf dem Hauptthread, aus einem Blob im Hintergrund.
+      const url = src.currentSrc || src.src;
+      if (!window.createImageBitmap || !window.fetch || !url) { anlegen(src); return; }
+      fetch(url).then(function (r) { return r.blob(); }).then(function (b) {
+        return createImageBitmap(b, { resizeWidth: 32, resizeHeight: 32, resizeQuality: 'medium' });
+      }).then(function (bild) {
+        // ohne Groessenangabe verstanden: ein grosses Bild, dann wie bisher
+        if (bild.width > 64) { if (bild.close) bild.close(); anlegen(src); return; }
+        anlegen(bild);
+        if (bild.close) bild.close();
+      }, function () { anlegen(src); });
+    }
+    if (src.complete && src.naturalWidth) klein();
+    else src.addEventListener('load', klein, { once: true });
   }
   document.querySelectorAll('.page .aura-host').forEach(buildAura);
   /* Die drei hinteren Titelbilder des Karussells liegen auf dem Handy nur gut
@@ -3643,6 +3667,10 @@
         if (i.dataset.srcset) i.srcset = i.dataset.srcset;
         i.src = i.dataset.src;
         i.removeAttribute('data-srcset'); i.removeAttribute('data-src');
+        /* Gleich im Hintergrund entpacken: die Folien stehen unsichtbar
+           (Deckkraft 0) bereit, und Safari entpackt ein Bild sonst erst,
+           wenn es zum ersten Mal gezeigt wird -- mitten in der Drehung. */
+        if (i.decode) i.decode().catch(function () {});
       });
     }
     if (!('IntersectionObserver' in window)) { laden(); return; }
@@ -3658,7 +3686,7 @@
       if (!host.dataset.aura) return;
       (host._hoefe || []).forEach(function (h) { h.remove(); });
       host._hoefe = null;
-      delete host.dataset.aura;
+      delete host.dataset.aura; host._auraLaeuft = false;
       buildAura(host);
     });
   };
@@ -4146,7 +4174,8 @@
          sind -- der Nebel kommt dann von allen Seiten wie um eine Lichtung,
          nicht als Vorhang von links und rechts. Von Norden rueckt er bis
          nah an Skye heran. Die Farbe: ein graues Blau, heller als die
-         Berge, damit der Nebel als eigene Schicht ueber ihnen liegt. */
+         Berge, damit der Nebel als eigene Schicht ueber ihnen liegt. Fast
+         neutral: mit [0.3, 0.33, 0.37] wirkte er petrol, gruen-blau. */
       /* "unten", "oben": Baender am Bildrand, [Breite ohne Nebel, Breite
          ganz] -- unten flach herein, oben Schwaden; beide mittel dicht. */
       /* "schwelle": wie hoch das Nebelfeld sein muss, damit dort Nebel liegt
@@ -4155,7 +4184,7 @@
          unterste Lage deckt am meisten, die hoechste am wenigsten, so
          ragen Berge heraus. "wind": km/s. */
       nebel: { klar: [-7.9, 55.95, -4.65, 57.63], schnitt: [[-6.95, 57.58], [-6.3, 57.83]],
-               rund: 35, nord: 4, weich: 110, farbe: [0.3, 0.33, 0.37],
+               rund: 35, nord: 4, weich: 110, farbe: [0.325, 0.332, 0.35],
                unten: [56.02, 55.72], oben: [57.58, 57.86], hoch: 0.07, schwelle: [0.7, 0.51], wind: 0.6,
                lagen: [[40, 0.92, -0.02], [170, 0.8, 0.01], [420, 0.65, 0.04]], dunst: 0.55 },
       meerFlach: true,
@@ -5096,7 +5125,10 @@
         '  vec2 p = vW.xy;' +
         // Boden unter dem tiefsten Meer, in dessen Farbe
         '  if (uRandLage > 1.5) { gl_FragColor = vec4(uBoden, 1.0); return; }' +
-        '  float fz = uGel > 0.5 && uRandLage < 0.5 ? smoothstep(-0.02, 0.2, vW.z - bodenH(p)) : 1.0;' +
+        /* Aus der Naehe laeuft er knapper aus: die unterste Lage (40 m)
+           erreichte mit 0.2 selbst ueber offenem Meer nur drei Viertel ihrer
+           Dichte, der Nebel blieb dort ein duenner Schleier. */
+        '  float fz = uGel > 0.5 && uRandLage < 0.5 ? smoothstep(-0.02, 0.2 - 0.12 * uNah, vW.z - bodenH(p)) : 1.0;' +
         '  if (fz < 0.004) discard;' +
         /* Seenebel, keine Wolken: eine flache Schicht ohne Licht und
            Schatten. Das Feld ist ein Rauschen in sechs Stufen, von grossen
@@ -5112,9 +5144,10 @@
         // in Windrichtung nur wenig gezogen: staerker wurden Striche daraus
         '  vec2 s = vec2(dot(a, uWind) * 0.82, dot(a, d1));' +
         '  vec4 v = T(s * 0.0024 + uVersatz * 0.31 + uT * vec2(0.0013, -0.0008));' +
-        '  vec2 q = s * 0.012 + uVersatz + (v.rg - 0.5) * 0.5;' +
+        '  vec2 q = s * 0.012 + uVersatz + (v.rg - 0.5) * (0.5 - 0.2 * uNah);' +
         // zweite, kleinere Verwirbelung: rollt die Schwaden ein
-        '  q += (T(q * 1.3 + 0.71 - uT * vec2(0.0011, 0.0007)).rg - 0.5) * 0.14;' +
+        // aus der Naehe kaum noch: dort sahen die eingerollten Schwaden aus wie Abgase
+        '  q += (T(q * 1.3 + 0.71 - uT * vec2(0.0011, 0.0007)).rg - 0.5) * 0.14 * (1.0 - 0.75 * uNah);' +
         /* Welle fuer die Raender (Formen von etwa 5 bis 15 km): das grobe v
            ist so gross, dass es eine Front nur als Ganzes verschob -- sie
            blieb eine Linie wie mit dem Lineal. */
@@ -5173,17 +5206,27 @@
            Huelle. Nicht in Windrichtung gezogen: parallele Fahnen liefen in
            der Schraegsicht auf einen Fluchtpunkt zu und sahen aus wie
            Lichtstrahlen oder Abgase. Stattdessen runde, weiche Baenke in drei
-           Groessen (etwa 2 km bis 500 m) ueber einem duennen Schleier, in
+           Groessen (etwa 2 km bis 500 m) ueber einem kaum sichtbaren
+           Schleier, mit dichtem Kern (nur noch eine Lage, siehe unten), in
            neutralem Grau -- das Blaugrau der Uebersicht wurde ueber dem
            dunklen Wasser gruen- und blaustichig wie Benzindampf. Der dunkle
            Dunst tritt aus der Naehe fast ganz zurueck. */
         '  if (uNah > 0.0) {' +
         '    float m = 0.55 * T(q * 2.6 + 0.19).b + 0.3 * T(R1 * q * 5.3 + 0.83).a + 0.15 * T(R2 * q * 10.7 + 0.47).g;' +
-        '    float hu = smoothstep(th - 0.3, th + 0.25, n);' +
-        '    float fn = (0.14 + 0.3 * smoothstep(0.4, 0.82, m)) * hu * uDichte * fz;' +
+        /* Baenke aus dem grossen Feld, ihr Rand von m nur leicht ausgefranst.
+           Die Schwelle liegt tiefer als in der Uebersicht: mit ihr lagen an
+           den Orten nur verstreute, halb durchsichtige Fetzen (3 bis 18 %
+           des Bildes), durch die das blaue Meer schien -- der Nebel wirkte
+           duenn und blaeulich. Jetzt wachsen sie zu zusammenhaengenden
+           Baenken zusammen, deren Kern das Wasser fast ganz deckt. */
+        '    float tn = th - 0.12;' +
+        '    float hu = smoothstep(tn - 0.03, tn + 0.07, n + (m - 0.5) * 0.18);' +
+        // wo die Bank dicker ist (n weit ueber der Schwelle), wird sie dichter und heller -- keine flache Farbschicht
+        '    float dk = smoothstep(tn, tn + 0.22, n + (m - 0.5) * 0.12);' +
+        '    float fn = hu * (0.62 + 0.26 * dk) * min(1.0, 0.68 * uDichte) * fz;' +
         '    fa = mix(fa, fn, uNah); hz *= 1.0 - 0.85 * uNah;' +
         '    vec3 grau = vec3(dot(uFarbe, vec3(0.3333)));' +
-        '    c = mix(c, grau * (1.0 + 0.22 * smoothstep(0.45, 0.85, m)), uNah);' +
+        '    c = mix(c, grau * (0.95 + 0.4 * dk + 0.3 * (m - 0.5)), uNah);' +
         '  }' +
         '  float ga = fa + hz * (1.0 - fa);' +
         '  if (ga < 0.004) discard;' +
@@ -5359,15 +5402,24 @@
          stetig mit der Entfernung -- im Flug blendet der Nebel fliessend um. */
       const rn = uebersicht ? k.dist / uebersicht.dist : 1;
       const tn = Math.max(0, Math.min(1, (0.5 - rn) / 0.35));
-      gl.uniform1f(n.loc.uNah, tn * tn * (3 - 2 * tn));
+      const nah = tn * tn * (3 - 2 * tn);
+      gl.uniform1f(n.loc.uNah, nah);
       const sw = N.schwelle || [0.68, 0.5];
       N.lagen.forEach(function (l, j) {
+        /* Aus der Naehe nur noch die unterste Lage, dafuer dichter: die drei
+           Lagen tragen fast dasselbe Muster in verschiedener Hoehe (mit
+           Ueberhoehung bis 1,3 km), in der Schraegsicht verschoben sie sich
+           strahlenfoermig gegeneinander -- verschmierte Strahlen statt
+           Nebelbaenken, und alles wirkte duenn und verteilt. Seenebel ist
+           eine tiefe Schicht. Nebenbei zwei ganzflaechige Durchgaenge weniger. */
+        const dichte = l[1] * (j ? 1 - nah : 1 + 0.6 * nah);
+        if (dichte < 0.004) return;
         // die Lagen ziehen unterschiedlich schnell (Windscherung), auf demselben Feld
         const w = wind(zeitS * (1 + 0.18 * j));
         gl.uniform2f(n.loc.uDrift, w.drift[0], w.drift[1]);
         gl.uniform2f(n.loc.uWind, w.dir[0], w.dir[1]);
         gl.uniform1f(n.loc.uZ, l[0] / 1000 * UEBERHOEHUNG);
-        gl.uniform1f(n.loc.uDichte, l[1]);
+        gl.uniform1f(n.loc.uDichte, dichte);
         gl.uniform3f(n.loc.uSchwelle, sw[0], sw[1], l[2] || 0);
         gl.uniform1f(n.loc.uT, zeitS);
         gl.uniform2f(n.loc.uVersatz, 0.013 * j, 0.007 * j);
