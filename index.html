@@ -5029,7 +5029,7 @@
       const fs = GENAU +
         'uniform sampler2D uRausch; uniform vec4 uKlar; uniform float uRund; uniform vec2 uNord; uniform vec3 uSchnitt; uniform float uWeich; uniform float uT; uniform vec2 uVersatz; uniform float uDichte; uniform vec4 uBand; uniform float uDunst;' +
         'uniform float uRandLage; uniform vec3 uFarbe; uniform vec3 uBoden; uniform vec2 uRand; uniform vec2 uDrift; uniform vec2 uWind; uniform vec3 uSchwelle; varying vec3 vW;' +
-        'uniform sampler2D uFormI; uniform sampler2D uFormA; uniform vec4 uBoxI; uniform vec4 uBoxA; uniform float uHz; uniform float uGel;' +
+        'uniform sampler2D uFormI; uniform sampler2D uFormA; uniform vec4 uBoxI; uniform vec4 uBoxA; uniform float uHz; uniform float uGel; uniform float uNah;' +
         'vec4 T(vec2 q){ return texture2D(uRausch, q); }' +
         /* Hoehe des Gelaendes unter dem Punkt (wie im Gelaende-Netz). Die
            Nebellagen sind flache Ebenen: wo ein Huegel durch sie stiess,
@@ -5111,9 +5111,10 @@
         // stufenweise: wo schon die groben Stufen weit unter der Schwelle liegen, sofort verwerfen (nur Dunst)
         '  float n = 0.4 * T(q * 0.45 + 0.13).b;' +
         '  hz *= fz;' +
-        '  if (n + 0.55 < th - 0.08 && dd < 0.6) { if (hz < 0.004) discard; gl_FragColor = vec4(hc, hz); return; }' +
+        '  float tu = th - 0.08 - 0.17 * uNah;' +
+        '  if (n + 0.55 < tu && dd < 0.6) { if (hz < 0.004) discard; gl_FragColor = vec4(hc, hz); return; }' +
         '  n += 0.25 * T(R1 * q * 0.92 + 0.37).a + 0.155 * T(R2 * q * 1.87 + 0.61).g;' +
-        '  if (n + 0.22 < th - 0.08 && dd < 0.6) { if (hz < 0.004) discard; gl_FragColor = vec4(hc, hz); return; }' +
+        '  if (n + 0.22 < tu && dd < 0.6) { if (hz < 0.004) discard; gl_FragColor = vec4(hc, hz); return; }' +
         '  float fe = fein(q);' +
         '  n += fe;' +
         // im klaren Gebiet laufen die einzelnen Schwaden weicher aus, keine scharfen Splitter
@@ -5126,6 +5127,20 @@
         '  float kern = smoothstep(th - 0.02, th + 0.3, n);' +
         '  vec3 c = uFarbe * (0.7 + 0.4 * kern + 0.4 * (fe - 0.0965));' +
         '  float fa = f * mix(0.6, 1.0, kern) * uDichte * fz;' +
+        /* Aus der Naehe (uNah 1) fuellte eine einzelne Schwade von 10 bis
+           20 km den ganzen Schirm -- ein weicher, heller Klecks wie ein Ei.
+           Dort tritt an ihre Stelle die feine Struktur: duenne, in
+           Windrichtung gezogene Fahnen von einigen hundert Metern, die nur
+           liegen, wo das grobe Feld Nebel traegt. Die grobe Form bleibt als
+           Huelle, sichtbar ist nur noch das feine Muster in ihr. */
+        '  if (uNah > 0.0) {' +
+        '    vec2 qq = q * vec2(0.45, 1.0);' +
+        '    float m = 0.5 * T(qq * 6.3 + 0.19).b + 0.3 * T(R1 * qq * 13.1 + 0.83).a + 0.2 * T(R2 * qq * 27.0 + 0.47).g;' +
+        '    float hu = smoothstep(th - 0.25, th + 0.2, n);' +
+        '    float fn = smoothstep(0.52, 0.8, m) * hu * 0.42 * uDichte * fz;' +
+        '    fa = mix(fa, fn, uNah); hz *= 1.0 - 0.5 * uNah;' +
+        '    c = mix(c, uFarbe * (0.78 + 0.5 * smoothstep(0.6, 0.85, m)), uNah);' +
+        '  }' +
         '  float ga = fa + hz * (1.0 - fa);' +
         '  if (ga < 0.004) discard;' +
         '  gl_FragColor = vec4((c * fa + hc * hz * (1.0 - fa)) / ga, ga);' +
@@ -5175,7 +5190,7 @@
         if (!gl.getProgramParameter(pr, gl.LINK_STATUS)) return;
         const n = { prog: pr, loc: {} };
         ['uM', 'uQ', 'uZ', 'uRausch', 'uKlar', 'uRund', 'uNord', 'uSchnitt', 'uWeich', 'uT', 'uVersatz', 'uDichte', 'uBand', 'uDunst', 'uRandLage', 'uFarbe', 'uBoden', 'uRand',
-         'uDrift', 'uWind', 'uSchwelle', 'uFormI', 'uFormA', 'uBoxI', 'uBoxA', 'uHz', 'uGel'].forEach(function (x) {
+         'uDrift', 'uWind', 'uSchwelle', 'uFormI', 'uFormA', 'uBoxI', 'uBoxA', 'uHz', 'uGel', 'uNah'].forEach(function (x) {
           n.loc[x] = gl.getUniformLocation(pr, x);
         });
         n.aW = gl.getAttribLocation(pr, 'aW');
@@ -5296,6 +5311,11 @@
         gl.uniform1f(n.loc.uHz, CFG.gelaende.hmax / 1000 * UEBERHOEHUNG);
       }
       gl.uniform1f(n.loc.uGel, gel ? 1 : 0);
+      /* Wie nah die Kamera ist: 0 in der Uebersicht, 1 an den Stationen,
+         stetig mit der Entfernung -- im Flug blendet der Nebel fliessend um. */
+      const rn = uebersicht ? k.dist / uebersicht.dist : 1;
+      const tn = Math.max(0, Math.min(1, (0.5 - rn) / 0.35));
+      gl.uniform1f(n.loc.uNah, tn * tn * (3 - 2 * tn));
       const sw = N.schwelle || [0.68, 0.5];
       N.lagen.forEach(function (l, j) {
         // die Lagen ziehen unterschiedlich schnell (Windscherung), auf demselben Feld
@@ -5626,9 +5646,14 @@
       // Die Loecher im aeusseren Netz liegen etwas innerhalb der inneren Bereiche: am Rand ueberlappen beide.
       const zx = (ra[2] - ra[0]) / A.netz * 1.5, zy = (ra[1] - ra[3]) / A.netz * 1.5;
       g.teile.push(netz(A, innen.map(function (b) { const ri = b.rand; return [ri[0] + zx, ri[1] - zy, ri[2] - zx, ri[3] + zy]; })));
-      // Wo aussen nichts zeichnet: genau die inneren Bereiche (hoechstens drei)
+      /* Wo aussen nichts zeichnet: die inneren Bereiche (hoechstens drei),
+         um eine halbe aeussere Zelle verkleinert. Endete das aeussere genau
+         an der Kante des inneren, lagen beide Raender verschieden hoch (das
+         grobe Netz glaettet die Berge) und schraeg von oben gesehen blieb
+         dazwischen eine Reihe schwarzer Pixel. So ueberlappen beide auf
+         dem schmalen Streifen und die Tiefe entscheidet. */
       g.loecher = new Float32Array(12);
-      for (let i = 0; i < 3; i++) g.loecher.set(innen[i] ? innen[i].rand : [1e9, -1e9, -1e9, 1e9], i * 4);
+      for (let i = 0; i < 3; i++) g.loecher.set(innen[i] ? (function (ri) { return [ri[0] + zx / 3, ri[1] - zy / 3, ri[2] - zx / 3, ri[3] + zy / 3]; })(innen[i].rand) : [1e9, -1e9, -1e9, 1e9], i * 4);
       gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, puf.t);
       gel = g;
       /* Die Bilder liegen jetzt als Texturen auf der Grafikkarte. Hielte die
