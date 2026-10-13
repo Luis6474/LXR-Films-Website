@@ -4134,7 +4134,14 @@
          Seite. "licht": Tiefe der Schatten, Staerke des Lichts, Glanz der Grate,
          Kontrast der Schatten aus der Naehe. */
       gelaende: { basis: 'daten/schottland', hmax: 1350, sdfKm: 1.5, licht: [0.4, 0.25, 0.05, 1.4],
-                  innen: { rand: [-151.637, 82.38, 63.738, -128.204], netz: 1024 },
+                  /* Hoehenlinien auf dem Land, im Stil der Linien im Meer: aus
+                     einem genauen Hoehenbild (0,5 m, "hoehe" am Bereich). Ihr
+                     Abstand passt sich der Naehe an (je naeher, desto feiner),
+                     jede vierte etwas kraeftiger. "farbe", "staerke", "dichte"
+                     (groesser: weniger Linien), "licht": wie viel von der
+                     Schattierung bleibt (1 = alles). */
+                  hoehenlinien: { farbe: [0.78, 0.77, 0.74], staerke: 0.14, dichte: 7, licht: 0.8 },
+                  innen: { rand: [-151.637, 82.38, 63.738, -128.204], netz: 1024, hoehe: true },
                   aussen: { rand: [-221.457, 197.711, 221.457, -197.878], netz: 384 } },
       ueberhoehung: 1.8,
       grund: [0.016, 0.03, 0.05],
@@ -4149,7 +4156,7 @@
       tinte: '226, 216, 190', tinteGl: [0.84, 0.82, 0.74],
       route: { hell: '255, 222, 178', schein: '255, 170, 90', leise: '240, 200, 150', sand: '250, 214, 168',
                ort: '255, 196, 130', ring: '255, 226, 190', punkt: '255, 236, 212' },
-      nah: [34, 42],                         // Kameraabstand an den Orten (quer / hochkant), km
+      nah: [52, 64],                         // Kameraabstand an den Orten (quer / hochkant), km
       ueberflug: 40,                         // ab so vielen km Strecke steigt der Flug bis zur ganzen Uebersicht
       wellen: [0.7, 3.2, 2.6, 8.0]          // Abstand fein/grob (km), Abklingen fein/grob (km)
     },
@@ -5453,7 +5460,24 @@
       const fs = kopfF + 'precision highp float;' +
         'uniform sampler2D uForm; uniform sampler2D uRel; uniform sampler2D uFarben; uniform sampler2D uKueste; uniform vec4 uKanal; uniform float uSdf; uniform vec4 uLoch[3];' +
         'uniform vec3 uAuge; uniform vec3 uGrund; uniform vec2 uNebel; uniform vec2 uRand; uniform vec4 uUfer; uniform vec4 uLicht; uniform vec3 uSee; uniform vec4 uSand; uniform vec2 uSandH;' +
+        'uniform sampler2D uHoehe; uniform vec2 uHN; uniform vec4 uHL; uniform vec4 uHF; uniform float uHR;' +
         rein + ' vec2 vUV; ' + rein + ' vec3 vW;' + (zwei ? 'out vec4 aus;' : '') +
+        /* Genaue Hoehe kubisch (B-Spline aus vier bilinearen Zugriffen): linear
+           gelesen knickten die Hoehenlinien an jedem Bildpunkt. */
+        'float hoehe(vec2 uv){ vec2 st = uv * uHN - 0.5, i = floor(st), f = st - i;' +
+        '  vec2 f2 = f * f, f3 = f2 * f;' +
+        '  vec2 w0 = (1.0 - 3.0 * f + 3.0 * f2 - f3) / 6.0, w1 = (4.0 - 6.0 * f2 + 3.0 * f3) / 6.0;' +
+        '  vec2 w2 = (1.0 + 3.0 * f + 3.0 * f2 - 3.0 * f3) / 6.0, w3 = f3 / 6.0;' +
+        '  vec2 g0 = w0 + w1, g1 = w2 + w3;' +
+        '  vec2 h0 = (i - 0.5 + w1 / g0) / uHN, h1 = (i + 1.5 + w3 / g1) / uHN;' +
+        '  return g0.y * (g0.x * ' + TX + '(uHoehe, h0).r + g1.x * ' + TX + '(uHoehe, vec2(h1.x, h0.y)).r)' +
+        '       + g1.y * (g0.x * ' + TX + '(uHoehe, vec2(h0.x, h1.y)).r + g1.x * ' + TX + '(uHoehe, h1).r); }' +
+        /* Abstand zur naechsten Linie im Abstand a, in Geraetepixeln, geteilt
+           durch die Linienbreite: am Rechner ein Pixel, bei hoher Dichte
+           (Handy) gut halb so breit wie ein CSS-Pixel -- in CSS-Pixeln
+           gemessen standen sie dort dreimal so breit, wuchtig neben den
+           feinen Linien im Meer. */
+        'float naehe(float h, float a, float gw){ return abs(fract(h / a + 0.5) - 0.5) * a / gw / max(1.0, 0.55 / uHF.a); }' +
         'void main(){' +
         // aussen: wo ein inneres Netz liegt, nichts zeichnen
         '  for (int i = 0; i < 3; i++) if (vW.x > uLoch[i].x && vW.x < uLoch[i].z && vW.y < uLoch[i].y && vW.y > uLoch[i].w) discard;' +
@@ -5475,11 +5499,38 @@
         '  float s = ' + TX + '(uRel, vUV).r / 0.4375;' +
         // Kontrast nur in den Schatten: verstaerkte Lichter machten helle Gipfel fast weiss.
         '  s = min(s, 1.0 + (s - 1.0) * uLicht.w) ;' +
+        // Mit Hoehenlinien bleibt nur ein Teil der Schattierung (die Form zeichnen die Linien)
+        '  s = mix(1.0, s, uHR);' +
         '  c *= mix(uLicht.x, 1.0, clamp(s, 0.0, 1.0)) + uLicht.y * max(s - 1.0, 0.0);' +
         '  c += uLicht.z * vec3(0.16, 0.17, 0.19) * max(s - 1.15, 0.0);' +
         /* Uferlinie: ein Pixel breit und halb so kraeftig wie die alte
            Stufenkante -- die feine Kueste hat viel mehr Buchten, kraeftiger
            umrahmt sie jede Insel und macht der Route Konkurrenz. */
+        /* Hoehenlinien: im Abstand a (Meter), passend zum Massstab an genau
+           diesem Bildpunkt (Meter je CSS-Pixel) -- in der Ferne gröber, sonst
+           wurden flache Huegel dort zu Kringeln. Stufen 10, 20, 40 ... m;
+           die Linien, die beim naechsten Schritt wegfallen (nicht auf 2a),
+           blenden mit t aus, so kommen und gehen sie stufenlos. Wo sie
+           enger als ein paar Bildpunkte stuenden (steile Hänge), werden sie
+           leiser; unter a/2 (Kueste) und auf ebenen Flaechen (Seen liegen
+           flach auf ihrem Pegel) keine. */
+        '  if (uHL.w > 0.5) {' +
+        '    float mpp = max(fwidth(vW.x), fwidth(vW.y)) * 1000.0 / uHF.a;' +
+        '    float st = max(0.0, log2(uHL.x * mpp / 10.0)), a = 10.0 * exp2(floor(st)), t = smoothstep(0.0, 1.0, fract(st));' +
+        '    float hm = hoehe(vUV), gw = max(fwidth(hm), 1e-4);' +
+        '    float l1 = 1.0 - smoothstep(0.3, 1.0, naehe(hm, a, gw));' +
+        '    float l2 = 1.0 - smoothstep(0.3, 1.0, naehe(hm, 2.0 * a, gw));' +
+        '    float l4 = 1.0 - smoothstep(0.4, 1.3, naehe(hm, 4.0 * a, gw));' +
+        '    float l8 = 1.0 - smoothstep(0.4, 1.3, naehe(hm, 8.0 * a, gw));' +
+        '    float lin = max(l2, l1 * (1.0 - t));' +
+        '    float idx = max(l8, l4 * (1.0 - t));' +
+        '    float dicht = smoothstep(2.5, 6.0, a / gw * uHF.a);' +
+        // zum Rand des feinen Bereichs hin aus (dort geht es ins grobe Gelaende ueber)
+        '    vec2 rd = min(vUV, 1.0 - vUV);' +
+        '    float eben = smoothstep(0.004, 0.012, gw / (mpp * uHF.a));' +
+        '    float k = (lin + 0.5 * idx) * dicht * eben * smoothstep(0.3 * a, 0.7 * a, hm) * land * smoothstep(0.0, 0.04, min(rd.x, rd.y));' +
+        '    c = mix(c, uHF.rgb, clamp(k * uHL.z, 0.0, 1.0));' +
+        '  }' +
         '  float u = 1.0 - smoothstep(0.25 * w, 0.85 * w, abs(sd - 0.7 * w));' +
         '  c = mix(mix(c, uSee, see), uUfer.rgb, u * uUfer.a * 0.45);' +
         '  float n = smoothstep(uNebel.x, uNebel.y, length(vW - uAuge));' +
@@ -5526,9 +5577,15 @@
       const teile = (G.bereiche || [Object.assign({ name: 'innen', gross: true, kueste: true }, G.innen)])
         .concat([Object.assign({ name: 'aussen' }, G.aussen)]);
       const liste = [];
+      /* Hoehenlinien nur mit WebGL 2 (das genaue Hoehenbild liegt als
+         Gleitkomma-Textur vor). Geladen wird vor dem Kontext: gefragt wird
+         deshalb, ob der Browser WebGL 2 kennt; laeuft die Karte doch mit
+         WebGL 1, bleibt das Bild beim Hochladen liegen. */
+      const linien = !!(G.hoehenlinien && typeof WebGL2RenderingContext !== 'undefined');
       teile.forEach(function (e) {
         liste.push(bild('-form-' + e.name + '.png'), bild('-relief-' + e.name + (gross && e.gross ? '-gross' : '') + '.webp'),
-                   gross && e.kueste ? bild('-kueste-' + e.name + '.png') : null);
+                   gross && e.kueste ? bild('-kueste-' + e.name + '.png') : null,
+                   linien && e.hoehe ? bild('-hoehe-' + e.name + (gross ? '-gross' : '') + '.webp') : null);
       });
       if (G.abstand !== false) liste.push(bild('-abstand.png'));
       return Promise.all(liste).then(function (b) {
@@ -5543,8 +5600,18 @@
           return { form: form, rel: rel, rand: e.rand, sand: !!e.sand, netz: gross ? e.netz : 4 * Math.round(e.netz * 0.15), n: n, hoehen: h };
         }
         const g = { teile: teile.map(function (e, i) {
-          const t = bereich(b[i * 3], b[i * 3 + 1], e);
-          if (b[i * 3 + 2]) t.kueste = b[i * 3 + 2];
+          const t = bereich(b[i * 4], b[i * 4 + 1], e);
+          if (b[i * 4 + 2]) t.kueste = b[i * 4 + 2];
+          if (b[i * 4 + 3]) {
+            // Hoehe in Metern: Rot das hohe, Gruen das niedrige Byte, in Stufen von 0,5 m
+            const hb = b[i * 4 + 3], n = hb.naturalWidth, cv = document.createElement('canvas');
+            cv.width = cv.height = n;
+            const c = cv.getContext('2d', { willReadFrequently: true });
+            c.drawImage(hb, 0, 0);
+            const px = c.getImageData(0, 0, n, n).data, m = new Float32Array(n * n);
+            for (let j = 0; j < n * n; j++) m[j] = (px[j * 4] * 256 + px[j * 4 + 1]) * 0.5;
+            t.genau = m; t.genauN = n;
+          }
           return t;
         }) };
         // Abstand zum Ufer fuer die Wasserlinien, passend zu dieser Kueste
@@ -5568,7 +5635,7 @@
       const q = gelaendeQuellen(zwei), pr = glProgramm(q[0], q[1]);
       if (!gl.getProgramParameter(pr, gl.LINK_STATUS)) return;
       const g = { prog: pr, loc: {}, teile: [] };
-      ['uM', 'uBox', 'uForm', 'uHz', 'uRel', 'uFarben', 'uKueste', 'uKanal', 'uSdf', 'uLoch', 'uAuge', 'uGrund', 'uNebel', 'uRand', 'uUfer', 'uLicht', 'uSee', 'uSand', 'uSandH'].forEach(function (n) {
+      ['uM', 'uBox', 'uForm', 'uHz', 'uRel', 'uFarben', 'uKueste', 'uKanal', 'uSdf', 'uLoch', 'uAuge', 'uGrund', 'uNebel', 'uRand', 'uUfer', 'uLicht', 'uSee', 'uSand', 'uSandH', 'uHoehe', 'uHN', 'uHL', 'uHF', 'uHR'].forEach(function (n) {
         g.loc[n] = gl.getUniformLocation(pr, n);
       });
       g.aG = gl.getAttribLocation(pr, 'aG');
@@ -5633,6 +5700,18 @@
           stuecke.push(st);
         }
         const t = { b: b, pv: gl.createBuffer(), pt: {}, stuecke: stuecke, form: textur(b.form), rel: textur(b.rel, 0, true) };
+        if (b.genau && zwei) {
+          /* Als R16F (Gleitkomma, mit WebGL 2 immer bilinear lesbar), ohne
+             Mipmaps: R16F ist ohne Erweiterung nicht renderbar. */
+          t.genau = gl.createTexture();
+          gl.bindTexture(gl.TEXTURE_2D, t.genau);
+          gl.texImage2D(gl.TEXTURE_2D, 0, gl.R16F, b.genauN, b.genauN, 0, gl.RED, gl.FLOAT, b.genau);
+          gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+          gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+          gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+          gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+          t.genauN = b.genauN;
+        }
         t.kueste = b.kueste ? textur(b.kueste, 0, true) : t.form;
         gl.bindBuffer(gl.ARRAY_BUFFER, t.pv); gl.bufferData(gl.ARRAY_BUFFER, pos, gl.STATIC_DRAW);
         [1, 2, 4].forEach(function (k) {
@@ -5661,7 +5740,7 @@
          Speicher (das 8192er allein 256 MB) -- dann fehlte der Platz fuer
          die Bilder der Tafel, sie blieben schwarze Felder. Nach einem
          Kontextverlust laedt webglcontextrestored sie neu. */
-      GEL.teile.forEach(function (b) { b.form = b.rel = b.kueste = null; });
+      GEL.teile.forEach(function (b) { b.form = b.rel = b.kueste = b.genau = null; });
     }
     function gelaendeZeichnen(k, cam) {
       const g = gel, L = g.loc, G = CFG.gelaende, letzter = g.teile.length - 1, keins = new Float32Array([1e9, -1e9, -1e9, 1e9, 1e9, -1e9, -1e9, 1e9, 1e9, -1e9, -1e9, 1e9]);
@@ -5684,7 +5763,10 @@
       gl.uniform3fv(L.uSee, MEER_FLACH);
       const sand = G.sand || [0, 0, 0, 0, 0, 1];
       gl.uniform2f(L.uSandH, sand[4] / G.hmax, sand[5] / G.hmax);
-      gl.uniform1i(L.uForm, 0); gl.uniform1i(L.uRel, 1); gl.uniform1i(L.uFarben, 2); gl.uniform1i(L.uKueste, 3);
+      gl.uniform1i(L.uForm, 0); gl.uniform1i(L.uRel, 1); gl.uniform1i(L.uFarben, 2); gl.uniform1i(L.uKueste, 3); gl.uniform1i(L.uHoehe, 4);
+      // Hoehenlinien (Abstand rechnet der Shader je Bildpunkt aus dem Massstab)
+      const HL = G.hoehenlinien, dpr = gl.drawingBufferHeight / Math.max(1, H);
+      if (HL) gl.uniform4f(L.uHF, HL.farbe[0], HL.farbe[1], HL.farbe[2], 1 / dpr);
       gl.activeTexture(gl.TEXTURE2); gl.bindTexture(gl.TEXTURE_2D, g.farben);
       gl.enable(gl.BLEND); gl.depthMask(true);
       gl.enableVertexAttribArray(g.aG);
@@ -5693,6 +5775,11 @@
         gl.uniform4f(L.uBox, r[0], r[1], r[2], r[3]);
         gl.uniform4fv(L.uLoch, i === letzter ? g.loecher : keins);
         gl.uniform4f(L.uSand, sand[0], sand[1], sand[2], t.b.sand ? sand[3] : 0);
+        const mitLinien = !!(HL && t.genau);
+        gl.uniform4f(L.uHL, HL ? HL.dichte : 0, 0, HL ? HL.staerke : 0, mitLinien ? 1 : 0);
+        gl.uniform1f(L.uHR, mitLinien ? HL.licht : 1);
+        gl.activeTexture(gl.TEXTURE4); gl.bindTexture(gl.TEXTURE_2D, mitLinien ? t.genau : t.rel);
+        if (mitLinien) gl.uniform2f(L.uHN, t.genauN, t.genauN);
         gl.activeTexture(gl.TEXTURE3); gl.bindTexture(gl.TEXTURE_2D, t.kueste);
         if (t.kueste === t.form) gl.uniform4f(L.uKanal, 0, 1, 0, 0); else gl.uniform4f(L.uKanal, 1, 0, 0, 0);
         gl.activeTexture(gl.TEXTURE1); gl.bindTexture(gl.TEXTURE_2D, t.rel);

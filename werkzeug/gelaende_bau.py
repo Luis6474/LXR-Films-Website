@@ -139,7 +139,7 @@ def seen_holen(name, box, nur_bekannte):
     return aus
 
 
-def bereich(name, z, box, form_px, relief_px, kueste_px=None, seen=None, see_min_km2=0.02, inseln=False):
+def bereich(name, z, box, form_px, relief_px, kueste_px=None, seen=None, see_min_km2=0.02, inseln=False, hoehe_px=None):
     h, rand, pix = dem(z, *box)
     print(name, "Raster", h.shape, "Zoom", z)
     h = ndimage.median_filter(h.astype(np.float32), size=3)
@@ -319,6 +319,21 @@ def bereich(name, z, box, form_px, relief_px, kueste_px=None, seen=None, see_min
         print("  ", ZIEL + "-kueste-%s.png" % name, os.path.getsize(ZIEL + "-kueste-%s.png" % name), "Bytes")
     for f in ("-form-%s.png",):
         print("  ", ZIEL + f % name, os.path.getsize(ZIEL + f % name), "Bytes")
+    if hoehe_px:
+        # Hoehe genau (fuer die Hoehenlinien auf dem Land): in Stufen von
+        # "hoeheStufe" Metern (0,5), Rot das hohe, Gruen das niedrige Byte,
+        # verlustfrei als WebP (16 Bit voll waeren mehr als doppelt so gross,
+        # feiner als 0,5 m braucht keine Linie). Leicht geglaettet, sonst
+        # zittern die Linien im Rauschen der Daten; im Meer 0.
+        hh = ndimage.gaussian_filter(np.where(land, np.clip(h, 0, HMAX), 0), G.get("linienWeich", 1.0))
+        stufe = G.get("hoeheStufe", 0.5)
+        for i, px in enumerate(hoehe_px if isinstance(hoehe_px, list) else [hoehe_px]):
+            v = np.clip(np.round(auf(hh, px, 3) / stufe), 0, 65535).astype(np.uint16)
+            rg = np.zeros((px, px, 3), np.uint8)
+            rg[..., 0] = v >> 8; rg[..., 1] = v & 255
+            f = ZIEL + "-hoehe-%s%s.webp" % (name, "-gross" if i else "")
+            Image.fromarray(rg, "RGB").save(f, lossless=True, quality=100, method=6)
+            print("  ", f, os.path.getsize(f), "Bytes")
     return {"rand": [round(v, 3) for v in rand]}
 
 
@@ -333,7 +348,7 @@ for b in BEREICHE:
     if NUR and b["name"] not in NUR: continue
     sn = seen_holen(b["name"], b["box"], False) if G.get("seen") else None
     aus[b["name"]] = bereich(b["name"], b["zoom"], b["box"], b["form"], b["relief"], b.get("kueste"),
-                             sn, G.get("seeMinKm2", 0.02), b.get("inseln", False))
+                             sn, G.get("seeMinKm2", 0.02), b.get("inseln", False), b.get("hoehe"))
 A = G["aussen"]
 if NUR and "aussen" not in NUR: print(json.dumps(aus)); sys.exit()
 box_a = CFG["ausschnitt"][0:1] + [CFG["ausschnitt"][2], CFG["ausschnitt"][1], CFG["ausschnitt"][3]]
