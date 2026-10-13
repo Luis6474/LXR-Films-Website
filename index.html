@@ -666,11 +666,19 @@
   .card-titleline { display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap; }
   .card-titleline .name { font-family: 'Noto Serif', Georgia, serif; font-size: 1.08em; letter-spacing: 0.03em; }
   .card-titleline .type { font-size: 0.78em; color: var(--text-dim); }
-  .card-teaser { margin-top: 4px; font-size: 0.87em; color: var(--text-dim); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-  /* Gedämpft und dunkel -- die Projektfarbe kommt erst beim Darüberfahren durch. */
+  /* Bis zu zwei Zeilen statt "..." -- der Satz zu The Same Gray war bei
+     1440 px mitten im letzten Wort abgeschnitten. */
+  .card-teaser {
+    margin-top: 4px; font-size: 0.87em; color: var(--text-dim);
+    display: -webkit-box; -webkit-line-clamp: 2; line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
+  }
+  /* Ruhig, aber lesbar: Noto Serif statt der Haarstriche der Caslon Display,
+     etwas groesser und heller als vorher (#5d666c ging auf dem dunklen Grund
+     unter). Die Projektfarbe kommt beim Darüberfahren durch. */
   .card-open {
-    flex-shrink: 0; font-size: 0.68em; letter-spacing: 0.18em; text-transform: uppercase;
-    color: #5d666c;
+    flex-shrink: 0; font-family: 'Noto Serif', Georgia, serif;
+    font-size: 0.74em; letter-spacing: 0.16em; text-transform: uppercase;
+    color: #a3aca7;
     transition: color 0.6s var(--ease);
   }
   @media (hover: hover) { .card-trigger:hover .card-open { color: var(--card-accent, var(--accent)); } }
@@ -793,8 +801,8 @@
     margin-left: auto; flex-shrink: 0;
     display: inline-flex; align-items: center; gap: 9px;
     background: none; border: none;
-    color: var(--text-dim); font: inherit;
-    font-size: 0.72em; font-weight: 500;
+    color: var(--text); font: inherit; font-family: 'Noto Serif', Georgia, serif;
+    font-size: 0.76em; font-weight: 400;
     letter-spacing: 0.18em; text-transform: uppercase;
     padding: 14px 2px; cursor: pointer;
     position: relative;
@@ -807,7 +815,7 @@
   }
   .schau-ansehen svg { width: 13px; height: 13px; display: block; }
   @media (hover: hover) {
-    .schau-ansehen:hover { color: var(--text); }
+    .schau-ansehen:hover { color: #fff; }
     .schau-ansehen:hover::after { width: calc(100% - 26px); }
   }
   .schau-ansehen:focus-visible { outline: 1px solid var(--accent); outline-offset: 2px; }
@@ -922,9 +930,15 @@
     background: linear-gradient(to top, rgba(0,0,0,0.55), transparent);
     opacity: 0; transition: opacity 0.5s var(--ease);
   }
-  .viewer-stage:hover .stage-ui,
-  .stage-ui:focus-within,
+  /* Nur solange sich der Zeiger bewegt (oder auf der Leiste steht), danach
+     nach 1,6 s wieder weg -- vorher blieb sie stehen, solange die Maus
+     irgendwo ueber dem Film lag. Fokus zeigt sie nur bei Tastaturbedienung,
+     sonst blieb sie nach jedem Klick auf einen Knopf dauerhaft stehen. */
+  .stage-ui:hover,
   .stage-ui.sichtbar { opacity: 1; }
+  /* eigene Regel: wo :has fehlt, faellt sonst die ganze Liste weg */
+  .stage-ui:has(:focus-visible) { opacity: 1; }
+  .stage-wrap.ruhig, .stage-wrap.ruhig * { cursor: none; }
   /* Ohne Kasten, nur die Zeichen selbst -- gerahmte Felder sahen auf dem
      Film nach Bedienoberflaeche aus. Die Trefferflaeche bleibt 44 px gross;
      der Schatten haelt ein weisses Zeichen auf hellem Einzelbild sichtbar. */
@@ -1029,10 +1043,8 @@
     transition: opacity 0.9s var(--ease);
   }
   .gross-schwarz.weg { opacity: 0; }
-  /* Im Vollbild ist die Steuerung die einzige Ausstiegsmoeglichkeit -- sie
-     darf sich dort nicht erst beim Ueberfahren zeigen. */
-  .stage-wrap:fullscreen .stage-ui,
-  .stage-wrap.fs-ersatz .stage-ui { opacity: 1; }
+  /* Im Vollbild ist die Steuerung die einzige Ausstiegsmoeglichkeit (neben
+     Esc): jede Bewegung und jedes Tippen holt sie zurueck, siehe leisteZeigen. */
 
   .viewer-head { max-width: 64ch; margin: 44px auto 0; }
   .viewer-head .eyebrow { display: block; color: var(--p-accent); margin-bottom: 12px; }
@@ -1554,7 +1566,7 @@
                 <span class="name">The Same Gray</span>
                 <span class="type">Kurzfilm · Schottland</span>
               </div>
-              <p class="card-teaser">[Ein-Satz-Teaser — Text fehlt mir noch]</p>
+              <p class="card-teaser">Ein alter Seemann, ein Leben auf See und eine Küste, die ihm bekannt vorkommt.</p>
             </div>
             <span class="card-open" aria-hidden="true">Ansehen</span>
           </div>
@@ -1658,6 +1670,7 @@
                alt="Segelschiff auf stürmischer See im Abendlicht"
                loading="lazy" decoding="async">
         </div>
+        <figcaption>Frame aus meinem Projekt <span class="zusammen">„<button type="button" class="in-link" data-viewer="v2">The Same Gray</button>“</span></figcaption>
       </figure>
       <div class="band-grid">
         <div class="band-text reveal">
@@ -1789,11 +1802,11 @@
       <div class="viewer-grid">
         <div><img src="Images/web/nahaufnahme-stephen-1600.webp" srcset="Images/web/nahaufnahme-stephen-800.webp 800w, Images/web/nahaufnahme-stephen-1200.webp 1200w, Images/web/nahaufnahme-stephen-1600.webp 1600w" sizes="(min-width: 760px) 550px, 100vw" alt="Nahaufnahme des Porträtierten" loading="lazy" decoding="async"></div>
         <div><img src="Images/web/still-2026-10-11-163506-1-39-2-1600.webp" srcset="Images/web/still-2026-10-11-163506-1-39-2-800.webp 800w, Images/web/still-2026-10-11-163506-1-39-2-1200.webp 1200w, Images/web/still-2026-10-11-163506-1-39-2-1600.webp 1600w" sizes="(min-width: 760px) 550px, 100vw" alt="Der Porträtierte mit Fernrohr in den Dünen" loading="lazy" decoding="async"></div>
-        <div><img src="Images/web/highland-cattle-1600.webp" srcset="Images/web/highland-cattle-800.webp 800w, Images/web/highland-cattle-1200.webp 1200w, Images/web/highland-cattle-1600.webp 1600w" sizes="(min-width: 760px) 550px, 100vw" alt="Highland Cattle im Profil" loading="lazy" decoding="async"></div>
-        <div><img src="Images/web/schaf-1600.webp" srcset="Images/web/schaf-800.webp 800w, Images/web/schaf-1200.webp 1200w, Images/web/schaf-1600.webp 1600w" sizes="(min-width: 760px) 550px, 100vw" alt="Schaf auf einer Klippe über dem Meer" loading="lazy" decoding="async"></div>
-        <div><img src="Images/web/stephen-am-strand-1600.webp" srcset="Images/web/stephen-am-strand-800.webp 800w, Images/web/stephen-am-strand-1200.webp 1200w, Images/web/stephen-am-strand-1600.webp 1600w" sizes="(min-width: 760px) 550px, 100vw" alt="Porträt an der Küste" loading="lazy" decoding="async"></div>
-        <div><img src="Images/web/nebelberg-1600.webp" srcset="Images/web/nebelberg-800.webp 800w, Images/web/nebelberg-1200.webp 1200w, Images/web/nebelberg-1600.webp 1600w" sizes="(min-width: 760px) 550px, 100vw" alt="Nebelverhangener Bergrücken" loading="lazy" decoding="async"></div>
         <div><img src="Images/web/still-2026-10-11-163506-1-12-1-1600.webp" srcset="Images/web/still-2026-10-11-163506-1-12-1-800.webp 800w, Images/web/still-2026-10-11-163506-1-12-1-1200.webp 1200w, Images/web/still-2026-10-11-163506-1-12-1-1600.webp 1600w" sizes="(min-width: 760px) 550px, 100vw" alt="Neist Point mit Leuchtturm über dem grauen Meer" loading="lazy" decoding="async"></div>
+        <div><img src="Images/web/schaf-1600.webp" srcset="Images/web/schaf-800.webp 800w, Images/web/schaf-1200.webp 1200w, Images/web/schaf-1600.webp 1600w" sizes="(min-width: 760px) 550px, 100vw" alt="Schaf auf einer Klippe über dem Meer" loading="lazy" decoding="async"></div>
+        <div><img src="Images/web/highland-cattle-1600.webp" srcset="Images/web/highland-cattle-800.webp 800w, Images/web/highland-cattle-1200.webp 1200w, Images/web/highland-cattle-1600.webp 1600w" sizes="(min-width: 760px) 550px, 100vw" alt="Highland Cattle im Profil" loading="lazy" decoding="async"></div>
+        <div><img src="Images/web/nebelberg-1600.webp" srcset="Images/web/nebelberg-800.webp 800w, Images/web/nebelberg-1200.webp 1200w, Images/web/nebelberg-1600.webp 1600w" sizes="(min-width: 760px) 550px, 100vw" alt="Nebelverhangener Bergrücken" loading="lazy" decoding="async"></div>
+        <div><img src="Images/web/stephen-am-strand-1600.webp" srcset="Images/web/stephen-am-strand-800.webp 800w, Images/web/stephen-am-strand-1200.webp 1200w, Images/web/stephen-am-strand-1600.webp 1600w" sizes="(min-width: 760px) 550px, 100vw" alt="Porträt an der Küste" loading="lazy" decoding="async"></div>
         <div><img src="Images/web/still-2026-10-11-163506-3-8-1-1600.webp" srcset="Images/web/still-2026-10-11-163506-3-8-1-800.webp 800w, Images/web/still-2026-10-11-163506-3-8-1-1200.webp 1200w, Images/web/still-2026-10-11-163506-3-8-1-1600.webp 1600w" sizes="(min-width: 760px) 550px, 100vw" alt="Gemälde eines Hafens mit Segelschiffen" loading="lazy" decoding="async"></div>
       </div>
       <button class="viewer-close">Schließen</button>
@@ -1809,7 +1822,7 @@
   <div class="viewer-scroll">
     <div class="viewer-inner">
       <div class="stage-wrap aura-host">
-      <div class="viewer-stage" data-yt="FfBvRlTPpvQ" data-ar="1.778">
+      <div class="viewer-stage" data-yt="FfBvRlTPpvQ" data-ar="2.07">
         <img src="Images/web/oesterreich25/still-2025-08-22-215508-3-29-1-1600.webp"
              srcset="Images/web/oesterreich25/still-2025-08-22-215508-3-29-1-800.webp 800w, Images/web/oesterreich25/still-2025-08-22-215508-3-29-1-1200.webp 1200w, Images/web/oesterreich25/still-2025-08-22-215508-3-29-1-1600.webp 1600w, Images/web/oesterreich25/still-2025-08-22-215508-3-29-1-2400.webp 2400w"
              sizes="(min-width: 1120px) 1120px, 100vw"
@@ -1866,7 +1879,7 @@
   <div class="viewer-scroll">
     <div class="viewer-inner">
       <div class="stage-wrap aura-host">
-      <div class="viewer-stage" data-yt="o1YdluXKf3g" data-ar="1.778">
+      <div class="viewer-stage" data-yt="o1YdluXKf3g" data-ar="2.07">
         <img src="Images/web/track-of-time/2-10-2-10-1-1600.webp"
              srcset="Images/web/track-of-time/2-10-2-10-1-800.webp 800w, Images/web/track-of-time/2-10-2-10-1-1200.webp 1200w, Images/web/track-of-time/2-10-2-10-1-1600.webp 1600w, Images/web/track-of-time/2-10-2-10-1-2400.webp 2400w"
              sizes="(min-width: 1120px) 1120px, 100vw"
@@ -2771,6 +2784,20 @@
     ui.appendChild(fsBtn);
     stage.appendChild(ui);
     stage.classList.add('has-video');
+    /* Die Leiste kommt mit jeder Bewegung des Zeigers ueber dem Film und
+       jedem Tippen; einmal je Buehne angemeldet (sie bleibt, der Film wird
+       bei jedem Oeffnen neu eingehaengt). */
+    const wrap = stage.closest('.stage-wrap') || stage;
+    if (!wrap._leisteAn) {
+      wrap._leisteAn = true;
+      ['pointermove', 'pointerdown'].forEach(function (t) {
+        wrap.addEventListener(t, function () { if (stage.classList.contains('has-video')) leisteZeigen(stage, 1600); }, { passive: true });
+      });
+      wrap.addEventListener('pointerleave', function () {
+        const u = stage.querySelector('.stage-ui');
+        if (u) u.classList.remove('sichtbar');
+      });
+    }
   }
 
   function unmountVideo(viewer) {
@@ -3034,12 +3061,18 @@
      Weil die Leiste ohne Zeiger unsichtbar bleibt, blendet sie sich nach jedem
      Tastendruck kurz ein -- sonst gaebe es keine Rueckmeldung. */
   let leisteZeit = null;
-  function leisteZeigen(stage) {
+  function leisteZeigen(stage, ms) {
     const ui = stage.querySelector('.stage-ui');
     if (!ui) return;
+    const wrap = stage.closest('.stage-wrap');
     ui.classList.add('sichtbar');
+    if (wrap) wrap.classList.remove('ruhig');
     clearTimeout(leisteZeit);
-    leisteZeit = setTimeout(function () { ui.classList.remove('sichtbar'); }, 2200);
+    leisteZeit = setTimeout(function () {
+      ui.classList.remove('sichtbar');
+      // Im Vollbild verschwindet mit der Leiste auch der Zeiger
+      if (wrap && (document.fullscreenElement === wrap || wrap.classList.contains('fs-ersatz'))) wrap.classList.add('ruhig');
+    }, ms || 2200);
   }
 
   document.addEventListener('keydown', function (e) {
@@ -4077,9 +4110,8 @@
       medien: {
         0: [kbild(KSG + 'img-7140'), kbild(KSG + 'img-7146'), kbild(KSG + 'img-7151'),
             kfilm(KSG + 'film-auchindrain-1'), kfilm(KSG + 'film-auchindrain-2')],
-        1: [kbild(KSG + 'img-7206'),
-            kfilm(KSG + 'film-ardnamurchan-1'), kfilm(KSG + 'film-ardnamurchan-2')],
-        2: [kbild(KSG + 'img-7216'), kbild(KSG + 'img-7219'), kbild(KSG + 'img-7227'),
+        1: [kfilm(KSG + 'film-ardnamurchan-1'), kfilm(KSG + 'film-ardnamurchan-2'), kfilm(KSG + 'film-ardnamurchan-3')],
+        2: [kbild(KSG + 'img-7206'), kbild(KSG + 'img-7216'), kbild(KSG + 'img-7219'), kbild(KSG + 'img-7227'),
             kfilm(KSG + 'film-sanna-beach')],
         3: [kfilm(KSG + 'film-skye'), kbild(KSG + 'mam-udal')],
         4: [kbild(KSG + 'img-7291'), kfilm(KSG + 'film-storr'), kfilm(KSG + 'film-storr-2')],
@@ -4092,7 +4124,7 @@
       texte: {
         0: 'Erste Station. Stephen Corrall getroffen, am 17. bis spät in die Nacht das Township vorbereitet. Dreh am 18. von 7 bis 13 Uhr, die Innenaufnahmen. Das Tageslicht reichte nicht, also haben wir uns die Morgensonne mit einem Lichtsetup selbst gebaut.',
         1: 'Weiterfahrt am Nachmittag des 18. Gedreht in den Bergen der Halbinsel und in der Blauen Stunde an der Küste.',
-        2: 'Schwarz-Weiß-Aufnahmen auf den Hügeln und am Strand, bei Sonne, darunter Stephen als Gestrandeter. Dazu die Farbaufnahmen für die Gegenwart, bei schlechterem Wetter.',
+        2: 'Schwarz-Weiß-Aufnahmen von Stephen als Gestrandetem, in den Hügeln und vor allem am Strand, bei Sonne. Dazu Farbaufnahmen aus der Gegenwart, ebenfalls am Strand: Stephen als Fischer und Stephen, der aufs Meer schaut. Dort war das Wetter schlechter.',
         3: 'Ab dem 20. auf Skye. Mit Drohne und Teleobjektiv: Tiere, Nebel, Meer.',
         4: 'Berge im Nebel beim Old Man of Storr, zu sehen ganz am Anfang des Films.',
         5: 'Viele Kormorane. Hier ist auch die Eröffnungsszene entstanden.',
@@ -4134,13 +4166,11 @@
          Seite. "licht": Tiefe der Schatten, Staerke des Lichts, Glanz der Grate,
          Kontrast der Schatten aus der Naehe. */
       gelaende: { basis: 'daten/schottland', hmax: 1350, sdfKm: 1.5, licht: [0.4, 0.25, 0.05, 1.4],
-                  /* Hoehenlinien auf dem Land, im Stil der Linien im Meer: aus
-                     einem genauen Hoehenbild (0,5 m, "hoehe" am Bereich). Ihr
-                     Abstand passt sich der Naehe an (je naeher, desto feiner),
-                     jede vierte etwas kraeftiger. "farbe", "staerke", "dichte"
-                     (groesser: weniger Linien), "licht": wie viel von der
-                     Schattierung bleibt (1 = alles). */
-                  hoehenlinien: { farbe: [0.78, 0.77, 0.74], staerke: 0.14, dichte: 7, licht: 0.8 },
+                  /* Hoehenlinien auf dem Land (Stil der Linien im Meer): auf
+                     Luis' Wunsch aus. Wieder an mit
+                     hoehenlinien: { farbe: [0.78, 0.77, 0.74], staerke: 0.14, dichte: 7, licht: 0.8 }
+                     -- das genaue Hoehenbild dazu baut gelaende_bau.py, wenn
+                     "hoehe": [2048, 4096] unter "innen" in schottland.json steht. */
                   innen: { rand: [-151.637, 82.38, 63.738, -128.204], netz: 1024, hoehe: true },
                   aussen: { rand: [-221.457, 197.711, 221.457, -197.878], netz: 384 } },
       ueberhoehung: 1.8,
@@ -4156,7 +4186,7 @@
       tinte: '226, 216, 190', tinteGl: [0.84, 0.82, 0.74],
       route: { hell: '255, 222, 178', schein: '255, 170, 90', leise: '240, 200, 150', sand: '250, 214, 168',
                ort: '255, 196, 130', ring: '255, 226, 190', punkt: '255, 236, 212' },
-      nah: [52, 64],                         // Kameraabstand an den Orten (quer / hochkant), km
+      nah: [56, 68],                         // Kameraabstand an den Orten (quer / hochkant), km
       ueberflug: 40,                         // ab so vielen km Strecke steigt der Flug bis zur ganzen Uebersicht
       wellen: [0.7, 3.2, 2.6, 8.0]          // Abstand fein/grob (km), Abklingen fein/grob (km)
     },
@@ -4493,7 +4523,7 @@
       // Im Hochformat sieht eine steile Schraegsicht vor allem Horizont;
       // dort blickt die Kamera etwas mehr nach unten und steht hoeher.
       const hoch = H / W > 1.2;
-      NAH.pitch = hoch ? 42 : 56;
+      NAH.pitch = hoch ? 49 : 63;
       const nah = CFG.nah || [24, 30];
       NAH.dist = hoch ? nah[1] : nah[0];
       /* Mit Gelaende liegen Orte und Route auf seiner Hoehe; die Route wird
@@ -5144,9 +5174,13 @@
         '    vec2 qq = q * vec2(0.45, 1.0);' +
         '    float m = 0.5 * T(qq * 6.3 + 0.19).b + 0.3 * T(R1 * qq * 13.1 + 0.83).a + 0.2 * T(R2 * qq * 27.0 + 0.47).g;' +
         '    float hu = smoothstep(th - 0.25, th + 0.2, n);' +
-        '    float fn = smoothstep(0.52, 0.8, m) * hu * 0.42 * uDichte * fz;' +
-        '    fa = mix(fa, fn, uNah); hz *= 1.0 - 0.5 * uNah;' +
-        '    c = mix(c, uFarbe * (0.78 + 0.5 * smoothstep(0.6, 0.85, m)), uNah);' +
+        /* Wirkte trotzdem wie duesterer Dampf: graue Flecken mit dunklem Hof.
+           Jetzt ein heller, weicher Schleier in der Huelle, in dem die Fahnen
+           nur sanft dichter werden; der dunkle Dunst tritt aus der Naehe fast
+           ganz zurueck. */
+        '    float fn = (0.2 * hu + 0.26 * smoothstep(0.4, 0.92, m) * hu) * uDichte * fz;' +
+        '    fa = mix(fa, fn, uNah); hz *= 1.0 - 0.85 * uNah;' +
+        '    c = mix(c, uFarbe * (0.95 + 0.3 * smoothstep(0.45, 0.9, m)), uNah);' +
         '  }' +
         '  float ga = fa + hz * (1.0 - fa);' +
         '  if (ga < 0.004) discard;' +
