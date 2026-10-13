@@ -5099,6 +5099,7 @@
         'uniform sampler2D uRausch; uniform vec4 uKlar; uniform float uRund; uniform vec2 uNord; uniform vec3 uSchnitt; uniform float uWeich; uniform float uT; uniform vec2 uVersatz; uniform float uDichte; uniform vec4 uBand; uniform float uDunst;' +
         'uniform float uRandLage; uniform vec3 uFarbe; uniform vec3 uBoden; uniform vec2 uRand; uniform vec2 uDrift; uniform vec2 uWind; uniform vec3 uSchwelle; varying vec3 vW;' +
         'uniform sampler2D uFormI; uniform sampler2D uFormA; uniform vec4 uBoxI; uniform vec4 uBoxA; uniform float uHz; uniform float uGel; uniform float uNah;' +
+        'uniform vec3 uAuge; uniform float uZt; uniform vec3 uLn; uniform float uSchr;' +
         'vec4 T(vec2 q){ return texture2D(uRausch, q); }' +
         /* Hoehe des Gelaendes unter dem Punkt (wie im Gelaende-Netz). Die
            Nebellagen sind flache Ebenen: wo ein Huegel durch sie stiess,
@@ -5121,6 +5122,61 @@
            wurde; w (km) verschiebt sie dort zu Buchten und Zungen */
         '  if ((q.y - m.y) * uNord.x > 0.0) a.y = (a.y - w) * uNord.y;' +
         '  return max(length(max(a, 0.0)) + min(max(a.x, a.y), 0.0) - uRund, dot(uSchnitt.xy, q) - uSchnitt.z); }' +
+        /* ---- Nebeldecke aus der Naehe ----
+           Vorher eine flache, unbeleuchtete Ebene 40 m ueber dem Meer, ihr
+           feinstes Muster gut 800 m gross: aus der Naehe wirkte das wie ein
+           weiches, niedrig aufgeloestes Bild auf dem Wasser. Jetzt ist der
+           Nebel eine Decke mit Hoehe (uZt, oben): ihre Oberflaeche ist ein
+           Hoehenfeld aus demselben Muster, der Blick wird schrittweise
+           hindurchgefuehrt, bis er die Decke oder den Boden trifft. Dort
+           bekommt sie Licht aus Nordwesten wie das Gelaende, darunter feine
+           Wuelste bis etwa 60 m, und deckt nach ihrer Dicke ueber dem Boden:
+           am Ufer und auf Huegeln laeuft sie duenn aus. */
+        // Versatz im Muster fuer einen Versatz in der Welt (die grobe Verwirbelung aendert sich ueber einige km kaum)
+        'vec2 dq(vec2 d){ return vec2(dot(d, uWind) * 0.82, dot(d, vec2(-uWind.y, uWind.x))) * 0.012; }' +
+        // Hoehe der Decke (0 bis 1): Baenke aus dem Muster, ihr Inneres dicker, oben gewellt
+        'float deckH(vec2 q, float tn, float zu){' +
+        '  float fe = fein(q), n = grob(q) + fe;' +
+        '  float cov = max(smoothstep(tn - 0.06, tn + 0.14, n), zu * smoothstep(0.22, 0.6, n));' +
+        '  return cov * clamp(0.5 + 1.6 * (n - tn) + 2.5 * (fe - 0.0965), 0.15, 1.0); }' +
+        /* Wuelste von etwa 1 km bis 250 m, weich gerundet (feinere machten
+           in der Schraegsicht haarige Streifen wie Filz) */
+        'float wulst(vec2 q){ return 0.55 * T(R2 * q * 8.3 + 0.11).r + 0.3 * T(R1 * q * 17.1 + 0.57).b + 0.15 * T(R2 * q * 34.7 + 0.33).a; }' +
+        'float boden(vec2 p){ return uGel > 0.5 ? max(bodenH(p), 0.0) : 0.0; }' +
+        'vec4 nahDeck(vec2 qW, float tn, float zu){' +
+        '  vec3 D = normalize(vW - uAuge);' +
+        '  float dz = max(-D.z, 1e-3);' +
+        '  vec3 P0 = uAuge + D * ((uAuge.z - uZt) / dz);' +
+        '  vec2 q0 = qW + dq(P0.xy - vW.xy);' +
+        '  float tE = uZt / dz, hit = -1.0, t0 = 0.0, aus = 0.0;' +
+        /* Vorab: liegt das grobe Muster am Anfang, in der Mitte und am Ende
+           des Blicks weit unter der Schwelle, kann hier keine Bank sein (es
+           aendert sich ueber diese 1 bis 2 km kaum) -- so laufen die vielen
+           Bildpunkte ohne Nebel nicht alle Schritte durch. */
+        '  float gm = max(grob(q0), max(grob(q0 + dq(D.xy * tE * 0.5)), grob(q0 + dq(D.xy * tE))));' +
+        '  if (zu < 0.01 && gm + 0.23 < tn - 0.06) return vec4(0.0);' +
+        // im Flug (uSchr 5) halb so viele Schritte: dort laufen beide Arten Nebel zugleich
+        '  for (int i = 1; i <= 10; i++) {' +
+        '    if (float(i) > uSchr) break;' +
+        '    float t = tE * float(i) / uSchr; vec3 P = P0 + D * t;' +
+        '    float h = uZt * deckH(q0 + dq(D.xy * t), tn, zu), g = boden(P.xy);' +
+        '    if (aus < 0.5) { if (P.z < g) aus = 1.0; else if (P.z < h) { hit = t; aus = 1.0; } else t0 = t; }' +
+        '  }' +
+        '  if (hit < 0.0) return vec4(0.0);' +
+        '  float a = t0, b = hit;' +
+        '  for (int k = 0; k < 4; k++) { float m = 0.5 * (a + b); float z = P0.z + D.z * m;' +
+        '    if (z < uZt * deckH(q0 + dq(D.xy * m), tn, zu)) b = m; else a = m; }' +
+        '  vec3 H = P0 + D * b; vec2 qh = q0 + dq(D.xy * b);' +
+        '  float f = deckH(qh, tn, zu);' +
+        '  float fx = deckH(qh + dq(vec2(0.12, 0.0)), tn, zu) - f, fy = deckH(qh + dq(vec2(0.0, 0.12)), tn, zu) - f;' +
+        '  float w0 = wulst(qh), wx = wulst(qh + dq(vec2(0.08, 0.0))) - w0, wy = wulst(qh + dq(vec2(0.0, 0.08))) - w0;' +
+        '  vec3 nr = normalize(vec3(-(uZt * fx / 0.12 + 0.25 * wx / 0.08) * 1.6, -(uZt * fy / 0.12 + 0.25 * wy / 0.08) * 1.6, 1.0));' +
+        '  float li = clamp((dot(nr, uLn) + 0.3) / 1.3, 0.0, 1.0);' +
+        '  float dick = max(H.z - boden(H.xy), 0.0);' +
+        '  float al = (1.0 - exp(-dick * 5.0)) * smoothstep(0.0, 0.35, f + (w0 - 0.5) * 0.3) * min(1.0, 0.68 * uDichte);' +
+        '  float hell = (0.45 + 0.65 * li) * mix(0.72, 1.0, smoothstep(0.05, 0.6, f));' +
+        // neutral mit einem Hauch Kuehle: reines Grau wirkte neben dem blauen Gelaende braeunlich
+        '  return vec4(vec3(dot(uFarbe, vec3(0.3333))) * vec3(0.97, 0.99, 1.04) * hell, clamp(al, 0.0, 1.0)); }' +
         'void main(){' +
         '  vec2 p = vW.xy;' +
         // Boden unter dem tiefsten Meer, in dessen Farbe
@@ -5184,10 +5240,15 @@
         // stufenweise: wo schon die groben Stufen weit unter der Schwelle liegen, sofort verwerfen (nur Dunst)
         '  float n = 0.4 * T(q * 0.45 + 0.13).b;' +
         '  hz *= fz;' +
-        '  float tu = th - 0.08 - 0.17 * uNah;' +
-        '  if (n + 0.55 < tu && dd < 0.6) { if (hz < 0.004) discard; gl_FragColor = vec4(hc, hz); return; }' +
+        '  vec4 dn = vec4(0.0);' +
+        '  if (uNah > 0.4) dn = nahDeck(q, th - 0.12, smoothstep(0.6, 1.0, dd));' +
+        '  if (uNah > 0.999) { hz *= 0.15; float ga = dn.a + hz * (1.0 - dn.a); if (ga < 0.004) discard;' +
+        '    gl_FragColor = vec4((dn.rgb * dn.a + hc * hz * (1.0 - dn.a)) / ga, ga); return; }' +
+        '  float tu = th - 0.08;' +
+        // (im Uebergang zur Naehe nicht vorzeitig verwerfen, dort zaehlt auch die Decke)
+        '  if (uNah == 0.0 && n + 0.55 < tu && dd < 0.6) { if (hz < 0.004) discard; gl_FragColor = vec4(hc, hz); return; }' +
         '  n += 0.25 * T(R1 * q * 0.92 + 0.37).a + 0.155 * T(R2 * q * 1.87 + 0.61).g;' +
-        '  if (n + 0.22 < tu && dd < 0.6) { if (hz < 0.004) discard; gl_FragColor = vec4(hc, hz); return; }' +
+        '  if (uNah == 0.0 && n + 0.22 < tu && dd < 0.6) { if (hz < 0.004) discard; gl_FragColor = vec4(hc, hz); return; }' +
         '  float fe = fein(q);' +
         '  n += fe;' +
         // im klaren Gebiet laufen die einzelnen Schwaden weicher aus, keine scharfen Splitter
@@ -5200,34 +5261,8 @@
         '  float kern = smoothstep(th - 0.02, th + 0.3, n);' +
         '  vec3 c = uFarbe * (0.7 + 0.4 * kern + 0.4 * (fe - 0.0965));' +
         '  float fa = f * mix(0.6, 1.0, kern) * uDichte * fz;' +
-        /* Aus der Naehe (uNah 1) fuellte eine einzelne Schwade von 10 bis
-           20 km den ganzen Schirm -- ein weicher, heller Klecks wie ein Ei.
-           Dort tritt an ihre Stelle eine feinere Struktur in der groben
-           Huelle. Nicht in Windrichtung gezogen: parallele Fahnen liefen in
-           der Schraegsicht auf einen Fluchtpunkt zu und sahen aus wie
-           Lichtstrahlen oder Abgase. Stattdessen runde, weiche Baenke in drei
-           Groessen (etwa 2 km bis 500 m) ueber einem kaum sichtbaren
-           Schleier, mit dichtem Kern (nur noch eine Lage, siehe unten), in
-           neutralem Grau -- das Blaugrau der Uebersicht wurde ueber dem
-           dunklen Wasser gruen- und blaustichig wie Benzindampf. Der dunkle
-           Dunst tritt aus der Naehe fast ganz zurueck. */
-        '  if (uNah > 0.0) {' +
-        '    float m = 0.55 * T(q * 2.6 + 0.19).b + 0.3 * T(R1 * q * 5.3 + 0.83).a + 0.15 * T(R2 * q * 10.7 + 0.47).g;' +
-        /* Baenke aus dem grossen Feld, ihr Rand von m nur leicht ausgefranst.
-           Die Schwelle liegt tiefer als in der Uebersicht: mit ihr lagen an
-           den Orten nur verstreute, halb durchsichtige Fetzen (3 bis 18 %
-           des Bildes), durch die das blaue Meer schien -- der Nebel wirkte
-           duenn und blaeulich. Jetzt wachsen sie zu zusammenhaengenden
-           Baenken zusammen, deren Kern das Wasser fast ganz deckt. */
-        '    float tn = th - 0.12;' +
-        '    float hu = smoothstep(tn - 0.03, tn + 0.07, n + (m - 0.5) * 0.18);' +
-        // wo die Bank dicker ist (n weit ueber der Schwelle), wird sie dichter und heller -- keine flache Farbschicht
-        '    float dk = smoothstep(tn, tn + 0.22, n + (m - 0.5) * 0.12);' +
-        '    float fn = hu * (0.62 + 0.26 * dk) * min(1.0, 0.68 * uDichte) * fz;' +
-        '    fa = mix(fa, fn, uNah); hz *= 1.0 - 0.85 * uNah;' +
-        '    vec3 grau = vec3(dot(uFarbe, vec3(0.3333)));' +
-        '    c = mix(c, grau * (0.95 + 0.4 * dk + 0.3 * (m - 0.5)), uNah);' +
-        '  }' +
+        // Uebergang zur Naehe: in die Nebeldecke ueberblenden
+        '  if (uNah > 0.0) { float u = smoothstep(0.4, 1.0, uNah); fa = mix(fa, dn.a, u); c = mix(c, dn.rgb, u); hz *= 1.0 - 0.85 * uNah; }' +
         '  float ga = fa + hz * (1.0 - fa);' +
         '  if (ga < 0.004) discard;' +
         '  gl_FragColor = vec4((c * fa + hc * hz * (1.0 - fa)) / ga, ga);' +
@@ -5277,7 +5312,7 @@
         if (!gl.getProgramParameter(pr, gl.LINK_STATUS)) return;
         const n = { prog: pr, loc: {} };
         ['uM', 'uQ', 'uZ', 'uRausch', 'uKlar', 'uRund', 'uNord', 'uSchnitt', 'uWeich', 'uT', 'uVersatz', 'uDichte', 'uBand', 'uDunst', 'uRandLage', 'uFarbe', 'uBoden', 'uRand',
-         'uDrift', 'uWind', 'uSchwelle', 'uFormI', 'uFormA', 'uBoxI', 'uBoxA', 'uHz', 'uGel', 'uNah'].forEach(function (x) {
+         'uDrift', 'uWind', 'uSchwelle', 'uFormI', 'uFormA', 'uBoxI', 'uBoxA', 'uHz', 'uGel', 'uNah', 'uAuge', 'uZt', 'uLn', 'uSchr'].forEach(function (x) {
           n.loc[x] = gl.getUniformLocation(pr, x);
         });
         n.aW = gl.getAttribLocation(pr, 'aW');
@@ -5404,6 +5439,12 @@
       const tn = Math.max(0, Math.min(1, (0.5 - rn) / 0.35));
       const nah = tn * tn * (3 - 2 * tn);
       gl.uniform1f(n.loc.uNah, nah);
+      // Nebeldecke: Oberkante, Auge, Licht aus Nordwesten (wie im Schattenbild des Gelaendes: 315 Grad, 38 Grad hoch)
+      const zt = (N.decke || 280) / 1000 * UEBERHOEHUNG;
+      gl.uniform1f(n.loc.uZt, zt);
+      gl.uniform1f(n.loc.uSchr, nah > 0.999 ? 10 : 5);
+      gl.uniform3fv(n.loc.uAuge, cam.auge);
+      gl.uniform3f(n.loc.uLn, -0.557, 0.557 * NORDY, 0.616);
       const sw = N.schwelle || [0.68, 0.5];
       N.lagen.forEach(function (l, j) {
         /* Aus der Naehe nur noch die unterste Lage, dafuer dichter: die drei
@@ -5418,7 +5459,8 @@
         const w = wind(zeitS * (1 + 0.18 * j));
         gl.uniform2f(n.loc.uDrift, w.drift[0], w.drift[1]);
         gl.uniform2f(n.loc.uWind, w.dir[0], w.dir[1]);
-        gl.uniform1f(n.loc.uZ, l[0] / 1000 * UEBERHOEHUNG);
+        // die unterste Lage steigt aus der Naehe zur Oberkante der Decke
+        gl.uniform1f(n.loc.uZ, j ? l[0] / 1000 * UEBERHOEHUNG : mix(l[0] / 1000 * UEBERHOEHUNG, zt, nah));
         gl.uniform1f(n.loc.uDichte, dichte);
         gl.uniform3f(n.loc.uSchwelle, sw[0], sw[1], l[2] || 0);
         gl.uniform1f(n.loc.uT, zeitS);
