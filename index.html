@@ -1824,8 +1824,10 @@
         <p class="lead">The Mountains ist eine filmische Reise durch die Alpen Bayerns und Norditaliens. Zwischen Morgennebel und Abendlicht entfalten sich Berge, Täler und Dörfer in ihrer stillen, zeitlosen Schönheit. Der Film sucht weniger das Spektakel als die Atmosphäre – er verweilt in Momenten, in denen Licht, Wind und Landschaft miteinander verschmelzen. Entstanden ist ein Werk, das die Erhabenheit der Natur nicht erklärt, sondern spürbar macht.</p>
       </div>
       <!-- Reisekarte The Mountains. ENTWURF: Orte und Reihenfolge vorlaeufig
-           (werkzeug/karten/mountains.json). -->
-      <section class="karte" data-karte="mountains" aria-label="Karte der Reise: Königssee, Dolomiten, Sylt">
+           (werkzeug/karten/mountains.json). Vorerst ausgeblendet ("hidden"),
+           bis die Schottland-Karte fertig ist -- zum Zeigen das Attribut
+           entfernen. Versteckt wird sie gar nicht erst gestartet. -->
+      <section class="karte" data-karte="mountains" hidden aria-label="Karte der Reise: Königssee, Dolomiten, Sylt">
         <div class="karte-lauf">
           <div class="karte-halt">
             <canvas class="karte-gl" aria-hidden="true"></canvas>
@@ -4252,7 +4254,7 @@
     }
   };
 
-  document.querySelectorAll('.karte[data-karte]').forEach(function (el) {
+  document.querySelectorAll('.karte[data-karte]:not([hidden])').forEach(function (el) {
     const cfg = KARTEN[el.dataset.karte];
     if (cfg) reisekarte(el, cfg);
   });
@@ -4964,13 +4966,26 @@
       } catch (e) { meer = null; }
     }
 
+    /* Uhr der Wasserlinien: sie wandern in Kilometern. Aus der Naehe ist ein
+       Kilometer viel groesser auf dem Schirm, die Linien liefen dort mit
+       gleicher Uhr um ein Vielfaches schneller und wirkten unruhig. Nah
+       laeuft die Uhr deshalb langsamer -- auf dem Schirm etwa so schnell
+       wie in der Uebersicht. Mitgezaehlt statt skaliert: kein Sprung. */
+    let wellenUhr = 0, wellenZuletzt = -1;
+    function wellenZeit(zeitS, k) {
+      const dt = wellenZuletzt < 0 ? 0 : zeitS - wellenZuletzt;
+      wellenZuletzt = zeitS;
+      const f = uebersicht ? Math.max(0.04, Math.min(1, Math.pow(k.dist / uebersicht.dist, 0.85))) : 1;
+      if (dt > 0) wellenUhr += Math.min(dt, 0.5) * f;          // Pause: kein Sprung
+      return wellenUhr;
+    }
     // Ohne "see": die Meeresflaeche; mit "see": die Flaeche dieses Sees.
     function wasser(k, cam, zeitS, see, z) {
       if (!meer || (!see && !meer.meer)) return;
       gl.useProgram(meer.prog);
       gl.uniform1f(meer.loc.uZ, see ? z : -0.001);
       gl.uniformMatrix4fv(meer.loc.uM, false, new Float32Array(cam.M));
-      gl.uniform1f(meer.loc.uT, zeitS);
+      gl.uniform1f(meer.loc.uT, wellenZeit(zeitS, k));
       gl.uniform3fv(meer.loc.uAuge, cam.auge);
       gl.uniform2f(meer.loc.uNebel, k.dist * 1.3, k.dist * 3.4);
       gl.uniform2f(meer.loc.uHalb, halb[0], halb[1]);
