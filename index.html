@@ -5099,14 +5099,18 @@
         'uniform sampler2D uRausch; uniform vec4 uKlar; uniform float uRund; uniform vec2 uNord; uniform vec3 uSchnitt; uniform float uWeich; uniform float uT; uniform vec2 uVersatz; uniform float uDichte; uniform vec4 uBand; uniform float uDunst;' +
         'uniform float uRandLage; uniform vec3 uFarbe; uniform vec3 uBoden; uniform vec2 uRand; uniform vec2 uDrift; uniform vec2 uWind; uniform vec3 uSchwelle; varying vec3 vW;' +
         'uniform sampler2D uFormI; uniform sampler2D uFormA; uniform vec4 uBoxI; uniform vec4 uBoxA; uniform float uHz; uniform float uGel; uniform float uNah;' +
-        'uniform vec3 uAuge; uniform float uZt; uniform float uSchr; uniform float uDk;' +
+        'uniform vec3 uAuge; uniform float uZt; uniform float uSchr; uniform float uDk; uniform vec3 uLn;' +
         'vec4 T(vec2 q){ return texture2D(uRausch, q); }' +
         /* Hoehe des Gelaendes unter dem Punkt (wie im Gelaende-Netz). Die
            Nebellagen sind flache Ebenen: wo ein Huegel durch sie stiess,
            schnitt er sie hart ab wie Pappe. Jetzt laeuft der Nebel aus,
            bevor das Gelaende ihn erreicht -- er liegt in den Taelern. */
         'float bodenH(vec2 p){ vec2 ui = (p - uBoxI.xy) / (uBoxI.zw - uBoxI.xy), ua = clamp((p - uBoxA.xy) / (uBoxA.zw - uBoxA.xy), 0.0, 1.0);' +
-        '  float hi = texture2D(uFormI, clamp(ui, 0.0, 1.0)).r, ha = texture2D(uFormA, ua).r;' +
+        /* Nur auf Land (Gruen: Abstand zur Kueste, 0,5 ist die Kueste) --
+           das grobe Formbild aussen (gut 400 m je Punkt) verschmiert kleine
+           Inseln zu kilometerbreiten Buckeln im Meer. */
+        '  vec2 fi = texture2D(uFormI, clamp(ui, 0.0, 1.0)).rg, fa = texture2D(uFormA, ua).rg;' +
+        '  float hi = fi.r * smoothstep(0.502, 0.53, fi.g), ha = fa.r * smoothstep(0.502, 0.53, fa.g);' +
         '  float drin = step(0.0, ui.x) * step(ui.x, 1.0) * step(0.0, ui.y) * step(ui.y, 1.0);' +
         '  return mix(ha, hi, drin) * uHz; }' +
         // Stufen gegeneinander gedreht, damit sich kein Raster abzeichnet
@@ -5135,18 +5139,37 @@
         // Versatz im Muster fuer einen Versatz in der Welt (die grobe Verwirbelung aendert sich ueber einige km kaum)
         'vec2 dq(vec2 d){ return vec2(dot(d, uWind) * 0.82, dot(d, vec2(-uWind.y, uWind.x))) * 0.012; }' +
         // Oberkante der Bank (0 bis 1): aus dem Muster, ihr Inneres hoeher, zum Rand weich auf null
+        /* Feinere Wuelste (400 bis 800 m) nur nah vor der Kamera: dort ist die
+           Decke ohne sie eine glatte graue Flaeche, in der Ferne wurden sie zu
+           Watte und Korn. gD: Gewicht, in nahDeck nach der Entfernung gesetzt. */
+        'float gD;' +
         'float deckH(vec2 q, float tn, float zu){' +
         // wie grob(q), der zweite Wert liefert nebenbei die Staerke der Woelbung (ein Texturzugriff weniger)
         '  vec4 g2 = T(R1 * q * 0.92 + 0.37);' +
         '  float fe = fein(q), n = 0.4 * T(q * 0.45 + 0.13).b + 0.25 * g2.a + 0.155 * T(R2 * q * 1.87 + 0.61).g + fe;' +
-        '  float cov = max(smoothstep(tn - 0.1, tn + 0.18, n), zu * smoothstep(0.22, 0.6, n));' +
-        /* Woelbung der Oberkante (1 bis 2 km): als Hoehe, nicht als Dichte --
-           Dichtemuster verschmierten im Blick zu Strahlen. Ihre Staerke
-           wechselt ueber die Flaeche: gleich starke Wuelste ueberall sahen
-           aus wie ein Wattefeld, wie eine Textur. */
-        '  float wb = 0.6 * T(R2 * q * 4.7 + 0.11).r + 0.4 * T(R1 * q * 9.6 + 0.57).b;' +
-        '  float wa = 0.25 + 1.1 * smoothstep(0.35, 0.68, g2.r);' +
-        '  return cov * clamp(0.4 + 1.4 * (n - tn) + 1.5 * (fe - 0.0965) + wa * (wb - 0.5), 0.08, 1.0); }' +
+        /* Ohne die feinen Stufen: sie stanzten kleine Loecher von 1 bis 2 km
+           in die Decke, durch die die Tiefenlinien um die Inseln schienen --
+           Krater. Und ohne Wuelste von 400 bis 800 m: sie sahen aus wie Watte,
+           ihre Lichtseiten wie Korn. Die Woelbung (2 bis 4 km) formt auch den
+           Rand: die Bank endet in runden Zungen mit Dicke statt in einem
+           kilometerbreiten halb durchsichtigen Schleier. */
+        '  float nc = n - fe + 0.0965;' +
+        '  float wb = 0.6 * T(R2 * q * 2.3 + 0.11).r + 0.4 * T(R1 * q * 4.7 + 0.57).b;' +
+        '  float wf = 0.5;' +
+        '  if (gD > 0.01) wf = mix(0.5, 0.6 * T(R1 * q * 9.6 + 0.29).g + 0.4 * T(R2 * q * 19.3 + 0.73).a, gD);' +
+        '  float ne = nc + 0.45 * (wb - 0.5) + 0.25 * (wf - 0.5);' +
+        /* Eine Schwelle von der Bank am Ort bis zur geschlossenen Decke
+           draussen: getrennt gerechnet zog der Uebergang zur Decke eine
+           gerade Front und liess dunkle Gruebchen in ihr. */
+        '  float thr = mix(tn + 0.17, 0.22, zu);' +
+        '  float cov = smoothstep(thr - 0.11, thr + 0.11, ne);' +
+        // Staerke der Woelbung wechselt ueber die Flaeche (gleich stark ueberall sah aus wie ein Wattefeld)
+        '  float wa = 0.4 + smoothstep(0.35, 0.68, g2.r);' +
+        /* Grundhoehe weich gesaettigt, die Woelbung darauf: hart begrenzt lag
+           die dichte Decke draussen ueberall an der Obergrenze -- eine glatte
+           graue Platte ohne jede Woelbung. */
+        '  float hb = 0.82 * (1.0 - exp(-2.4 * max(0.45 + 1.2 * (nc - tn), 0.0)));' +
+        '  return cov * clamp(hb + wa * (wb - 0.5) + 0.7 * (wf - 0.5), 0.08, 1.0); }' +
         'float boden(vec2 p){ return uGel > 0.5 ? max(bodenH(p), 0.0) : 0.0; }' +
         // Stammfunktion der Rampe clamp(x, 0, 1): damit die Dichte zwischen zwei Schritten genau statt in Stufen
         'float rampF(float x){ return x < 0.0 ? 0.0 : (x < 1.0 ? 0.5 * x * x : x - 0.5); }' +
@@ -5156,25 +5179,34 @@
         '  vec3 P0 = uAuge + D * ((uAuge.z - uZt) / dz);' +
         '  vec2 q0 = qW + dq(P0.xy - vW.xy);' +
         '  float tE = uZt / dz;' +
+        '  gD = 1.0 - smoothstep(1.5, 2.6, length(P0 - uAuge) / max(uAuge.z, 1e-3));' +
         /* Vorab: liegt das grobe Muster am Anfang, in der Mitte und am Ende
            des Blicks weit unter der Schwelle, ist hier kein Nebel (es aendert
            sich ueber diese 1 bis 2 km kaum) -- die vielen Bildpunkte ohne
            Nebel laufen so nicht alle Schritte durch. */
         '  float gm = max(grob(q0), max(grob(q0 + dq(D.xy * tE * 0.5)), grob(q0 + dq(D.xy * tE))));' +
         '  if (zu < 0.01 && gm + 0.23 < tn - 0.1) return vec4(0.0);' +
-        '  float ds = tE / uSchr, tr = 1.0, hell = 0.0, aus = 1.0, R = 0.35 * uZt;' +
+        '  float ds = tE / uSchr, tr = 1.0, hell = 0.0, aus = 1.0, R = 0.35 * uZt, tS = -1.0;' +
         '  float x0 = (uZt * deckH(q0, tn, zu) - P0.z) / R;' +
         '  for (int i = 1; i <= 16; i++) {' +
         '    if (float(i) > uSchr) break;' +
         '    float t = ds * float(i); vec3 P = P0 + D * t;' +
-        '    float x1 = (uZt * deckH(q0 + dq(D.xy * t), tn, zu) - P.z) / R;' +
+        '    float top = uZt * deckH(q0 + dq(D.xy * t), tn, zu), g = boden(P.xy);' +
+        '    float x1 = (top - P.z) / R;' +
         // mittlere Dichte auf dem Stueck: Tiefe unter der Oberkante dazwischen linear
         '    float m = abs(x1 - x0) > 1e-4 ? (rampF(x1) - rampF(x0)) / (x1 - x0) : clamp(x0, 0.0, 1.0);' +
-        '    float a = (1.0 - exp(-uDk * min(m, 1.0) * ds)) * aus;' +
+        /* ueber Land nur, wo die Bank dick ueber dem Boden steht (in
+           Taelern): duenn ueber Huegeln lag sie als schmutziger Schleier.
+           Ueber dem Meer nicht -- dort machte es niedrige Zungen zu Rauch. */
+        '    m *= mix(1.0, smoothstep(0.3, 0.6, (top - g) / uZt), smoothstep(0.0, 0.06 * uZt, g));' +
+        // duenne Lagen dichter: sonst waren niedrige Zungen am Rand der Bank ein Schleier, die Linien darunter scharf
+        '    float a = (1.0 - exp(-uDk * min(m, 1.0) * ds / (0.35 + 0.65 * clamp(top / uZt, 0.0, 1.0)))) * aus;' +
         // von oben beleuchtet: je tiefer in der Bank, desto dunkler
         '    hell += tr * a * (0.42 + 0.85 * exp(-1.4 * max(0.5 * (x0 + x1), 0.0)));' +
         '    tr *= 1.0 - a;' +
-        '    aus *= step(boden(P.xy), P.z);' +
+        // Punkt fuer das Licht: wo der Blick merklich in die Bank tritt (bei 0,6 bekam steil von oben gesehener Nebel nie Licht und blieb eine glatte Flaeche)
+        '    if (tS < 0.0 && tr < 0.9) tS = t;' +
+        '    aus *= step(g, P.z);' +
         '    x0 = x1;' +
         '  }' +
         '  float al = 1.0 - tr;' +
@@ -5184,8 +5216,16 @@
            durchsichtigen Nebel -- er sah aus wie ein Bild mit herunter-
            gedrehter Deckkraft. Der Rand bleibt weich (er laeuft weiter
            gegen null), nur steiler. */
-        '  float alD = 1.0 - pow(tr, 1.8);' +
-        '  return vec4(vec3(dot(uFarbe, vec3(0.3333))) * vec3(0.98, 0.995, 1.025) * (hell / al), alD * min(1.0, 0.68 * uDichte)); }' +
+        // ganz schwacher Nebel gar nicht: er lag als schmutziger Hauch in Saeulen ueber dem Land
+        '  float alD = (1.0 - pow(tr, 1.8)) * smoothstep(0.04, 0.2, al);' +
+        /* Licht aus Nordwesten (wie das Gelaende) auf die Woelbung der
+           Oberkante, dort wo der Blick dicht wird: die grossen, glatten Wuelste
+           bekommen Licht- und Schattenseite, die Decke Plastizitaet. */
+        '  float sh = 1.0;' +
+        '  if (tS > 0.0) { vec2 qs = q0 + dq(D.xy * tS); float h0 = deckH(qs, tn, zu);' +
+        '    vec3 nr = normalize(vec3(-(deckH(qs + dq(vec2(0.25, 0.0)), tn, zu) - h0) * uZt / 0.25 * 3.0, -(deckH(qs + dq(vec2(0.0, 0.25)), tn, zu) - h0) * uZt / 0.25 * 3.0, 1.0));' +
+        '    sh = 0.78 + 0.4 * clamp(dot(nr, uLn), 0.0, 1.0); }' +
+        '  return vec4(vec3(dot(uFarbe, vec3(0.3333))) * vec3(0.95, 0.99, 1.06) * (hell / al) * sh, alD * min(1.0, 0.68 * uDichte)); }' +
         'void main(){' +
         '  vec2 p = vW.xy;' +
         // Boden unter dem tiefsten Meer, in dessen Farbe
@@ -5250,7 +5290,7 @@
         '  float n = 0.4 * T(q * 0.45 + 0.13).b;' +
         '  hz *= fz;' +
         '  vec4 dn = vec4(0.0);' +
-        '  if (uNah > 0.55) dn = nahDeck(q, th - 0.12, smoothstep(0.6, 1.0, dd));' +
+        '  if (uNah > 0.55) dn = nahDeck(q, th - 0.12, smoothstep(0.4, 1.0, dd));' +
         '  if (uNah > 0.999) { hz = 0.0; float ga = dn.a + hz * (1.0 - dn.a); if (ga < 0.004) discard;' +
         '    gl_FragColor = vec4((dn.rgb * dn.a + hc * hz * (1.0 - dn.a)) / ga, ga); return; }' +
         '  float tu = th - 0.08;' +
@@ -5321,7 +5361,7 @@
         if (!gl.getProgramParameter(pr, gl.LINK_STATUS)) return;
         const n = { prog: pr, loc: {} };
         ['uM', 'uQ', 'uZ', 'uRausch', 'uKlar', 'uRund', 'uNord', 'uSchnitt', 'uWeich', 'uT', 'uVersatz', 'uDichte', 'uBand', 'uDunst', 'uRandLage', 'uFarbe', 'uBoden', 'uRand',
-         'uDrift', 'uWind', 'uSchwelle', 'uFormI', 'uFormA', 'uBoxI', 'uBoxA', 'uHz', 'uGel', 'uNah', 'uAuge', 'uZt', 'uSchr', 'uDk'].forEach(function (x) {
+         'uDrift', 'uWind', 'uSchwelle', 'uFormI', 'uFormA', 'uBoxI', 'uBoxA', 'uHz', 'uGel', 'uNah', 'uAuge', 'uZt', 'uSchr', 'uDk', 'uLn'].forEach(function (x) {
           n.loc[x] = gl.getUniformLocation(pr, x);
         });
         n.aW = gl.getAttribLocation(pr, 'aW');
@@ -5445,13 +5485,17 @@
       /* Wie nah die Kamera ist: 0 in der Uebersicht, 1 an den Stationen,
          stetig mit der Entfernung -- im Flug blendet der Nebel fliessend um. */
       const rn = uebersicht ? k.dist / uebersicht.dist : 1;
-      const tn = Math.max(0, Math.min(1, (0.5 - rn) / 0.35));
+      /* An den Orten liegt rn um 0,16 bis 0,2: dort muss nah genau 1 sein --
+         mit / 0.35 kam es auf 0,998, und der Nebel lief am Ort im Flugmodus
+         (wenige Schritte, mit dem Nebel der Uebersicht gemischt). */
+      const tn = Math.max(0, Math.min(1, (0.5 - rn) / 0.28));
       const nah = tn * tn * (3 - 2 * tn);
       gl.uniform1f(n.loc.uNah, nah);
-      // Nebel aus der Naehe: Oberkante des Volumens, Auge, Schritte, Dichte
+      // Nebel aus der Naehe: Oberkante des Volumens, Auge, Schritte, Dichte, Licht aus Nordwesten (315 Grad, 38 Grad hoch wie im Schattenbild)
+      gl.uniform3f(n.loc.uLn, -0.557, 0.557 * NORDY, 0.616);
       const zt = (N.decke || 280) / 1000 * UEBERHOEHUNG;
       gl.uniform1f(n.loc.uZt, zt);
-      gl.uniform1f(n.loc.uSchr, nah > 0.999 ? 16 : 5);
+      gl.uniform1f(n.loc.uSchr, nah > 0.999 ? 10 : 5);
       gl.uniform1f(n.loc.uDk, N.deckDichte || 1.6);
       gl.uniform3fv(n.loc.uAuge, cam.auge);
       const sw = N.schwelle || [0.68, 0.5];
