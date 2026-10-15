@@ -2468,15 +2468,38 @@
   const PLAY_PROOF_SECONDS = 5.5;
   const PLAY_FALLBACK_MS = 14000;
 
+  /* Dasselbe gilt fuer jedes Fortsetzen nach einer Pause und fuer laengeres
+     Nachladen: YouTube zeigt dann wieder rund drei Sekunden seine Oberflaeche,
+     oben angeschnitten und in der Mitte ein Pausensymbol. Der Player wird
+     deshalb verdeckt, stumm ein Stueck vor die Haltestelle gespult und erst an
+     genau dieser Stelle wieder gezeigt -- man sieht den Film dort
+     weiterlaufen, wo er stand, nur ohne YouTubes Einblendung. */
+  const WEITER_VORLAUF = 4;
+  const PUFFER_MS = 700;
+  const ABDECK_MS = 750;    // Dauer der Blende auf das Standbild (CSS 0.7 s)
+
   function watchPlayer(frame, opts) {
     let baseTime = null;
     let shown = false;
+    let zeit = null;          // zuletzt gemeldete Laufzeit
+    let ziel = null;          // ab hier nach dem Fortsetzen wieder zeigen
+    let zurueck = false;      // der Ruecksprung ist beim Player angekommen
+    let puffer = null;
+    let spaeter = null;
+    let bereit = false;
 
-    function arm() { baseTime = null; shown = false; }
+    function arm() { baseTime = null; ziel = null; shown = false; }
+
+    function ohneUntertitel() {
+      // Automatische Untertitel saessen unten im abgeschnittenen Bereich.
+      ytCommand(frame, 'unloadModule', ['captions']);
+      ytCommand(frame, 'unloadModule', ['cc']);
+    }
 
     function show() {
       if (shown) return;
       shown = true;
+      ohneUntertitel();
       opts.onShow();
     }
 
@@ -2486,6 +2509,30 @@
       if (opts.onHide) opts.onHide();
     }
 
+    function weiter() {
+      clearTimeout(puffer); puffer = null;
+      clearTimeout(spaeter); spaeter = null;
+      const stand = zeit;
+      const warZuSehen = shown;
+      if (shown) { shown = false; if (opts.onCover) opts.onCover(); }
+      ytCommand(frame, 'mute');
+      if (stand === null || stand < WEITER_VORLAUF + 1) arm();
+      else { ziel = stand; zurueck = false; }
+      function los() {
+        spaeter = null;
+        ytCommand(frame, 'seekTo', [ziel === null ? 0 : ziel - WEITER_VORLAUF, true]);
+        ytCommand(frame, 'playVideo');
+      }
+      // Erst spulen, wenn das Standbild ganz davor steht -- sonst blitzte
+      // waehrend der Blende die zurueckgespulte Stelle auf.
+      if (warZuSehen) spaeter = setTimeout(los, ABDECK_MS); else los();
+    }
+
+    function halt() {
+      clearTimeout(spaeter); spaeter = null;
+      ytCommand(frame, 'pauseVideo');
+    }
+
     function onMessage(e) {
       if (!e.data || typeof e.data !== 'string') return;
       if (e.source !== frame.contentWindow) return;
@@ -2493,6 +2540,7 @@
       try { msg = JSON.parse(e.data); } catch (err) { return; }
       const info = msg.info;
       if (!info || typeof info !== 'object') return;
+      if (!bereit) { bereit = true; ohneUntertitel(); }
 
       // Film zu Ende: Player sofort wieder verdecken, sonst erscheinen
       // YouTubes Abspann-Vorschlaege.
@@ -2505,10 +2553,23 @@
         }
         return;
       }
+      // Laengeres Nachladen, waehrend der Film zu sehen ist.
+      if (info.playerState === 3 && shown && !puffer) {
+        puffer = setTimeout(weiter, PUFFER_MS);
+      } else if (typeof info.playerState === 'number' && info.playerState !== 3) {
+        clearTimeout(puffer); puffer = null;
+      }
 
       // Die Meldungen mit der Laufzeit tragen keinen Zustandswert -- beides
       // muss deshalb getrennt ausgewertet werden.
       if (typeof info.currentTime === 'number') {
+        if (ziel !== null) {
+          if (info.currentTime < ziel - 1) zurueck = true;
+          else if (zurueck && info.currentTime >= ziel) { ziel = null; show(); }
+          return;
+        }
+        zeit = info.currentTime;
+        if (shown) return;
         if (baseTime === null) { baseTime = info.currentTime; return; }
         if (info.currentTime - baseTime >= PLAY_PROOF_SECONDS) show();
       }
@@ -2530,10 +2591,15 @@
         ytCommand(frame, 'seekTo', [0, true]);
         ytCommand(frame, 'playVideo');
       },
+      weiter: weiter,
+      halt: halt,
+      deckt: function () { return ziel !== null; },
       stop: function () {
         window.removeEventListener('message', onMessage);
         clearInterval(handshake);
         clearTimeout(fallback);
+        clearTimeout(puffer);
+        clearTimeout(spaeter);
       }
     };
   }
@@ -2725,10 +2791,16 @@
     stage.appendChild(frame);
     registerFit(stage, frame, UEBERZOOM);
     stage._player = watchPlayer(frame, {
-      onShow: function () { stage.classList.add('is-playing'); },
+      onShow: function () {
+        stage.classList.add('is-playing');
+        // Waehrend der Abdeckung lief der Film stumm.
+        if (!muted) { ytCommand(frame, 'unMute'); ytCommand(frame, 'setVolume', [100]); }
+      },
+      onCover: function () { stage.classList.remove('is-playing'); },
       onHide: function () {
         // Zurueck aufs Standbild -- so bleiben Abspann-Vorschlaege verdeckt.
         stage.classList.remove('is-playing');
+        stage._ende = true;
         if (stage._playBtn) setzeZeichen(stage._playBtn, 'play', 'Erneut abspielen', true);
       }
     });
@@ -2752,25 +2824,31 @@
 
     stage._playBtn = playBtn;
     let playing = true;
+    let muted = true;
     playBtn.addEventListener('click', function () {
       // Nach dem Ende: von vorn, dabei die Startanzeige erneut aussitzen.
-      if (!stage.classList.contains('is-playing') && stage._player) {
+      if (stage._ende && stage._player) {
+        stage._ende = false;
         stage._player.replay();
         playing = true;
         setzeZeichen(playBtn, 'pause', 'Pause (Leertaste)', false);
         return;
       }
       playing = !playing;
-      ytCommand(frame, playing ? 'playVideo' : 'pauseVideo');
+      if (playing) stage._player.weiter();
+      else stage._player.halt();
       if (playing) setzeZeichen(playBtn, 'pause', 'Pause (Leertaste)', false);
       else setzeZeichen(playBtn, 'play', 'Abspielen (Leertaste)', true);
     });
 
-    let muted = true;
     soundBtn.addEventListener('click', function () {
       muted = !muted;
-      ytCommand(frame, muted ? 'mute' : 'unMute');
-      if (!muted) ytCommand(frame, 'setVolume', [100]);
+      // Waehrend der Abdeckung nach dem Fortsetzen bleibt er stumm, bis er
+      // wieder zu sehen ist -- sonst hoerte man den Vorlauf doppelt.
+      if (muted || !stage._player || !stage._player.deckt()) {
+        ytCommand(frame, muted ? 'mute' : 'unMute');
+        if (!muted) ytCommand(frame, 'setVolume', [100]);
+      }
       setzeZeichen(soundBtn, muted ? 'stumm' : 'ton',
                    muted ? 'Ton an' : 'Ton aus', false);
     });
@@ -2808,6 +2886,7 @@
     if (!stage) return;
     if (stage._player) { stage._player.stop(); stage._player = null; }
     stage._playBtn = null;
+    stage._ende = false;
     const frame = stage.querySelector('iframe');
     if (frame) { ytCommand(frame, 'stopVideo'); frame.remove(); }
     const ui = stage.querySelector('.stage-ui');
