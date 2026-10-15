@@ -4288,7 +4288,10 @@
                      hoehenlinien: { farbe: [0.78, 0.77, 0.74], staerke: 0.14, dichte: 7, licht: 0.8 }
                      -- das genaue Hoehenbild dazu baut gelaende_bau.py, wenn
                      "hoehe": [2048, 4096] unter "innen" in schottland.json steht. */
-                  innen: { rand: [-151.637, 82.38, 63.738, -128.204], netz: 1024, hoehe: true },
+                  /* "hebriden": Lewis und Harris fein -- von The Storr aus sieht man
+                     nach Nordwesten dorthin, aus den groben Daten wirkte es flach. */
+                  bereiche: [{ name: 'innen', rand: [-151.637, 82.38, 63.738, -128.204], netz: 1024, hoehe: true, gross: true, kueste: true },
+                             { name: 'hebriden', rand: [-103.105, 175.507, -33.327, 78.964], netz: 384, gross: true, kueste: true }],
                   aussen: { rand: [-221.457, 197.711, 221.457, -197.878], netz: 384 } },
       ueberhoehung: 1.8,
       grund: [0.016, 0.03, 0.05],
@@ -5900,6 +5903,18 @@
          grobe Netz glaettet die Berge) und schraeg von oben gesehen blieb
          dazwischen eine Reihe schwarzer Pixel. So ueberlappen beide auf
          dem schmalen Streifen und die Tiefe entscheidet. */
+      /* Ueberlappt ein feiner Bereich einen frueheren (Hebriden und
+         Schottland), zeichnet er dort nichts -- bis auf einen schmalen
+         Streifen, auf dem wie oben die Tiefe entscheidet. */
+      innen.forEach(function (b, i) {
+        const t = g.teile[i], l = new Float32Array([1e9, -1e9, -1e9, 1e9, 1e9, -1e9, -1e9, 1e9, 1e9, -1e9, -1e9, 1e9]);
+        const cx = (b.rand[2] - b.rand[0]) / b.netz * 0.5, cy = (b.rand[1] - b.rand[3]) / b.netz * 0.5;
+        for (let j = 0; j < Math.min(i, 3); j++) {
+          const ri = innen[j].rand;
+          l.set([ri[0] + cx, ri[1] - cy, ri[2] - cx, ri[3] + cy], j * 4);
+        }
+        if (i) t.loch = l;
+      });
       g.loecher = new Float32Array(12);
       for (let i = 0; i < 3; i++) g.loecher.set(innen[i] ? (function (ri) { return [ri[0] + zx / 3, ri[1] - zy / 3, ri[2] - zx / 3, ri[3] + zy / 3]; })(innen[i].rand) : [1e9, -1e9, -1e9, 1e9], i * 4);
       gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, puf.t);
@@ -5943,7 +5958,7 @@
       g.teile.forEach(function (t, i) {
         const r = t.b.rand;
         gl.uniform4f(L.uBox, r[0], r[1], r[2], r[3]);
-        gl.uniform4fv(L.uLoch, i === letzter ? g.loecher : keins);
+        gl.uniform4fv(L.uLoch, i === letzter ? g.loecher : (t.loch || keins));
         gl.uniform4f(L.uSand, sand[0], sand[1], sand[2], t.b.sand ? sand[3] : 0);
         const mitLinien = !!(HL && t.genau);
         gl.uniform4f(L.uHL, HL ? HL.dichte : 0, 0, HL ? HL.staerke : 0, mitLinien ? 1 : 0);
