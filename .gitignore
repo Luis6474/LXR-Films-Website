@@ -10,3 +10,13 @@
 # Standbilder aus dem Film im Original (4K): die Karte nutzt nur die
 # Web-Fassungen in Images/web/karte-same-gray/film-*.
 Images/Bilder Karte Same gray/Frames aus dem Film/
+
+# Alles unter Images/ ausser den Web-Fassungen bleibt privat: Originale
+# tragen GPS-Daten und Aufnahmezeiten, und GitHub Pages veroeffentlicht
+# jede Datei im Repository.
+/Images/*
+!/Images/web/
+
+# Alte Hero-Fassungen (die Seite nutzt hero-v4-*)
+video/web/hero-1080.mp4
+video/web/hero-720.mp4
