@@ -5,6 +5,16 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>LXR Films — Luis Räder</title>
 <meta name="description" content="LXR Films — Videoproduktion aus Hamburg. Werbe- und Imagefilme, Konzept bis Schnitt von einer Person.">
+<!-- Vorschau, wenn der Link in Messengern und sozialen Netzwerken geteilt wird -->
+<link rel="canonical" href="https://luis6474.github.io/LXR-Films-Website/">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="LXR Films">
+<meta property="og:title" content="LXR Films — Luis Räder">
+<meta property="og:description" content="Videoproduktion aus Hamburg. Werbe- und Imagefilme, Konzept bis Schnitt von einer Person.">
+<meta property="og:url" content="https://luis6474.github.io/LXR-Films-Website/">
+<meta property="og:image" content="https://luis6474.github.io/LXR-Films-Website/Images/web/hero-v4-poster-1280.jpg">
+<meta property="og:locale" content="de_DE">
+<meta name="twitter:card" content="summary_large_image">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' fill='%230d1216'/%3E%3Ctext x='16' y='22' font-family='Georgia,serif' font-size='15' fill='%23c8c2b6' text-anchor='middle'%3EL%3C/text%3E%3C/svg%3E">
 <script>document.documentElement.className += ' js';</script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -1322,6 +1332,24 @@
     transition: color 0.5s var(--ease), border-color 0.5s var(--ease);
   }
   .viewer-close:hover { color: var(--text); border-color: var(--p-accent); }
+  /* Derselbe Knopf noch einmal fest oben rechts: sonst muesste man zum
+     Schliessen durch das ganze Projekt scrollen (auf dem Handy auch durch
+     die Karte). Leicht hinterlegt, damit er ueber Film und Bildern lesbar ist. */
+  .viewer-x {
+    position: absolute; top: max(16px, env(safe-area-inset-top)); right: max(16px, env(safe-area-inset-right));
+    z-index: 20; margin: 0; padding: 9px 16px;
+    background: rgba(8, 10, 12, 0.42);
+    -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px);
+  }
+  .viewer-x { transition: opacity 0.4s var(--ease), color 0.5s var(--ease), border-color 0.5s var(--ease); }
+  /* Fuellt die Reisekarte den Schirm, steht dort "Karte ueberspringen" --
+     der Knopf weicht so lange. Im Ersatz-Vollbild (Telefon) gehoert der
+     Schirm dem Film. */
+  .viewer.karte-deckt .viewer-x { opacity: 0; pointer-events: none; }
+  /* Der Titel bekommt beim Oeffnen den Fokus nur als Startpunkt -- er ist
+     kein Bedienelement, ein Fokusrahmen darum waere irrefuehrend. */
+  .viewer-head h2:focus { outline: none; }
+  .viewer:has(.fs-ersatz) .viewer-x { display: none; }
 
   /* ---------- Schmale Schirme ----------
      Die einzeilige Kartenzeile funktioniert hier nicht: Für den Text bleiben
@@ -3018,6 +3046,7 @@
       (trigger.classList.contains('schau-platz') && trigger.dataset.film !== '0');
     busy = true;
     current = viewer;
+    adresseSetzen(viewer);
     /* Solange die Projektansicht offen ist, ist die Startseite fuer Tastatur
        und Screenreader nicht da (inert): Tab bleibt in der Ansicht, statt in
        der unsichtbaren Seite dahinter zu landen. Beim Schliessen kehrt der
@@ -3081,8 +3110,11 @@
 
       setTimeout(function () {
         busy = false;
-        const closeBtn = viewer.querySelector('.viewer-close');
-        if (closeBtn) closeBtn.focus({ preventScroll: true });
+        /* Der Fokus kommt auf den Titel, nicht auf "Schliessen": Vorlesegeraete
+           beginnen so oben, und die Leertaste haelt den Film an, statt die
+           Ansicht gleich wieder zu schliessen. */
+        const titel = viewer.querySelector('.viewer-head h2');
+        if (titel) { titel.tabIndex = -1; titel.focus({ preventScroll: true }); }
       }, FRAME_MS);
     }, SHUT_MS);
   }
@@ -3312,8 +3344,16 @@
     trigger.addEventListener('pointerenter', vorwaermen);
     trigger.addEventListener('focus', vorwaermen);
   });
+  /* Fester Schliessen-Knopf oben in jeder Projektansicht. */
+  document.querySelectorAll('.viewer').forEach(function (v) {
+    const unten = v.querySelector('.viewer-close');
+    if (!unten) return;
+    const oben = unten.cloneNode(true);
+    oben.classList.add('viewer-x');
+    v.appendChild(oben);
+  });
   document.querySelectorAll('.viewer-close').forEach(function (btn) {
-    btn.addEventListener('click', closeProject);
+    btn.addEventListener('click', schliessen);
   });
   document.addEventListener('keydown', function (e) {
     if (e.key !== 'Escape' || !current) return;
@@ -3324,8 +3364,57 @@
     const wrap = current.querySelector('.stage-wrap.fs-ersatz');
     if (wrap && wrap._fsUm) { wrap._fsUm(); return; }
     if (document.fullscreenElement) return;
-    closeProject();
+    schliessen();
   });
+
+  /* ---------- Adressen ----------
+     Jedes Projekt hat eine eigene Adresse (#the-same-gray). Beim Oeffnen
+     kommt sie als neuer Eintrag in den Verlauf: die Zurueck-Taste (auf dem
+     Handy die wichtigste) schliesst dann das Projekt, statt die Seite zu
+     verlassen, und ein geteilter Link oeffnet es direkt. */
+  function kennung(viewer) {
+    const h = viewer.querySelector('.viewer-head h2');
+    return (h ? h.textContent : viewer.id).trim().toLowerCase()
+      .replace(/ä/g, 'ae').replace(/ö/g, 'oe').replace(/ü/g, 'ue').replace(/ß/g, 'ss')
+      .replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+  }
+  function viewerZu(hash) {
+    let k = '';
+    try { k = decodeURIComponent((hash || '').replace(/^#/, '')); } catch (e) { return null; }
+    if (!k) return null;
+    const alle = document.querySelectorAll('.viewer');
+    for (let i = 0; i < alle.length; i++) if (kennung(alle[i]) === k) return alle[i];
+    return null;
+  }
+  function ohneHash() { return location.pathname + location.search; }
+  function adresseSetzen(viewer) {
+    if (!history.pushState) return;
+    const k = '#' + kennung(viewer);
+    if (location.hash === k) return;            // per Link oder Vorwaerts-Taste gekommen
+    try { history.pushState({ lxr: viewer.id }, '', k); } catch (e) {}
+  }
+  /* Schliessen per Knopf oder Escape: steht der eigene Eintrag oben, geht es
+     einen Schritt zurueck (popstate schliesst dann); kam man per Link, wird
+     die Adresse nur bereinigt. */
+  function schliessen() {
+    if (busy || !current) return;
+    if (history.state && history.state.lxr === current.id) { history.back(); return; }
+    if (location.hash) { try { history.replaceState(null, '', ohneHash()); } catch (e) {} }
+    closeProject();
+  }
+  function ausAdresse() {
+    if (busy) { setTimeout(ausAdresse, 120); return; }
+    const ziel = viewerZu(location.hash);
+    if (current && current !== ziel) { closeProject(); if (ziel) setTimeout(ausAdresse, 120); return; }
+    if (ziel && !current) {
+      const t = document.querySelector('.card-trigger[data-viewer="' + ziel.id + '"]') ||
+                document.querySelector('[data-viewer="' + ziel.id + '"]');
+      if (t) openProject(t);
+    }
+  }
+  window.addEventListener('popstate', ausAdresse);
+  // Per Link mit Projektadresse gekommen: gleich oeffnen.
+  if (viewerZu(location.hash)) setTimeout(ausAdresse, 300);
 
   /* ---------- Hero-Film und Umschalten ----------
      Der Film ist eine eigene Datei: er startet ohne Umweg, laeuft nahtlos in
@@ -7823,11 +7912,11 @@
       const r = halt.getBoundingClientRect();
       const deckt = r.top <= 0.5 && r.bottom >= viewer.clientHeight - 0.5;
       if (viewer.classList.contains('karte-deckt') !== deckt) viewer.classList.toggle('karte-deckt', deckt);
-      /* Beim Oeffnen steht der Fokus auf "Schliessen" -- eine Leertaste
-         schloesse dann die ganze Projektseite. Fuellt die Karte den Schirm,
-         bekommt sie den Fokus: Leertaste und Pfeile fahren weiter. */
+      /* Fuellt die Karte den Schirm, bekommt sie den Fokus (sofern er nicht
+         schon in ihr oder auf einem Bedienknopf des Films liegt): Leertaste
+         und Pfeile fahren dann weiter, statt etwas anderes auszuloesen. */
       const f = document.activeElement;
-      if (deckt && f && f.closest && f.closest('.viewer-close')) wurzel.focus({ preventScroll: true });
+      if (deckt && f && f !== wurzel && !wurzel.contains(f) && f.closest && !f.closest('.stage-ui')) wurzel.focus({ preventScroll: true });
     }
     // Gezeichnet wird nur, solange die Karte im Bild ist.
     if ('IntersectionObserver' in window) {
