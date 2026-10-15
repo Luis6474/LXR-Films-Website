@@ -1969,6 +1969,15 @@
 
 <script>
 (function () {
+  /* Jedes Teil der Seite startet abgesichert: wirft eines (etwa auf einem
+     ungewoehnlichen Browser), fehlt nur dieses Teil -- Projekte, Tasten und
+     Karten werden trotzdem verdrahtet. */
+  function sicher(name, fn) {
+    try { fn(); } catch (e) {
+      if (window.console && console.warn) console.warn('LXR: ' + name + ' ausgefallen', e);
+    }
+  }
+
   /* ---------- Einstellungen ----------
      Die Werte, die das Aussehen von Lichthoefen, Sternen und Korn
      bestimmen, an einer Stelle. Genau diese Namen und Zahlen zeigt das
@@ -2029,7 +2038,7 @@
                    Schwarz laesst den Untergrund unveraendert, nur die Koerner
                    treten hervor -- so bekommen auch die dunklen Flaechen Korn,
                    ohne dass die Schwaerzen aufgehellt werden. */
-  (function buildGrain() {
+  sicher('Korn', function buildGrain() {
     /* Die Kachel wird doppelt so fein gerechnet wie sie spaeter angezeigt wird
        und erst am Ende einmal sauber heruntergerechnet. Das ist der Grund,
        warum das Korn rund statt kantig wirkt: bei einem Korn, das direkt in
@@ -2321,7 +2330,7 @@
       setTimeout(weiter, 0);
     }
     requestAnimationFrame(function () { setTimeout(weiter, 0); });
-  })();
+  });
 
   /* ---------- Teelicht ----------
      Ein warmes, unruhiges Licht ueber der Seite. Frueher lagen hier zwei
@@ -2329,7 +2338,7 @@
      sind entfallen -- geblieben ist das Flackern, und das laeuft jetzt so dicht
      und so unregelmaessig, dass es wie eine Kerzenflamme wirkt statt wie eine
      gelegentliche Stoerung. */
-  (function teelicht() {
+  sicher('Teelicht', function teelicht() {
     if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
     const zucken = document.getElementById('zucken');
     if (!zucken) return;
@@ -2372,7 +2381,7 @@
         e.style.setProperty('--staerke', (0.3 + Math.random() * 0.7).toFixed(2));
       });
     }, 2100, 450);    // im Mittel alle 2,6 s, stark schwankend
-  })();
+  });
 
   const page = document.getElementById('page');
   const body = document.body;
@@ -3332,56 +3341,60 @@
   const heroAura = document.getElementById('heroAura');
   const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
-  if (heroVideo) {
-    // Auf schmalen Fenstern die kleinere Fassung -- spart Daten, sieht dort gleich aus.
-    const netz = navigator.connection || {};
-    const wide = window.innerWidth >= 900 && !netz.saveData;
-    // Bei reduzierter Bewegung ist der Film ausgeblendet: dann nichts laden.
-    if (reducedMotion) heroVideo.preload = 'none';
-    else heroVideo.src = wide ? heroVideo.dataset.hd : heroVideo.dataset.sd;
-    /* Die grosse Fassung braucht rund 12 Mbit/s. Reicht die Leitung dafuer
-       nicht und der Film bleibt zum Nachladen stehen, wird nach 1,5 s an
-       derselben Stelle auf die kleine Fassung gewechselt -- einmal, danach
-       bleibt es dabei. Ein ruckelnder Film waere schlimmer als ein etwas
-       weicherer. */
-    if (wide) {
-      let haenger = null;
-      heroVideo.addEventListener('waiting', function () {
-        clearTimeout(haenger);
-        haenger = setTimeout(function () {
-          if (heroVideo.currentSrc.indexOf(heroVideo.dataset.hd) < 0) return;
-          const t = heroVideo.currentTime;
-          heroVideo.src = heroVideo.dataset.sd;
-          heroVideo.currentTime = t;
-          if (!reducedMotion) heroVideo.play().catch(function () {});
-        }, 1500);
-      });
-      heroVideo.addEventListener('playing', function () { clearTimeout(haenger); });
+  sicher('Hero-Film', function () {
+    if (heroVideo) {
+      // Auf schmalen Fenstern die kleinere Fassung -- spart Daten, sieht dort gleich aus.
+      const netz = navigator.connection || {};
+      const wide = window.innerWidth >= 900 && !netz.saveData;
+      // Bei reduzierter Bewegung ist der Film ausgeblendet: dann nichts laden.
+      if (reducedMotion) heroVideo.preload = 'none';
+      else heroVideo.src = wide ? heroVideo.dataset.hd : heroVideo.dataset.sd;
+      /* Die grosse Fassung braucht rund 12 Mbit/s. Reicht die Leitung dafuer
+         nicht und der Film bleibt zum Nachladen stehen, wird nach 1,5 s an
+         derselben Stelle auf die kleine Fassung gewechselt -- einmal, danach
+         bleibt es dabei. Ein ruckelnder Film waere schlimmer als ein etwas
+         weicherer. */
+      if (wide) {
+        let haenger = null;
+        heroVideo.addEventListener('waiting', function () {
+          clearTimeout(haenger);
+          haenger = setTimeout(function () {
+            if (heroVideo.currentSrc.indexOf(heroVideo.dataset.hd) < 0) return;
+            const t = heroVideo.currentTime;
+            heroVideo.src = heroVideo.dataset.sd;
+            heroVideo.currentTime = t;
+            if (!reducedMotion) heroVideo.play().catch(function () {});
+          }, 1500);
+        });
+        heroVideo.addEventListener('playing', function () { clearTimeout(haenger); });
+      }
+      if (!reducedMotion) {
+        heroVideo.autoplay = true;
+        const go = heroVideo.play();
+        // Verweigert der Browser das Abspielen, bleibt einfach das Standbild
+        // stehen -- das ist der erste Bildkader des Films, der Unterschied faellt
+        // nicht auf.
+        if (go && go.catch) { go.catch(function () {}); }
+      }
     }
-    if (!reducedMotion) {
-      heroVideo.autoplay = true;
-      const go = heroVideo.play();
-      // Verweigert der Browser das Abspielen, bleibt einfach das Standbild
-      // stehen -- das ist der erste Bildkader des Films, der Unterschied faellt
-      // nicht auf.
-      if (go && go.catch) { go.catch(function () {}); }
-    }
-  }
+  });
 
   /* Ausser Sicht ruht der Film: sonst laedt und dekodiert er unsichtbar
      weiter (gemessen am PC 33 MB in 20 s). 300 px Vorlauf, damit er schon
      wieder laeuft, wenn der Hero zurueck ins Bild kommt. Bei offener
      Projektseite regeln open-/closeProject den Film. */
   let heroImBild = true;
-  if (heroVideo && heroSection && !reducedMotion && 'IntersectionObserver' in window) {
-    new IntersectionObserver(function (es) {
-      heroImBild = es[es.length - 1].isIntersecting;
-      heroSection.classList.toggle('ausser-sicht', !heroImBild);
-      if (document.body.classList.contains('bg-ruht')) return;
-      if (heroImBild) { const p = heroVideo.play(); if (p && p.catch) p.catch(function () {}); }
-      else if (!heroVideo.paused) heroVideo.pause();
-    }, { rootMargin: '300px 0px' }).observe(heroSection);
-  }
+  sicher('Hero-Pause', function () {
+    if (heroVideo && heroSection && !reducedMotion && 'IntersectionObserver' in window) {
+      new IntersectionObserver(function (es) {
+        heroImBild = es[es.length - 1].isIntersecting;
+        heroSection.classList.toggle('ausser-sicht', !heroImBild);
+        if (document.body.classList.contains('bg-ruht')) return;
+        if (heroImBild) { const p = heroVideo.play(); if (p && p.catch) p.catch(function () {}); }
+        else if (!heroVideo.paused) heroVideo.pause();
+      }, { rootMargin: '300px 0px' }).observe(heroSection);
+    }
+  });
 
   /* Zwei Zustaende, kein Dazwischen: Beim ersten Scrollen schaltet der Film auf
      Seitenformat um und bleibt dort. Bewusst NICHT an den Scrollfortschritt
@@ -3403,85 +3416,89 @@
   function onDockKey(e) {
     if (['ArrowDown', 'PageDown', 'End', ' ', 'Spacebar'].indexOf(e.key) !== -1) dockHero();
   }
-  if (heroFrame) {
-    if (window.scrollY > 6 || reducedMotion) {
-      // Seite kommt bereits gescrollt zurueck: dann ohne Bewegung direkt klein.
-      const t = heroFrame.style.transition;
-      heroFrame.style.transition = 'none';
-      dockHero();
-      void heroFrame.offsetWidth;
-      heroFrame.style.transition = t;
-    } else {
-      window.addEventListener('scroll', onFirstScroll, { passive: true });
-      window.addEventListener('wheel', dockHero, { passive: true });
-      window.addEventListener('touchmove', dockHero, { passive: true });
-      window.addEventListener('keydown', onDockKey);
+  sicher('Hero-Rahmen', function () {
+    if (heroFrame) {
+      if (window.scrollY > 6 || reducedMotion) {
+        // Seite kommt bereits gescrollt zurueck: dann ohne Bewegung direkt klein.
+        const t = heroFrame.style.transition;
+        heroFrame.style.transition = 'none';
+        dockHero();
+        void heroFrame.offsetWidth;
+        heroFrame.style.transition = t;
+      } else {
+        window.addEventListener('scroll', onFirstScroll, { passive: true });
+        window.addEventListener('wheel', dockHero, { passive: true });
+        window.addEventListener('touchmove', dockHero, { passive: true });
+        window.addEventListener('keydown', onDockKey);
+      }
     }
-  }
+  });
 
   /* Lichthof: der laufende Film wird in ein 32x18 grosses Feld gezeichnet und
      per CSS stark unscharf hochgezogen. Die Farbe stammt damit wirklich aus dem
      Bild und nicht aus einer geschaetzten Palette. Der Aufwand pro Zeichnung
      ist verschwindend klein, deshalb reichen acht Bilder pro Sekunde. */
-  if (heroAura && heroVideo && !reducedMotion) {
-    /* Das 32x18-Feld liegt jetzt abseits. Gezeigt wird eine Leinwand in
-       einem Achtel der Anzeigegroesse, in die der fertig weichgezeichnete
-       Schein gerechnet wird: dieselbe Kette wie vorher im CSS (hochziehen,
-       70 px weich, Saettigung, Helligkeit), der Radius im selben Massstab
-       verkleinert. Ausserhalb der Leinwand ist es durchsichtig -- genau wie
-       beim CSS-Filter, der am Rand ebenfalls gegen Durchsichtig auslief. */
-    const FEIN = 8;
-    const feld = document.createElement('canvas');
-    feld.width = 32; feld.height = 18;
-    const fctx = feld.getContext('2d', { alpha: false });
-    const ctx = heroAura.getContext('2d');
-    const leinwandFilter = ctx && typeof ctx.filter === 'string';
-    if (!leinwandFilter) heroAura.classList.add('css-weich');
-    function passen() {
-      if (!leinwandFilter) { heroAura.width = 32; heroAura.height = 18; return; }
-      const w = Math.max(8, Math.round(heroAura.clientWidth / FEIN));
-      const h = Math.max(8, Math.round(heroAura.clientHeight / FEIN));
-      if (heroAura.width !== w || heroAura.height !== h) { heroAura.width = w; heroAura.height = h; }
-    }
-    passen();
-    let auraTimer = null;
-    /* Laeuft bewusst auch unter einer offenen Projektseite weiter: ohne das
-       Nachzeichnen legt der Browser den angehaltenen Film still und braucht
-       beim Zurueckkommen spuerbar lange, ihn wieder aufzunehmen (gemessen
-       rund 2 s Stillstand der ganzen Seite). */
-    function paintAura() {
-      if (heroVideo.readyState >= 2 && heroVideo.videoWidth) {
-        try {
-          if (!leinwandFilter) { ctx.drawImage(heroVideo, 0, 0, 32, 18); return; }
-          fctx.drawImage(heroVideo, 0, 0, 32, 18);
-          ctx.clearRect(0, 0, heroAura.width, heroAura.height);
-          ctx.filter = 'blur(' + (70 / FEIN) + 'px) saturate(2.8) brightness(1.58)';
-          ctx.imageSmoothingEnabled = true;
-          ctx.drawImage(feld, 0, 0, heroAura.width, heroAura.height);
-        } catch (e) {}
+  sicher('Hero-Lichthof', function () {
+    if (heroAura && heroVideo && !reducedMotion) {
+      /* Das 32x18-Feld liegt jetzt abseits. Gezeigt wird eine Leinwand in
+         einem Achtel der Anzeigegroesse, in die der fertig weichgezeichnete
+         Schein gerechnet wird: dieselbe Kette wie vorher im CSS (hochziehen,
+         70 px weich, Saettigung, Helligkeit), der Radius im selben Massstab
+         verkleinert. Ausserhalb der Leinwand ist es durchsichtig -- genau wie
+         beim CSS-Filter, der am Rand ebenfalls gegen Durchsichtig auslief. */
+      const FEIN = 8;
+      const feld = document.createElement('canvas');
+      feld.width = 32; feld.height = 18;
+      const fctx = feld.getContext('2d', { alpha: false });
+      const ctx = heroAura.getContext('2d');
+      const leinwandFilter = ctx && typeof ctx.filter === 'string';
+      if (!leinwandFilter) heroAura.classList.add('css-weich');
+      function passen() {
+        if (!leinwandFilter) { heroAura.width = 32; heroAura.height = 18; return; }
+        const w = Math.max(8, Math.round(heroAura.clientWidth / FEIN));
+        const h = Math.max(8, Math.round(heroAura.clientHeight / FEIN));
+        if (heroAura.width !== w || heroAura.height !== h) { heroAura.width = w; heroAura.height = h; }
       }
+      passen();
+      let auraTimer = null;
+      /* Laeuft bewusst auch unter einer offenen Projektseite weiter: ohne das
+         Nachzeichnen legt der Browser den angehaltenen Film still und braucht
+         beim Zurueckkommen spuerbar lange, ihn wieder aufzunehmen (gemessen
+         rund 2 s Stillstand der ganzen Seite). */
+      function paintAura() {
+        if (heroVideo.readyState >= 2 && heroVideo.videoWidth) {
+          try {
+            if (!leinwandFilter) { ctx.drawImage(heroVideo, 0, 0, 32, 18); return; }
+            fctx.drawImage(heroVideo, 0, 0, 32, 18);
+            ctx.clearRect(0, 0, heroAura.width, heroAura.height);
+            ctx.filter = 'blur(' + (70 / FEIN) + 'px) saturate(2.8) brightness(1.58)';
+            ctx.imageSmoothingEnabled = true;
+            ctx.drawImage(feld, 0, 0, heroAura.width, heroAura.height);
+          } catch (e) {}
+        }
+      }
+      // Die Groesse haengt am Fenster (vw/vh) -- danach neu zuschneiden.
+      window.addEventListener('resize', function () { passen(); paintAura(); });
+      function auraOn() {
+        if (auraTimer) return;
+        paintAura();
+        auraTimer = setInterval(paintAura, 125);
+      }
+      function auraOff() { if (auraTimer) { clearInterval(auraTimer); auraTimer = null; } }
+      heroVideo.addEventListener('loadeddata', paintAura);
+      // Nur zeichnen, solange der Hero ueberhaupt im Bild ist.
+      if ('IntersectionObserver' in window) {
+        new IntersectionObserver(function (es) {
+          es.forEach(function (e) { e.isIntersecting ? auraOn() : auraOff(); });
+        }, { threshold: 0 }).observe(heroSection);
+      } else {
+        auraOn();
+      }
+      document.addEventListener('visibilitychange', function () {
+        document.hidden ? auraOff() : auraOn();
+      });
     }
-    // Die Groesse haengt am Fenster (vw/vh) -- danach neu zuschneiden.
-    window.addEventListener('resize', function () { passen(); paintAura(); });
-    function auraOn() {
-      if (auraTimer) return;
-      paintAura();
-      auraTimer = setInterval(paintAura, 125);
-    }
-    function auraOff() { if (auraTimer) { clearInterval(auraTimer); auraTimer = null; } }
-    heroVideo.addEventListener('loadeddata', paintAura);
-    // Nur zeichnen, solange der Hero ueberhaupt im Bild ist.
-    if ('IntersectionObserver' in window) {
-      new IntersectionObserver(function (es) {
-        es.forEach(function (e) { e.isIntersecting ? auraOn() : auraOff(); });
-      }, { threshold: 0 }).observe(heroSection);
-    } else {
-      auraOn();
-    }
-    document.addEventListener('visibilitychange', function () {
-      document.hidden ? auraOff() : auraOn();
-    });
-  }
+  });
 
   /* ---------- Kameraführung ----------
      Jeder Bildkasten bekommt einen inneren Rahmen, der beim Scrollen langsamer
@@ -3823,14 +3840,14 @@
     if (src.complete && src.naturalWidth) klein();
     else src.addEventListener('load', klein, { once: true });
   }
-  document.querySelectorAll('.page .aura-host').forEach(buildAura);
+  document.querySelectorAll('.page .aura-host').forEach(function (h) { sicher('Lichthof', function () { buildAura(h); }); });
   /* Die drei hinteren Titelbilder des Karussells liegen auf dem Handy nur gut
      einen Schirm unter dem Start -- trotz loading=lazy luden sie sofort mit
      (rund 850 kB) und nahmen dem Hero-Film die Leitung. Jetzt laden sie alle
      drei zusammen, sobald die Schau naht; einzeln beobachtet kaemen die
      seitlich wartenden Folien erst beim Hereindrehen. Die Hoefe warten ohnehin
      auf 'load' (buildAura oben). */
-  (function () {
+  sicher('Karussellbilder', function () {
     const schau = document.getElementById('schau');
     const spaet = schau ? Array.prototype.slice.call(schau.querySelectorAll('img[data-src]')) : [];
     if (!spaet.length) return;
@@ -3851,7 +3868,7 @@
       ob.disconnect(); laden();
     }, { rootMargin: '0px 0px 600px 0px' });
     ob.observe(schau);
-  })();
+  });
   // Fuer das Reglerfeld: alle schon gebauten Hoefe mit neuen Werten neu bauen.
   reglerHaken.hoefe = function () {
     document.querySelectorAll('.aura-host').forEach(function (host) {
@@ -3872,7 +3889,7 @@
      mehrere Bildschirme hohen Strecke klebt -- dem Nutzer wird das Scrollen
      dabei nie aus der Hand genommen, und Rad, Trackpad, Wischen, Tastatur
      und Scrollbalken verhalten sich alle weiter so, wie er es kennt. */
-  (function schau() {
+  sicher('Karussell', function schau() {
     const wurzel = document.getElementById('schau');
     if (!wurzel) return;
     const lauf = document.getElementById('schau-lauf');
@@ -4256,7 +4273,7 @@
     buehne.addEventListener('hofda', function () { if (anzeige !== null) zeichne(anzeige); });
     stelle();
     uebernehmen();
-  })();
+  });
 
   /* ---------- Reisekarten ----------
      Eine Familie von drei Karten: The Same Gray (Schottland), The Mountains
@@ -4506,7 +4523,8 @@
 
   document.querySelectorAll('.karte[data-karte]:not([hidden])').forEach(function (el) {
     const cfg = KARTEN[el.dataset.karte];
-    if (cfg) reisekarte(el, cfg);
+    // Faellt eine Karte aus, bleibt der Rest der Seite bedienbar.
+    if (cfg) sicher('Karte ' + el.dataset.karte, function () { reisekarte(el, cfg); });
   });
 
   function reisekarte(wurzel, CFG) {
