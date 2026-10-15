@@ -13,6 +13,7 @@
      und Verbindungsaufbau laufen sonst erst, wenn jemand ein Projekt oeffnet.
      Vorverbunden faellt das aus der wahrgenommenen Wartezeit heraus. -->
 <link rel="preconnect" href="https://www.youtube-nocookie.com">
+<link rel="dns-prefetch" href="https://www.youtube.com">
 <link rel="preconnect" href="https://i.ytimg.com" crossorigin>
 <link rel="dns-prefetch" href="https://www.youtube-nocookie.com">
 <!-- Noto Serif statt Fraunces. Gesucht war Symbola; die ist eine
@@ -915,9 +916,17 @@
     background-image: linear-gradient(to right, transparent, var(--p-accent, #fff), transparent);
     background-repeat: no-repeat; background-size: 38% 100%;
   }
-  .viewer-stage.has-video:not(.is-playing) .stage-laedt {
+  .viewer-stage.has-video:not(.is-playing):not(.ist-fehler) .stage-laedt {
     opacity: 0.8; animation: laedt 1.7s var(--ease) infinite;
   }
+  /* Laedt der Film nicht, bleibt das Standbild mit einem leisen Hinweis. */
+  .stage-hinweis {
+    position: absolute; left: 0; right: 0; bottom: 0; z-index: 5; margin: 0;
+    padding: 40px 24px 20px; text-align: center;
+    font-size: 0.82em; letter-spacing: 0.04em; color: var(--text-dim);
+    background: linear-gradient(to top, rgba(0,0,0,0.6), transparent);
+  }
+  .stage-hinweis a { color: var(--text); text-underline-offset: 3px; }
   @keyframes laedt {
     0%   { background-position: -40% 0; }
     100% { background-position: 140% 0; }
@@ -2381,13 +2390,41 @@
      YouTube, aber ohne sichtbare YouTube-Oberfläche: nocookie-Domain, alle
      Bedienelemente des Players abgeschaltet, eigene Steuerung darüber, und das
      iframe nimmt keine Klicks an -- niemand landet versehentlich auf YouTube.
-     Gesteuert wird per postMessage, damit kein YouTube-Skript geladen werden muss.
+     Gesteuert wird ueber YouTubes offizielle IFrame-API (iframe_api): sie ist
+     dokumentiert und wird von YouTube stabil gehalten -- das rohe
+     Nachrichtenformat darunter nicht. Das Skript wird erst beim ersten
+     Oeffnen eines Projekts geladen. Befehle vor der Bereitschaft des Players
+     werden gesammelt und danach ausgefuehrt.
      Trägt eine Stage keine Video-ID, bleibt einfach das Standbild stehen. */
+  let ytLaden = null;
+  function ytApi() {
+    if (window.YT && window.YT.Player) return Promise.resolve(window.YT);
+    if (ytLaden) return ytLaden;
+    ytLaden = new Promise(function (fertig, fehler) {
+      const vorher = window.onYouTubeIframeAPIReady;
+      window.onYouTubeIframeAPIReady = function () {
+        if (typeof vorher === 'function') vorher();
+        fertig(window.YT);
+      };
+      const sk = document.createElement('script');
+      sk.src = 'https://www.youtube.com/iframe_api';
+      sk.async = true;
+      sk.onerror = function () { ytLaden = null; sk.remove(); fehler(new Error('YouTube-API')); };
+      document.head.appendChild(sk);
+    });
+    return ytLaden;
+  }
+
   function ytCommand(iframe, func, args) {
-    if (!iframe || !iframe.contentWindow) return;
-    iframe.contentWindow.postMessage(
-      JSON.stringify({ event: 'command', func: func, args: args || [] }), '*'
-    );
+    if (!iframe) return;
+    const p = iframe._yt;
+    if (p && p.bereit) {
+      if (typeof p.player[func] === 'function') {
+        try { p.player[func].apply(p.player, args || []); } catch (e) {}
+      }
+    } else {
+      (iframe._warte = iframe._warte || []).push([func, args]);
+    }
   }
 
   function ytParams(id, extra) {
@@ -2464,9 +2501,8 @@
     fitted.forEach(function (p) { fitFrame(p[0], p[1], p[2]); });
   });
 
-  /* Meldet zurück, wann der Film tatsächlich läuft. Dafür wird kein
-     YouTube-Skript geladen -- der Player selbst schickt die Zustände,
-     sobald man sich per postMessage anmeldet. */
+  /* Meldet zurück, wann der Film tatsächlich läuft: Zustand aus den
+     Ereignissen der IFrame-API, Laufzeit per getCurrentTime(). */
   /* YouTube blendet in den ersten Sekunden jedes eingebetteten Films Titel,
      Kanalnamen, ein Pausensymbol und sein Logo ein. Das laesst sich durch
      KEINEN Einbettungsparameter abschalten -- controls=0 und modestbranding=1
@@ -2475,6 +2511,9 @@
      bleibt davor stehen), bis die Anzeige von selbst verschwunden ist.
      Als Beleg dient die tatsaechlich abgespielte Laufzeit. */
   const PLAY_PROOF_SECONDS = 5.5;
+  /* Kommt bis dahin kein laufender Film zustande (YouTube blockiert, offline,
+     Film nicht verfuegbar), bleibt das Standbild stehen und ein Hinweis mit
+     Link zu YouTube erscheint -- statt blind ein schwarzes Fehlerbild zu zeigen. */
   const PLAY_FALLBACK_MS = 14000;
 
   /* Dasselbe gilt fuer jedes Fortsetzen nach einer Pause und fuer laengeres
@@ -2485,7 +2524,7 @@
      weiterlaufen, wo er stand, nur ohne YouTubes Einblendung. */
   const WEITER_VORLAUF = 4;
   const PUFFER_MS = 700;
-  const ABDECK_MS = 750;    // Dauer der Blende auf das Standbild (CSS 0.7 s)
+  const ABDECK_MS = 850;    // bis das Standbild ganz deckt (CSS: Bild 0.8 s, Player 0.7 s)
 
   function watchPlayer(frame, opts) {
     let baseTime = null;
@@ -2495,7 +2534,6 @@
     let zurueck = false;      // der Ruecksprung ist beim Player angekommen
     let puffer = null;
     let spaeter = null;
-    let bereit = false;
 
     function arm() { baseTime = null; ziel = null; shown = false; }
 
@@ -2542,18 +2580,13 @@
       ytCommand(frame, 'pauseVideo');
     }
 
-    function onMessage(e) {
-      if (!e.data || typeof e.data !== 'string') return;
-      if (e.source !== frame.contentWindow) return;
-      let msg;
-      try { msg = JSON.parse(e.data); } catch (err) { return; }
-      const info = msg.info;
-      if (!info || typeof info !== 'object') return;
-      if (!bereit) { bereit = true; ohneUntertitel(); }
+    let lief = false;          // der Film hat schon einmal gespielt
 
+    function zustand(st) {
+      if (st === 1) lief = true;
       // Film zu Ende: Player sofort wieder verdecken, sonst erscheinen
       // YouTubes Abspann-Vorschlaege.
-      if (info.playerState === 0) {
+      if (st === 0) {
         hide();
         if (opts.loop) {
           arm();
@@ -2563,36 +2596,65 @@
         return;
       }
       // Laengeres Nachladen, waehrend der Film zu sehen ist.
-      if (info.playerState === 3 && shown && !puffer) {
+      if (st === 3 && shown && !puffer) {
         puffer = setTimeout(weiter, PUFFER_MS);
-      } else if (typeof info.playerState === 'number' && info.playerState !== 3) {
+      } else if (st !== 3) {
         clearTimeout(puffer); puffer = null;
-      }
-
-      // Die Meldungen mit der Laufzeit tragen keinen Zustandswert -- beides
-      // muss deshalb getrennt ausgewertet werden.
-      if (typeof info.currentTime === 'number') {
-        if (ziel !== null) {
-          if (info.currentTime < ziel - 1) zurueck = true;
-          else if (zurueck && info.currentTime >= ziel) { ziel = null; show(); }
-          return;
-        }
-        zeit = info.currentTime;
-        if (shown) return;
-        if (baseTime === null) { baseTime = info.currentTime; return; }
-        if (info.currentTime - baseTime >= PLAY_PROOF_SECONDS) show();
       }
     }
 
-    window.addEventListener('message', onMessage);
-    const handshake = setInterval(function () {
-      if (frame.contentWindow) {
-        frame.contentWindow.postMessage('{"event":"listening"}', '*');
+    function laufzeit(t) {
+      if (ziel !== null) {
+        if (t < ziel - 1) zurueck = true;
+        else if (zurueck && t >= ziel) { ziel = null; show(); }
+        return;
       }
-    }, 200);
-    // Notnagel: kommt gar keine Rueckmeldung, lieber den Film zeigen als
-    // dauerhaft beim Standbild zu bleiben.
-    const fallback = setTimeout(show, PLAY_FALLBACK_MS);
+      zeit = t;
+      if (shown) return;
+      // Ein Ruecksprung (Neustart) setzt den Beleg neu an -- direkt nach
+      // dem Spulbefehl meldet der Player noch kurz die alte Zeit.
+      if (baseTime === null || t < baseTime) { baseTime = t; return; }
+      if (t - baseTime >= PLAY_PROOF_SECONDS) show();
+    }
+
+    let fehlerGemeldet = false;
+    function fehler() {
+      if (fehlerGemeldet || shown) return;
+      fehlerGemeldet = true;
+      if (opts.onFehler) opts.onFehler();
+    }
+
+    let takt = null;
+    let aus = false;
+    ytApi().then(function (YT) {
+      if (aus) return;
+      const p = { bereit: false, player: null };
+      frame._yt = p;
+      p.player = new YT.Player(frame, {
+        events: {
+          onReady: function () {
+            if (aus) return;
+            p.bereit = true;
+            ohneUntertitel();
+            const warte = frame._warte || [];
+            frame._warte = null;
+            warte.forEach(function (c) { ytCommand(frame, c[0], c[1]); });
+            takt = setInterval(function () {
+              try {
+                const t = p.player.getCurrentTime();
+                if (typeof t === 'number') laufzeit(t);
+              } catch (e) {}
+            }, 250);
+          },
+          onStateChange: function (e) { if (!aus) zustand(e.data); },
+          onError: function () { if (!aus) fehler(); }
+        }
+      });
+    }, fehler);
+
+    // Notnagel: Hat der Film schon gespielt, nur der Beleg fehlt, wird er
+    // gezeigt. Lief er nie, bleibt das Standbild mit dem Hinweis.
+    const fallback = setTimeout(function () { if (lief) show(); else fehler(); }, PLAY_FALLBACK_MS);
 
     return {
       replay: function () {
@@ -2604,11 +2666,15 @@
       halt: halt,
       deckt: function () { return ziel !== null; },
       stop: function () {
-        window.removeEventListener('message', onMessage);
-        clearInterval(handshake);
+        aus = true;
+        clearInterval(takt);
         clearTimeout(fallback);
         clearTimeout(puffer);
         clearTimeout(spaeter);
+        if (frame._yt && frame._yt.player && frame._yt.player.destroy) {
+          try { frame._yt.player.destroy(); } catch (e) {}
+        }
+        frame._yt = null;
       }
     };
   }
@@ -2797,6 +2863,8 @@
     frame.title = viewer.querySelector('h2') ? viewer.querySelector('h2').textContent : 'Film';
     frame.allow = 'autoplay; encrypted-media; picture-in-picture';
     frame.setAttribute('referrerpolicy', 'strict-origin-when-cross-origin');
+    // Nicht per Tab erreichbar: im Player wirken Escape, Leertaste und F nicht.
+    frame.tabIndex = -1;
     stage.appendChild(frame);
     registerFit(stage, frame, UEBERZOOM);
     stage._player = watchPlayer(frame, {
@@ -2806,6 +2874,19 @@
         if (!muted) { ytCommand(frame, 'unMute'); ytCommand(frame, 'setVolume', [100]); }
       },
       onCover: function () { stage.classList.remove('is-playing'); },
+      onFehler: function () {
+        stage.classList.add('ist-fehler');
+        if (stage.querySelector('.stage-hinweis')) return;
+        const h = document.createElement('p');
+        h.className = 'stage-hinweis';
+        h.textContent = 'Der Film lässt sich gerade nicht laden. ';
+        const a = document.createElement('a');
+        a.href = 'https://www.youtube.com/watch?v=' + encodeURIComponent(id);
+        a.target = '_blank'; a.rel = 'noopener';
+        a.textContent = 'Auf YouTube ansehen';
+        h.appendChild(a);
+        stage.appendChild(h);
+      },
       onHide: function () {
         // Zurueck aufs Standbild -- so bleiben Abspann-Vorschlaege verdeckt.
         stage.classList.remove('is-playing');
@@ -2902,6 +2983,9 @@
     if (ui) ui.remove();
     const laden = stage.querySelector('.stage-laedt');
     if (laden) laden.remove();
+    const hinweis = stage.querySelector('.stage-hinweis');
+    if (hinweis) hinweis.remove();
+    stage.classList.remove('ist-fehler');
     const wrap = stage.closest('.stage-wrap');
     if (wrap && wrap._fsAb) wrap._fsAb();
     stage.classList.remove('has-video', 'is-playing');
