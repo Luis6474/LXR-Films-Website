@@ -17,8 +17,6 @@
 <meta name="twitter:card" content="summary_large_image">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' fill='%230d1216'/%3E%3Ctext x='16' y='22' font-family='Georgia,serif' font-size='15' fill='%23c8c2b6' text-anchor='middle'%3EL%3C/text%3E%3C/svg%3E">
 <script>document.documentElement.className += ' js';</script>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <!-- Der Player steht auf einer fremden Domain: Namensaufloesung, TLS-Handschlag
      und Verbindungsaufbau laufen sonst erst, wenn jemand ein Projekt oeffnet.
      Vorverbunden faellt das aus der wahrgenommenen Wartezeit heraus. -->
@@ -36,10 +34,31 @@
      Beide sind so gebaut, dass sie ihn nicht brauchen: Belleza ist eine
      humanistische Versalschrift, Libre Caslon Display ein Lesegrad. Ein erzwungenes
      font-weight wuerde der Browser nur nachbilden und dabei verschmieren. -->
-<!-- Schriften laden ohne das erste Bild aufzuhalten: Die Hero-Zeile blendet
-     ohnehin erst nach 0,4 s ein, bis dahin ist die Schrift in aller Regel da. -->
-<link href="https://fonts.googleapis.com/css2?family=Belleza&family=Libre+Caslon+Display&family=Noto+Serif:wght@400;600&display=swap" rel="stylesheet" media="print" onload="this.onload=null;this.media='all'">
-<noscript><link href="https://fonts.googleapis.com/css2?family=Belleza&family=Libre+Caslon+Display&family=Noto+Serif:wght@400;600&display=swap" rel="stylesheet"></noscript>
+<!-- Schriften liegen auf dem eigenen Server (fonts/): kein Abruf bei Google,
+     also keine Besucherdaten an Dritte. Nur die Zeichenbereiche latin und
+     latin-ext -- sie decken alle Zeichen der Seite ab. Noto Serif ist eine
+     variable Schrift, eine Datei traegt 400 und 600. font-display: swap haelt
+     das erste Bild nicht auf. Lizenz: SIL Open Font License (fonts/LIZENZ.txt). -->
+<style>
+  @font-face { font-family: 'Belleza'; font-style: normal; font-weight: 400; font-display: swap;
+    src: url(fonts/belleza-latin-ext.woff2) format('woff2');
+    unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C4, U+2113, U+2C60-2C7F, U+A720-A7FF; }
+  @font-face { font-family: 'Belleza'; font-style: normal; font-weight: 400; font-display: swap;
+    src: url(fonts/belleza-latin.woff2) format('woff2');
+    unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD; }
+  @font-face { font-family: 'Libre Caslon Display'; font-style: normal; font-weight: 400; font-display: swap;
+    src: url(fonts/libre-caslon-display-latin-ext.woff2) format('woff2');
+    unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C4, U+2113, U+2C60-2C7F, U+A720-A7FF; }
+  @font-face { font-family: 'Libre Caslon Display'; font-style: normal; font-weight: 400; font-display: swap;
+    src: url(fonts/libre-caslon-display-latin.woff2) format('woff2');
+    unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD; }
+  @font-face { font-family: 'Noto Serif'; font-style: normal; font-weight: 400 600; font-display: swap;
+    src: url(fonts/noto-serif-latin-ext.woff2) format('woff2');
+    unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C4, U+2113, U+2C60-2C7F, U+A720-A7FF; }
+  @font-face { font-family: 'Noto Serif'; font-style: normal; font-weight: 400 600; font-display: swap;
+    src: url(fonts/noto-serif-latin.woff2) format('woff2');
+    unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD; }
+</style>
 <style>
   :root {
     /* Tiefer und blauer als zuvor (#0d1216 / #090d10). Grund: die Lichthoefe

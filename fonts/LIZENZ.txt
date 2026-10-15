@@ -1,0 +1,9 @@
+Schriften in diesem Ordner (Web-Teilmengen latin und latin-ext, WOFF2,
+bezogen ueber Google Fonts, unveraendert):
+
+- Belleza – Copyright (c) 2012 Eduardo Tunni
+- Libre Caslon Display – Copyright (c) 2012 The Libre Caslon Project Authors (Pablo Impallari, Rodrigo Fuenzalida)
+- Noto Serif – Copyright 2022 The Noto Project Authors
+
+Alle drei stehen unter der SIL Open Font License, Version 1.1:
+https://openfontlicense.org/open-font-license-official-text/
