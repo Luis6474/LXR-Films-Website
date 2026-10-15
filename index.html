@@ -3434,10 +3434,58 @@
     if (heroVideo) {
       // Auf schmalen Fenstern die kleinere Fassung -- spart Daten, sieht dort gleich aus.
       const netz = navigator.connection || {};
-      const wide = window.innerWidth >= 900 && !netz.saveData;
+      let wide = window.innerWidth >= 900 && !netz.saveData;
+      /* Tablets und grosse Telefone sind oft im Mobilfunk, und Safari verraet
+         die Leitung nicht (navigator.connection fehlt). Dort wird vor dem
+         Start gemessen: die ersten 1,5 MB der grossen Fassung, hoechstens
+         1,5 s lang, gezaehlt ab der Antwort (ohne die Wartezeit der Leitung).
+         Kommen sie mit mindestens 16 Mbit/s (die grosse braucht im Schnitt
+         11,5), bleibt es bei ihr -- im WLAN also wie am Rechner; sonst
+         die kleine (1,5 Mbit/s). Bis dahin steht das Standbild. */
+      const messen = wide && !reducedMotion && matchMedia('(pointer: coarse)').matches
+                     && window.fetch && window.AbortController;
+      function starten() {
+        heroVideo.src = wide ? heroVideo.dataset.hd : heroVideo.dataset.sd;
+        // Nach der Messung nur anlaufen, wenn der Hero noch zu sehen ist.
+        if (!reducedMotion && (!messen || (heroImBild && !body.classList.contains('bg-ruht')))) {
+          heroVideo.autoplay = true;
+          const go = heroVideo.play();
+          // Verweigert der Browser das Abspielen, bleibt einfach das Standbild
+          // stehen -- das ist der erste Bildkader des Films, der Unterschied faellt
+          // nicht auf.
+          if (go && go.catch) { go.catch(function () {}); }
+        }
+      }
       // Bei reduzierter Bewegung ist der Film ausgeblendet: dann nichts laden.
       if (reducedMotion) heroVideo.preload = 'none';
-      else heroVideo.src = wide ? heroVideo.dataset.hd : heroVideo.dataset.sd;
+      else if (messen) {
+        const ab = new AbortController(), BYTES = 1500000;
+        let t0 = performance.now();
+        const frist = setTimeout(function () { ab.abort(); }, 1500);
+        fetch(heroVideo.dataset.hd, { headers: { Range: 'bytes=0-' + (BYTES - 1) }, signal: ab.signal, cache: 'no-store' })
+          .then(function (r) {
+            t0 = performance.now();
+            /* Selbst lesen und nach 1,5 MB aufhoeren -- falls ein Server die
+               Bereichsangabe uebergeht und die ganze Datei schickt. */
+            if (!r.body || !r.body.getReader) return r.arrayBuffer().then(function (b) { return b.byteLength; });
+            const leser = r.body.getReader();
+            let n = 0;
+            function weiter() {
+              return leser.read().then(function (x) {
+                if (x.done) return n;
+                n += x.value.byteLength;
+                if (n >= BYTES) { ab.abort(); return n; }
+                return weiter();
+              });
+            }
+            return weiter();
+          })
+          .then(function (n) {
+            const mbit = n * 8 / (Math.max(1, performance.now() - t0) / 1000) / 1e6;
+            wide = n >= BYTES * 0.9 && mbit >= 16;
+          }, function () { wide = false; })
+          .then(function () { clearTimeout(frist); starten(); });
+      } else starten();
       /* Die grosse Fassung braucht rund 12 Mbit/s. Reicht die Leitung dafuer
          nicht und der Film bleibt zum Nachladen stehen, wird nach 1,5 s an
          derselben Stelle auf die kleine Fassung gewechselt -- einmal, danach
@@ -3456,14 +3504,6 @@
           }, 1500);
         });
         heroVideo.addEventListener('playing', function () { clearTimeout(haenger); });
-      }
-      if (!reducedMotion) {
-        heroVideo.autoplay = true;
-        const go = heroVideo.play();
-        // Verweigert der Browser das Abspielen, bleibt einfach das Standbild
-        // stehen -- das ist der erste Bildkader des Films, der Unterschied faellt
-        // nicht auf.
-        if (go && go.catch) { go.catch(function () {}); }
       }
     }
   });
@@ -8096,9 +8136,26 @@
     /* Nur auf Oeffnen und Schliessen reagieren -- andere Klassenwechsel
        (etwa karte-deckt beim Scrollen) liefen sonst jedes Mal durch laden(). */
     let warAktiv = viewer.classList.contains('is-active');
+    /* Das erste Laden (5 bis 9 MB) wartet, bis die Karte eine Bildschirmhoehe
+       heran ist -- wer das Projekt nur fuer den Film oeffnet,
+       laedt sie nicht. Am Rechner liegt sie meist schon so nah, dass es sofort
+       losgeht; auf dem Handy erst beim Hinscrollen. */
+    let nahOb = null;
+    function naheLaden() {
+      const sc = viewer.querySelector('.viewer-scroll');
+      if (!sc || !('IntersectionObserver' in window)) { laden(); return; }
+      if (nahOb) return;
+      nahOb = new IntersectionObserver(function (es) {
+        if (!es.some(function (e) { return e.isIntersecting; })) return;
+        if (!viewer.classList.contains('is-active')) return;
+        nahOb.disconnect(); nahOb = null;
+        laden();
+      }, { root: sc, rootMargin: '100% 0px' });
+      nahOb.observe(wurzel);
+    }
     new MutationObserver(function () {
       const aktiv = viewer.classList.contains('is-active');
-      if (aktiv && !warAktiv) laden();
+      if (aktiv && !warAktiv) { if (geladen) laden(); else naheLaden(); }
       // Geschlossen: Videos der Tafel sofort still, nicht erst nach der Blende
       if (!aktiv && warAktiv) {
         medienAnhalten();
