@@ -4444,8 +4444,8 @@
        noch einrastet, kommt beim selben Film zurueck: die Fahrt lief sonst
        unter dem Projekt weiter (oder setzte nach dem Abbrechen per
        Nachziehen neu an), und nach dem Schliessen stand der naechste Film
-       vorn. Sobald das Projekt
-       deckt, steht die Seite genau auf dem geoeffneten Film. */
+       vorn. Sobald das Projekt deckt, steht die Seite genau auf dem
+       geoeffneten Film. */
     function hinstellenNach(k) {
       abbrechen();
       clearTimeout(ruhe);
@@ -4526,6 +4526,8 @@
       if (!eigen && y !== letztesY) richtung = y > letztesY ? 1 : -1;
       const r = rohStand();
       if (r < -0.001 || r > N - 1 + PUFFER + 0.001) drinnen = false;
+      // Nur mit dem Layout, zu dem er gehoert (siehe resize)
+      if (innerWidth === fensterB && innerHeight === fensterH) stand = r;
       letztesY = y;
       clearTimeout(ruhe);
       // Auf Touch etwas laenger warten: dort laeuft nach dem Loslassen noch
@@ -4533,7 +4535,28 @@
       ruhe = setTimeout(nachziehen, beruehrung ? 260 : 140);
     }
     window.addEventListener('scroll', anstossen, { passive: true });
+    /* Neue Fenstergroesse, derselbe Film. Die Scrollstrecke haengt an der
+       Fensterhoehe, und alles darueber wird bei anderer Breite anders hoch
+       -- der Scrollstand blieb aber derselbe. Gemessen: The Mountains vorn,
+       Fenster von 2560 auf 1366 verkleinert, danach stand The South vorn;
+       ebenso beim Drehen des iPads. Jetzt wird der Stand in Filmen
+       gemerkt und nach der Aenderung wieder angefahren. Auf Touch nur bei
+       neuer Breite: dort aendert die Adressleiste staendig die Hoehe, und
+       ein Sprung mitten im Schwung waere schlimmer als der Fehler. */
+    let stand = rohStand(), fensterB = innerWidth, fensterH = innerHeight;
     window.addEventListener('resize', function () {
+      const neu = innerWidth !== fensterB || (!beruehrung && innerHeight !== fensterH);
+      fensterB = innerWidth; fensterH = innerHeight;
+      if (neu && !finger && stand >= -0.001 && stand <= N - 1 + PUFFER + 0.001) {
+        const sp = segmentPx();
+        if (sp > 0) {
+          abbrechen();
+          eigen = true;
+          window.scrollTo({ top: Math.round(lauf.getBoundingClientRect().top + window.scrollY + sp * stand), behavior: 'instant' });
+          setTimeout(function () { eigen = false; }, 60);
+        }
+      }
+      stand = rohStand();
       breite = buehne.offsetWidth;
       if (anzeige !== null) zeichne(anzeige);
       stelle();
