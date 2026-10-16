@@ -1529,7 +1529,16 @@
     html, body { background: #fff !important; }
     body { color: #1a1d1c; }
     body::before, .grain, .zucken, .sterne, .aura, .hero-aura, .hero-media, .hero-marquee,
-    .schau, .card-open, .viewer, .lb-bar { display: none !important; }
+    .schau, .card-open, .viewer:not(.is-active), .lb-bar { display: none !important; }
+    /* Ist ein Projekt offen, wird das Projekt gedruckt, nicht die Startseite:
+       Text und Standbilder, ohne Player, Karte und Knoepfe. */
+    body.is-viewing .page { display: none !important; }
+    .viewer.is-active, .viewer.is-active .viewer-scroll, .viewer.is-active .viewer-inner {
+      position: static !important; overflow: visible !important; opacity: 1 !important; transform: none !important; }
+    .viewer.is-active .viewer-scroll { padding: 0 !important; }
+    .viewer-grain, .viewer-x, .viewer-close, .stage-ui, .viewer-stage iframe, .stage-laedt, .stage-hinweis,
+    .karte { display: none !important; }
+    .viewer-stage img { opacity: 1 !important; }
     body *, body *::before, body *::after { color: #1a1d1c !important; text-shadow: none !important; }
     .hero { height: auto; min-height: 0; padding: 0 0 24px; }
     .hero-frame, .hero-content { position: static !important; transform: none !important; width: auto !important; height: auto !important; animation: none !important; opacity: 1 !important; }
