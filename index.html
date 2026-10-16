@@ -5177,7 +5177,10 @@
         k.vf = 1; k.vA = k.vB = k.kommt = ph.ort;
         setze({ x: c.x, y: c.y, z: c.z, dist: c.dist, pitch: c.pitch, bearing: c.bearing - 3 + 6 * f });
         k.gruppe = g;
-        k.tag = ph.tagA + Math.min(n - 1, Math.floor(f * n));
+        /* Bei zwei (oder vier) Tagen liegt der Halt genau auf der Grenze
+           zwischen zwei Tagen -- dort zeigt er den frueheren, sonst kippte
+           das Datum mit jedem Rundungsrest (etwa nach dem Drehen). */
+        k.tag = ph.tagA + Math.max(0, Math.min(n - 1, Math.floor(f * n - 1e-4)));
         k.sicht = stufe(0.1, 0.26, f) * (1 - stufe(0.8, 0.95, f));
         k.ort = ph.ort; k.weg = ph.ort - 1; k.wegL = 1e9; k.dampf = 0.4;
         const ga = gruppeVon(ph.ort);
