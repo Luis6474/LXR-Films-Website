@@ -96,6 +96,10 @@
   /* Kein grauer Kasten beim Antippen (iPad, Handy): Rueckmeldung geben die
      Knoepfe selbst, der Kasten lag sonst ueber Karten und Karussell. */
   html { scroll-behavior: smooth; -webkit-tap-highlight-color: transparent; }
+  /* Scrollbalken (Windows): sonst eine weisse Schiene neben der dunklen
+     Seite. Ohne Schiene, nur ein heller Daumen; erbt sich in die Projekt-
+     seiten und die Kartentafel. */
+  html { scrollbar-color: rgba(230, 234, 232, 0.22) transparent; }
 
   body {
     margin: 0;
