@@ -960,10 +960,15 @@
   .stage-hinweis {
     position: absolute; left: 0; right: 0; bottom: 0; z-index: 5; margin: 0;
     padding: 40px 24px 20px; text-align: center;
-    font-size: 0.82em; letter-spacing: 0.04em; color: var(--text-dim);
-    background: linear-gradient(to top, rgba(0,0,0,0.6), transparent);
+    font-size: 0.82em; letter-spacing: 0.04em; color: #cfd4d2;
+    /* Ueber hellen Standbildern (Wald, Himmel) war der Satz mit 0,6 und
+       gedimmter Schrift kaum zu lesen. */
+    background: linear-gradient(to top, rgba(0,0,0,0.8), rgba(0,0,0,0.5) 55%, transparent);
+    text-shadow: 0 1px 3px rgba(0, 0, 0, 0.75);
   }
   .stage-hinweis a { color: var(--text); text-underline-offset: 3px; }
+  /* Telefon: tiefer an den Rand, sonst lag der Satz mitten im Bild. */
+  @media (max-width: 620px) { .stage-hinweis { padding: 26px 14px 9px; font-size: 0.76em; } }
   @keyframes laedt {
     0%   { background-position: -40% 0; }
     100% { background-position: 140% 0; }
