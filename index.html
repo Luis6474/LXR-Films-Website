@@ -4224,6 +4224,9 @@
      mehrere Bildschirme hohen Strecke klebt -- dem Nutzer wird das Scrollen
      dabei nie aus der Hand genommen, und Rad, Trackpad, Wischen, Tastatur
      und Scrollbalken verhalten sich alle weiter so, wie er es kennt. */
+  // Hat das Karussell bei einer neuen Fenstergroesse schon selbst
+  // nachgestellt, haelt sich die allgemeine Verankerung heraus.
+  let karussellHielt = false;
   sicher('Karussell', function schau() {
     const wurzel = document.getElementById('schau');
     if (!wurzel) return;
@@ -4553,6 +4556,7 @@
           abbrechen();
           eigen = true;
           window.scrollTo({ top: Math.round(lauf.getBoundingClientRect().top + window.scrollY + sp * stand), behavior: 'instant' });
+          karussellHielt = true;
           setTimeout(function () { eigen = false; }, 60);
         }
       }
@@ -4687,6 +4691,49 @@
     buehne.addEventListener('hofda', function () { if (anzeige !== null) zeichne(anzeige); });
     stelle();
     uebernehmen();
+  });
+
+  /* ---------- Dieselbe Stelle bei neuer Fenstergroesse ----------
+     Dreht man das iPad oder zieht das Fenster kleiner, wird alles darueber
+     anders hoch, der Scrollstand bleibt aber stehen. Chrome gleicht das
+     beim Fensterwechsel nicht aus, Safari kennt gar keine Verankerung.
+     Gemessen: oben auf "Projekte", 2560 -> 1366 breit, danach stand die
+     Seite 1700 px tiefer. Jetzt wird beim Scrollen gemerkt, was auf einem
+     Drittel der Hoehe steht, und nach der Aenderung wieder dorthin
+     gestellt. Auf Touch nur bei neuer Breite (die Adressleiste aendert
+     staendig die Hoehe). */
+  sicher('Verankerung', function () {
+    if (!document.elementFromPoint) return;
+    const beruehrung = window.matchMedia('(pointer: coarse)').matches;
+    let anker = null, ankerY = 0, b = innerWidth, h = innerHeight, mess = null;
+    function merken() {
+      if (innerWidth !== b || innerHeight !== h) return;     // Layout noch nicht nachgezogen
+      if (document.body.classList.contains('is-viewing')) return;   // die Seite liegt verdeckt still
+      let el = document.elementFromPoint(innerWidth / 2, innerHeight / 3);
+      while (el && el.parentElement && el.offsetHeight < 40) el = el.parentElement;
+      if (!el || el === document.body || el === document.documentElement) { anker = null; return; }
+      // Welcher Punkt des Elements auf der Drittel-Linie steht, als Anteil
+      // seiner Hoehe -- wird es schmaler und dafuer hoeher, bleibt derselbe
+      // Inhalt dort.
+      const r = el.getBoundingClientRect();
+      anker = el;
+      ankerY = r.height > 0 ? (innerHeight / 3 - r.top) / r.height : 0;
+    }
+    function spaeterMerken() { clearTimeout(mess); mess = setTimeout(merken, 150); }
+    window.addEventListener('scroll', spaeterMerken, { passive: true });
+    window.addEventListener('load', spaeterMerken);
+    spaeterMerken();
+    window.addEventListener('resize', function () {
+      const neu = innerWidth !== b || (!beruehrung && innerHeight !== h);
+      b = innerWidth; h = innerHeight;
+      if (neu && !karussellHielt && anker && anker.isConnected) {
+        const r = anker.getBoundingClientRect();
+        const ziel = r.top + window.scrollY + ankerY * r.height - innerHeight / 3;
+        window.scrollTo({ top: Math.max(0, Math.round(ziel)), behavior: 'instant' });
+      }
+      karussellHielt = false;
+      spaeterMerken();
+    });
   });
 
   /* ---------- Reisekarten ----------
