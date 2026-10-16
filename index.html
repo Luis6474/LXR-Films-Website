@@ -980,6 +980,7 @@
      Abstand oben (--bar-h + 46px) und ein Rest Luft darunter. Ohne bekanntes
      Format (--ar) keine Grenze; das Telefon quer regelt es weiter unten. */
   .stage-wrap { max-width: calc((100vh - var(--bar-h) - 74px) * var(--ar, 99)); margin-left: auto; margin-right: auto; }
+  @supports (height: 1svh) { .stage-wrap { max-width: calc((100svh - var(--bar-h) - 74px) * var(--ar, 99)); } }
   .stage-wrap.gross, .stage-wrap.fs-ersatz { max-width: none; }
 
   .viewer-stage { position: relative; aspect-ratio: 21 / 9; overflow: hidden; background: #000; }
