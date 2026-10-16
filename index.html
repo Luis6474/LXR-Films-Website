@@ -730,6 +730,7 @@
     text-decoration-thickness: 1px;
   }
   .contact a:hover { color: var(--accent); }
+  .contact a:focus-visible { outline: 1px solid var(--accent); outline-offset: 3px; }
 
   footer { padding: 36px 0; text-align: center; font-size: 0.76em; letter-spacing: 0.14em; text-transform: uppercase; color: var(--text-dim); }
 
@@ -1264,6 +1265,7 @@
   .karte-schritt.vor { transform: translateX(calc(-50% + var(--zb, 120px) / 2 + 30px)); }
   .karte.ist-bereit .karte-schritt { opacity: 1; }
   .karte-schritt:hover { background: rgba(240, 206, 156, 0.2); border-color: rgba(255, 226, 190, 0.8); }
+  .karte-schritt:focus-visible { outline: 1px solid rgba(255, 226, 190, 0.8); outline-offset: 3px; }
   .karte-schritt:disabled { opacity: 0.25 !important; cursor: default; }
   /* Karte ueberspringen: gut sichtbar, im warmen Ton der Route, mit einem
      leisen Aufleuchten, wenn die Karte erscheint -- wer ihn uebersieht,
@@ -1353,6 +1355,7 @@
     transition: color 0.5s var(--ease), border-color 0.5s var(--ease);
   }
   .viewer-close:hover { color: var(--text); border-color: var(--p-accent); }
+  .viewer-close:focus-visible { outline: 1px solid var(--p-accent, var(--accent)); outline-offset: 3px; }
   /* Derselbe Knopf noch einmal fest oben rechts: sonst muesste man zum
      Schliessen durch das ganze Projekt scrollen (auf dem Handy auch durch
      die Karte). Leicht hinterlegt, damit er ueber Film und Bildern lesbar ist. */
