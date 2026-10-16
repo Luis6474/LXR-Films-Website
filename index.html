@@ -771,6 +771,10 @@
   .schau-platz > img:not(.aura) { position: relative; z-index: 1; }
   .schau-leiste { display: none; }
   .schau-knopf-reihe { margin-top: 12px; }
+  /* Die Schau liegt ausserhalb der Inhaltsspalte (das Karussell braucht die
+     ganze Fensterbreite). Als Liste stand sie dadurch randlos, "Ansehen"
+     klebte am Bildschirmrand. */
+  .schau:not(.ist-karussell) .schau-buehne { width: min(calc(100% - 32px), var(--wide)); margin: 0 auto; }
 
   /* --- Karussell --- */
   .schau.ist-karussell .schau-lauf {
@@ -1487,7 +1491,8 @@
     .marquee-track { animation: none; }
     .zucken { display: none; }            /* .dither bleibt: es bewegt sich nicht */
     .hero-frame { transition: none; }
-    .hero-video { display: none; }
+    /* Das Video bleibt als Standbild stehen (poster): das Skript laedt und
+       startet es hier nicht. Ausgeblendet war der Rahmen oben leer und schwarz. */
     .aura { transition: none; }
   }
 </style>
@@ -3974,7 +3979,10 @@
          der Sternenebene statt darunter, und die Kopplung von Sternen und
          Helligkeit waere genau dort ausser Kraft, wo der hellste Schein der
          Seite steht. Daneben gehaengt bleibt er in der unteren Ebene. */
-      const sammler = host.closest('[data-hof-sammler]');
+      // Ohne Karussell (reduzierte Bewegung: Liste) traegt jedes Bild seinen
+      // Hof selbst -- gesammelt lagen alle Hoefe ueber der ganzen Liste und
+      // faerbten sie als graugruener Nebel ein.
+      const sammler = reducedMotion ? null : host.closest('[data-hof-sammler]');
       const ziel = sammler || host;
       ziel.insertBefore(aura, ziel.firstChild);
       aura.dataset.grund = aura.style.getPropertyValue('--hof-deck') || String(EINST.hofDeck);
