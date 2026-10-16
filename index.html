@@ -16,7 +16,24 @@
 <meta property="og:locale" content="de_DE">
 <meta name="twitter:card" content="summary_large_image">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' fill='%230d1216'/%3E%3Ctext x='16' y='22' font-family='Georgia,serif' font-size='15' fill='%23c8c2b6' text-anchor='middle'%3EL%3C/text%3E%3C/svg%3E">
-<script>document.documentElement.className += ' js';</script>
+<script>document.documentElement.className += ' js';
+/* Per Link direkt auf ein Projekt: die Startseite gar nicht erst zeigen. Bei
+   langsamer Leitung stand sie sonst rund 4 s da (bis das Skript am Ende der
+   Datei ankommt), dann fuhr ploetzlich die Blende zu. Die Namen sind die
+   Adressen der Projekte (siehe kennung() weiter unten). Sicherheitsnetz: ist
+   2 s nach dem Laden kein Projekt offen, erscheint die Seite trotzdem. */
+(function (h) {
+  if (['gaertnerei-eggert-finder', 'the-same-gray', 'the-mountains', 'track-of-time', 'the-south']
+      .indexOf(location.hash.slice(1)) < 0) return;
+  h.classList.add('direkt');
+  document.addEventListener('DOMContentLoaded', function () {
+    let n = 0;
+    (function warte() {
+      if (document.body.classList.contains('is-viewing') || ++n > 20) h.classList.remove('direkt');
+      else setTimeout(warte, 100);
+    })();
+  });
+})(document.documentElement);</script>
 <!-- Ohne JavaScript: Chrome blendet dann bei jedem Video die Bedienleiste
      ein, obwohl das Hero-Video ohne Skript gar keine Quelle bekommt -- also
      nur das Standbild zeigen. Das Karussell laedt seine Bilder per Skript
@@ -397,6 +414,7 @@
      aufzumachen; das haengende Zitat bleibt dadurch klebend. */
   .page { transition: opacity 0.6s var(--ease); overflow-x: clip; }
   .page.is-hidden { opacity: 0; pointer-events: none; }
+  .direkt .page { opacity: 0; transition: none; }
   /* Deckt eine Projektseite ganz, ruhen Korn, Sterne und Dither der
      Startseite darunter (unsichtbare Mischschritte ueber den ganzen Schirm).
      Gesetzt erst, wenn sie voll deckt, aufgehoben, bevor sie ausblendet. */
