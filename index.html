@@ -1333,7 +1333,9 @@
   .viewer-grid > * { position: relative; aspect-ratio: 2 / 1; overflow: hidden; }
 
   .viewer-process {
-    max-width: 64ch; margin: 0 auto; padding-top: 22px;
+    /* 64ch in der Schrift des Textes darueber: "ch" misst hier in der
+       kleineren Schrift, ohne die Umrechnung stand der Kasten 38 px eingerueckt. */
+    max-width: calc(64ch / 0.9); margin: 0 auto; padding-top: 22px;
     font-size: 0.9em; color: var(--p-accent);
     position: relative;
   }
