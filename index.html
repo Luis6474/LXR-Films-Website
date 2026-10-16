@@ -4701,26 +4701,52 @@
      Seite 1700 px tiefer. Jetzt wird beim Scrollen gemerkt, was auf einem
      Drittel der Hoehe steht, und nach der Aenderung wieder dorthin
      gestellt. Auf Touch nur bei neuer Breite (die Adressleiste aendert
-     staendig die Hoehe). */
+     staendig die Hoehe). Ebenso in einem offenen Projekt, das in seinem
+     eigenen Kasten scrollt: dort stand man nach quer -> hoch -> quer
+     300 px weiter oben. */
   sicher('Verankerung', function () {
     if (!document.elementFromPoint) return;
     const beruehrung = window.matchMedia('(pointer: coarse)').matches;
     let anker = null, ankerY = 0, b = innerWidth, h = innerHeight, mess = null;
-    function merken() {
-      if (innerWidth !== b || innerHeight !== h) return;     // Layout noch nicht nachgezogen
-      if (document.body.classList.contains('is-viewing')) return;   // die Seite liegt verdeckt still
+    let pAnker = null, pAnkerY = 0;      // im offenen Projekt
+    function kasten() { return document.querySelector('.viewer.is-active .viewer-scroll'); }
+    function punkt(innen) {
       let el = document.elementFromPoint(innerWidth / 2, innerHeight / 3);
       while (el && el.parentElement && el.offsetHeight < 40) el = el.parentElement;
-      if (!el || el === document.body || el === document.documentElement) { anker = null; return; }
-      // Welcher Punkt des Elements auf der Drittel-Linie steht, als Anteil
-      // seiner Hoehe -- wird es schmaler und dafuer hoeher, bleibt derselbe
-      // Inhalt dort.
+      if (!el || el === document.body || el === document.documentElement) return null;
+      if (innen && !innen.contains(el)) return null;
+      return el;
+    }
+    // Welcher Punkt des Elements auf der Drittel-Linie steht, als Anteil
+    // seiner Hoehe -- wird es schmaler und dafuer hoeher, bleibt derselbe
+    // Inhalt dort.
+    function anteil(el) {
       const r = el.getBoundingClientRect();
-      anker = el;
-      ankerY = r.height > 0 ? (innerHeight / 3 - r.top) / r.height : 0;
+      return r.height > 0 ? (innerHeight / 3 - r.top) / r.height : 0;
+    }
+    function versatz(el, y) {
+      const r = el.getBoundingClientRect();
+      return r.top + y * r.height - innerHeight / 3;
+    }
+    function merken() {
+      if (innerWidth !== b || innerHeight !== h) return;     // Layout noch nicht nachgezogen
+      // Ist ein Projekt offen, liegt die Seite verdeckt still: ihr Anker bleibt.
+      if (document.body.classList.contains('is-viewing')) {
+        const k = kasten();
+        pAnker = k ? punkt(k) : null;
+        if (pAnker) pAnkerY = anteil(pAnker);
+        return;
+      }
+      pAnker = null;
+      anker = punkt(null);
+      if (anker) ankerY = anteil(anker);
     }
     function spaeterMerken() { clearTimeout(mess); mess = setTimeout(merken, 150); }
     window.addEventListener('scroll', spaeterMerken, { passive: true });
+    // Der Kasten eines Projekts meldet sein Scrollen nicht nach oben -- abfangen
+    document.addEventListener('scroll', function (e) {
+      if (e.target !== document && e.target.classList && e.target.classList.contains('viewer-scroll')) spaeterMerken();
+    }, { passive: true, capture: true });
     window.addEventListener('load', spaeterMerken);
     spaeterMerken();
     window.addEventListener('resize', function () {
@@ -4731,6 +4757,8 @@
         const ziel = r.top + window.scrollY + ankerY * r.height - innerHeight / 3;
         window.scrollTo({ top: Math.max(0, Math.round(ziel)), behavior: 'instant' });
       }
+      const k = kasten();
+      if (neu && k && pAnker && k.contains(pAnker)) k.scrollTop += Math.round(versatz(pAnker, pAnkerY));
       karussellHielt = false;
       spaeterMerken();
     });
