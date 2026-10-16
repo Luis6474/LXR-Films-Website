@@ -440,7 +440,7 @@
     background: #0a0e12;
     transition: opacity 0.5s var(--ease);
   }
-  .js .hero-video:not(.poster-da) { opacity: 0; }
+  .js .hero-video:not(.poster-da), .js img.laedt { opacity: 0 !important; }
 
   /* Abdunkler nur so stark, wie die Headline es braucht -- der Film soll
      erkennbar bleiben, nicht gedämpft wirken. */
@@ -3785,10 +3785,25 @@
       if (!e.isIntersecting) return;
       const el = e.target;
       const delay = el.dataset.hold ? parseFloat(el.dataset.hold) : 0;
-      setTimeout(function () { el.classList.add('show'); }, delay);
+      // Ist das Bild darin noch nicht ganz da, blendet es erst danach auf.
+      const bild = el.querySelector('img.laedt');
+      function zeigen() { setTimeout(function () { el.classList.add('show'); }, delay); }
+      if (bild) { bild.addEventListener('load', zeigen, { once: true }); bild.addEventListener('error', zeigen, { once: true }); }
+      else zeigen();
       io.unobserve(el);
     });
   }, { threshold: 0.12 });
+
+  /* Bilder erst zeigen, wenn sie ganz geladen sind: bei langsamer Leitung
+     bauten sie sich sonst Zeile fuer Zeile auf (die Buehne der Projekt-
+     seiten stand sekundenlang halb schwarz). */
+  document.querySelectorAll('img').forEach(function (b) {
+    if (b.complete) return;
+    b.classList.add('laedt');
+    function fertig() { b.classList.remove('laedt'); }
+    b.addEventListener('load', fertig, { once: true });
+    b.addEventListener('error', fertig, { once: true });
+  });
 
   document.querySelectorAll('.reveal, .reveal-media').forEach(function (el) { io.observe(el); });
 
