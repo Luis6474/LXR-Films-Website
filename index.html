@@ -1029,7 +1029,7 @@
 
   .stage-wrap:fullscreen {
     display: flex; align-items: center; justify-content: center;
-    width: 100%; height: 100%;
+    width: 100%; height: 100%; max-width: none;
     background: #000;
   }
   /* Nur in Prozent des Elternkastens, der im Vollbild die Flaeche selbst ist.
@@ -1047,7 +1047,7 @@
 
   .stage-wrap:-webkit-full-screen {
     display: flex; align-items: center; justify-content: center;
-    width: 100%; height: 100%;
+    width: 100%; height: 100%; max-width: none;
     background: #000;
   }
   .stage-wrap:-webkit-full-screen .viewer-stage {
@@ -1083,6 +1083,13 @@
   .stage-wrap.gross .viewer-stage { flex: none; }
   .stage-wrap.gross .aura { display: none; }
   .stage-wrap.gleitet { z-index: 6; }
+  /* Telefon quer: ein Film in 16:9 (The South) war ueber die volle Breite
+     rund 430 px hoch, auf 390 px Schirm -- nie ganz zu sehen. Hoechstens
+     92 % der Fensterhoehe, mittig. Ohne bekanntes Format (--ar) keine Grenze. */
+  @media (max-height: 520px) and (orientation: landscape) {
+    .stage-wrap { max-width: calc(92vh * var(--ar, 99)); margin-left: auto; margin-right: auto; }
+    .stage-wrap.gross, .stage-wrap.fs-ersatz { max-width: none; }
+  }
   .stage-wrap.gleitet .aura { opacity: 0; }
   .gross-schwarz {
     position: fixed; inset: 0; z-index: 5; background: #000; pointer-events: none;
@@ -2933,6 +2940,8 @@
     // Echtes Format des Films -- damit von YouTube eingebackene Balken
     // ausserhalb der sichtbaren Flaeche landen.
     stage.style.setProperty('--ar', (stage.dataset.ar || '1.778'));
+    // auch an der Huelle: das Telefon quer begrenzt sie danach (siehe CSS)
+    if (stage.parentElement) stage.parentElement.style.setProperty('--ar', (stage.dataset.ar || '1.778'));
 
     const frame = document.createElement('iframe');
     frame.src = 'https://www.youtube-nocookie.com/embed/' + encodeURIComponent(id) + '?' + ytParams(id);
