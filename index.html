@@ -1382,6 +1382,9 @@
      der Knopf weicht so lange. Im Ersatz-Vollbild (Telefon) gehoert der
      Schirm dem Film. */
   .viewer.karte-deckt .viewer-x { opacity: 0; pointer-events: none; }
+  /* Beim Hinein- und Hinausrollen der Karte zieht "Karte ueberspringen"
+     unter dem Schliessen-Knopf durch -- auch dann weicht er. */
+  .viewer.x-weicht .viewer-x { opacity: 0; pointer-events: none; }
   /* Der Titel bekommt beim Oeffnen den Fokus nur als Startpunkt -- er ist
      kein Bedienelement, ein Fokusrahmen darum waere irrefuehrend. */
   .viewer-head h2:focus { outline: none; }
@@ -8035,14 +8038,26 @@
        Projektseite vollstaendig unter ihr. Es wird dann nicht gezeichnet --
        sein Mischschritt ueber den ganzen Schirm faellt in jedem Bild weg,
        zu sehen war es an dieser Stelle ohnehin nicht. */
+    const knopfX = viewer.querySelector('.viewer-x'), knopfW = halt.querySelector('.karte-weiter');
     function deckung() {
       /* Ohne sichtbare Karte gibt es nichts zu messen. Das Messen erzwingt
          ein Layout -- beim Laden der Startseite, fuer vier geschlossene
          Karten nacheinander, waren das zusammen ueber 100 ms Stillstand. */
-      if (!sichtbar) { if (viewer.classList.contains('karte-deckt')) viewer.classList.remove('karte-deckt'); return; }
+      if (!sichtbar) {
+        if (viewer.classList.contains('karte-deckt')) viewer.classList.remove('karte-deckt');
+        if (viewer.classList.contains('x-weicht')) viewer.classList.remove('x-weicht');
+        return;
+      }
       const r = halt.getBoundingClientRect();
       const deckt = r.top <= 0.5 && r.bottom >= viewer.clientHeight - 0.5;
       if (viewer.classList.contains('karte-deckt') !== deckt) viewer.classList.toggle('karte-deckt', deckt);
+      // Liegen die beiden Knoepfe uebereinander (mit 8 px Luft)?
+      let weicht = false;
+      if (!deckt && knopfX && knopfW && wurzel.classList.contains('ist-bereit') && !wurzel.classList.contains('ist-still')) {
+        const a = knopfX.getBoundingClientRect(), b = knopfW.getBoundingClientRect();
+        weicht = b.bottom > a.top - 8 && b.top < a.bottom + 8 && b.right > a.left - 8 && b.left < a.right + 8;
+      }
+      if (viewer.classList.contains('x-weicht') !== weicht) viewer.classList.toggle('x-weicht', weicht);
       /* Fuellt die Karte den Schirm, bekommt sie den Fokus (sofern er nicht
          schon in ihr oder auf einem Bedienknopf des Films liegt): Leertaste
          und Pfeile fahren dann weiter, statt etwas anderes auszuloesen. */
