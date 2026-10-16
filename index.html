@@ -2545,6 +2545,7 @@
 
   const page = document.getElementById('page');
   const body = document.body;
+  const SEITENTITEL = document.title;
 
   const SHUT_MS  = 900;  // Blende faehrt zu
   const FRAME_MS = 800;  // Blende oeffnet auf den bleibenden Kinorahmen
@@ -3196,6 +3197,11 @@
     const tone = getComputedStyle(viewer).getPropertyValue('--p-bg').trim();
     body.style.setProperty('--lb-color', tone || '#07090b');
 
+    /* Eigener Tab-Titel je Projekt: sonst hiessen Lesezeichen und
+       Verlaufseintraege auf "#the-same-gray" genauso wie die Startseite. */
+    const kopf = viewer.querySelector('h2');
+    if (kopf) document.title = kopf.textContent.trim() + ' — LXR Films';
+
     /* Der Film haengt ab hier drin, also BEVOR die Blende zufaehrt statt erst
        danach. Das sind 900 ms Vorsprung beim Laden, die vorher ungenutzt
        verstrichen sind. Sichtbar wird dadurch nichts: die Ansicht steht auf
@@ -3384,6 +3390,7 @@
 
     // Blende wieder zu ...
     unmountVideo(viewer);   // Ton darf nicht weiterlaufen
+    document.title = SEITENTITEL;
     body.classList.remove('lb-framed');
     body.classList.add('lb-shut');
     viewer.classList.remove('is-active');
