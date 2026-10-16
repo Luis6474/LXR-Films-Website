@@ -6108,7 +6108,7 @@
       return 0;
     }
     // Bilder laden; die Hoehen des Formbilds (Rot) fuer Orte und Route auslesen.
-    function gelaendeLaden() {
+    function gelaendeLaden(warten) {
       const G = CFG.gelaende;
       function bild(name) {
         return new Promise(function (fertig, fehler) {
@@ -6140,7 +6140,9 @@
                    linien && e.hoehe ? bild('-hoehe-' + e.name + (gross ? '-gross' : '') + '.webp') : null);
       });
       if (G.abstand !== false) liste.push(bild('-abstand.png'));
-      return Promise.all(liste).then(function (b) {
+      // Ausgelesen (getImageData, bis 60 ms am Stueck) erst in einer ruhigen
+      // Luecke -- die Bilder kamen sonst mitten im Aufblenden der Projektseite an.
+      return Promise.all(liste).then(warten || function (b) { return b; }).then(function (b) {
         function bereich(form, rel, e) {
           const n = form.naturalWidth, cv = document.createElement('canvas');
           cv.width = cv.height = n;
@@ -8202,7 +8204,7 @@
         });
       }
       // Das Gelaende laedt gleichzeitig; fehlt es, bleibt die Karte gestuft.
-      const gelaende = CFG.gelaende ? gelaendeLaden().catch(function (e) { console.warn('Gelaende nicht geladen:', e); return null; }) : null;
+      const gelaende = CFG.gelaende ? gelaendeLaden(ruhig).catch(function (e) { console.warn('Gelaende nicht geladen:', e); return null; }) : null;
       fetch(CFG.datei).then(function (r) {
         if (!r.ok) throw new Error('Karte ' + r.status);
         return r.arrayBuffer();
