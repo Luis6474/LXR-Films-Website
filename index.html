@@ -3435,6 +3435,7 @@
       // ... und dann ganz raus, zurueck zum normalen Seitenformat
       body.classList.remove('lb-shut');
       current = null;
+      try { history.scrollRestoration = 'auto'; } catch (e) {}
       setTimeout(function () {
         busy = false;
         if (spaeter) { const t = spaeter; spaeter = null; openProject(t); }
@@ -3563,6 +3564,13 @@
     if (!history.pushState) return;
     const k = '#' + kennung(viewer);
     if (location.hash === k) return;            // per Link oder Vorwaerts-Taste gekommen
+    /* Beim Zurueckgehen (Schliessen) setzte der Browser die Seite sonst auf
+       die Position im Klickmoment -- klickte man, waehrend die Seite noch
+       glitt oder das Karussell einrastete, lief die Bewegung unter dem
+       Projekt weiter, und nach dem Schliessen sprang die Seite zurueck bzw.
+       das Karussell auf den naechsten Film. So bleibt sie, wo sie ist. Nach
+       dem Schliessen wieder 'auto' (Neuladen behaelt die Position). */
+    try { history.scrollRestoration = 'manual'; } catch (e) {}
     try { history.pushState({ lxr: viewer.id }, '', k); } catch (e) {}
   }
   /* Schliessen per Knopf oder Escape: steht der eigene Eintrag oben, geht es
@@ -4424,6 +4432,28 @@
         cancelAnimationFrame(fahrt); fahrt = null; eigen = false;
       }
     }
+    /* Wer "Ansehen" drueckt, waehrend das Karussell noch einrastet, kommt
+       beim selben Film zurueck: die Fahrt lief sonst unter dem Projekt
+       weiter (oder setzte nach dem Abbrechen per Nachziehen neu an), und
+       nach dem Schliessen stand der naechste Film vorn. Sobald das Projekt
+       deckt, steht die Seite genau auf dem geoeffneten Film. */
+    ansehen.addEventListener('click', function () {
+      const k = vorn;
+      abbrechen();
+      clearTimeout(ruhe);
+      let n = 0;
+      (function hinstellen() {
+        if (!document.body.classList.contains('is-viewing')) { if (++n < 40) setTimeout(hinstellen, 100); return; }
+        const sp = segmentPx();
+        if (sp <= 0) return;
+        abbrechen();
+        clearTimeout(ruhe);
+        eigen = true;
+        window.scrollTo({ top: Math.round(lauf.getBoundingClientRect().top + window.scrollY + sp * k), behavior: 'instant' });
+        drinnen = true;
+        setTimeout(function () { clearTimeout(ruhe); eigen = false; }, 60);
+      })();
+    });
     ['wheel', 'touchstart', 'keydown', 'mousedown'].forEach(function (typ) {
       window.addEventListener(typ, abbrechen, { passive: true, capture: true });  // Erfassen: vor dem Tastengriff der Schau, sonst braeche er seine eigene Fahrt ab
     });
