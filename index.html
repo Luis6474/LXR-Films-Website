@@ -104,6 +104,10 @@
     line-height: 1.65;
     -webkit-font-smoothing: antialiased;
   }
+  /* Markierter Text im Graugruen der Seite statt im Blau des Systems. */
+  ::selection { background: rgba(127, 143, 136, 0.45); color: #fff; }
+  /* In den Projektseiten in deren eigenem Ton */
+  .viewer ::selection { background: color-mix(in srgb, var(--p-accent, var(--accent)) 45%, transparent); }
   /* Tiefe statt flacher Fläche */
   body::before {
     content: ""; position: fixed; inset: 0; z-index: -1;
