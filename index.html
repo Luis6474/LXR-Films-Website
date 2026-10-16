@@ -438,7 +438,9 @@
     object-fit: cover; object-position: center;
     display: block; pointer-events: none;
     background: #0a0e12;
+    transition: opacity 0.5s var(--ease);
   }
+  .js .hero-video:not(.poster-da) { opacity: 0; }
 
   /* Abdunkler nur so stark, wie die Headline es braucht -- der Film soll
      erkennbar bleiben, nicht gedämpft wirken. */
@@ -1539,6 +1541,12 @@
                data-hd="video/web/hero-v4-1080.mp4"
                data-sd="video/web/hero-v4-720.mp4"
                aria-hidden="true" tabindex="-1"></video>
+        <!-- Das Standbild erst zeigen, wenn es ganz da ist: bei langsamer
+             Leitung baute es sich sonst Zeile fuer Zeile von oben auf, mit
+             einer harten Kante quer durchs Bild. -->
+        <script>(function (v) { function da() { v.classList.add('poster-da'); }
+          const b = new Image(); b.onload = b.onerror = da; b.src = v.getAttribute('poster');
+          v.addEventListener('loadeddata', da); })(document.getElementById('heroVideo'));</script>
         <div class="hero-scrim" aria-hidden="true"></div>
       </div>
       <div class="hero-content" id="heroContent">
