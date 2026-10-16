@@ -5233,6 +5233,48 @@
       if (pr) { vorrat.delete(k); return pr; }
       return glBauen(vs, fs);
     }
+    /* Texturen des Gelaendes. grau: nur ein Kanal (Schattenbild, Kueste),
+       gelesen wird Rot. Mit WebGL 2 als R8: LUMINANCE legt der Treiber unter
+       Windows (D3D11) als RGBA an, das 8192er Schattenbild belegte so rund
+       340 MB statt 85 MB -- und Chrome hatte keinen Platz mehr fuer die
+       Bilder der Tafel (sie blieben schwarz). */
+    function gelTextur(quelle, breite, grau) {
+      const zwei = glZwei(), an = gl.getExtension('EXT_texture_filter_anisotropic');
+      const t = gl.createTexture(), f = grau ? (zwei ? gl.RED : gl.LUMINANCE) : gl.RGB;
+      const fi = grau && zwei ? gl.R8 : f;
+      gl.bindTexture(gl.TEXTURE_2D, t);
+      gl.pixelStorei(gl.UNPACK_ALIGNMENT, 1);
+      if (breite) gl.texImage2D(gl.TEXTURE_2D, 0, fi, breite, 1, 0, f, gl.UNSIGNED_BYTE, quelle);
+      else gl.texImage2D(gl.TEXTURE_2D, 0, fi, f, gl.UNSIGNED_BYTE, quelle);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+      if (breite) gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+      else {
+        gl.generateMipmap(gl.TEXTURE_2D);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR_MIPMAP_LINEAR);
+        if (an) gl.texParameterf(gl.TEXTURE_2D, an.TEXTURE_MAX_ANISOTROPY_EXT, Math.min(8, gl.getParameter(an.MAX_TEXTURE_MAX_ANISOTROPY_EXT)));
+      }
+      return t;
+    }
+    /* Die Gelaendebilder vorab hochladen, jedes in einer eigenen ruhigen
+       Luecke: am Stueck hielt das die Seite rund 250 ms an, oft mitten im
+       Scrollen auf die Karte zu. gelaendeStarten nimmt sie dann fertig. */
+    let texVorrat = new Map();
+    function texturenVorab(ruhig) {
+      if (!GEL || !glKontext() || !(glZwei() || gl.getExtension('OES_standard_derivatives'))) return Promise.resolve();
+      const auftraege = [];
+      GEL.teile.forEach(function (b) {
+        if (b.form) auftraege.push([b.form, false]);
+        if (b.rel) auftraege.push([b.rel, true]);
+        if (b.kueste) auftraege.push([b.kueste, true]);
+      });
+      return auftraege.reduce(function (p, a) {
+        return p.then(ruhig).then(function () {
+          if (!gl.isContextLost() && !texVorrat.has(a[0])) texVorrat.set(a[0], gelTextur(a[0], 0, a[1]));
+        });
+      }, Promise.resolve());
+    }
     // Alle Programme anstossen, die die Karte brauchen wird.
     function glAnstossen() {
       if (!glKontext() || vorrat.size) return;
@@ -6105,29 +6147,11 @@
         g.loc[n] = gl.getUniformLocation(pr, n);
       });
       g.aG = gl.getAttribLocation(pr, 'aG');
-      const an = gl.getExtension('EXT_texture_filter_anisotropic');
-      /* grau: nur ein Kanal (Schattenbild, Kueste), gelesen wird Rot. Mit
-         WebGL 2 als R8: LUMINANCE legt der Treiber unter Windows (D3D11)
-         als RGBA an, das 8192er Schattenbild belegte so rund 340 MB statt
-         85 MB -- und Chrome hatte keinen Platz mehr fuer die Bilder der
-         Tafel (sie blieben schwarz). */
+      // Vorab hochgeladen (texturenVorab), sonst jetzt.
       function textur(quelle, breite, grau) {
-        const t = gl.createTexture(), f = grau ? (zwei ? gl.RED : gl.LUMINANCE) : gl.RGB;
-        const fi = grau && zwei ? gl.R8 : f;
-        gl.bindTexture(gl.TEXTURE_2D, t);
-        gl.pixelStorei(gl.UNPACK_ALIGNMENT, 1);
-        if (breite) gl.texImage2D(gl.TEXTURE_2D, 0, fi, breite, 1, 0, f, gl.UNSIGNED_BYTE, quelle);
-        else gl.texImage2D(gl.TEXTURE_2D, 0, fi, f, gl.UNSIGNED_BYTE, quelle);
-        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
-        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
-        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
-        if (breite) gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
-        else {
-          gl.generateMipmap(gl.TEXTURE_2D);
-          gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR_MIPMAP_LINEAR);
-          if (an) gl.texParameterf(gl.TEXTURE_2D, an.TEXTURE_MAX_ANISOTROPY_EXT, Math.min(8, gl.getParameter(an.MAX_TEXTURE_MAX_ANISOTROPY_EXT)));
-        }
-        return t;
+        const v = !breite && texVorrat.get(quelle);
+        if (v) { texVorrat.delete(quelle); return v; }
+        return gelTextur(quelle, breite, grau);
       }
       // Farbe nach Hoehe: wie die Stufen bisher, nur stufenlos.
       const fb = new Uint8Array(256 * 3), hoechste = D.kopf.stufen[D.kopf.stufen.length - 1];
@@ -8100,6 +8124,27 @@
           }, warte);
         });
       }
+      /* Das Hochladen auf die Grafikkarte (Gelaendebilder bis 4096 px) haelt
+         die Seite am Stueck rund 250 ms an. Faellt das mitten ins Scrollen
+         auf die Karte zu, steht das Bild sichtbar. Deshalb erst, wenn das
+         Scrollen kurz ruht -- ist die Karte schon fast im Bild, sofort,
+         und laenger als 5 s wird nicht gewartet. */
+      function stillstand(x) {
+        return new Promise(function (fertig) {
+          const bis = performance.now() + 5000;
+          let zuletzt = performance.now();     // ein Scrollen kurz davor zaehlt mit
+          function bewegt() { zuletzt = performance.now(); }
+          scroller.addEventListener('scroll', bewegt, { passive: true });
+          (function pruefen() {
+            const jetzt = performance.now();
+            const nah = wurzel.getBoundingClientRect().top - scroller.getBoundingClientRect().top < scroller.clientHeight * 0.6;
+            if (nah || jetzt - zuletzt >= 250 || jetzt >= bis) {
+              scroller.removeEventListener('scroll', bewegt);
+              fertig(x);
+            } else setTimeout(pruefen, 60);
+          })();
+        });
+      }
       // Das Gelaende laedt gleichzeitig; fehlt es, bleibt die Karte gestuft.
       const gelaende = CFG.gelaende ? gelaendeLaden().catch(function (e) { console.warn('Gelaende nicht geladen:', e); return null; }) : null;
       fetch(CFG.datei).then(function (r) {
@@ -8116,7 +8161,7 @@
         // Erst die Groesse, dann der Kontext -- sonst wird er gleich wieder umgebaut.
         try { groesse(); glAnstossen(); } catch (e) { /* dann eben beim Einrichten */ }
         return glFertig();
-      }).then(ruhig).then(function () {
+      }).then(ruhig).then(function () { return texturenVorab(ruhig); }).then(stillstand).then(function () {
         groesse();
         vorbereiten(W, H);
         if (!glStarten()) throw new Error('kein WebGL');
@@ -8158,7 +8203,7 @@
       anlaufen();
     });
 
-    glc.addEventListener('webglcontextlost', function (e) { e.preventDefault(); bereit = false; vorrat = new Map(); }, false);
+    glc.addEventListener('webglcontextlost', function (e) { e.preventDefault(); bereit = false; vorrat = new Map(); texVorrat = new Map(); }, false);
     glc.addEventListener('webglcontextrestored', function () {
       if (!D) return;
       loc = {}; puf = {}; ueberNeu = true;
