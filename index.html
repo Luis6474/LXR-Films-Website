@@ -2581,7 +2581,7 @@
   const EXIT_MS  = 700;  // Blende faehrt beim Schliessen wieder zu
 
   let current = null;
-  let busy = false, spaeter = null;
+  let busy = false, spaeter = null, oeffnet = false, zuNachOeffnen = false;
   let oeffner = null;   // was den Fokus hatte, als die Projektansicht aufging
   let ruheZeit = null, heroPausiert = false;
 
@@ -3211,7 +3211,7 @@
     // klickt man meist aufs Bild, nicht auf den Knopf darunter).
     const direkt = trigger.dataset.direkt === '1' ||
       (trigger.classList.contains('schau-platz') && trigger.dataset.film !== '0');
-    busy = true;
+    busy = true; oeffnet = true; zuNachOeffnen = false;
     current = viewer;
     adresseSetzen(viewer);
     /* Solange die Projektansicht offen ist, ist die Startseite fuer Tastatur
@@ -3281,7 +3281,8 @@
       }
 
       setTimeout(function () {
-        busy = false;
+        busy = false; oeffnet = false;
+        if (zuNachOeffnen) { zuNachOeffnen = false; schliessen(); return; }
         /* Der Fokus kommt auf den Titel, nicht auf "Schliessen": Vorlesegeraete
            beginnen so oben, und die Leertaste haelt den Film an, statt die
            Ansicht gleich wieder zu schliessen. */
@@ -3577,7 +3578,11 @@
   /* Schliessen per Knopf oder Escape: steht der eigene Eintrag oben, geht es
      einen Schritt zurueck (popstate schliesst dann); kam man per Link, wird
      die Adresse nur bereinigt. */
+  /* Escape oder Schliessen, waehrend das Projekt noch aufgeht: gemerkt und
+     ausgefuehrt, sobald es offen ist -- sonst ging der Tastendruck still
+     verloren und man musste ein zweites Mal druecken. */
   function schliessen() {
+    if (oeffnet) { zuNachOeffnen = true; return; }
     if (busy || !current) return;
     if (history.state && history.state.lxr === current.id) { history.back(); return; }
     if (location.hash) { try { history.replaceState(null, '', ohneHash()); } catch (e) {} }
