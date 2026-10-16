@@ -640,6 +640,13 @@
   .figure-media > img:not(.aura) { position: relative; z-index: 1; }
   /* Zwei Bilder nebeneinander (Arbeitsweise): gleich breit, gleich hoch. */
   .figure-paar { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+  /* Telefon quer: ein Foto ueber die volle Breite war hoeher als der Schirm
+     (4:3 bei 800 px rund 600 px auf 390 px Hoehe) -- man sah es nie ganz.
+     Deshalb hoechstens 82 % der Fensterhoehe, das Bildpaar entsprechend. */
+  @media (max-height: 520px) and (orientation: landscape) {
+    .band-figure > .figure-media { max-width: calc(82vh * var(--fig-ar, 4 / 3)); }
+    .figure-paar { max-width: calc(82vh * 4 / 3 + 20px); }
+  }
   /* Ein Titel in Anfuehrungszeichen bricht nie zwischen Zeichen und Titel. */
   .zusammen { white-space: nowrap; }
   /* Grosses Bild ueber einem Abschnitt, mittig. Nie hoeher als 70 % des
