@@ -4416,6 +4416,37 @@
         Math.round(roh) + (e.key === 'ArrowRight' ? 1 : -1))));
     });
 
+    /* Bild ab, Bild auf und Leertaste scrollen fast eine ganze Fensterhoehe
+       -- mehr als das halbe Karussell. Von oben kommend landete man damit
+       gleich beim dritten Film, der zweite Druck schoss am letzten vorbei.
+       Faellt so ein Sprung ins Karussell, faehrt es stattdessen genau einen
+       Film weiter (oder zum ersten bzw. letzten, wenn man hineinkommt). Die
+       Pfeiltasten brauchen das nicht: ihre 40 px erledigt das Nachziehen. */
+    window.addEventListener('keydown', function (e) {
+      if (e.defaultPrevented || e.ctrlKey || e.altKey || e.metaKey) return;
+      if (document.body.classList.contains('is-viewing')) return;
+      const k = e.key;
+      const leer = k === ' ' || k === 'Spacebar';
+      if (k !== 'PageDown' && k !== 'PageUp' && !leer) return;
+      const z = e.target;
+      if (z && z.closest && z.closest('input, textarea, select, [contenteditable]')) return;
+      if (leer && z && z.closest && z.closest('button, a, [role="button"]')) return;
+      const sp = segmentPx();
+      if (sp <= 0) return;
+      const runter = k === 'PageDown' || (leer && !e.shiftKey);
+      const r = rohStand(), sprung = 0.875 * window.innerHeight / sp, rand = 0.02;
+      let n;
+      if (runter) {
+        if (r >= N - 1 - rand || r + sprung <= rand) return;
+        n = r < -rand ? 0 : Math.floor(r + rand) + 1;
+      } else {
+        if (r <= rand || r - sprung >= N - 1 - rand) return;
+        n = r > N - 1 + rand ? N - 1 : Math.ceil(r - rand) - 1;
+      }
+      e.preventDefault();
+      fahreZu(Math.max(0, Math.min(N - 1, n)));
+    });
+
     /* Ein Titelbild, das erst nach dem letzten Zeichnen fertig laedt, bekam
        sonst die Standard-Deckkraft seines Hofs -- auch hinten, unsichtbar. */
     buehne.addEventListener('hofda', function () { if (anzeige !== null) zeichne(anzeige); });
