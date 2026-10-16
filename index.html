@@ -974,6 +974,13 @@
   .viewer.is-active .viewer-inner { opacity: 1; transform: none; }
 
   .stage-wrap { position: relative; }
+  /* Der Film passt beim Oeffnen ganz ins Fenster. Auf Laptops (1366x625,
+     1440x700) reichte die 1120 px breite Buehne sonst unten ueber den Rand,
+     bei The South (16:9) fehlte gut ein Fuenftel des Bildes. Hoehe minus
+     Abstand oben (--bar-h + 46px) und ein Rest Luft darunter. Ohne bekanntes
+     Format (--ar) keine Grenze; das Telefon quer regelt es weiter unten. */
+  .stage-wrap { max-width: calc((100vh - var(--bar-h) - 74px) * var(--ar, 99)); margin-left: auto; margin-right: auto; }
+  .stage-wrap.gross, .stage-wrap.fs-ersatz { max-width: none; }
 
   .viewer-stage { position: relative; aspect-ratio: 21 / 9; overflow: hidden; background: #000; }
   .viewer-stage img { transform-origin: center; }
