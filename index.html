@@ -1262,6 +1262,14 @@
     font-size: clamp(1.05em, 1.7vw, 1.4em); letter-spacing: 0.22em;
     color: var(--text);
   }
+  /* Ein weicher dunkler Schatten hinter dem Datum: laeuft die Route
+     hindurch (am iPad an mehreren Stationen), kreuzt sie die Ziffern
+     nicht mehr hell, sondern taucht darunter ab. */
+  .karte-datum::before {
+    content: ''; position: absolute; left: 50%; top: 50%;
+    width: 15em; height: 3.4em; transform: translate(-50%, -50%);
+    background: radial-gradient(closest-side, rgba(8, 11, 12, 0.72), rgba(8, 11, 12, 0.4) 55%, transparent);
+  }
   .karte-datum span {
     position: absolute; left: 0; right: 0; top: 0;
     opacity: 0; transition: opacity 0.7s var(--ease);
@@ -1288,7 +1296,7 @@
   .karte-schritt {
     position: absolute; left: 50%; bottom: calc(max(44px, 7dvh) + 2.6em - 9px);
     width: 34px; height: 34px; padding: 0; border-radius: 50%;
-    border: 1px solid rgba(255, 226, 190, 0.35); background: rgba(8, 11, 12, 0.45);
+    border: 1px solid rgba(255, 226, 190, 0.35); background: rgba(8, 11, 12, 0.62);
     color: rgba(255, 236, 212, 0.92); font: 18px/1 Georgia, serif; cursor: pointer;
     opacity: 0; transition: opacity 0.8s var(--ease), background-color 0.25s, border-color 0.25s;
   }
