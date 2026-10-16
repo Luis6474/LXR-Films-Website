@@ -989,6 +989,9 @@
   .stage-ui.sichtbar { opacity: 1; }
   /* eigene Regel: wo :has fehlt, faellt sonst die ganze Liste weg */
   .stage-ui:has(:focus-visible) { opacity: 1; }
+  /* Pausiert oder zu Ende: die Leiste bleibt stehen -- sonst zeigte nichts,
+     dass der Film steht und wie er weiterlaeuft. */
+  .viewer-stage.steht .stage-ui { opacity: 1; }
   .stage-wrap.ruhig, .stage-wrap.ruhig * { cursor: none; }
   /* Ohne Kasten, nur die Zeichen selbst -- gerahmte Felder sahen auf dem
      Film nach Bedienoberflaeche aus. Die Trefferflaeche bleibt 44 px gross;
@@ -2981,6 +2984,7 @@
         // Zurueck aufs Standbild -- so bleiben Abspann-Vorschlaege verdeckt.
         stage.classList.remove('is-playing');
         stage._ende = true;
+        stage.classList.add('steht');
         if (stage._playBtn) setzeZeichen(stage._playBtn, 'play', 'Erneut abspielen', true);
       }
     });
@@ -3011,12 +3015,14 @@
         stage._ende = false;
         stage._player.replay();
         playing = true;
+        stage.classList.remove('steht');
         setzeZeichen(playBtn, 'pause', 'Pause (Leertaste)', false);
         return;
       }
       playing = !playing;
       if (playing) stage._player.weiter();
       else stage._player.halt();
+      stage.classList.toggle('steht', !playing);
       if (playing) setzeZeichen(playBtn, 'pause', 'Pause (Leertaste)', false);
       else setzeZeichen(playBtn, 'play', 'Abspielen (Leertaste)', true);
     });
@@ -3075,7 +3081,7 @@
     if (laden) laden.remove();
     const hinweis = stage.querySelector('.stage-hinweis');
     if (hinweis) hinweis.remove();
-    stage.classList.remove('ist-fehler');
+    stage.classList.remove('ist-fehler', 'steht');
     const wrap = stage.closest('.stage-wrap');
     if (wrap && wrap._fsAb) wrap._fsAb();
     stage.classList.remove('has-video', 'is-playing');
@@ -3339,8 +3345,8 @@
     clearTimeout(leisteZeit);
     leisteZeit = setTimeout(function () {
       ui.classList.remove('sichtbar');
-      // Im Vollbild verschwindet mit der Leiste auch der Zeiger
-      if (wrap && (document.fullscreenElement === wrap || wrap.classList.contains('fs-ersatz'))) wrap.classList.add('ruhig');
+      // Im Vollbild verschwindet mit der Leiste auch der Zeiger (nicht, solange der Film steht)
+      if (wrap && !stage.classList.contains('steht') && (document.fullscreenElement === wrap || wrap.classList.contains('fs-ersatz'))) wrap.classList.add('ruhig');
     }, ms || 2200);
   }
 
