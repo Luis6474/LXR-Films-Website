@@ -93,7 +93,9 @@
   }
 
   * { box-sizing: border-box; }
-  html { scroll-behavior: smooth; }
+  /* Kein grauer Kasten beim Antippen (iPad, Handy): Rueckmeldung geben die
+     Knoepfe selbst, der Kasten lag sonst ueber Karten und Karussell. */
+  html { scroll-behavior: smooth; -webkit-tap-highlight-color: transparent; }
 
   body {
     margin: 0;
