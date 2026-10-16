@@ -1296,6 +1296,9 @@
   /* Sehr schmal (Falt-Handy zugeklappt): sonst bricht der Knopf in zwei
      Zeilen und reicht bis in die Fotos. */
   .karte-weiter { white-space: nowrap; }
+  /* Unter 375 px (aeltere und kleine Telefone) reichen zwei Zeilen fuer den
+     Satz zu The Same Gray nicht -- er brach mitten im Wort ab ("die ih..."). */
+  @media (max-width: 374px) { .card-info .card-teaser { -webkit-line-clamp: 3; line-clamp: 3; } }
   @media (max-width: 340px) { .karte-weiter { font-size: 0.74em; letter-spacing: 0.08em; right: 12px; padding-left: 14px; padding-right: 14px; } }
   /* Kompassnadel: unten links, auf der Hoehe des Datums, leise wie die Karte. */
   .karte-kompass {
