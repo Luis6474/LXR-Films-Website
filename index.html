@@ -916,6 +916,32 @@
   .schau-ansehen:focus-visible { outline: 1px solid var(--accent); outline-offset: 2px; }
   .schau-knopf-reihe .schau-ansehen { margin-left: 0; }
 
+  /* Textverweis im Stil von "Ansehen": Grossbuchstaben, ein kurzer Strich
+     darunter, der beim Ueberfahren mitwaechst. Fuer "Mehr ueber mich" und
+     "Auf YouTube ansehen" in der Projektansicht. */
+  .pfeil-link {
+    display: inline-flex; align-items: center; gap: 9px;
+    color: var(--text); text-decoration: none;
+    font-family: 'Noto Serif', Georgia, serif; font-size: 0.76em;
+    letter-spacing: 0.18em; text-transform: uppercase;
+    padding: 14px 2px; position: relative;
+    transition: color 0.45s var(--ease);
+  }
+  .pfeil-link::after {
+    content: ""; position: absolute; left: 2px; bottom: 11px;
+    width: 18px; height: 1px; background: currentColor;
+    transition: width 0.45s var(--ease);
+  }
+  .pfeil-link svg { width: 13px; height: 13px; display: block; flex-shrink: 0; }
+  @media (hover: hover) {
+    .pfeil-link:hover { color: #fff; }
+    .pfeil-link:hover::after { width: calc(100% - 26px); }
+  }
+  .pfeil-link:focus-visible { outline: 1px solid var(--accent); outline-offset: 2px; }
+  .mehr-link { margin-top: 22px; }
+  .yt-link { margin-top: 10px; color: var(--p-accent); }
+  .yt-link:focus-visible { outline-color: var(--p-accent); }
+
   /* Nur fuer Vorlesegeraete -- der Titel steht sichtbar im Bild. */
   .nur-vorlesen {
     position: absolute; width: 1px; height: 1px; overflow: hidden;
@@ -1662,7 +1688,7 @@
                  alt="Dreh mit Teleobjektiv auf einer Weide, im Hintergrund Highlandrinder"
                  loading="lazy" decoding="async">
           </div>
-          <figcaption>Teleaufnahmen für „The Same Gray“ in Schottland</figcaption>
+          <figcaption>Teleaufnahmen für <span class="zusammen">„<button type="button" class="in-link" data-viewer="v2">The Same Gray</button>“</span> in Schottland</figcaption>
         </figure>
       </div>
     </div>
@@ -1732,6 +1758,9 @@
           <p class="body">Ich produziere Werbe- und Imagefilme für Unternehmen und Selbstständige – mit professionellem Look, durchdachtem Schnitt und einem Gespür für gute Bilder. Ich habe bereits Videos für lokale Firmen, Produktreels für Designer und cinematische Kurzfilme umgesetzt – alles mit dem Anspruch, dass es auch auf den großen Plattformen bestehen kann.</p>
           <p class="body">Ich glaube an ehrliche Bilder, präzises Storytelling und daran, dass visuelle Inhalte Emotionen und Vertrauen schaffen können. Wenn du ein Video willst, das auffällt – melde dich gern bei mir.</p>
           <p class="standout">Jede Geschichte verdient es, gut erzählt zu werden.</p>
+          <a class="pfeil-link mehr-link" href="wer-ich-bin/">Mehr über mich<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.3"
+               stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path
+               d="M4 12h15M13 6l6 6-6 6"/></svg></a>
         </div>
         <figure class="band-figure reveal-media">
           <div class="figure-media aura-host" style="--fig-ar: 4 / 3">
@@ -1747,7 +1776,7 @@
     </div>
   </section>
 
-  <section class="projects">
+  <section class="projects" id="projekte">
     <div class="band-inner">
       <h2 class="reveal">Projekte</h2>
 
@@ -1863,7 +1892,7 @@
                    loading="lazy" decoding="async">
             </div>
           </div>
-          <figcaption>Links: Drehort für den Kurzfilm „The Same Gray“ in Auchindrain · Rechts: Dreh für <span class="zusammen">„<button type="button" class="in-link" data-viewer="v1">Gärtnerei Finder</button>“</span> in Hamburg-Sasel</figcaption>
+          <figcaption>Links: Drehort für den Kurzfilm <span class="zusammen">„<button type="button" class="in-link" data-viewer="v2">The Same Gray</button>“</span> in Auchindrain · Rechts: Dreh für <span class="zusammen">„<button type="button" class="in-link" data-viewer="v1">Gärtnerei Finder</button>“</span> in Hamburg-Sasel</figcaption>
         </figure>
       </div>
     </div>
@@ -1903,7 +1932,7 @@
     </div>
   </section>
 
-  <section class="contact">
+  <section class="contact" id="kontakt">
     <div class="wrap reveal">
       <h2>Kontakt</h2>
       <div class="who">
@@ -1945,6 +1974,7 @@
       <div class="viewer-head">
         <span class="eyebrow">Familienbetrieb · Hamburg-Sasel</span>
         <h2 id="v1-title">Gärtnerei Eggert Finder</h2>
+        <a class="pfeil-link yt-link" href="https://www.youtube.com/watch?v=qUV4MVFWDoc" target="_blank" rel="noopener">Auf YouTube ansehen<span class="nur-vorlesen"> (öffnet ein neues Fenster)</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 16 16 8M9.5 8H16v6.5"/></svg></a>
       </div>
       <div class="viewer-text">
         <p class="lead">Ein Ort zum Wachsen – und das im wahrsten Sinne.</p>
@@ -1984,6 +2014,7 @@
       <div class="viewer-head">
         <span class="eyebrow">Kurzfilm · Schottland</span>
         <h2 id="v2-title">The Same Gray</h2>
+        <a class="pfeil-link yt-link" href="https://www.youtube.com/watch?v=ncu7h1OXrmg" target="_blank" rel="noopener">Auf YouTube ansehen<span class="nur-vorlesen"> (öffnet ein neues Fenster)</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 16 16 8M9.5 8H16v6.5"/></svg></a>
       </div>
       <div class="viewer-text">
         <p class="lead film">„The Same Gray“ ist eine Geschichte über einen Seemann, der auf einer regnerischen, kargen Insel im Südatlantik geboren wurde und dem ewigen Grau seiner Jugend entkommen konnte, bloß um 30 Jahre später auf dem gleichen Breitengrad angespült zu werden, nur auf der anderen Seite der Welt.</p>
@@ -2044,6 +2075,7 @@
       <div class="viewer-head">
         <span class="eyebrow">Reisefilm · Bayern &amp; Norditalien</span>
         <h2 id="v3-title">The Mountains</h2>
+        <a class="pfeil-link yt-link" href="https://www.youtube.com/watch?v=FfBvRlTPpvQ" target="_blank" rel="noopener">Auf YouTube ansehen<span class="nur-vorlesen"> (öffnet ein neues Fenster)</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 16 16 8M9.5 8H16v6.5"/></svg></a>
       </div>
       <div class="viewer-text">
         <p class="lead">The Mountains ist eine filmische Reise durch die Alpen Bayerns und Norditaliens. Zwischen Morgennebel und Abendlicht entfalten sich Berge, Täler und Dörfer in ihrer stillen, zeitlosen Schönheit. Der Film sucht weniger das Spektakel als die Atmosphäre – er verweilt in Momenten, in denen Licht, Wind und Landschaft miteinander verschmelzen. Entstanden ist ein Werk, das die Erhabenheit der Natur nicht erklärt, sondern spürbar macht.</p>
@@ -2101,6 +2133,7 @@
       <div class="viewer-head">
         <span class="eyebrow">Kurzfilm · historische Eisenbahn</span>
         <h2 id="v4-title">Track of Time</h2>
+        <a class="pfeil-link yt-link" href="https://www.youtube.com/watch?v=o1YdluXKf3g" target="_blank" rel="noopener">Auf YouTube ansehen<span class="nur-vorlesen"> (öffnet ein neues Fenster)</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 16 16 8M9.5 8H16v6.5"/></svg></a>
       </div>
       <div class="viewer-text">
         <p class="lead">Manche Orte scheinen stillzustehen – und bewegen doch so viel. „Track of Time“ ist eine Reise entlang historischer Gleise, eingefangen mit der Kamera, erzählt in Bildern. Es geht nicht nur um eine Dampflok. Es geht um Atmosphäre, Bewegung und Erinnerung. Um den Versuch, Zeit sichtbar zu machen – und ein Gefühl einzufangen, das bleibt, wenn alles andere längst weitergefahren ist.</p>
@@ -2137,6 +2170,7 @@
       <div class="viewer-head">
         <span class="eyebrow">Reisefilm · Österreich, Italien, Bayern</span>
         <h2 id="v5-title">The South</h2>
+        <a class="pfeil-link yt-link" href="https://www.youtube.com/watch?v=rKGhlvCMp7U" target="_blank" rel="noopener">Auf YouTube ansehen<span class="nur-vorlesen"> (öffnet ein neues Fenster)</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 16 16 8M9.5 8H16v6.5"/></svg></a>
       </div>
       <div class="viewer-text">
         <p class="lead">Es beginnt mit Fernweh – und endet mit Geschichten, die du nie mehr vergisst.</p>
