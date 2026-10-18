@@ -3944,13 +3944,24 @@
   }
   sicher('Hero-Rahmen', function () {
     if (heroFrame) {
-      if (window.scrollY > 6 || reducedMotion) {
+      /* Mit Sprungziel auf einen Abschnitt (#projekte, #kontakt -- von Wer
+         ich bin): gleich klein, bevor der Browser hinspringt. Sonst schrumpfte
+         der Hero erst danach, am Handy um 321 px, und "Projekte" stand 320 px
+         ueber dem oberen Rand. Projekt-Adressen haben kein Element dieses
+         Namens und bleiben unberuehrt. */
+      let ziel = null;
+      try { ziel = location.hash.length > 1 && document.getElementById(decodeURIComponent(location.hash.slice(1))); } catch (e) {}
+      if (ziel && heroSection.contains(ziel)) ziel = null;
+      if (window.scrollY > 6 || reducedMotion || ziel) {
         // Seite kommt bereits gescrollt zurueck: dann ohne Bewegung direkt klein.
-        const t = heroFrame.style.transition;
+        // Am Handy faehrt auch der Hero selbst in der Hoehe -- beide anhalten.
+        const t = heroFrame.style.transition, ts = heroSection.style.transition;
         heroFrame.style.transition = 'none';
+        heroSection.style.transition = 'none';
         dockHero();
         void heroFrame.offsetWidth;
         heroFrame.style.transition = t;
+        heroSection.style.transition = ts;
       } else {
         window.addEventListener('scroll', onFirstScroll, { passive: true });
         window.addEventListener('wheel', dockHero, { passive: true });
