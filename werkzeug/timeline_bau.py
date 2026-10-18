@@ -25,7 +25,7 @@ pillow_heif.register_heif_opener()
 WURZEL = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 QUELLE = os.path.join(WURZEL, "Images", "Timeline Bilder")
 ZIEL = os.path.join(WURZEL, "Images", "web", "timeline")
-BREITEN = (800, 1600)
+BREITEN = (800, 1600, 2400)   # 2400 nur, wenn die Vorlage so breit ist
 QUALITAET = 92
 
 ROH_LASSEN = {"IMG_8077.JPEG"}                       # EXIF-Drehung ignorieren
@@ -129,6 +129,8 @@ def main():
             im = balken_weg(im)
         name = name_fuer(datei)
         for b in BREITEN:
+            if b > 1600 and im.width < b:
+                continue
             kopie = im.copy()
             if kopie.width > b:
                 kopie = kopie.resize((b, round(kopie.height * b / kopie.width)), Image.LANCZOS)

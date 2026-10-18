@@ -168,20 +168,31 @@
   .zl-text p:not(.eyebrow) { color: var(--text-dim); line-height: 1.85; font-size: 0.98em; }
   .zl-text p + p:not(.eyebrow) { margin-top: 16px; }
   .zl-zeit { margin: 0; }
-  .zl-projekt {
-    display: inline-block; max-width: 100%; margin-top: 24px; line-height: 1.5;
-    color: var(--text); text-decoration: none;
-    font-size: 0.74em; letter-spacing: 0.18em; text-transform: uppercase;
-    padding: 11px 18px 10px; border: 1px solid rgba(230, 234, 232, 0.22); border-radius: 999px;
-    transition: border-color 0.4s var(--ease), background-color 0.4s var(--ease);
+  /* Verweise wie "Ansehen" auf der Startseite: Grossbuchstaben, ein kurzer
+     Strich darunter, der beim Ueberfahren unter dem ganzen Wort mitwaechst. */
+  .zl-projekt, .schluss .wege a {
+    /* inline-block statt flex: bricht der Text um, bleibt der Pfeil direkt
+       hinter dem letzten Wort, statt an den rechten Rand zu rutschen */
+    display: inline-block; max-width: 100%;
+    margin-top: 18px; color: var(--text); text-decoration: none;
+    font-family: 'Noto Serif', Georgia, serif; font-size: 0.76em;
+    letter-spacing: 0.18em; text-transform: uppercase; line-height: 1.5;
+    padding: 14px 2px; position: relative;
+    transition: color 0.45s var(--ease);
   }
-  /* Schmal: der Knopf darf umbrechen (sonst ragte er bei "Gaertnerei Eggert
-     Finder" ueber den Rand), dann als Rechteck mit weichen Ecken. */
+  .zl-projekt::after, .schluss .wege a::after {
+    content: ""; position: absolute; left: 2px; bottom: 9px;
+    width: 18px; height: 1px; background: currentColor;
+    transition: width 0.45s var(--ease);
+  }
+  .zl-projekt svg, .schluss .wege a svg { width: 13px; height: 13px; display: inline-block; vertical-align: -1px; margin-left: 9px; }
+  @media (hover: hover) {
+    .zl-projekt:hover, .schluss .wege a:hover { color: #fff; }
+    .zl-projekt:hover::after, .schluss .wege a:hover::after { width: calc(100% - 26px); }
+  }
   @media (max-width: 520px) {
-    .zl-projekt { font-size: 0.68em; letter-spacing: 0.12em; border-radius: 18px; }
-    .zl-projekt .zusammen { white-space: normal; }
+    .zl-projekt { font-size: 0.7em; letter-spacing: 0.13em; }
   }
-  .zl-projekt:hover { border-color: rgba(230, 234, 232, 0.6); background: rgba(230, 234, 232, 0.05); }
   .zl-tafel { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 28px; }
   .zl-bild { margin: 0; aspect-ratio: 4 / 3; overflow: hidden; background: #0b1012; }
   .zl-tafel .zl-bild:last-child:nth-child(odd):not(.klein) { grid-column: 1 / -1; aspect-ratio: 16 / 9; }
@@ -308,14 +319,7 @@
     font-size: clamp(1.3em, 2.4vw, 1.75em); line-height: 1.45; letter-spacing: 0.02em;
     max-width: 30ch;
   }
-  .schluss .wege { margin-top: 64px; display: flex; flex-wrap: wrap; gap: 14px 36px; }
-  .schluss .wege a {
-    color: var(--text); text-decoration: none;
-    font-size: 0.8em; letter-spacing: 0.16em; text-transform: uppercase;
-    padding: 12px 26px; border: 1px solid rgba(255, 255, 255, 0.18);
-    transition: border-color 0.5s var(--ease);
-  }
-  .schluss .wege a:hover { border-color: var(--accent); }
+  .schluss .wege { margin-top: 46px; display: flex; flex-wrap: wrap; gap: 14px 36px; }
   .kontakt { max-width: 1120px; margin: 0 auto; padding: 8vh 22px 4vh; }
   .kontakt h2 { font-size: 1.3em; letter-spacing: 0.06em; margin-bottom: 26px; }
   .kontakt .row { display: flex; gap: 14px; padding: 2px 0; font-size: 0.97em; }
@@ -365,10 +369,10 @@
             <p>Angefangen hat alles 2023 mit einem Drohnenflug. Erst ging es nur um den Flugspaß, aber irgendwann begann ich auch, mit der Drohne zu filmen. Daneben entstanden immer wieder kleinere Aufnahmen, etwa im Harz, die nie auf YouTube gelandet sind.</p>
           </div>
           <div class="zl-tafel">
-            <figure class="zl-bild" data-ar="1.335"><img src="../Images/web/timeline/dji-2023-05-19-800.webp" srcset="../Images/web/timeline/dji-2023-05-19-800.webp 800w, ../Images/web/timeline/dji-2023-05-19-1600.webp 1600w" sizes="(min-width: 700px) 30vw, 50vw" width="5280" height="3956" alt="Luftaufnahme: grüne Felder und ein gelbes Rapsfeld, am Horizont das Meer" loading="lazy" decoding="async"></figure>
-            <figure class="zl-bild" data-ar="1.333"><img src="../Images/web/timeline/img-6544-800.webp" srcset="../Images/web/timeline/img-6544-800.webp 800w, ../Images/web/timeline/img-6544-1600.webp 1600w" sizes="(min-width: 700px) 30vw, 50vw" width="2048" height="1536" alt="Eine Drohne im Abendhimmel über einem Kornfeld" loading="lazy" decoding="async"></figure>
+            <figure class="zl-bild" data-ar="1.335"><img src="../Images/web/timeline/dji-2023-05-19-800.webp" srcset="../Images/web/timeline/dji-2023-05-19-800.webp 800w, ../Images/web/timeline/dji-2023-05-19-1600.webp 1600w, ../Images/web/timeline/dji-2023-05-19-2400.webp 2400w" sizes="(min-width: 700px) 50vw, 50vw" width="5280" height="3956" alt="Luftaufnahme: grüne Felder und ein gelbes Rapsfeld, am Horizont das Meer" loading="lazy" decoding="async"></figure>
+            <figure class="zl-bild" data-ar="1.333"><img src="../Images/web/timeline/img-6544-800.webp" srcset="../Images/web/timeline/img-6544-800.webp 800w, ../Images/web/timeline/img-6544-1600.webp 1600w" sizes="(min-width: 700px) 50vw, 50vw" width="2048" height="1536" alt="Eine Drohne im Abendhimmel über einem Kornfeld" loading="lazy" decoding="async"></figure>
             <figure class="zl-bild zl-film" data-ar="1.778"><video muted loop playsinline controls preload="none" poster="../Images/web/timeline/drohne-2023-standbild.webp" width="1280" height="720" aria-label="Video: eine Drohne steigt in der Abenddämmerung über einem Feld mit einzelnem Baum auf"><source src="../Images/web/timeline/drohne-2023.mp4" type="video/mp4"></video></figure>
-            <figure class="zl-bild" data-ar="1.333"><img src="../Images/web/timeline/img-7612-800.webp" srcset="../Images/web/timeline/img-7612-800.webp 800w, ../Images/web/timeline/img-7612-1600.webp 1600w" sizes="(min-width: 700px) 30vw, 50vw" width="2048" height="1536" alt="Luis kniet auf einem Feldweg neben seiner Drohne, dahinter das Auto" loading="lazy" decoding="async"></figure>
+            <figure class="zl-bild" data-ar="1.333"><img src="../Images/web/timeline/img-7612-800.webp" srcset="../Images/web/timeline/img-7612-800.webp 800w, ../Images/web/timeline/img-7612-1600.webp 1600w" sizes="(min-width: 700px) 50vw, 50vw" width="2048" height="1536" alt="Luis kniet auf einem Feldweg neben seiner Drohne, dahinter das Auto" loading="lazy" decoding="async"></figure>
           </div>
         </li>
         <li class="zl-station" data-jahr="Herbst 2023" style="--farbe: #6d7471">
@@ -376,13 +380,13 @@
             <p class="eyebrow zl-zeit">Oktober und November 2023</p>
             <h3 class="zl-jahr">Herbst 2023</h3>
             <p>Ich drehte einen Kurzfilm im herbstlichen Sauerland und beschäftigte mich parallel mit Colorgrading, Schnitt und Filmmusik. Es war mein erster Film.</p>
-            <a class="zl-projekt" href="https://www.youtube.com/watch?v=ZxEFBb1LwxA" target="_blank" rel="noopener">Auf YouTube ansehen<span class="nur-vorlesen"> (öffnet ein neues Fenster)</span> <span aria-hidden="true">↗</span></a>
+            <a class="zl-projekt" href="https://www.youtube.com/watch?v=ZxEFBb1LwxA" target="_blank" rel="noopener"><span>Auf YouTube ansehen</span><span class="nur-vorlesen"> (öffnet ein neues Fenster)</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 16 16 8M9.5 8H16v6.5"/></svg></a>
           </div>
           <div class="zl-tafel">
-            <figure class="zl-bild" data-ar="1.916"><img src="../Images/web/timeline/herbst-2023-burg-800.webp" srcset="../Images/web/timeline/herbst-2023-burg-800.webp 800w, ../Images/web/timeline/herbst-2023-burg-1600.webp 1600w" sizes="(min-width: 700px) 30vw, 50vw" width="2560" height="1336" alt="Standbild aus dem Sauerland-Film: eine Burg über herbstlichem Wald" loading="lazy" decoding="async"></figure>
-            <figure class="zl-bild" data-ar="1.333"><img src="../Images/web/timeline/img-8077-800.webp" srcset="../Images/web/timeline/img-8077-800.webp 800w, ../Images/web/timeline/img-8077-1600.webp 1600w" sizes="(min-width: 700px) 30vw, 50vw" width="4032" height="3024" alt="Hände an der Drohnen-Fernbedienung, auf dem Bildschirm herbstlicher Wald von oben" loading="lazy" decoding="async"></figure>
-            <figure class="zl-bild" data-ar="1.918"><img src="../Images/web/timeline/herbst-2023-wald-800.webp" srcset="../Images/web/timeline/herbst-2023-wald-800.webp 800w, ../Images/web/timeline/herbst-2023-wald-1600.webp 1600w" sizes="(min-width: 700px) 30vw, 50vw" width="2560" height="1335" alt="Standbild aus dem Sauerland-Film: Herbstwald von oben" loading="lazy" decoding="async"></figure>
-            <figure class="zl-bild" data-ar="1.333"><img src="../Images/web/timeline/img-8152-800.webp" srcset="../Images/web/timeline/img-8152-800.webp 800w, ../Images/web/timeline/img-8152-1600.webp 1600w" sizes="(min-width: 700px) 30vw, 50vw" width="4032" height="3024" alt="Eine Burg auf einem grünen Hügel unter grauem Himmel" loading="lazy" decoding="async"></figure>
+            <figure class="zl-bild" data-ar="1.916"><img src="../Images/web/timeline/herbst-2023-burg-800.webp" srcset="../Images/web/timeline/herbst-2023-burg-800.webp 800w, ../Images/web/timeline/herbst-2023-burg-1600.webp 1600w, ../Images/web/timeline/herbst-2023-burg-2400.webp 2400w" sizes="(min-width: 700px) 50vw, 50vw" width="2560" height="1336" alt="Standbild aus dem Sauerland-Film: eine Burg über herbstlichem Wald" loading="lazy" decoding="async"></figure>
+            <figure class="zl-bild" data-ar="1.333"><img src="../Images/web/timeline/img-8077-800.webp" srcset="../Images/web/timeline/img-8077-800.webp 800w, ../Images/web/timeline/img-8077-1600.webp 1600w, ../Images/web/timeline/img-8077-2400.webp 2400w" sizes="(min-width: 700px) 50vw, 50vw" width="4032" height="3024" alt="Hände an der Drohnen-Fernbedienung, auf dem Bildschirm herbstlicher Wald von oben" loading="lazy" decoding="async"></figure>
+            <figure class="zl-bild" data-ar="1.918"><img src="../Images/web/timeline/herbst-2023-wald-800.webp" srcset="../Images/web/timeline/herbst-2023-wald-800.webp 800w, ../Images/web/timeline/herbst-2023-wald-1600.webp 1600w, ../Images/web/timeline/herbst-2023-wald-2400.webp 2400w" sizes="(min-width: 700px) 50vw, 50vw" width="2560" height="1335" alt="Standbild aus dem Sauerland-Film: Herbstwald von oben" loading="lazy" decoding="async"></figure>
+            <figure class="zl-bild" data-ar="1.333"><img src="../Images/web/timeline/img-8152-800.webp" srcset="../Images/web/timeline/img-8152-800.webp 800w, ../Images/web/timeline/img-8152-1600.webp 1600w, ../Images/web/timeline/img-8152-2400.webp 2400w" sizes="(min-width: 700px) 50vw, 50vw" width="4032" height="3024" alt="Eine Burg auf einem grünen Hügel unter grauem Himmel" loading="lazy" decoding="async"></figure>
           </div>
         </li>
         <li class="zl-station" data-jahr="Ende 2023" style="--farbe: #6b94b1">
@@ -390,12 +394,12 @@
             <p class="eyebrow zl-zeit">Zweites Projekt · Hamburger Hafen</p>
             <h3 class="zl-jahr">Ende 2023</h3>
             <p>Mein zweites Projekt war „Port of Hamburg“: kleinere Aufnahmen rund um den Hamburger Hafen.</p>
-            <a class="zl-projekt" href="https://www.youtube.com/watch?v=qWsltowI3xI" target="_blank" rel="noopener">Auf YouTube ansehen<span class="nur-vorlesen"> (öffnet ein neues Fenster)</span> <span aria-hidden="true">↗</span></a>
+            <a class="zl-projekt" href="https://www.youtube.com/watch?v=qWsltowI3xI" target="_blank" rel="noopener"><span>Auf YouTube ansehen</span><span class="nur-vorlesen"> (öffnet ein neues Fenster)</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 16 16 8M9.5 8H16v6.5"/></svg></a>
           </div>
           <div class="zl-tafel">
-            <figure class="zl-bild" data-ar="1.778"><img src="../Images/web/timeline/port-of-hamburg-1-800.webp" srcset="../Images/web/timeline/port-of-hamburg-1-800.webp 800w, ../Images/web/timeline/port-of-hamburg-1-1600.webp 1600w" sizes="(min-width: 700px) 30vw, 50vw" width="2560" height="1440" alt="Standbild aus „Port of Hamburg“: Containerkräne in der Abenddämmerung über der Elbe" loading="lazy" decoding="async"></figure>
-            <figure class="zl-bild" data-ar="1.333"><img src="../Images/web/timeline/img-8773-800.webp" srcset="../Images/web/timeline/img-8773-800.webp 800w, ../Images/web/timeline/img-8773-1600.webp 1600w" sizes="(min-width: 700px) 30vw, 50vw" width="4032" height="3024" alt="Luis mit Kamera am Gimbal im Hamburger Hafen, dahinter ein Museumsschiff" loading="lazy" decoding="async"></figure>
-            <figure class="zl-bild" data-ar="1.855"><img src="../Images/web/timeline/port-of-hamburg-2-800.webp" srcset="../Images/web/timeline/port-of-hamburg-2-800.webp 800w, ../Images/web/timeline/port-of-hamburg-2-1600.webp 1600w" sizes="(min-width: 700px) 30vw, 50vw" width="2560" height="1380" alt="Standbild aus „Port of Hamburg“: die beleuchteten Landungsbrücken bei Nacht" loading="lazy" decoding="async"></figure>
+            <figure class="zl-bild" data-ar="1.778"><img src="../Images/web/timeline/port-of-hamburg-1-800.webp" srcset="../Images/web/timeline/port-of-hamburg-1-800.webp 800w, ../Images/web/timeline/port-of-hamburg-1-1600.webp 1600w, ../Images/web/timeline/port-of-hamburg-1-2400.webp 2400w" sizes="(min-width: 700px) 50vw, 50vw" width="2560" height="1440" alt="Standbild aus „Port of Hamburg“: Containerkräne in der Abenddämmerung über der Elbe" loading="lazy" decoding="async"></figure>
+            <figure class="zl-bild" data-ar="1.333"><img src="../Images/web/timeline/img-8773-800.webp" srcset="../Images/web/timeline/img-8773-800.webp 800w, ../Images/web/timeline/img-8773-1600.webp 1600w, ../Images/web/timeline/img-8773-2400.webp 2400w" sizes="(min-width: 700px) 50vw, 50vw" width="4032" height="3024" alt="Luis mit Kamera am Gimbal im Hamburger Hafen, dahinter ein Museumsschiff" loading="lazy" decoding="async"></figure>
+            <figure class="zl-bild" data-ar="1.855"><img src="../Images/web/timeline/port-of-hamburg-2-800.webp" srcset="../Images/web/timeline/port-of-hamburg-2-800.webp 800w, ../Images/web/timeline/port-of-hamburg-2-1600.webp 1600w, ../Images/web/timeline/port-of-hamburg-2-2400.webp 2400w" sizes="(min-width: 700px) 50vw, 50vw" width="2560" height="1380" alt="Standbild aus „Port of Hamburg“: die beleuchteten Landungsbrücken bei Nacht" loading="lazy" decoding="async"></figure>
           </div>
         </li>
         <li class="zl-station" data-jahr="Winter 2023/24" style="--farbe: #76756e">
@@ -405,25 +409,25 @@
             <p>Wenn gerade kein Videoprojekt anstand, fotografierte ich sehr viel, auch in Hamburg.</p>
           </div>
           <div class="zl-tafel">
-            <figure class="zl-bild" data-ar="1.333"><img src="../Images/web/timeline/img-8531-800.webp" srcset="../Images/web/timeline/img-8531-800.webp 800w, ../Images/web/timeline/img-8531-1600.webp 1600w" sizes="(min-width: 700px) 30vw, 50vw" width="4032" height="3024" alt="Luis filmt aus dem Autofenster eine verschneite Landschaft" loading="lazy" decoding="async"></figure>
-            <figure class="zl-bild" data-ar="1.155"><img src="../Images/web/timeline/img-8746-800.webp" srcset="../Images/web/timeline/img-8746-800.webp 800w, ../Images/web/timeline/img-8746-1600.webp 1600w" sizes="(min-width: 700px) 30vw, 50vw" width="3492" height="3024" alt="Luis fotografiert auf einem Weg zwischen kahlen Bäumen" loading="lazy" decoding="async"></figure>
-            <figure class="zl-bild" data-ar="1.333"><img src="../Images/web/timeline/img-9433-800.webp" srcset="../Images/web/timeline/img-9433-800.webp 800w, ../Images/web/timeline/img-9433-1600.webp 1600w" sizes="(min-width: 700px) 30vw, 50vw" width="4032" height="3024" alt="Luis fotografiert am Flussufer, gegenüber eine Altstadt" loading="lazy" decoding="async"></figure>
-            <figure class="zl-bild" data-ar="1.333"><img src="../Images/web/timeline/img-0018-800.webp" srcset="../Images/web/timeline/img-0018-800.webp 800w, ../Images/web/timeline/img-0018-1600.webp 1600w" sizes="(min-width: 700px) 30vw, 50vw" width="4032" height="3024" alt="Luis auf einem Steg zwischen Segelbooten" loading="lazy" decoding="async"></figure>
+            <figure class="zl-bild" data-ar="1.333"><img src="../Images/web/timeline/img-8531-800.webp" srcset="../Images/web/timeline/img-8531-800.webp 800w, ../Images/web/timeline/img-8531-1600.webp 1600w, ../Images/web/timeline/img-8531-2400.webp 2400w" sizes="(min-width: 700px) 50vw, 50vw" width="4032" height="3024" alt="Luis filmt aus dem Autofenster eine verschneite Landschaft" loading="lazy" decoding="async"></figure>
+            <figure class="zl-bild" data-ar="1.155"><img src="../Images/web/timeline/img-8746-800.webp" srcset="../Images/web/timeline/img-8746-800.webp 800w, ../Images/web/timeline/img-8746-1600.webp 1600w, ../Images/web/timeline/img-8746-2400.webp 2400w" sizes="(min-width: 700px) 50vw, 50vw" width="3492" height="3024" alt="Luis fotografiert auf einem Weg zwischen kahlen Bäumen" loading="lazy" decoding="async"></figure>
+            <figure class="zl-bild" data-ar="1.333"><img src="../Images/web/timeline/img-9433-800.webp" srcset="../Images/web/timeline/img-9433-800.webp 800w, ../Images/web/timeline/img-9433-1600.webp 1600w, ../Images/web/timeline/img-9433-2400.webp 2400w" sizes="(min-width: 700px) 50vw, 50vw" width="4032" height="3024" alt="Luis fotografiert am Flussufer, gegenüber eine Altstadt" loading="lazy" decoding="async"></figure>
+            <figure class="zl-bild" data-ar="1.333"><img src="../Images/web/timeline/img-0018-800.webp" srcset="../Images/web/timeline/img-0018-800.webp 800w, ../Images/web/timeline/img-0018-1600.webp 1600w, ../Images/web/timeline/img-0018-2400.webp 2400w" sizes="(min-width: 700px) 50vw, 50vw" width="4032" height="3024" alt="Luis auf einem Steg zwischen Segelbooten" loading="lazy" decoding="async"></figure>
           </div>
         </li>
         <li class="zl-station" data-jahr="2024" style="--farbe: #6f8a86">
           <div class="zl-text">
             <p class="eyebrow zl-zeit">Reisefilm · Österreich, Italien, Bayern</p>
             <h3 class="zl-jahr">2024</h3>
-            <p>Mit diesem Wissen drehte ich ein halbes Jahr später meinen nächsten Kurzfilm: <a class="in-link" href="../#the-south">„The South“</a>, eine Reise durch die Alpen. Dabei lernte ich vor allem, wie wichtig gute Planung ist.</p>
-            <a class="zl-projekt" href="../#the-south">Zum Projekt <span class="zusammen">„The South“</span> <span aria-hidden="true">→</span></a>
+            <p>Mit den neuen Erkenntnissen aus meinem ersten und zweiten Projekt drehte ich ein halbes Jahr später meinen nächsten Kurzfilm: <a class="in-link" href="../#the-south">„The South“</a>, eine Reise durch die Alpen. Dabei lernte ich vor allem, wie wichtig gute Planung ist.</p>
+            <a class="zl-projekt" href="../#the-south"><span>Zum Projekt „The South“</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 12h15M13 6l6 6-6 6"/></svg></a>
           </div>
           <div class="zl-tafel">
-            <figure class="zl-bild" data-ar="1.808"><img src="../Images/web/oesterreich24/img-2098-800.webp" srcset="../Images/web/oesterreich24/img-2098-800.webp 800w, ../Images/web/oesterreich24/img-2098-1500.webp 1500w" sizes="(min-width: 700px) 30vw, 50vw" width="1500" height="830" alt="Standbild aus „The South“: eine Kapelle über einem Bergsee" loading="lazy" decoding="async"></figure>
-            <figure class="zl-bild" data-ar="1.808"><img src="../Images/web/oesterreich24/img-2100-800.webp" srcset="../Images/web/oesterreich24/img-2100-800.webp 800w, ../Images/web/oesterreich24/img-2100-1500.webp 1500w" sizes="(min-width: 700px) 30vw, 50vw" width="1500" height="830" alt="Standbild aus „The South“: eine Gondel in einem Kanal in Venedig" loading="lazy" decoding="async"></figure>
-            <figure class="zl-bild klein" data-ar="1.778"><img src="../Images/web/timeline/venedig-2024-800.webp" srcset="../Images/web/timeline/venedig-2024-800.webp 800w, ../Images/web/timeline/venedig-2024-1600.webp 1600w" sizes="(min-width: 700px) 30vw, 50vw" width="2560" height="1440" alt="Luis mit Gimbal an einer Brüstung über dem Canal Grande" loading="lazy" decoding="async"></figure>
-            <figure class="zl-bild klein" data-ar="1.778"><img src="../Images/web/timeline/alm-drohne-2024-800.webp" srcset="../Images/web/timeline/alm-drohne-2024-800.webp 800w, ../Images/web/timeline/alm-drohne-2024-1600.webp 1600w" sizes="(min-width: 700px) 30vw, 50vw" width="2560" height="1440" alt="Luis mit Rucksack und Drohnen-Fernbedienung auf einer Almwiese" loading="lazy" decoding="async"></figure>
-            <figure class="zl-bild" data-ar="1.808"><img src="../Images/web/oesterreich24/img-2083-800.webp" srcset="../Images/web/oesterreich24/img-2083-800.webp 800w, ../Images/web/oesterreich24/img-2083-1500.webp 1500w" sizes="(min-width: 700px) 30vw, 50vw" width="1500" height="830" alt="Standbild aus „The South“: Wolken über einem Alpental" loading="lazy" decoding="async"></figure>
+            <figure class="zl-bild" data-ar="1.808"><img src="../Images/web/oesterreich24/img-2098-800.webp" srcset="../Images/web/oesterreich24/img-2098-800.webp 800w, ../Images/web/oesterreich24/img-2098-1500.webp 1500w" sizes="(min-width: 700px) 50vw, 50vw" width="1500" height="830" alt="Standbild aus „The South“: eine Kapelle über einem Bergsee" loading="lazy" decoding="async"></figure>
+            <figure class="zl-bild" data-ar="1.808"><img src="../Images/web/oesterreich24/img-2100-800.webp" srcset="../Images/web/oesterreich24/img-2100-800.webp 800w, ../Images/web/oesterreich24/img-2100-1500.webp 1500w" sizes="(min-width: 700px) 50vw, 50vw" width="1500" height="830" alt="Standbild aus „The South“: eine Gondel in einem Kanal in Venedig" loading="lazy" decoding="async"></figure>
+            <figure class="zl-bild klein" data-ar="1.778"><img src="../Images/web/timeline/venedig-2024-800.webp" srcset="../Images/web/timeline/venedig-2024-800.webp 800w, ../Images/web/timeline/venedig-2024-1600.webp 1600w, ../Images/web/timeline/venedig-2024-2400.webp 2400w" sizes="(min-width: 700px) 50vw, 50vw" width="2560" height="1440" alt="Luis mit Gimbal an einer Brüstung über dem Canal Grande" loading="lazy" decoding="async"></figure>
+            <figure class="zl-bild klein" data-ar="1.778"><img src="../Images/web/timeline/alm-drohne-2024-800.webp" srcset="../Images/web/timeline/alm-drohne-2024-800.webp 800w, ../Images/web/timeline/alm-drohne-2024-1600.webp 1600w, ../Images/web/timeline/alm-drohne-2024-2400.webp 2400w" sizes="(min-width: 700px) 50vw, 50vw" width="2560" height="1440" alt="Luis mit Rucksack und Drohnen-Fernbedienung auf einer Almwiese" loading="lazy" decoding="async"></figure>
+            <figure class="zl-bild" data-ar="1.808"><img src="../Images/web/oesterreich24/img-2083-800.webp" srcset="../Images/web/oesterreich24/img-2083-800.webp 800w, ../Images/web/oesterreich24/img-2083-1500.webp 1500w" sizes="(min-width: 700px) 50vw, 50vw" width="1500" height="830" alt="Standbild aus „The South“: Wolken über einem Alpental" loading="lazy" decoding="async"></figure>
           </div>
         </li>
         <li class="zl-station" data-jahr="2025" style="--farbe: #8c603d">
@@ -433,9 +437,9 @@
 
           </div>
           <div class="zl-tafel">
-            <figure class="zl-bild" data-ar="1.778"><img src="../Images/web/timeline/5-januar-2025-800.webp" srcset="../Images/web/timeline/5-januar-2025-800.webp 800w, ../Images/web/timeline/5-januar-2025-1600.webp 1600w" sizes="(min-width: 700px) 30vw, 50vw" width="2560" height="1440" alt="Luis mit Maske hält ein Licht in Rauch vor einem Fenster" loading="lazy" decoding="async"></figure>
-            <figure class="zl-bild" data-ar="1.875"><img src="../Images/web/timeline/5januar2025-800.webp" srcset="../Images/web/timeline/5januar2025-800.webp 800w, ../Images/web/timeline/5januar2025-1600.webp 1600w" sizes="(min-width: 700px) 30vw, 50vw" width="2560" height="1365" alt="Luis mit Maske richtet eine Lampe und einen Reflektor ein" loading="lazy" decoding="async"></figure>
-            <figure class="zl-bild" data-ar="1.023"><img src="../Images/web/timeline/img-4046-800.webp" srcset="../Images/web/timeline/img-4046-800.webp 800w, ../Images/web/timeline/img-4046-1600.webp 1600w" sizes="(min-width: 700px) 30vw, 50vw" width="3094" height="3024" alt="Luis neben einem Produktaufbau mit Schuh, Leuchte und Kamera" loading="lazy" decoding="async"></figure>
+            <figure class="zl-bild" data-ar="1.778"><img src="../Images/web/timeline/5-januar-2025-800.webp" srcset="../Images/web/timeline/5-januar-2025-800.webp 800w, ../Images/web/timeline/5-januar-2025-1600.webp 1600w, ../Images/web/timeline/5-januar-2025-2400.webp 2400w" sizes="(min-width: 700px) 50vw, 50vw" width="2560" height="1440" alt="Luis mit Maske hält ein Licht in Rauch vor einem Fenster" loading="lazy" decoding="async"></figure>
+            <figure class="zl-bild" data-ar="1.875"><img src="../Images/web/timeline/5januar2025-800.webp" srcset="../Images/web/timeline/5januar2025-800.webp 800w, ../Images/web/timeline/5januar2025-1600.webp 1600w, ../Images/web/timeline/5januar2025-2400.webp 2400w" sizes="(min-width: 700px) 50vw, 50vw" width="2560" height="1365" alt="Luis mit Maske richtet eine Lampe und einen Reflektor ein" loading="lazy" decoding="async"></figure>
+            <figure class="zl-bild" data-ar="1.023"><img src="../Images/web/timeline/img-4046-800.webp" srcset="../Images/web/timeline/img-4046-800.webp 800w, ../Images/web/timeline/img-4046-1600.webp 1600w, ../Images/web/timeline/img-4046-2400.webp 2400w" sizes="(min-width: 700px) 50vw, 50vw" width="3094" height="3024" alt="Luis neben einem Produktaufbau mit Schuh, Leuchte und Kamera" loading="lazy" decoding="async"></figure>
           </div>
         </li>
         <li class="zl-station" data-jahr="Frühjahr 2025" style="--farbe: #727b54">
@@ -443,12 +447,12 @@
             <p class="eyebrow zl-zeit">Kurzfilm · historische Eisenbahn</p>
             <h3 class="zl-jahr">Frühjahr 2025</h3>
             <p>Im Frühjahr 2025 wagte ich mich an eine neue Art von Film und begleitete die <a class="in-link" href="../#track-of-time">„Molli“</a>, eine historische Dampflok in Kühlungsborn.</p>
-            <a class="zl-projekt" href="../#track-of-time">Zum Projekt <span class="zusammen">„Track of Time“</span> <span aria-hidden="true">→</span></a>
+            <a class="zl-projekt" href="../#track-of-time"><span>Zum Projekt „Track of Time“</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 12h15M13 6l6 6-6 6"/></svg></a>
           </div>
           <div class="zl-tafel">
             <figure class="zl-bild zl-film" data-ar="1.778"><video muted loop playsinline controls preload="none" poster="../Images/web/timeline/molli-aufbau-2025-standbild.webp" width="1280" height="720" aria-label="Video: Luis baut auf einer Wiese einen Kameraslider auf"><source src="../Images/web/timeline/molli-aufbau-2025.mp4" type="video/mp4"></video></figure>
-            <figure class="zl-bild klein" data-ar="0.510"><img src="../Images/web/timeline/molli-mai-2025-800.webp" srcset="../Images/web/timeline/molli-mai-2025-800.webp 800w, ../Images/web/timeline/molli-mai-2025-1600.webp 1600w" sizes="(min-width: 700px) 30vw, 50vw" width="293" height="574" alt="Luis lehnt mit Kamera aus dem Fenster der fahrenden Molli" loading="lazy" decoding="async"></figure>
-            <figure class="zl-bild" data-ar="1.881"><img src="../Images/web/timeline/29mai2025-800.webp" srcset="../Images/web/timeline/29mai2025-800.webp 800w, ../Images/web/timeline/29mai2025-1600.webp 1600w" sizes="(min-width: 700px) 30vw, 50vw" width="2560" height="1361" alt="Luis an einem Steinstrand unter einer Steilküste" loading="lazy" decoding="async"></figure>
+            <figure class="zl-bild klein" data-ar="0.510"><img src="../Images/web/timeline/molli-mai-2025-800.webp" srcset="../Images/web/timeline/molli-mai-2025-800.webp 800w, ../Images/web/timeline/molli-mai-2025-1600.webp 1600w" sizes="(min-width: 700px) 50vw, 50vw" width="293" height="574" alt="Luis lehnt mit Kamera aus dem Fenster der fahrenden Molli" loading="lazy" decoding="async"></figure>
+            <figure class="zl-bild" data-ar="1.881"><img src="../Images/web/timeline/29mai2025-800.webp" srcset="../Images/web/timeline/29mai2025-800.webp 800w, ../Images/web/timeline/29mai2025-1600.webp 1600w, ../Images/web/timeline/29mai2025-2400.webp 2400w" sizes="(min-width: 700px) 50vw, 50vw" width="2560" height="1361" alt="Luis an einem Steinstrand unter einer Steilküste" loading="lazy" decoding="async"></figure>
           </div>
         </li>
         <li class="zl-station" data-jahr="Sommer 2025" style="--farbe: #758791">
@@ -456,15 +460,15 @@
             <p class="eyebrow zl-zeit">Reisefilm · Bayern &amp; Norditalien</p>
             <h3 class="zl-jahr">Sommer 2025</h3>
             <p>Im Sommer ging es zurück in die Alpen. Bei <a class="in-link" href="../#the-south">„The South“</a> hatte ich Probleme mit den Locations und der Routenplanung vor Ort, also wollte ich es diesmal besser machen: Berchtesgadener Land, Königssee, Dolomiten. In den italienischen Alpen filmte ich unter anderem den Karersee und konnte ein traditionelles Dorffest samt Gottesdienst und Zeremonie einfangen. Zum ersten Mal standen nicht nur Landschaften vor meiner Kamera, sondern auch Menschen.</p>
-            <a class="zl-projekt" href="../#the-mountains">Zum Projekt <span class="zusammen">„The Mountains“</span> <span aria-hidden="true">→</span></a>
+            <a class="zl-projekt" href="../#the-mountains"><span>Zum Projekt „The Mountains“</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 12h15M13 6l6 6-6 6"/></svg></a>
           </div>
           <div class="zl-tafel">
-            <figure class="zl-bild" data-ar="2.074"><img src="../Images/web/timeline/ranui-2025-800.webp" srcset="../Images/web/timeline/ranui-2025-800.webp 800w, ../Images/web/timeline/ranui-2025-1600.webp 1600w" sizes="(min-width: 700px) 30vw, 50vw" width="4096" height="1975" alt="Luftaufnahme: die Kirche St. Johann in Ranui auf einer grünen Wiese vor Bergwald" loading="lazy" decoding="async"></figure>
-            <figure class="zl-bild" data-ar="1.333"><img src="../Images/web/timeline/img-4490-800.webp" srcset="../Images/web/timeline/img-4490-800.webp 800w, ../Images/web/timeline/img-4490-1600.webp 1600w" sizes="(min-width: 700px) 30vw, 50vw" width="4032" height="3024" alt="Morgennebel über einem Bergsee" loading="lazy" decoding="async"></figure>
-            <figure class="zl-bild" data-ar="1.333"><img src="../Images/web/timeline/img-4483-800.webp" srcset="../Images/web/timeline/img-4483-800.webp 800w, ../Images/web/timeline/img-4483-1600.webp 1600w" sizes="(min-width: 700px) 30vw, 50vw" width="4032" height="3024" alt="Luis an einem nebligen Seeufer zwischen Bergwäldern" loading="lazy" decoding="async"></figure>
-            <figure class="zl-bild" data-ar="1.333"><img src="../Images/web/timeline/img-4525-800.webp" srcset="../Images/web/timeline/img-4525-800.webp 800w, ../Images/web/timeline/img-4525-1600.webp 1600w" sizes="(min-width: 700px) 30vw, 50vw" width="4032" height="3024" alt="Luis balanciert mit Rucksack über einen Baumstamm im Wald" loading="lazy" decoding="async"></figure>
-            <figure class="zl-bild" data-ar="1.333"><img src="../Images/web/timeline/img-4529-800.webp" srcset="../Images/web/timeline/img-4529-800.webp 800w, ../Images/web/timeline/img-4529-1600.webp 1600w" sizes="(min-width: 700px) 30vw, 50vw" width="4032" height="3024" alt="Luis filmt mit Rauch in einem sonnigen Wald" loading="lazy" decoding="async"></figure>
-            <figure class="zl-bild" data-ar="1.333"><img src="../Images/web/timeline/img-4582-800.webp" srcset="../Images/web/timeline/img-4582-800.webp 800w, ../Images/web/timeline/img-4582-1600.webp 1600w" sizes="(min-width: 700px) 30vw, 50vw" width="4032" height="3024" alt="Luis filmt vom Bug eines Ruderboots auf einem Bergsee vor Felswänden" loading="lazy" decoding="async"></figure>
+            <figure class="zl-bild" data-ar="2.074"><img src="../Images/web/timeline/ranui-2025-800.webp" srcset="../Images/web/timeline/ranui-2025-800.webp 800w, ../Images/web/timeline/ranui-2025-1600.webp 1600w, ../Images/web/timeline/ranui-2025-2400.webp 2400w" sizes="(min-width: 700px) 50vw, 50vw" width="4096" height="1975" alt="Luftaufnahme: die Kirche St. Johann in Ranui auf einer grünen Wiese vor Bergwald" loading="lazy" decoding="async"></figure>
+            <figure class="zl-bild" data-ar="1.333"><img src="../Images/web/timeline/img-4490-800.webp" srcset="../Images/web/timeline/img-4490-800.webp 800w, ../Images/web/timeline/img-4490-1600.webp 1600w, ../Images/web/timeline/img-4490-2400.webp 2400w" sizes="(min-width: 700px) 50vw, 50vw" width="4032" height="3024" alt="Morgennebel über einem Bergsee" loading="lazy" decoding="async"></figure>
+            <figure class="zl-bild" data-ar="1.333"><img src="../Images/web/timeline/img-4483-800.webp" srcset="../Images/web/timeline/img-4483-800.webp 800w, ../Images/web/timeline/img-4483-1600.webp 1600w, ../Images/web/timeline/img-4483-2400.webp 2400w" sizes="(min-width: 700px) 50vw, 50vw" width="4032" height="3024" alt="Luis an einem nebligen Seeufer zwischen Bergwäldern" loading="lazy" decoding="async"></figure>
+            <figure class="zl-bild" data-ar="1.333"><img src="../Images/web/timeline/img-4525-800.webp" srcset="../Images/web/timeline/img-4525-800.webp 800w, ../Images/web/timeline/img-4525-1600.webp 1600w, ../Images/web/timeline/img-4525-2400.webp 2400w" sizes="(min-width: 700px) 50vw, 50vw" width="4032" height="3024" alt="Luis balanciert mit Rucksack über einen Baumstamm im Wald" loading="lazy" decoding="async"></figure>
+            <figure class="zl-bild" data-ar="1.333"><img src="../Images/web/timeline/img-4529-800.webp" srcset="../Images/web/timeline/img-4529-800.webp 800w, ../Images/web/timeline/img-4529-1600.webp 1600w, ../Images/web/timeline/img-4529-2400.webp 2400w" sizes="(min-width: 700px) 50vw, 50vw" width="4032" height="3024" alt="Luis filmt mit Rauch in einem sonnigen Wald" loading="lazy" decoding="async"></figure>
+            <figure class="zl-bild" data-ar="1.333"><img src="../Images/web/timeline/img-4582-800.webp" srcset="../Images/web/timeline/img-4582-800.webp 800w, ../Images/web/timeline/img-4582-1600.webp 1600w, ../Images/web/timeline/img-4582-2400.webp 2400w" sizes="(min-width: 700px) 50vw, 50vw" width="4032" height="3024" alt="Luis filmt vom Bug eines Ruderboots auf einem Bergsee vor Felswänden" loading="lazy" decoding="async"></figure>
           </div>
         </li>
         <li class="zl-station" data-jahr="Sommer 2025" style="--farbe: #646b66">
@@ -472,12 +476,12 @@
             <p class="eyebrow zl-zeit">Familienbetrieb · Hamburg-Sasel</p>
             <h3 class="zl-jahr">Sommer 2025</h3>
             <p>Kurz darauf kam mir das zugute: In einem Porträtfilm für die <a class="in-link" href="../#gaertnerei-eggert-finder">Gärtnerei Finder</a> arbeitete ich zum ersten Mal für einen echten Kunden, lernte viel über Kundenarbeit und Marketing und übte weiter, mit Menschen vor der Kamera zu arbeiten.</p>
-            <a class="zl-projekt" href="../#gaertnerei-eggert-finder">Zum Projekt <span class="zusammen">„Gärtnerei Eggert Finder“</span> <span aria-hidden="true">→</span></a>
+            <a class="zl-projekt" href="../#gaertnerei-eggert-finder"><span>Zum Projekt „Gärtnerei Eggert Finder“</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 12h15M13 6l6 6-6 6"/></svg></a>
           </div>
           <div class="zl-tafel">
-            <figure class="zl-bild" data-ar="1.333"><img src="../Images/web/timeline/img-4204-800.webp" srcset="../Images/web/timeline/img-4204-800.webp 800w, ../Images/web/timeline/img-4204-1600.webp 1600w" sizes="(min-width: 700px) 30vw, 50vw" width="4032" height="3024" alt="Luis filmt Pflanzen im Gewächshaus der Gärtnerei" loading="lazy" decoding="async"></figure>
-            <figure class="zl-bild" data-ar="1.333"><img src="../Images/web/timeline/img-4205-800.webp" srcset="../Images/web/timeline/img-4205-800.webp 800w, ../Images/web/timeline/img-4205-1600.webp 1600w" sizes="(min-width: 700px) 30vw, 50vw" width="4032" height="3024" alt="Luis richtet die Kamera auf einen Strauch im Gewächshaus" loading="lazy" decoding="async"></figure>
-            <figure class="zl-bild" data-ar="1.333"><img src="../Images/web/timeline/img-4298-800.webp" srcset="../Images/web/timeline/img-4298-800.webp 800w, ../Images/web/timeline/img-4298-1600.webp 1600w" sizes="(min-width: 700px) 30vw, 50vw" width="4032" height="3024" alt="Luis an der Kamera, daneben eine große Softbox zwischen Balkonpflanzen" loading="lazy" decoding="async"></figure>
+            <figure class="zl-bild" data-ar="1.333"><img src="../Images/web/timeline/img-4204-800.webp" srcset="../Images/web/timeline/img-4204-800.webp 800w, ../Images/web/timeline/img-4204-1600.webp 1600w, ../Images/web/timeline/img-4204-2400.webp 2400w" sizes="(min-width: 700px) 50vw, 50vw" width="4032" height="3024" alt="Luis filmt Pflanzen im Gewächshaus der Gärtnerei" loading="lazy" decoding="async"></figure>
+            <figure class="zl-bild" data-ar="1.333"><img src="../Images/web/timeline/img-4205-800.webp" srcset="../Images/web/timeline/img-4205-800.webp 800w, ../Images/web/timeline/img-4205-1600.webp 1600w, ../Images/web/timeline/img-4205-2400.webp 2400w" sizes="(min-width: 700px) 50vw, 50vw" width="4032" height="3024" alt="Luis richtet die Kamera auf einen Strauch im Gewächshaus" loading="lazy" decoding="async"></figure>
+            <figure class="zl-bild" data-ar="1.333"><img src="../Images/web/timeline/img-4298-800.webp" srcset="../Images/web/timeline/img-4298-800.webp 800w, ../Images/web/timeline/img-4298-1600.webp 1600w, ../Images/web/timeline/img-4298-2400.webp 2400w" sizes="(min-width: 700px) 50vw, 50vw" width="4032" height="3024" alt="Luis an der Kamera, daneben eine große Softbox zwischen Balkonpflanzen" loading="lazy" decoding="async"></figure>
           </div>
         </li>
         <li class="zl-station" data-jahr="2026" style="--farbe: #757066">
@@ -485,15 +489,15 @@
             <p class="eyebrow zl-zeit">Kurzfilm · Schottland</p>
             <h3 class="zl-jahr">2026</h3>
             <p>Im Frühjahr 2026 begann ich mit der Planung für mein bisher größtes Projekt: <a class="in-link" href="../#the-same-gray">„The Same Gray“</a>. Zum ersten Mal arbeitete ich mit einem echten Schauspieler und führte Regie, oft unter Druck. Die Eröffnungsszene entstand nachts auf einer Klippe, in dichtem Nebel, bei strömendem Regen und orkanartigem Sturm. Mein 14-mm-Weitwinkel war nicht wasserdicht, also musste ich es gegen den Wind ruhig halten, die Linse trocken halten und gleichzeitig die Aufnahme einstellen.</p>
-            <a class="zl-projekt" href="../#the-same-gray">Zum Projekt <span class="zusammen">„The Same Gray“</span> <span aria-hidden="true">→</span></a>
+            <a class="zl-projekt" href="../#the-same-gray"><span>Zum Projekt „The Same Gray“</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 12h15M13 6l6 6-6 6"/></svg></a>
           </div>
           <div class="zl-tafel">
-            <figure class="zl-bild" data-ar="1.333"><img src="../Images/web/timeline/img-7147-800.webp" srcset="../Images/web/timeline/img-7147-800.webp 800w, ../Images/web/timeline/img-7147-1600.webp 1600w" sizes="(min-width: 700px) 30vw, 50vw" width="5712" height="4284" alt="Luis an Kamera und Monitor, gegenüber Stephen Corrall am Tisch eines Cottages" loading="lazy" decoding="async"></figure>
-            <figure class="zl-bild" data-ar="1.333"><img src="../Images/web/timeline/img-7152-800.webp" srcset="../Images/web/timeline/img-7152-800.webp 800w, ../Images/web/timeline/img-7152-1600.webp 1600w" sizes="(min-width: 700px) 30vw, 50vw" width="5712" height="4284" alt="Stephen Corrall mit Pfeife und Luis in einer Tür" loading="lazy" decoding="async"></figure>
-            <figure class="zl-bild" data-ar="1.333"><img src="../Images/web/timeline/img-7214-800.webp" srcset="../Images/web/timeline/img-7214-800.webp 800w, ../Images/web/timeline/img-7214-1600.webp 1600w" sizes="(min-width: 700px) 30vw, 50vw" width="5712" height="4284" alt="Luis und Stephen Corrall am Strand" loading="lazy" decoding="async"></figure>
-            <figure class="zl-bild" data-ar="1.333"><img src="../Images/web/timeline/img-7124-800.webp" srcset="../Images/web/timeline/img-7124-800.webp 800w, ../Images/web/timeline/img-7124-1600.webp 1600w" sizes="(min-width: 700px) 30vw, 50vw" width="5712" height="4284" alt="Drei Personen mit Kisten und Ausrüstung neben einem Anhänger" loading="lazy" decoding="async"></figure>
-            <figure class="zl-bild" data-ar="1.263"><img src="../Images/web/timeline/img-7272-800.webp" srcset="../Images/web/timeline/img-7272-800.webp 800w, ../Images/web/timeline/img-7272-1600.webp 1600w" sizes="(min-width: 700px) 30vw, 50vw" width="5409" height="4284" alt="Luis mit Kamera auf einer Hochmoorwiese im Dunst" loading="lazy" decoding="async"></figure>
-            <figure class="zl-bild" data-ar="1.333"><img src="../Images/web/timeline/img-7385-800.webp" srcset="../Images/web/timeline/img-7385-800.webp 800w, ../Images/web/timeline/img-7385-1600.webp 1600w" sizes="(min-width: 700px) 30vw, 50vw" width="5712" height="4284" alt="Luis mit Stativ auf einer Straße vor einem Wohnmobil" loading="lazy" decoding="async"></figure>
+            <figure class="zl-bild" data-ar="1.333"><img src="../Images/web/timeline/img-7147-800.webp" srcset="../Images/web/timeline/img-7147-800.webp 800w, ../Images/web/timeline/img-7147-1600.webp 1600w, ../Images/web/timeline/img-7147-2400.webp 2400w" sizes="(min-width: 700px) 50vw, 50vw" width="5712" height="4284" alt="Luis an Kamera und Monitor, gegenüber Stephen Corrall am Tisch eines Cottages" loading="lazy" decoding="async"></figure>
+            <figure class="zl-bild" data-ar="1.333"><img src="../Images/web/timeline/img-7152-800.webp" srcset="../Images/web/timeline/img-7152-800.webp 800w, ../Images/web/timeline/img-7152-1600.webp 1600w, ../Images/web/timeline/img-7152-2400.webp 2400w" sizes="(min-width: 700px) 50vw, 50vw" width="5712" height="4284" alt="Stephen Corrall mit Pfeife und Luis in einer Tür" loading="lazy" decoding="async"></figure>
+            <figure class="zl-bild" data-ar="1.333"><img src="../Images/web/timeline/img-7214-800.webp" srcset="../Images/web/timeline/img-7214-800.webp 800w, ../Images/web/timeline/img-7214-1600.webp 1600w, ../Images/web/timeline/img-7214-2400.webp 2400w" sizes="(min-width: 700px) 50vw, 50vw" width="5712" height="4284" alt="Luis und Stephen Corrall am Strand" loading="lazy" decoding="async"></figure>
+            <figure class="zl-bild" data-ar="1.333"><img src="../Images/web/timeline/img-7124-800.webp" srcset="../Images/web/timeline/img-7124-800.webp 800w, ../Images/web/timeline/img-7124-1600.webp 1600w, ../Images/web/timeline/img-7124-2400.webp 2400w" sizes="(min-width: 700px) 50vw, 50vw" width="5712" height="4284" alt="Drei Personen mit Kisten und Ausrüstung neben einem Anhänger" loading="lazy" decoding="async"></figure>
+            <figure class="zl-bild" data-ar="1.263"><img src="../Images/web/timeline/img-7272-800.webp" srcset="../Images/web/timeline/img-7272-800.webp 800w, ../Images/web/timeline/img-7272-1600.webp 1600w, ../Images/web/timeline/img-7272-2400.webp 2400w" sizes="(min-width: 700px) 50vw, 50vw" width="5409" height="4284" alt="Luis mit Kamera auf einer Hochmoorwiese im Dunst" loading="lazy" decoding="async"></figure>
+            <figure class="zl-bild" data-ar="1.333"><img src="../Images/web/timeline/img-7385-800.webp" srcset="../Images/web/timeline/img-7385-800.webp 800w, ../Images/web/timeline/img-7385-1600.webp 1600w, ../Images/web/timeline/img-7385-2400.webp 2400w" sizes="(min-width: 700px) 50vw, 50vw" width="5712" height="4284" alt="Luis mit Stativ auf einer Straße vor einem Wohnmobil" loading="lazy" decoding="async"></figure>
           </div>
         </li>
         </ol>
@@ -511,7 +515,7 @@
     <p class="eyebrow">Heute</p>
     <p class="standout" style="margin-top: 22px">Heute bringe ich all das in jedes Projekt mit, ob Kurzfilm oder Auftrag: die Ruhe der Landschaftsfilme, den Blick für Menschen und die Erfahrung, dass ein Dreh selten nach Plan läuft und trotzdem gut werden kann.</p>
     <div class="wege">
-      <a href="../#projekte">Alle Projekte</a>
+      <a href="../#projekte">Alle Projekte<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 12h15M13 6l6 6-6 6"/></svg></a>
     </div>
   </section>
 
@@ -642,6 +646,10 @@
         const st = figs[j].style;
         st.left = x.toFixed(1) + 'px'; st.top = y.toFixed(1) + 'px';
         st.width = w.toFixed(1) + 'px'; st.height = h.toFixed(1) + 'px';
+        // Sonst waehlt der Browser nach der Schaetzung im HTML die Fassung
+        // (am Rechner 800 px fuer ein 1200 px breites Bild: unscharf).
+        const bild = figs[j].querySelector('img');
+        if (bild) bild.sizes = Math.ceil(w) + 'px';
         x += w + G * f;
       }
       i += k;
