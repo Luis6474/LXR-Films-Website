@@ -228,7 +228,7 @@
        zeichnete hier zwei Kanten (der Grund ist selbst ein Verlauf). */
     .zl.ist-buehne .zl-stationen { position: absolute; inset: 0; max-width: none; padding: 0; }
     .zl.ist-buehne .zl-station {
-      position: absolute; inset: 0; padding: 11vh 6vw 19vh; border: 0;
+      position: absolute; inset: 0; padding: max(11vh, 100px) 6vw 19vh; border: 0;   /* oben Platz fuer "Zeitleiste ueberspringen" (top 28px + ~50px), sonst stiess er am Laptop an die Bilder */
       display: grid; grid-template-columns: minmax(0, 0.82fr) minmax(0, 1.3fr); gap: 5vw; align-items: center;
       opacity: 0; visibility: hidden;
       transition: opacity 0.9s var(--ease), visibility 0s linear 0.9s;
@@ -267,7 +267,7 @@
 
     /* Hochformat (iPad hoch): Bilder oben, Text darunter */
     @media (max-aspect-ratio: 1/1) {
-      .zl.ist-buehne .zl-station { grid-template-columns: 1fr; grid-template-rows: minmax(0, 1fr) auto; gap: 4vh; padding: 9vh 8vw 20vh; }
+      .zl.ist-buehne .zl-station { grid-template-columns: 1fr; grid-template-rows: minmax(0, 1fr) auto; gap: 4vh; padding: max(9vh, 100px) 8vw 20vh; }
       .zl.ist-buehne .zl-tafel { grid-row: 1; }
       .zl.ist-buehne .zl-text { grid-row: 2; justify-self: start; max-width: 40em; }
       .zl.ist-buehne .zl-station::after { left: 50%; top: 36%; }
