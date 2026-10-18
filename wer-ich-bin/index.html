@@ -754,7 +754,7 @@
   }
   let offen = false;
   window.addEventListener('scroll', function () {
-    if (!offen) { offen = true; requestAnimationFrame(function () { offen = false; zeigen(); }); }
+    if (!offen) { offen = true; requestAnimationFrame(function () { offen = false; zeigen(); listeMerken(); }); }
     const y = window.scrollY;
     if (!eigen && y !== letztesY) richtung = y > letztesY ? 1 : -1;
     letztesY = y;
@@ -783,24 +783,52 @@
     }
   });
 
-  /* Neue Fenstergroesse (iPad drehen): dieselbe Station bleibt stehen. */
-  let stand = roh(), fb = innerWidth, fh = innerHeight;
+  /* Neue Fenstergroesse (iPad drehen): dieselbe Station bleibt stehen.
+     Auch beim Wechsel zwischen Liste und Buehne (iPad-Split-View, schmales
+     Fenster breiter ziehen): vorher sprang die Buehne dann auf 2023 zurueck,
+     und aus der Buehne landete die Liste irgendwo. In der Liste zaehlt die
+     Station, die im oberen Drittel steht (-1: noch davor). Wer schon hinter
+     der Zeitleiste ist, behaelt seinen Abstand zum Seitenende. */
+  let listenStation = -1, hinten = false, vomEnde = 0;
+  function listeMerken() {
+    vomEnde = document.documentElement.scrollHeight - innerHeight - window.scrollY;
+    if (buehne()) { listenStation = -1; hinten = roh() > N - 1 + PUFFER; return; }
+    let k = -1;
+    stationen.forEach(function (s, j) { if (s.getBoundingClientRect().top < innerHeight * 0.35) k = j; });
+    hinten = stationen[N - 1].getBoundingClientRect().bottom < innerHeight * 0.35;
+    listenStation = hinten ? -1 : k;
+  }
+  let stand = roh(), fb = innerWidth, fh = innerHeight, warBuehne = buehne();
   window.addEventListener('resize', function () {
     const neu = innerWidth !== fb || innerHeight !== fh;
     fb = innerWidth; fh = innerHeight;
+    const jetzt = buehne(), vorn = an;
     stationen.forEach(function (s) { s._gelegt = false; });
     an = -1;
-    if (neu && buehne() && stand > -0.01 && stand < N - 1 + PUFFER) {
+    if (neu && jetzt !== warBuehne && hinten) {
+      abbrechen(); if (!jetzt) alleLegen();
+      window.scrollTo({ top: Math.max(0, document.documentElement.scrollHeight - innerHeight - vomEnde), behavior: 'instant' });
+    } else if (neu && jetzt && !warBuehne) {
+      if (listenStation >= 0) { abbrechen(); window.scrollTo({ top: Math.round(obenVon(listenStation)), behavior: 'instant' }); }
+    } else if (neu && !jetzt && warBuehne) {
+      if (vorn >= 0 && stand > -0.01 && stand < N - 1 + PUFFER) {
+        abbrechen(); alleLegen();
+        window.scrollTo({ top: Math.round(stationen[vorn].getBoundingClientRect().top + window.scrollY - 24), behavior: 'instant' });
+      }
+    } else if (neu && jetzt && stand > -0.01 && stand < N - 1 + PUFFER) {
       abbrechen();
       window.scrollTo({ top: Math.round(obenVon(stand)), behavior: 'instant' });
     }
+    warBuehne = jetzt;
     if (!buehne()) alleLegen();
     zeigen();
     stand = roh();
+    listeMerken();
   });
 
   alleLegen();
   zeigen();
+  listeMerken();
   // Schriften koennen die Textspalte noch verschieben
   if (document.fonts && document.fonts.ready) document.fonts.ready.then(function () { stationen.forEach(function (s) { if (s._gelegt) legen(s); }); });
 })();
