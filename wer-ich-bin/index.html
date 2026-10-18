@@ -195,7 +195,10 @@
   }
   .zl-tafel { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 28px; }
   .zl-bild { margin: 0; aspect-ratio: 4 / 3; overflow: hidden; background: #0b1012; }
-  .zl-tafel .zl-bild:last-child:nth-child(odd):not(.klein) { grid-column: 1 / -1; aspect-ratio: 16 / 9; }
+  .zl-tafel .zl-bild:last-child:nth-child(odd):not(.klein), .zl-tafel .zl-bild.gross { grid-column: 1 / -1; aspect-ratio: 16 / 9; }
+  /* Mit einem grossen Bild (eigene Zeile) geht der Rest bei ungerader
+     Gesamtzahl paarweise auf: das letzte bleibt dann normal breit. */
+  .zl-tafel:has(> .gross) .zl-bild:last-child:nth-child(odd):not(.gross) { grid-column: auto; aspect-ratio: 4 / 3; }
   /* Hochkant-Video in der Liste: zwei Zeilen hoch, sonst bliebe vom Blick
      aus dem Zug nur ein Streifen */
   .zl-tafel .zl-film[data-ar^="0."] { grid-row: span 2; aspect-ratio: auto; position: relative; }
@@ -258,6 +261,7 @@
     .zl.ist-buehne .ist-an .zl-bild:nth-child(5) { transition-delay: 0.32s; }
     .zl.ist-buehne .ist-an .zl-bild:nth-child(6) { transition-delay: 0.4s; }
     .zl.ist-buehne .ist-an .zl-bild:nth-child(7) { transition-delay: 0.48s; }
+    .zl.ist-buehne .ist-an .zl-bild:nth-child(8) { transition-delay: 0.56s; }
 
     /* Hochformat (iPad hoch): Bilder oben, Text darunter */
     @media (max-aspect-ratio: 1/1) {
@@ -424,7 +428,7 @@
           </div>
           <div class="zl-tafel">
             <figure class="zl-bild" data-ar="1.808"><img src="../Images/web/oesterreich24/img-2098-800.webp" srcset="../Images/web/oesterreich24/img-2098-800.webp 800w, ../Images/web/oesterreich24/img-2098-1500.webp 1500w" sizes="(min-width: 700px) 50vw, 50vw" width="1500" height="830" alt="Standbild aus „The South“: eine Kapelle über einem Bergsee" loading="lazy" decoding="async"></figure>
-            <figure class="zl-bild" data-ar="1.808"><img src="../Images/web/oesterreich24/img-2100-800.webp" srcset="../Images/web/oesterreich24/img-2100-800.webp 800w, ../Images/web/oesterreich24/img-2100-1500.webp 1500w" sizes="(min-width: 700px) 50vw, 50vw" width="1500" height="830" alt="Standbild aus „The South“: eine Gondel in einem Kanal in Venedig" loading="lazy" decoding="async"></figure>
+            <figure class="zl-bild" data-ar="1.808"><img src="../Images/web/oesterreich24/img-2108-800.webp" srcset="../Images/web/oesterreich24/img-2108-800.webp 800w, ../Images/web/oesterreich24/img-2108-1500.webp 1500w" sizes="(min-width: 700px) 50vw, 50vw" width="1500" height="830" alt="Standbild aus „The South“: die Fassade des Markusdoms in Venedig" loading="lazy" decoding="async"></figure>
             <figure class="zl-bild klein" data-ar="1.778"><img src="../Images/web/timeline/venedig-2024-800.webp" srcset="../Images/web/timeline/venedig-2024-800.webp 800w, ../Images/web/timeline/venedig-2024-1600.webp 1600w, ../Images/web/timeline/venedig-2024-2400.webp 2400w" sizes="(min-width: 700px) 50vw, 50vw" width="2560" height="1440" alt="Luis mit Gimbal an einer Brüstung über dem Canal Grande" loading="lazy" decoding="async"></figure>
             <figure class="zl-bild klein" data-ar="1.778"><img src="../Images/web/timeline/alm-drohne-2024-800.webp" srcset="../Images/web/timeline/alm-drohne-2024-800.webp 800w, ../Images/web/timeline/alm-drohne-2024-1600.webp 1600w, ../Images/web/timeline/alm-drohne-2024-2400.webp 2400w" sizes="(min-width: 700px) 50vw, 50vw" width="2560" height="1440" alt="Luis mit Rucksack und Drohnen-Fernbedienung auf einer Almwiese" loading="lazy" decoding="async"></figure>
             <figure class="zl-bild" data-ar="1.808"><img src="../Images/web/oesterreich24/img-2083-800.webp" srcset="../Images/web/oesterreich24/img-2083-800.webp 800w, ../Images/web/oesterreich24/img-2083-1500.webp 1500w" sizes="(min-width: 700px) 50vw, 50vw" width="1500" height="830" alt="Standbild aus „The South“: Wolken über einem Alpental" loading="lazy" decoding="async"></figure>
@@ -463,12 +467,13 @@
             <a class="zl-projekt" href="../#the-mountains"><span>Zum Projekt „The Mountains“</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 12h15M13 6l6 6-6 6"/></svg></a>
           </div>
           <div class="zl-tafel">
-            <figure class="zl-bild" data-ar="2.074"><img src="../Images/web/timeline/ranui-2025-800.webp" srcset="../Images/web/timeline/ranui-2025-800.webp 800w, ../Images/web/timeline/ranui-2025-1600.webp 1600w, ../Images/web/timeline/ranui-2025-2400.webp 2400w" sizes="(min-width: 700px) 50vw, 50vw" width="4096" height="1975" alt="Luftaufnahme: die Kirche St. Johann in Ranui auf einer grünen Wiese vor Bergwald" loading="lazy" decoding="async"></figure>
+            <figure class="zl-bild gross" data-ar="2.074"><img src="../Images/web/timeline/ranui-2025-800.webp" srcset="../Images/web/timeline/ranui-2025-800.webp 800w, ../Images/web/timeline/ranui-2025-1600.webp 1600w, ../Images/web/timeline/ranui-2025-2400.webp 2400w" sizes="(min-width: 700px) 50vw, 50vw" width="4096" height="1975" alt="Luftaufnahme: die Kirche St. Johann in Ranui auf einer grünen Wiese vor Bergwald" loading="lazy" decoding="async"></figure>
             <figure class="zl-bild" data-ar="1.333"><img src="../Images/web/timeline/img-4490-800.webp" srcset="../Images/web/timeline/img-4490-800.webp 800w, ../Images/web/timeline/img-4490-1600.webp 1600w, ../Images/web/timeline/img-4490-2400.webp 2400w" sizes="(min-width: 700px) 50vw, 50vw" width="4032" height="3024" alt="Morgennebel über einem Bergsee" loading="lazy" decoding="async"></figure>
             <figure class="zl-bild" data-ar="1.333"><img src="../Images/web/timeline/img-4483-800.webp" srcset="../Images/web/timeline/img-4483-800.webp 800w, ../Images/web/timeline/img-4483-1600.webp 1600w, ../Images/web/timeline/img-4483-2400.webp 2400w" sizes="(min-width: 700px) 50vw, 50vw" width="4032" height="3024" alt="Luis an einem nebligen Seeufer zwischen Bergwäldern" loading="lazy" decoding="async"></figure>
             <figure class="zl-bild" data-ar="1.333"><img src="../Images/web/timeline/img-4525-800.webp" srcset="../Images/web/timeline/img-4525-800.webp 800w, ../Images/web/timeline/img-4525-1600.webp 1600w, ../Images/web/timeline/img-4525-2400.webp 2400w" sizes="(min-width: 700px) 50vw, 50vw" width="4032" height="3024" alt="Luis balanciert mit Rucksack über einen Baumstamm im Wald" loading="lazy" decoding="async"></figure>
             <figure class="zl-bild" data-ar="1.333"><img src="../Images/web/timeline/img-4529-800.webp" srcset="../Images/web/timeline/img-4529-800.webp 800w, ../Images/web/timeline/img-4529-1600.webp 1600w, ../Images/web/timeline/img-4529-2400.webp 2400w" sizes="(min-width: 700px) 50vw, 50vw" width="4032" height="3024" alt="Luis filmt mit Rauch in einem sonnigen Wald" loading="lazy" decoding="async"></figure>
             <figure class="zl-bild" data-ar="1.333"><img src="../Images/web/timeline/img-4582-800.webp" srcset="../Images/web/timeline/img-4582-800.webp 800w, ../Images/web/timeline/img-4582-1600.webp 1600w, ../Images/web/timeline/img-4582-2400.webp 2400w" sizes="(min-width: 700px) 50vw, 50vw" width="4032" height="3024" alt="Luis filmt vom Bug eines Ruderboots auf einem Bergsee vor Felswänden" loading="lazy" decoding="async"></figure>
+            <figure class="zl-bild" data-ar="1.333"><img src="../Images/web/timeline/img-4690-800.webp" srcset="../Images/web/timeline/img-4690-800.webp 800w, ../Images/web/timeline/img-4690-1600.webp 1600w, ../Images/web/timeline/img-4690-2400.webp 2400w" sizes="(min-width: 700px) 50vw, 50vw" width="4032" height="3024" alt="Luis filmt von der Empore aus den Festgottesdienst in einer bemalten Dorfkirche" loading="lazy" decoding="async"></figure>
           </div>
         </li>
         <li class="zl-station" data-jahr="Sommer 2025" style="--farbe: #646b66">
@@ -617,7 +622,8 @@
     const ar = figs.map(function (f) { return parseFloat(f.dataset.ar) || 1.5; });
     // "klein" (auf Wunsch bei einzelnen Bildern) zaehlt beim Vergleich nur
     // zu knapp einem Drittel -- so landet es in einer Reihe mit anderen.
-    const gew = figs.map(function (f) { return f.classList.contains('klein') ? 0.3 : 1; });
+    // "gross" umgekehrt dreifach: es bekommt eine Reihe fuer sich.
+    const gew = figs.map(function (f) { return f.classList.contains('klein') ? 0.3 : f.classList.contains('gross') ? 3 : 1; });
     const G = Math.round(Math.max(8, Math.min(16, W * 0.014)));
     let best = null;
     aufteilungen(figs.length).forEach(function (reihen) {
