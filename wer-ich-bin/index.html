@@ -668,7 +668,16 @@
 
   let an = -1;
   function zeigen() {
-    if (!buehne()) return;
+    if (!buehne()) {
+      // Liste (auch nach dem Wechsel von der Buehne): alle Stationen lesbar,
+      // sonst blieben neun von zehn fuer Bildschirmleser verborgen.
+      if (an !== -2) {
+        an = -2;
+        stationen.forEach(function (s) { s.removeAttribute('aria-hidden'); s.classList.remove('ist-an', 'ist-fern'); });
+        filmeSteuern();
+      }
+      return;
+    }
     const k = Math.max(0, Math.min(N - 1, Math.round(roh())));
     if (k === an) return;
     an = k;
