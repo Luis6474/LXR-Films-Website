@@ -1510,6 +1510,9 @@
      kein Bedienelement, ein Fokusrahmen darum waere irrefuehrend. */
   .viewer-head h2:focus { outline: none; }
   .viewer:has(.fs-ersatz) .viewer-x { display: none; }
+  /* Ist der Knopf am Ende des Projekts zu sehen, weicht der obere: nie
+     zweimal "Schliessen" gleichzeitig. */
+  .viewer.unten-zu .viewer-x { opacity: 0; pointer-events: none; }
 
   /* ---------- Schmale Schirme ----------
      Die einzeilige Kartenzeile funktioniert hier nicht: Für den Text bleiben
@@ -1865,7 +1868,7 @@
       <div class="card reveal" style="--card-accent:#c8a171">
         <button class="card-trigger" data-viewer="v5" aria-haspopup="dialog">
           <div class="card-head">
-            <div class="card-preview"><img src="Images/web/oesterreich24/img-2100-400.webp" srcset="Images/web/oesterreich24/img-2100-400.webp 400w, Images/web/oesterreich24/img-2100-800.webp 800w" sizes="(min-width: 760px) 132px, (max-width: 620px) 96px, 112px" alt="" loading="lazy" decoding="async"></div>
+            <div class="card-preview"><img src="Images/web/oesterreich24/img-2108-400.webp" srcset="Images/web/oesterreich24/img-2108-400.webp 400w, Images/web/oesterreich24/img-2108-800.webp 800w" sizes="(min-width: 760px) 132px, (max-width: 620px) 96px, 112px" alt="" loading="lazy" decoding="async"></div>
             <div class="card-info">
               <div class="card-titleline">
                 <span class="name">The South</span>
@@ -3582,6 +3585,11 @@
     const oben = unten.cloneNode(true);
     oben.classList.add('viewer-x');
     v.appendChild(oben);
+    if ('IntersectionObserver' in window) {
+      new IntersectionObserver(function (e) {
+        v.classList.toggle('unten-zu', e[e.length - 1].isIntersecting);
+      }).observe(unten);
+    }
   });
   document.querySelectorAll('.viewer-close').forEach(function (btn) {
     btn.addEventListener('click', schliessen);
