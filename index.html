@@ -4522,7 +4522,7 @@
     function schritt(jetzt) {
       let dt = Math.min(0.064, (jetzt - zuletzt) / 1000);
       zuletzt = jetzt;
-      const f = eilig() ? FEDER * 3 : FEDER;
+      const f = eilig() ? FEDER * 1.7 : FEDER;   // rund 0,5 s je Film
       while (dt > 0) {
         const h = Math.min(dt, 0.008);
         tempo += (f * f * (ziel - anzeige) - 2 * f * tempo) * h;
