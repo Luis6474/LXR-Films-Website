@@ -367,6 +367,15 @@
   <section class="zl" aria-label="Zeitleiste von 2023 bis heute">
     <div class="zl-lauf">
       <div class="zl-halt">
+        <!-- Bedienung vor den Stationen: mit Tab kommt man erst zum
+             Ueberspringen, dann zur Wahl der Station und von dort weiter in
+             ihre Links (die Lage auf dem Schirm regelt das CSS). -->
+        <button type="button" class="zl-weiter">Zeitleiste überspringen <span aria-hidden="true">↓</span></button>
+        <div class="zl-achse">
+          <button type="button" class="zl-schritt zurueck" aria-label="Vorige Station">‹</button>
+          <div class="zl-striche"></div>
+          <button type="button" class="zl-schritt vor" aria-label="Nächste Station">›</button>
+        </div>
         <ol class="zl-stationen">
         <li class="zl-station" data-jahr="2023" style="--farbe: #7f937c">
           <div class="zl-text">
@@ -508,12 +517,6 @@
           </div>
         </li>
         </ol>
-        <div class="zl-achse">
-          <button type="button" class="zl-schritt zurueck" aria-label="Vorige Station">‹</button>
-          <div class="zl-striche"></div>
-          <button type="button" class="zl-schritt vor" aria-label="Nächste Station">›</button>
-        </div>
-        <button type="button" class="zl-weiter">Zeitleiste überspringen <span aria-hidden="true">↓</span></button>
       </div>
     </div>
   </section>
@@ -689,10 +692,15 @@
       s.setAttribute('aria-hidden', j === k ? 'false' : 'true');
       if (Math.abs(j - k) <= 1 && !s._gelegt) { s._gelegt = true; legen(s); }
     });
+    // Nur der Strich der vorderen Station ist ein Tab-Halt (sonst zehn
+    // Halte hintereinander); steht der Fokus auf einem Strich, wandert er mit.
+    const fokusStrich = knoepfe.indexOf(document.activeElement) >= 0;
     knoepfe.forEach(function (b, j) {
       b.classList.toggle('ist-an', j === k);
+      b.tabIndex = j === k ? 0 : -1;
       if (j === k) b.setAttribute('aria-current', 'step'); else b.removeAttribute('aria-current');
     });
+    if (fokusStrich) knoepfe[k].focus({ preventScroll: true });
     zurueck.disabled = k === 0;
     vor.disabled = k === N - 1;
     filmeSteuern();
@@ -782,7 +790,7 @@
   window.addEventListener('keydown', function (e) {
     if (e.defaultPrevented || e.altKey || e.ctrlKey || e.metaKey || !buehne()) return;
     const r = roh();
-    if (r < -0.05 || r > N - 1 + 0.05) return;
+    if (r < -0.05 || r > N - 1 + PUFFER) return;   // im Puffer nach der letzten steht die Buehne noch
     // Gedrueckt halten: erst weiter, wenn die Fahrt angekommen ist
     if (e.repeat && fahrt && /^(Arrow(Right|Down|Left|Up)|Page(Down|Up))$/.test(e.key)) { e.preventDefault(); return; }
     if (e.key === 'ArrowRight' || e.key === 'ArrowDown' || e.key === 'PageDown') {
