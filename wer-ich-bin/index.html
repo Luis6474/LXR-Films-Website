@@ -691,25 +691,47 @@
 
   /* Fahrt zu einer Station: eigene, weiche Kurve. Greift man ein (Rad,
      Finger, Taste), bricht sie sofort ab. */
-  let fahrt = null, eigen = false;
+  let fahrt = null, eigen = false, ziel = 0;
   function glatt(x) { return x < 0.5 ? 4 * x * x * x : 1 - Math.pow(-2 * x + 2, 3) / 2; }
   function abbrechen() { if (fahrt) { cancelAnimationFrame(fahrt); fahrt = null; eigen = false; } }
+  /* Neues Ziel waehrend einer Fahrt (schnell mehrmals weiter): mit dem
+     Tempo weiterfahren, das gerade anliegt, statt aus dem Stand neu
+     anzufahren -- sonst sackte die Bewegung bei jedem Druck kurz auf fast
+     null ab. Hermite-Kurve mit Anfangssteigung m, ab m <= 3 ohne Ueberschwingen. */
+  let tempo = 0;
+  function weich(m) {
+    return function (x) { return (-2 * x * x * x + 3 * x * x) + m * (x * x * x - 2 * x * x + x); };
+  }
   function fahreZu(k) {
     k = Math.max(0, Math.min(N - 1, k));
+    const v0 = fahrt ? tempo : 0;
     abbrechen();
+    ziel = k;
     const von = window.scrollY, nach = Math.round(obenVon(k)), weg = nach - von;
     if (Math.abs(weg) < 1) return;
     const dauer = Math.min(1300, 650 + Math.abs(weg) * 0.12), t0 = performance.now();
+    const kurve = v0 * weg > 0 ? weich(Math.min(3, v0 * dauer / weg)) : glatt;
+    let vorY = von, vorT = t0;
+    tempo = 0;
     eigen = true;
     (function schritt(jetzt) {
       const x = Math.min(1, (jetzt - t0) / dauer);
-      window.scrollTo({ top: von + weg * glatt(x), behavior: 'instant' });
+      const y = von + weg * kurve(x);
+      if (jetzt > vorT) { tempo = (y - vorY) / (jetzt - vorT); vorY = y; vorT = jetzt; }
+      window.scrollTo({ top: y, behavior: 'instant' });
       if (x < 1) fahrt = requestAnimationFrame(schritt);
       else { fahrt = null; setTimeout(function () { eigen = false; }, 60); }
     })(t0);
   }
+  /* Schritt weiter oder zurueck zaehlt waehrend einer Fahrt von ihrem Ziel
+     aus: sonst schluckten schnell hintereinander gedrueckte Tasten Schritte
+     (viermal rechts in 0,12 s kam nur eine Station weiter). */
+  function basis() { return fahrt ? ziel : an; }
   ['wheel', 'touchstart', 'mousedown'].forEach(function (t) {
-    window.addEventListener(t, abbrechen, { passive: true, capture: true });
+    window.addEventListener(t, function (e) {
+      if (t === 'mousedown' && e.target.closest && e.target.closest('.zl-schritt')) return;
+      abbrechen();
+    }, { passive: true, capture: true });
   });
 
   /* Nachziehen: bleibt man zwischen zwei Stationen stehen, faehrt die
@@ -741,8 +763,8 @@
     ruhe = setTimeout(nachziehen, 150);
   }, { passive: true });
 
-  zurueck.addEventListener('click', function () { fahreZu(an - 1); });
-  vor.addEventListener('click', function () { fahreZu(an + 1); });
+  zurueck.addEventListener('click', function () { fahreZu(basis() - 1); });
+  vor.addEventListener('click', function () { fahreZu(basis() + 1); });
   weiter.addEventListener('click', function () {
     abbrechen();
     window.scrollTo({ top: lauf.getBoundingClientRect().top + window.scrollY + lauf.offsetHeight - halt.offsetHeight + 2, behavior: 'smooth' });
@@ -753,9 +775,9 @@
     const r = roh();
     if (r < -0.05 || r > N - 1 + 0.05) return;
     if (e.key === 'ArrowRight' || e.key === 'ArrowDown' || e.key === 'PageDown') {
-      if (an < N - 1) { e.preventDefault(); fahreZu(an + 1); }
+      if (basis() < N - 1) { e.preventDefault(); fahreZu(basis() + 1); }
     } else if (e.key === 'ArrowLeft' || e.key === 'ArrowUp' || e.key === 'PageUp') {
-      if (an > 0) { e.preventDefault(); fahreZu(an - 1); }
+      if (basis() > 0) { e.preventDefault(); fahreZu(basis() - 1); }
     }
   });
 
