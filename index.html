@@ -4736,8 +4736,27 @@
        aber nicht warten. */
     let gedrueckt = 0;
     function eilig() { return performance.now() - gedrueckt < 400; }
+    /* Gebremst wird nur Schwung aus Rad, Finger oder Scrolltasten. Spruenge
+       (Link auf #kontakt, Ende-Taste, Rollbalken) gleiten wegen
+       scroll-behavior: smooth ebenfalls durchs Karussell und blieben sonst
+       beim ersten Film haengen. Drei Sekunden decken das Ausgleiten nach
+       dem Loslassen ab. */
+    let eingabe = -Infinity;
+    function merken() { eingabe = performance.now(); }
+    ['wheel', 'touchstart', 'touchmove', 'touchend'].forEach(function (t) {
+      window.addEventListener(t, merken, { passive: true });
+    });
+    window.addEventListener('keydown', function (e) {
+      if (/^(ArrowDown|ArrowUp|PageDown|PageUp| |Spacebar)$/.test(e.key)) merken();
+      else if (e.key === 'End' || e.key === 'Home') eingabe = -Infinity;
+    });
+    // Klick auf den Rollbalken der Seite
+    window.addEventListener('mousedown', function (e) {
+      if (e.target === document.documentElement) eingabe = -Infinity;
+    });
     function bremsen(r) {
       if (eigen || r < -0.001 || r > N - 1 + PUFFER + 0.001) return false;
+      if (performance.now() - eingabe > 3000) return false;
       const g = grenzen();
       if (!g) return false;
       let soll = null;
