@@ -1623,6 +1623,11 @@
     .hero-content { animation: none; }
     /* Kein Durchlauf, keine Umschaltbewegung. */
     .marquee-track { animation: none; }
+    /* Stehend zeigte die Zeile einen zufaelligen Ausschnitt, links mit
+       angeschnittenem "Film". Hier steht sie einmal, mittig. */
+    .marquee-track { width: auto; justify-content: center; }
+    .m-group + .m-group, .m-word + .m-word { display: none; }
+    .m-word { white-space: normal; text-align: center; padding: 0 6vw; }
     .zucken { display: none; }            /* .dither bleibt: es bewegt sich nicht */
     .hero-frame { transition: none; }
     /* Das Video bleibt als Standbild stehen (poster): das Skript laedt und
