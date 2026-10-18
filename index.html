@@ -4639,6 +4639,13 @@
        Hineinscrollen von oben "The Same Gray" uebersprungen. */
     let drinnen = false;
     function glatt(x) { return x < 0.5 ? 4 * x * x * x : 1 - Math.pow(-2 * x + 2, 3) / 2; }
+    /* Neues Ziel waehrend einer Fahrt (Pfeiltaste schnell mehrmals): mit dem
+       anliegenden Tempo weiter statt aus dem Stand -- Hermite-Kurve mit
+       Anfangssteigung m, bis m = 3 ohne Ueberschwingen. */
+    function weich(m) {
+      return function (x) { return (-2 * x * x * x + 3 * x * x) + m * (x * x * x - 2 * x * x + x); };
+    }
+    let zielFilm = 0, fahrTempo = 0;
     function abbrechen() {
       if (fahrt) {
         cancelAnimationFrame(fahrt); fahrt = null; eigen = false;
@@ -4670,7 +4677,11 @@
     // Ein Klick aufs vordere Bild selbst oeffnet ebenfalls (siehe openProject).
     plaetze.forEach(function (p, k) { p.addEventListener('click', function () { hinstellenNach(k); }); });
     ['wheel', 'touchstart', 'keydown', 'mousedown'].forEach(function (typ) {
-      window.addEventListener(typ, abbrechen, { passive: true, capture: true });  // Erfassen: vor dem Tastengriff der Schau, sonst braeche er seine eigene Fahrt ab
+      window.addEventListener(typ, function (e) {
+        // Pfeile in der Schau fahren selbst weiter (vom Ziel der laufenden Fahrt aus)
+        if (typ === 'keydown' && (e.key === 'ArrowLeft' || e.key === 'ArrowRight') && wurzel.contains(e.target)) return;
+        abbrechen();
+      }, { passive: true, capture: true });  // Erfassen: vor dem Tastengriff der Schau, sonst braeche er seine eigene Fahrt ab
     });
     /* Solange ein Finger liegt, wird NIE nachgezogen. Vorher reichte es,
        den Finger 0,14 s still zu halten: dann fuhr die Seite unter ihm los,
@@ -4689,7 +4700,9 @@
     function fahreZu(ziel) {
       const sp = segmentPx();
       if (sp <= 0) return;
+      const v0 = fahrt ? fahrTempo : 0;
       abbrechen();
+      zielFilm = ziel;
       const oben = lauf.getBoundingClientRect().top + window.scrollY;
       const von = window.scrollY;
       const nach = Math.round(oben + sp * ziel);
@@ -4697,10 +4710,15 @@
       if (Math.abs(weg) < 1) return;
       const dauer = 900;
       const t0 = performance.now();
+      const kurve = v0 * weg > 0 ? weich(Math.min(3, v0 * dauer / weg)) : glatt;
+      let vorY = von, vorT = t0;
+      fahrTempo = 0;
       eigen = true;
       (function schritt(jetzt) {
         const x = Math.min(1, (jetzt - t0) / dauer);
-        window.scrollTo({ top: von + weg * glatt(x), behavior: 'instant' });
+        const y = von + weg * kurve(x);
+        if (jetzt > vorT) { fahrTempo = (y - vorY) / (jetzt - vorT); vorY = y; vorT = jetzt; }
+        window.scrollTo({ top: y, behavior: 'instant' });
         if (x < 1) fahrt = requestAnimationFrame(schritt);
         else {
           fahrt = null; drinnen = true;
@@ -4918,9 +4936,12 @@
     wurzel.addEventListener('keydown', function (e) {
       if (e.key !== 'ArrowLeft' && e.key !== 'ArrowRight') return;
       e.preventDefault();
-      const roh = Math.min(N - 1, Math.max(0, rohStand()));
-      fahreZu(Math.max(0, Math.min(N - 1,
-        Math.round(roh) + (e.key === 'ArrowRight' ? 1 : -1))));
+      // Gedrueckt halten: erst weiter, wenn die Fahrt angekommen ist
+      if (e.repeat && fahrt) return;
+      // Waehrend einer Fahrt zaehlt ihr Ziel -- sonst schluckten schnelle
+      // Druecke Schritte (dreimal rechts in 0,12 s kam nur ein Film weiter).
+      const basis = fahrt ? zielFilm : Math.round(Math.min(N - 1, Math.max(0, rohStand())));
+      fahreZu(Math.max(0, Math.min(N - 1, basis + (e.key === 'ArrowRight' ? 1 : -1))));
     });
 
     /* Bild ab, Bild auf und Leertaste scrollen fast eine ganze Fensterhoehe

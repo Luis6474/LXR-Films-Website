@@ -774,6 +774,8 @@
     if (e.defaultPrevented || e.altKey || e.ctrlKey || e.metaKey || !buehne()) return;
     const r = roh();
     if (r < -0.05 || r > N - 1 + 0.05) return;
+    // Gedrueckt halten: erst weiter, wenn die Fahrt angekommen ist
+    if (e.repeat && fahrt && /^(Arrow(Right|Down|Left|Up)|Page(Down|Up))$/.test(e.key)) { e.preventDefault(); return; }
     if (e.key === 'ArrowRight' || e.key === 'ArrowDown' || e.key === 'PageDown') {
       if (basis() < N - 1) { e.preventDefault(); fahreZu(basis() + 1); }
     } else if (e.key === 'ArrowLeft' || e.key === 'ArrowUp' || e.key === 'PageUp') {
