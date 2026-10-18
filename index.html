@@ -4522,9 +4522,10 @@
     function schritt(jetzt) {
       let dt = Math.min(0.064, (jetzt - zuletzt) / 1000);
       zuletzt = jetzt;
+      const f = eilig() ? FEDER * 3 : FEDER;
       while (dt > 0) {
         const h = Math.min(dt, 0.008);
-        tempo += (FEDER * FEDER * (ziel - anzeige) - 2 * FEDER * tempo) * h;
+        tempo += (f * f * (ziel - anzeige) - 2 * f * tempo) * h;
         anzeige += tempo * h;
         dt -= h;
       }
@@ -4693,18 +4694,20 @@
 
     /* Bremse: Ein kraeftiger Schwung (Trackpad, Wischen, schnell gedrehtes
        Rad) trug frueher ueber mehrere Filme hinweg, ohne dass man sie sah.
-       Jetzt darf der Scrollstand dem gezeigten Bild hoechstens einen Film
-       voraus sein; der naechste gilt als erreicht, sobald das Karussell drei
-       Viertel des Weges dorthin gedreht hat. Zuegiges Weiterscrollen geht
-       also, nur kein Ueberspringen. Wer von aussen hereinkommt, haelt erst
-       beim ersten Film (bzw. von unten beim letzten). Die Buehne steht
+       Jetzt darf der Scrollstand dem vorn stehenden Bild hoechstens einen
+       Film voraus sein. Schnell durch geht also, nur nie ungesehen. Die Buehne steht
        waehrenddessen fest (sticky) -- das Zurueckhalten selbst sieht man nicht. */
     function grenzen() {
       if (anzeige === null) return null;
-      const gezeigt = anzeige / SCHRITT;
-      if (!drinnen) return [Math.round(gezeigt), Math.round(gezeigt)];
-      return [Math.ceil(gezeigt - 0.25) - 1, Math.floor(gezeigt + 0.25) + 1];
+      // Erreicht ist ein Film, sobald er vorn steht (halber Weg).
+      const gezeigt = Math.round(anzeige / SCHRITT);
+      return [gezeigt - 1, gezeigt + 1];
     }
+    /* Wer gegen die Bremse drueckt, will zuegig durch: dann dreht die Feder
+       schneller -- jedes Bild steht kurz vorn, man merkt, was da war, muss
+       aber nicht warten. */
+    let gedrueckt = 0;
+    function eilig() { return performance.now() - gedrueckt < 400; }
     function bremsen(r) {
       if (eigen || r < -0.001 || r > N - 1 + PUFFER + 0.001) return false;
       const g = grenzen();
@@ -4713,6 +4716,7 @@
       if (richtung > 0 && g[1] < N - 1 && r > g[1] + 0.001) soll = g[1];
       else if (richtung < 0 && g[0] > 0 && r < g[0] - 0.001) soll = g[0];
       if (soll === null) return false;
+      gedrueckt = performance.now();
       const y = Math.round(lauf.getBoundingClientRect().top + window.scrollY + segmentPx() * soll);
       window.scrollTo({ top: y, behavior: 'instant' });
       letztesY = window.scrollY;
@@ -4728,6 +4732,7 @@
       if ((e.deltaY > 0 && g[1] < N - 1 && r >= g[1] - 0.001) ||
           (e.deltaY < 0 && g[0] > 0 && r <= g[0] + 0.001)) {
         e.preventDefault();
+        gedrueckt = performance.now();
         richtung = e.deltaY > 0 ? 1 : -1;
         clearTimeout(ruhe);
         ruhe = setTimeout(nachziehen, 140);
