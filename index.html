@@ -3777,18 +3777,37 @@
          Leitung nicht und der Film bleibt zum Nachladen stehen, wird nach
          1,5 s an derselben Stelle eine Stufe kleiner gewechselt (gross ->
          mittel -> klein), danach nie wieder hinauf. Ein ruckelnder Film waere
-         schlimmer als ein etwas weicherer. */
+         schlimmer als ein etwas weicherer. Ebenso bei vielen kurzen Haengern:
+         Bei knapper Leitung (gemessen 8 Mbit/s) stockte die grosse Fassung
+         jede Sekunde fuer einen Augenblick, nie 1,5 s am Stueck -- drei
+         spuerbare Haenger (ab 0,25 s) binnen 8 s reichen deshalb auch.
+         Gezaehlt wird erst 2,5 s nach einem Wechsel: Das Anlaufen ruckt
+         ueberall, und der Wechsel selbst meldet schon "waiting". */
       if (wide) {
-        let haenger = null;
-        heroVideo.addEventListener('waiting', function () {
+        let haenger = null, stopps = [], seit = 0, ruhe = 0;
+        function kleiner() {
           clearTimeout(haenger);
-          haenger = setTimeout(function () {
-            const jetzt = heroVideo.currentSrc;
-            if (jetzt.indexOf(heroVideo.dataset.hd) >= 0) fassungWechseln(heroVideo.dataset.mittel);
-            else if (jetzt.indexOf(heroVideo.dataset.mittel) >= 0) fassungWechseln(heroVideo.dataset.sd);
-          }, 1500);
+          stopps = []; seit = 0; ruhe = performance.now() + 2500;
+          const jetzt = heroVideo.currentSrc;
+          if (jetzt.indexOf(heroVideo.dataset.hd) >= 0) fassungWechseln(heroVideo.dataset.mittel);
+          else if (jetzt.indexOf(heroVideo.dataset.mittel) >= 0) fassungWechseln(heroVideo.dataset.sd);
+        }
+        heroVideo.addEventListener('waiting', function () {
+          if (performance.now() < ruhe) return;
+          clearTimeout(haenger);
+          seit = performance.now();
+          haenger = setTimeout(kleiner, 1500);
         });
-        heroVideo.addEventListener('playing', function () { clearTimeout(haenger); });
+        heroVideo.addEventListener('playing', function () {
+          clearTimeout(haenger);
+          const t = performance.now();
+          if (seit && t - seit >= 250) {
+            stopps = stopps.filter(function (s) { return t - s < 8000; });
+            stopps.push(t);
+            if (stopps.length >= 3) kleiner();
+          }
+          seit = 0;
+        });
       }
     }
   });
@@ -3819,7 +3838,11 @@
     if (!heroVideo || !src || heroVideo.currentSrc.indexOf(src) >= 0) return;
     const t = heroVideo.currentTime, lief = !heroVideo.paused;
     heroVideo.src = src;
-    heroVideo.currentTime = t;
+    /* Die Stelle laesst sich erst setzen, wenn die neue Datei ihre Laenge
+       kennt -- vorher gesetzt, begann der Film wieder von vorn. */
+    heroVideo.addEventListener('loadedmetadata', function () {
+      if (t < heroVideo.duration) heroVideo.currentTime = t;
+    }, { once: true });
     if (lief && !reducedMotion) heroVideo.play().catch(function () {});
   }
   function sparen() {
