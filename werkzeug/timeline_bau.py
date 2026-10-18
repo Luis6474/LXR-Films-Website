@@ -30,18 +30,17 @@ QUALITAET = 92
 
 ROH_LASSEN = {"IMG_8077.JPEG"}                       # EXIF-Drehung ignorieren
 ZENSUR = {"IMG_7612.JPEG": [(880, 795, 978, 840)]}   # Kennzeichen (x0, y0, x1, y1)
-# Dateinamen, die nichts ueber den Inhalt sagen (oder irrefuehren: das
-# Venedig-Bild heisst "Sommer2025", stammt aber aus dem Video vom 16.08.2024)
+# Dateinamen, die nichts ueber den Inhalt sagen
 NAMEN = {
     "Sommer2025.jpg": "ranui-2025",
-    "Sommer2025(bitte eher klein reinmachen).png": "alm-drohne-2025",
-    "Sommer2025(bitte eher klein machen).png": "venedig-2024",
+    "Sommer2024(bitte eher klein reinmachen).png": "alm-drohne-2024",
+    "Sommer2024(bitte eher klein machen).png": "venedig-2024",
     "molli_mai2025.png": "molli-mai-2025",
-    "IMG_3940.MOV": "molli-zug-2025",
-    "IMG_1287.MOV": "venedig-2024-film",
+    "IMG_3948.MOV": "molli-aufbau-2025",
+    "IMG_9899(bitte 2023 integrieren).MOV": "drohne-2023",
 }
 # Video: Breite der langen Seite, Sekunde fuer das Standbild
-FILME = {"IMG_3940.MOV": (720, 1.0), "IMG_1287.MOV": (720, 3.0)}
+FILME = {"IMG_3948.MOV": (720, 1.0), "IMG_9899(bitte 2023 integrieren).MOV": (720, 4.0)}
 FFMPEG = imageio_ffmpeg.get_ffmpeg_exe()
 
 
