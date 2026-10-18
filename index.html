@@ -727,7 +727,7 @@
     text-underline-offset: 4px; text-decoration-thickness: 1px;
     transition: color 0.4s var(--ease);
   }
-  .in-link:hover { color: var(--accent); }
+  @media (hover: hover) { .in-link:hover { color: var(--accent); } }
   .in-link:focus-visible { outline: 1px solid var(--accent); outline-offset: 3px; }
 
   /* ---------- Projektliste ----------
@@ -799,7 +799,7 @@
     text-decoration-color: var(--accent); text-underline-offset: 5px;
     text-decoration-thickness: 1px;
   }
-  .contact a:hover { color: var(--accent); }
+  @media (hover: hover) { .contact a:hover { color: var(--accent); } }
   .contact a:focus-visible { outline: 1px solid var(--accent); outline-offset: 3px; }
 
   footer { padding: 36px 0; text-align: center; font-size: 0.76em; letter-spacing: 0.14em; text-transform: uppercase; color: var(--text-dim); }
@@ -1103,8 +1103,10 @@
      nach 1,6 s wieder weg -- vorher blieb sie stehen, solange die Maus
      irgendwo ueber dem Film lag. Fokus zeigt sie nur bei Tastaturbedienung,
      sonst blieb sie nach jedem Klick auf einen Knopf dauerhaft stehen. */
-  .stage-ui:hover,
   .stage-ui.sichtbar { opacity: 1; }
+  /* Nur mit echtem Zeiger: am iPad blieb :hover nach dem Tippen haengen und
+     die Leiste stand dann dauerhaft (Tippen zeigt sie per pointerdown). */
+  @media (hover: hover) { .stage-ui:hover { opacity: 1; } }
   /* eigene Regel: wo :has fehlt, faellt sonst die ganze Liste weg */
   .stage-ui:has(:focus-visible) { opacity: 1; }
   /* Pausiert oder zu Ende: die Leiste bleibt stehen -- sonst zeigte nichts,
@@ -1123,9 +1125,11 @@
     transition: color 0.35s var(--ease), filter 0.35s var(--ease);
   }
   .stage-btn svg { width: 19px; height: 19px; display: block; }
-  .stage-btn:hover {
-    color: #fff;
-    filter: drop-shadow(0 1px 3px rgba(0,0,0,0.65)) drop-shadow(0 0 7px rgba(255,255,255,0.45));
+  @media (hover: hover) {
+    .stage-btn:hover {
+      color: #fff;
+      filter: drop-shadow(0 1px 3px rgba(0,0,0,0.65)) drop-shadow(0 0 7px rgba(255,255,255,0.45));
+    }
   }
   .stage-btn:focus-visible { outline: 1px solid rgba(255,255,255,0.6); outline-offset: -8px; }
 
@@ -1391,8 +1395,10 @@
     display: flex; gap: 9px; padding: 10px 6px; cursor: pointer; touch-action: none;
   }
   /* Ziehen oder klicken: springt zum Tag (bei den Alpenkarten zum Ort) */
-  .karte-zeit:hover i { opacity: 0.45; }
-  .karte-zeit:hover i.ist-an { opacity: 0.9; }
+  @media (hover: hover) {
+    .karte-zeit:hover i { opacity: 0.45; }
+    .karte-zeit:hover i.ist-an { opacity: 0.9; }
+  }
   .karte-zeit i {
     display: block; width: 1px; height: 7px;
     background: var(--text); opacity: 0.18;
@@ -1412,7 +1418,7 @@
   .karte-schritt.zurueck { transform: translateX(calc(-50% - var(--zb, 120px) / 2 - 30px)); }
   .karte-schritt.vor { transform: translateX(calc(-50% + var(--zb, 120px) / 2 + 30px)); }
   .karte.ist-bereit .karte-schritt { opacity: 1; }
-  .karte-schritt:hover { background: rgba(240, 206, 156, 0.2); border-color: rgba(255, 226, 190, 0.8); }
+  @media (hover: hover) { .karte-schritt:hover { background: rgba(240, 206, 156, 0.2); border-color: rgba(255, 226, 190, 0.8); } }
   .karte-schritt:focus-visible { outline: 1px solid rgba(255, 226, 190, 0.8); outline-offset: 3px; }
   .karte-schritt:disabled { opacity: 0.25 !important; cursor: default; }
   /* Karte ueberspringen: gut sichtbar, im warmen Ton der Route, mit einem
@@ -1508,7 +1514,7 @@
     padding: 12px 26px; cursor: pointer;
     transition: color 0.5s var(--ease), border-color 0.5s var(--ease);
   }
-  .viewer-close:hover { color: var(--text); border-color: var(--p-accent); }
+  @media (hover: hover) { .viewer-close:hover { color: var(--text); border-color: var(--p-accent); } }
   .viewer-close:focus-visible { outline: 1px solid var(--p-accent, var(--accent)); outline-offset: 3px; }
   /* Derselbe Knopf noch einmal fest oben rechts: sonst muesste man zum
      Schliessen durch das ganze Projekt scrollen (auf dem Handy auch durch

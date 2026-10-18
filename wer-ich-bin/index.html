@@ -123,7 +123,7 @@
     font-size: 0.74em; letter-spacing: 0.2em; text-transform: uppercase;
     padding: 10px 0; transition: color 0.4s var(--ease);
   }
-  .kopf a:hover { color: var(--text); }
+  @media (hover: hover) { .kopf a:hover { color: var(--text); } }
   .kopf a:focus-visible, .in-link:focus-visible, .zl-projekt:focus-visible, .schluss a:focus-visible {
     outline: 1px solid var(--accent); outline-offset: 3px;
   }
@@ -151,7 +151,7 @@
     text-underline-offset: 4px; text-decoration-thickness: 1px;
     transition: color 0.4s var(--ease);
   }
-  .in-link:hover { color: var(--accent); }
+  @media (hover: hover) { .in-link:hover { color: var(--accent); } }
 
   /* ---------- Zeitleiste ----------
      Ohne Skript, bei reduzierter Bewegung und auf kleinen Schirmen: eine
@@ -288,7 +288,7 @@
       background: var(--text); opacity: 0.25; transform: translate(-50%, -50%);
       transition: opacity 0.7s var(--ease), transform 0.7s var(--ease);
     }
-    .zl-striche button:hover::before { opacity: 0.6; }
+    @media (hover: hover) { .zl-striche button:hover::before { opacity: 0.6; } }
     .zl-striche button.ist-an::before { opacity: 0.95; transform: translate(-50%, -50%) scaleY(2); }
     .zl-striche button:focus-visible { outline: 1px solid var(--warm); outline-offset: 0; }
     .zl-schritt {
@@ -297,7 +297,7 @@
       color: rgba(255, 236, 212, 0.92); font: 18px/1 Georgia, serif; cursor: pointer;
       transition: background-color 0.25s, border-color 0.25s, opacity 0.5s;
     }
-    .zl-schritt:hover { background: rgba(240, 206, 156, 0.2); border-color: rgba(255, 226, 190, 0.8); }
+    @media (hover: hover) { .zl-schritt:hover { background: rgba(240, 206, 156, 0.2); border-color: rgba(255, 226, 190, 0.8); } }
     .zl-schritt:focus-visible { outline: 1px solid rgba(255, 226, 190, 0.8); outline-offset: 3px; }
     .zl-schritt:disabled { opacity: 0.25; cursor: default; }
 
@@ -331,7 +331,7 @@
   .kontakt .row { display: flex; gap: 14px; padding: 2px 0; font-size: 0.97em; }
   .kontakt .k { color: var(--text-dim); min-width: 104px; }
   .kontakt a { color: var(--text); text-decoration: none; border-bottom: 1px solid rgba(255, 255, 255, 0.18); }
-  .kontakt a:hover { color: var(--accent); }
+  @media (hover: hover) { .kontakt a:hover { color: var(--accent); } }
   footer { padding: 36px 0; text-align: center; font-size: 0.76em; letter-spacing: 0.14em; text-transform: uppercase; color: var(--text-dim); }
 
   /* Einblendung beim Hineinscrollen (Auftakt, Schluss) */
