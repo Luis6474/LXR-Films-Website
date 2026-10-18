@@ -3868,8 +3868,11 @@
         return;
       }
       /* Nur zaehlen, solange der Hero im Bild und die Seite sichtbar ist --
-         sonst haette eine Pause im Hintergrund das Fenster verfaelscht. */
-      if (!heroImBild || document.hidden) { vorher = 0; requestAnimationFrame(bild); return; }
+         sonst haette eine Pause im Hintergrund das Fenster verfaelscht.
+         Solange er weg ist, nur alle 0,4 s nachsehen: vorher lief hier eine
+         leere Schleife in jedem Bild weiter, die ganze Zeit, die man weiter
+         unten las (gemessen 56 Aufrufe/s ohne jede Bewegung). */
+      if (!heroImBild || document.hidden) { vorher = 0; setTimeout(function () { requestAnimationFrame(bild); }, 400); return; }
       if (vorher) {
         const dt = t - vorher;
         if (dt < 250) {
