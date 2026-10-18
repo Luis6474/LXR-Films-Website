@@ -208,7 +208,8 @@
   /* Achse, Knoepfe und Leuchten gibt es nur auf der Buehne. */
   .zl-achse, .zl-weiter { display: none; }
 
-  @media (min-width: 700px) and (min-height: 560px) {
+  /* Nur am Schirm: gedruckt wird die Liste (die Buehne lag auf A4 uebereinander). */
+  @media screen and (min-width: 700px) and (min-height: 560px) {
     .zl.ist-buehne .zl-lauf {
       position: relative;
       height: calc(100vh + (var(--n, 8) - 1 + 0.35) * var(--einheit));
