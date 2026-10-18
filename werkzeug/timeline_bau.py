@@ -38,9 +38,19 @@ NAMEN = {
     "molli_mai2025.png": "molli-mai-2025",
     "IMG_3948.MOV": "molli-aufbau-2025",
     "IMG_9899(bitte 2023 integrieren).MOV": "drohne-2023",
+    "Herbst2023.png": "herbst-2023-wald",
+    "Herbst2023(2).png": "herbst-2023-burg",
+    "Portofhamburg2023.png": "port-of-hamburg-1",
+    "Portofhamburg2023(2).png": "port-of-hamburg-2",
 }
-# Video: Breite der langen Seite, Sekunde fuer das Standbild
-FILME = {"IMG_3948.MOV": (720, 1.0), "IMG_9899(bitte 2023 integrieren).MOV": (720, 4.0)}
+# Liegt im Ordner, gehoert aber nicht auf die Seite (fast dasselbe Bild wie
+# Herbst2023(2).png)
+AUSLASSEN = {"Screenshot 2026-10-18 165508.png"}
+# Video: lange Seite, Sekunde fuer das Standbild, Qualitaet (CRF, kleiner =
+# besser), Sekunden, die am Ende wegfallen. 1280 px: auf der Buehne am
+# Rechner ist ein Video gut 700 px breit, bei hoher Pixeldichte doppelt.
+FILME = {"IMG_3948.MOV": (1280, 1.0, 24, 1.0),
+         "IMG_9899(bitte 2023 integrieren).MOV": (1280, 4.0, 22, 0.0)}
 FFMPEG = imageio_ffmpeg.get_ffmpeg_exe()
 
 
@@ -72,12 +82,17 @@ def zensieren(im, boxen):
 
 def film(datei, masse):
     """Stumme Schleife (ffmpeg dreht nach der Ausrichtung im Video selbst)."""
-    lang, sek = FILME[datei]
+    lang, sek, crf, ende = FILME[datei]
     name = name_fuer(datei)
     quelle = os.path.join(QUELLE, datei)
     skal = f"scale='if(gt(iw,ih),{lang},-2)':'if(gt(iw,ih),-2,{lang})'"
-    subprocess.run([FFMPEG, "-v", "error", "-y", "-i", quelle, "-an", "-map_metadata", "-1",
-                    "-vf", skal + ",fps=30", "-c:v", "libx264", "-preset", "slow", "-crf", "29",
+    kuerzen = []
+    if ende:
+        info = subprocess.run([FFMPEG, "-i", quelle], capture_output=True, text=True).stderr
+        h, m, s = info.split("Duration: ")[1].split(",")[0].split(":")
+        kuerzen = ["-t", "%.2f" % (int(h) * 3600 + int(m) * 60 + float(s) - ende)]
+    subprocess.run([FFMPEG, "-v", "error", "-y", "-i", quelle, *kuerzen, "-an", "-map_metadata", "-1",
+                    "-vf", skal + ",fps=30", "-c:v", "libx264", "-preset", "slow", "-crf", str(crf),
                     "-pix_fmt", "yuv420p", "-profile:v", "high", "-movflags", "+faststart",
                     os.path.join(ZIEL, name + ".mp4")], check=True)
     bild = os.path.join(ZIEL, name + "-standbild.png")
@@ -96,6 +111,8 @@ def main():
     masse = {}
     for datei in sorted(os.listdir(QUELLE)):
         pfad = os.path.join(QUELLE, datei)
+        if datei in AUSLASSEN:
+            continue
         if datei in FILME:
             film(datei, masse)
             continue

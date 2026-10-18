@@ -1560,6 +1560,12 @@
     .band-grid.text-right.bild-paar { grid-template-columns: minmax(0, 8fr) minmax(0, 5fr); gap: 60px; }
     .bild-paar .band-figure { margin-left: calc(-1 * min(120px, max(0px, (100vw - var(--wide)) / 2 - 10px))); }
     .band-grid.text-right .band-text { grid-column: 2; }
+    /* Erster Abschnitt: mehr Bild (ein breites Standbild), der Text waechst
+       mit, damit beide Spalten im Gleichgewicht bleiben. */
+    .band-grid.lead-grid { grid-template-columns: minmax(0, 4fr) minmax(0, 6fr); gap: 64px; }
+    .lead-grid .band-figure { margin-right: calc(-1 * min(200px, max(0px, (100vw - var(--wide)) / 2 - 10px))); }
+    .lead-grid .opening { font-size: clamp(1.45em, 0.9em + 1.1vw, 1.9em); line-height: 1.4; }
+    .lead-grid .body { font-size: clamp(1em, 0.85em + 0.3vw, 1.12em); }
     .band-grid.text-right .band-figure { grid-column: 1; grid-row: 1; }
     .band.alt::before {
       background: radial-gradient(70% 60% at 76% 42%, rgba(122,158,186,0.09), transparent 68%);
@@ -1679,20 +1685,20 @@
 
   <section class="band lead-band">
     <div class="band-inner">
-      <div class="band-grid">
+      <div class="band-grid lead-grid">
         <div class="band-text reveal">
           <p class="opening">Ich warte auf das richtige Licht.</p>
           <p class="body" style="margin-top:24px">Auf Nebel, der sich hebt, auf die Blaue Stunde, auf den Moment, in dem ein Ort seine Stimmung zeigt. Daraus entstehen Filme, die nicht laut sein müssen, um hängen zu bleiben.</p>
         </div>
         <figure class="band-figure reveal-media">
-          <div class="figure-media aura-host" style="--fig-ar: 4 / 3">
-            <img src="Images/web/whatsapp-image-2026-09-13-at-20-36-50-1600.webp"
-                 srcset="Images/web/whatsapp-image-2026-09-13-at-20-36-50-800.webp 800w, Images/web/whatsapp-image-2026-09-13-at-20-36-50-1200.webp 1200w, Images/web/whatsapp-image-2026-09-13-at-20-36-50-1600.webp 1600w, Images/web/whatsapp-image-2026-09-13-at-20-36-50-2400.webp 2400w"
-                 sizes="(min-width: 1180px) 462px, (min-width: 900px) 40vw, calc(100vw - 44px)"
-                 alt="Dreh mit Teleobjektiv auf einer Weide, im Hintergrund Highlandrinder"
+          <div class="figure-media aura-host" style="--fig-ar: 2560 / 1336">
+            <img src="Images/web/timeline/herbst-2023-burg-1600.webp"
+                 srcset="Images/web/timeline/herbst-2023-burg-800.webp 800w, Images/web/timeline/herbst-2023-burg-1600.webp 1600w"
+                 sizes="(min-width: 1180px) 840px, (min-width: 900px) 60vw, calc(100vw - 44px)"
+                 alt="Eine Burg über herbstlichem Wald im Sauerland unter grauem Himmel"
                  loading="lazy" decoding="async">
           </div>
-          <figcaption>Teleaufnahmen für <span class="zusammen">„<button type="button" class="in-link" data-viewer="v2">The Same Gray</button>“</span> in Schottland</figcaption>
+          <figcaption>Frame aus meinem ersten Projekt Ende 2023</figcaption>
         </figure>
       </div>
     </div>
@@ -1775,7 +1781,7 @@
                  alt="Am Strand: Luis zeigt Stephen Corrall eine Aufnahme auf dem Kameramonitor"
                  loading="lazy" decoding="async">
           </div>
-          <figcaption>Dreharbeiten am Sanna Beach auf Ardnamurchan mit Schauspieler <a class="in-link" href="https://app.spotlight.com/5813-0163-0340" target="_blank" rel="noopener">Stephen Corrall</a> für das Projekt <span class="zusammen">„<button type="button" class="in-link" data-viewer="v2">The Same Gray</button>“</span></figcaption>
+          <figcaption>Dreharbeiten am Sanna Beach auf Ardnamurchan mit Schauspieler <a class="in-link" href="https://app.spotlight.com/5813-0163-0340" target="_blank" rel="noopener">Stephen Corrall</a> für das Projekt <span class="zusammen">„<button type="button" class="in-link" data-direkt="1" data-viewer="v2">The Same Gray</button>“</span></figcaption>
         </figure>
       </div>
     </div>
@@ -1897,7 +1903,7 @@
                    loading="lazy" decoding="async">
             </div>
           </div>
-          <figcaption>Links: Drehort für den Kurzfilm <span class="zusammen">„<button type="button" class="in-link" data-viewer="v2">The Same Gray</button>“</span> in Auchindrain · Rechts: Dreh für <span class="zusammen">„<button type="button" class="in-link" data-viewer="v1">Gärtnerei Finder</button>“</span> in Hamburg-Sasel</figcaption>
+          <figcaption>Links: Drehort für den Kurzfilm <span class="zusammen">„<button type="button" class="in-link" data-direkt="1" data-viewer="v2">The Same Gray</button>“</span> in Auchindrain · Rechts: Dreh für <span class="zusammen">„<button type="button" class="in-link" data-direkt="1" data-viewer="v1">Gärtnerei Finder</button>“</span> in Hamburg-Sasel</figcaption>
         </figure>
       </div>
     </div>
@@ -1914,7 +1920,7 @@
                alt="Segelschiff auf stürmischer See im Abendlicht"
                loading="lazy" decoding="async">
         </div>
-        <figcaption>Frame aus meinem Projekt <span class="zusammen">„<button type="button" class="in-link" data-viewer="v2">The Same Gray</button>“</span></figcaption>
+        <figcaption>Frame aus meinem Projekt <span class="zusammen">„<button type="button" class="in-link" data-direkt="1" data-viewer="v2">The Same Gray</button>“</span></figcaption>
       </figure>
       <div class="band-grid">
         <div class="band-text reveal">
@@ -1931,7 +1937,7 @@
                  alt="Dreh in einem alten Cottage: Luis filmt vom Stativ, Stephen Corrall sitzt am Tisch vor dem Fenster"
                  loading="lazy" decoding="async">
           </div>
-          <figcaption>Dreharbeiten zu <span class="zusammen">„<button type="button" class="in-link" data-viewer="v2">The Same Gray</button>“</span> in Auchindrain</figcaption>
+          <figcaption>Dreharbeiten zu <span class="zusammen">„<button type="button" class="in-link" data-direkt="1" data-viewer="v2">The Same Gray</button>“</span> in Auchindrain</figcaption>
         </figure>
       </div>
     </div>
@@ -3239,6 +3245,7 @@
     }
   }
 
+  let perAdresse = false;
   function openProject(trigger) {
     /* Nach dem Schliessen ist die Startseite schon zu sehen, waehrend die
        Blende noch aufgeht -- ein Klick in dieser Zeit wird gemerkt und
@@ -3250,8 +3257,9 @@
        fensterfuellend, die Projektseite liegt darunter (siehe grossStarten). */
     // Ein Klick auf das Titelbild selbst zaehlt wie "Ansehen" (am Rechner
     // klickt man meist aufs Bild, nicht auf den Knopf darunter).
-    const direkt = trigger.dataset.direkt === '1' ||
+    const direkt = perAdresse || trigger.dataset.direkt === '1' ||
       (trigger.classList.contains('schau-platz') && trigger.dataset.film !== '0');
+    perAdresse = false;
     busy = true; oeffnet = true; zuNachOeffnen = false;
     current = viewer;
     adresseSetzen(viewer);
@@ -3640,8 +3648,9 @@
     }
   }
   window.addEventListener('popstate', ausAdresse);
-  // Per Link mit Projektadresse gekommen: gleich oeffnen.
-  if (viewerZu(location.hash)) setTimeout(ausAdresse, 300);
+  // Per Link mit Projektadresse gekommen: gleich oeffnen, der Film gross
+  // wie aus der Projektschau (die Projektseite liegt darunter).
+  if (viewerZu(location.hash)) { perAdresse = true; setTimeout(ausAdresse, 300); }
 
   /* ---------- Hero-Film und Umschalten ----------
      Der Film ist eine eigene Datei: er startet ohne Umweg, laeuft nahtlos in

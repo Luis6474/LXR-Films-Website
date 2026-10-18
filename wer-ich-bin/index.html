@@ -72,6 +72,10 @@
     font-size: 0.72em; letter-spacing: 0.2em; text-transform: uppercase; color: var(--text-dim);
   }
   .zusammen { white-space: nowrap; }
+  .nur-vorlesen {
+    position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px;
+    overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0;
+  }
 
   /* Sterne und Korn: dieselben Kacheln wie auf der Startseite (dort beim
      Laden gerechnet, hier als Datei -- Images/web/textur). */
@@ -124,7 +128,15 @@
   }
 
   /* Auftakt */
-  .auftakt { max-width: 1120px; margin: 0 auto; padding: 18vh 22px 12vh; }
+  /* Fuellt den ersten Bildschirm (abzueglich Kopfzeile): sonst ragten unten
+     rechts die Bilder der ersten Station halb herein, ihr Text daneben aber
+     noch nicht -- das sah verrutscht aus. */
+  .auftakt {
+    max-width: 1120px; margin: 0 auto; padding: 12vh 22px 10vh;
+    min-height: calc(100vh - 72px);
+    display: flex; flex-direction: column; justify-content: center;
+  }
+  @supports (height: 1svh) { .auftakt { min-height: calc(100svh - 72px); } }
   .auftakt h1 { font-size: clamp(2.1em, 5vw, 3.6em); letter-spacing: 0.08em; margin: 18px 0 34px; }
   .auftakt .lead { max-width: 34ch; font-size: clamp(1.12em, 1.6vw, 1.32em); line-height: 1.6; }
   .auftakt .hinweis {
@@ -355,7 +367,7 @@
           <div class="zl-tafel">
             <figure class="zl-bild" data-ar="1.335"><img src="../Images/web/timeline/dji-2023-05-19-800.webp" srcset="../Images/web/timeline/dji-2023-05-19-800.webp 800w, ../Images/web/timeline/dji-2023-05-19-1600.webp 1600w" sizes="(min-width: 700px) 30vw, 50vw" width="5280" height="3956" alt="Luftaufnahme: grüne Felder und ein gelbes Rapsfeld, am Horizont das Meer" loading="lazy" decoding="async"></figure>
             <figure class="zl-bild" data-ar="1.333"><img src="../Images/web/timeline/img-6544-800.webp" srcset="../Images/web/timeline/img-6544-800.webp 800w, ../Images/web/timeline/img-6544-1600.webp 1600w" sizes="(min-width: 700px) 30vw, 50vw" width="2048" height="1536" alt="Eine Drohne im Abendhimmel über einem Kornfeld" loading="lazy" decoding="async"></figure>
-            <figure class="zl-bild zl-film" data-ar="1.773"><video muted loop playsinline controls preload="none" poster="../Images/web/timeline/drohne-2023-standbild.webp" width="720" height="406" aria-label="Video: eine Drohne steigt in der Abenddämmerung über einem Feld mit einzelnem Baum auf"><source src="../Images/web/timeline/drohne-2023.mp4" type="video/mp4"></video></figure>
+            <figure class="zl-bild zl-film" data-ar="1.778"><video muted loop playsinline controls preload="none" poster="../Images/web/timeline/drohne-2023-standbild.webp" width="1280" height="720" aria-label="Video: eine Drohne steigt in der Abenddämmerung über einem Feld mit einzelnem Baum auf"><source src="../Images/web/timeline/drohne-2023.mp4" type="video/mp4"></video></figure>
             <figure class="zl-bild" data-ar="1.333"><img src="../Images/web/timeline/img-7612-800.webp" srcset="../Images/web/timeline/img-7612-800.webp 800w, ../Images/web/timeline/img-7612-1600.webp 1600w" sizes="(min-width: 700px) 30vw, 50vw" width="2048" height="1536" alt="Luis kniet auf einem Feldweg neben seiner Drohne, dahinter das Auto" loading="lazy" decoding="async"></figure>
           </div>
         </li>
@@ -363,14 +375,30 @@
           <div class="zl-text">
             <p class="eyebrow zl-zeit">Oktober und November 2023</p>
             <h3 class="zl-jahr">Herbst 2023</h3>
-            <p>Ich drehte einen Kurzfilm im herbstlichen Sauerland und beschäftigte mich parallel mit Colorgrading, Schnitt und Filmmusik.</p>
+            <p>Ich drehte einen Kurzfilm im herbstlichen Sauerland und beschäftigte mich parallel mit Colorgrading, Schnitt und Filmmusik. Es war mein erster Film.</p>
+            <a class="zl-projekt" href="https://www.youtube.com/watch?v=ZxEFBb1LwxA" target="_blank" rel="noopener">Auf YouTube ansehen<span class="nur-vorlesen"> (öffnet ein neues Fenster)</span> <span aria-hidden="true">↗</span></a>
           </div>
           <div class="zl-tafel">
+            <figure class="zl-bild" data-ar="1.916"><img src="../Images/web/timeline/herbst-2023-burg-800.webp" srcset="../Images/web/timeline/herbst-2023-burg-800.webp 800w, ../Images/web/timeline/herbst-2023-burg-1600.webp 1600w" sizes="(min-width: 700px) 30vw, 50vw" width="2560" height="1336" alt="Standbild aus dem Sauerland-Film: eine Burg über herbstlichem Wald" loading="lazy" decoding="async"></figure>
             <figure class="zl-bild" data-ar="1.333"><img src="../Images/web/timeline/img-8077-800.webp" srcset="../Images/web/timeline/img-8077-800.webp 800w, ../Images/web/timeline/img-8077-1600.webp 1600w" sizes="(min-width: 700px) 30vw, 50vw" width="4032" height="3024" alt="Hände an der Drohnen-Fernbedienung, auf dem Bildschirm herbstlicher Wald von oben" loading="lazy" decoding="async"></figure>
+            <figure class="zl-bild" data-ar="1.918"><img src="../Images/web/timeline/herbst-2023-wald-800.webp" srcset="../Images/web/timeline/herbst-2023-wald-800.webp 800w, ../Images/web/timeline/herbst-2023-wald-1600.webp 1600w" sizes="(min-width: 700px) 30vw, 50vw" width="2560" height="1335" alt="Standbild aus dem Sauerland-Film: Herbstwald von oben" loading="lazy" decoding="async"></figure>
             <figure class="zl-bild" data-ar="1.333"><img src="../Images/web/timeline/img-8152-800.webp" srcset="../Images/web/timeline/img-8152-800.webp 800w, ../Images/web/timeline/img-8152-1600.webp 1600w" sizes="(min-width: 700px) 30vw, 50vw" width="4032" height="3024" alt="Eine Burg auf einem grünen Hügel unter grauem Himmel" loading="lazy" decoding="async"></figure>
           </div>
         </li>
-        <li class="zl-station" data-jahr="Winter 2023/24" style="--farbe: #838ca1">
+        <li class="zl-station" data-jahr="Ende 2023" style="--farbe: #6b94b1">
+          <div class="zl-text">
+            <p class="eyebrow zl-zeit">Zweites Projekt · Hamburger Hafen</p>
+            <h3 class="zl-jahr">Ende 2023</h3>
+            <p>Mein zweites Projekt war „Port of Hamburg“: kleinere Aufnahmen rund um den Hamburger Hafen.</p>
+            <a class="zl-projekt" href="https://www.youtube.com/watch?v=qWsltowI3xI" target="_blank" rel="noopener">Auf YouTube ansehen<span class="nur-vorlesen"> (öffnet ein neues Fenster)</span> <span aria-hidden="true">↗</span></a>
+          </div>
+          <div class="zl-tafel">
+            <figure class="zl-bild" data-ar="1.778"><img src="../Images/web/timeline/port-of-hamburg-1-800.webp" srcset="../Images/web/timeline/port-of-hamburg-1-800.webp 800w, ../Images/web/timeline/port-of-hamburg-1-1600.webp 1600w" sizes="(min-width: 700px) 30vw, 50vw" width="2560" height="1440" alt="Standbild aus „Port of Hamburg“: Containerkräne in der Abenddämmerung über der Elbe" loading="lazy" decoding="async"></figure>
+            <figure class="zl-bild" data-ar="1.333"><img src="../Images/web/timeline/img-8773-800.webp" srcset="../Images/web/timeline/img-8773-800.webp 800w, ../Images/web/timeline/img-8773-1600.webp 1600w" sizes="(min-width: 700px) 30vw, 50vw" width="4032" height="3024" alt="Luis mit Kamera am Gimbal im Hamburger Hafen, dahinter ein Museumsschiff" loading="lazy" decoding="async"></figure>
+            <figure class="zl-bild" data-ar="1.855"><img src="../Images/web/timeline/port-of-hamburg-2-800.webp" srcset="../Images/web/timeline/port-of-hamburg-2-800.webp 800w, ../Images/web/timeline/port-of-hamburg-2-1600.webp 1600w" sizes="(min-width: 700px) 30vw, 50vw" width="2560" height="1380" alt="Standbild aus „Port of Hamburg“: die beleuchteten Landungsbrücken bei Nacht" loading="lazy" decoding="async"></figure>
+          </div>
+        </li>
+        <li class="zl-station" data-jahr="Winter 2023/24" style="--farbe: #76756e">
           <div class="zl-text">
             <p class="eyebrow zl-zeit">Dezember 2023 bis Mai 2024</p>
             <h3 class="zl-jahr">Winter 2023/24</h3>
@@ -379,7 +407,6 @@
           <div class="zl-tafel">
             <figure class="zl-bild" data-ar="1.333"><img src="../Images/web/timeline/img-8531-800.webp" srcset="../Images/web/timeline/img-8531-800.webp 800w, ../Images/web/timeline/img-8531-1600.webp 1600w" sizes="(min-width: 700px) 30vw, 50vw" width="4032" height="3024" alt="Luis filmt aus dem Autofenster eine verschneite Landschaft" loading="lazy" decoding="async"></figure>
             <figure class="zl-bild" data-ar="1.155"><img src="../Images/web/timeline/img-8746-800.webp" srcset="../Images/web/timeline/img-8746-800.webp 800w, ../Images/web/timeline/img-8746-1600.webp 1600w" sizes="(min-width: 700px) 30vw, 50vw" width="3492" height="3024" alt="Luis fotografiert auf einem Weg zwischen kahlen Bäumen" loading="lazy" decoding="async"></figure>
-            <figure class="zl-bild" data-ar="1.333"><img src="../Images/web/timeline/img-8773-800.webp" srcset="../Images/web/timeline/img-8773-800.webp 800w, ../Images/web/timeline/img-8773-1600.webp 1600w" sizes="(min-width: 700px) 30vw, 50vw" width="4032" height="3024" alt="Luis mit Kamera am Gimbal im Hamburger Hafen, dahinter ein Museumsschiff" loading="lazy" decoding="async"></figure>
             <figure class="zl-bild" data-ar="1.333"><img src="../Images/web/timeline/img-9433-800.webp" srcset="../Images/web/timeline/img-9433-800.webp 800w, ../Images/web/timeline/img-9433-1600.webp 1600w" sizes="(min-width: 700px) 30vw, 50vw" width="4032" height="3024" alt="Luis fotografiert am Flussufer, gegenüber eine Altstadt" loading="lazy" decoding="async"></figure>
             <figure class="zl-bild" data-ar="1.333"><img src="../Images/web/timeline/img-0018-800.webp" srcset="../Images/web/timeline/img-0018-800.webp 800w, ../Images/web/timeline/img-0018-1600.webp 1600w" sizes="(min-width: 700px) 30vw, 50vw" width="4032" height="3024" alt="Luis auf einem Steg zwischen Segelbooten" loading="lazy" decoding="async"></figure>
           </div>
@@ -419,7 +446,7 @@
             <a class="zl-projekt" href="../#track-of-time">Zum Projekt <span class="zusammen">„Track of Time“</span> <span aria-hidden="true">→</span></a>
           </div>
           <div class="zl-tafel">
-            <figure class="zl-bild zl-film" data-ar="1.773"><video muted loop playsinline controls preload="none" poster="../Images/web/timeline/molli-aufbau-2025-standbild.webp" width="720" height="406" aria-label="Video: Luis baut auf einer Wiese einen Kameraslider auf"><source src="../Images/web/timeline/molli-aufbau-2025.mp4" type="video/mp4"></video></figure>
+            <figure class="zl-bild zl-film" data-ar="1.778"><video muted loop playsinline controls preload="none" poster="../Images/web/timeline/molli-aufbau-2025-standbild.webp" width="1280" height="720" aria-label="Video: Luis baut auf einer Wiese einen Kameraslider auf"><source src="../Images/web/timeline/molli-aufbau-2025.mp4" type="video/mp4"></video></figure>
             <figure class="zl-bild klein" data-ar="0.510"><img src="../Images/web/timeline/molli-mai-2025-800.webp" srcset="../Images/web/timeline/molli-mai-2025-800.webp 800w, ../Images/web/timeline/molli-mai-2025-1600.webp 1600w" sizes="(min-width: 700px) 30vw, 50vw" width="293" height="574" alt="Luis lehnt mit Kamera aus dem Fenster der fahrenden Molli" loading="lazy" decoding="async"></figure>
             <figure class="zl-bild" data-ar="1.881"><img src="../Images/web/timeline/29mai2025-800.webp" srcset="../Images/web/timeline/29mai2025-800.webp 800w, ../Images/web/timeline/29mai2025-1600.webp 1600w" sizes="(min-width: 700px) 30vw, 50vw" width="2560" height="1361" alt="Luis an einem Steinstrand unter einer Steilküste" loading="lazy" decoding="async"></figure>
           </div>
