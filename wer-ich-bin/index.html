@@ -669,7 +669,7 @@
   }
   function alleLegen() { stationen.forEach(legen); }
 
-  let an = -1;
+  let an = -1, selbst = false;
   function zeigen() {
     if (!buehne()) {
       // Liste (auch nach dem Wechsel von der Buehne): alle Stationen lesbar,
@@ -700,7 +700,7 @@
       b.tabIndex = j === k ? 0 : -1;
       if (j === k) b.setAttribute('aria-current', 'step'); else b.removeAttribute('aria-current');
     });
-    if (fokusStrich) knoepfe[k].focus({ preventScroll: true });
+    if (fokusStrich) { selbst = true; knoepfe[k].focus({ preventScroll: true }); selbst = false; }
     zurueck.disabled = k === 0;
     vor.disabled = k === N - 1;
     filmeSteuern();
@@ -779,6 +779,23 @@
     clearTimeout(ruhe);
     ruhe = setTimeout(nachziehen, 150);
   }, { passive: true });
+
+  /* Mit Tab in die Buehne: der Browser rollt das Element selbst ins Bild,
+     und weil die Buehne klebt, landete er dabei auf der zweiten Station
+     (2023 wurde uebersprungen). Stattdessen genau die Station, zu der der
+     Fokus gehoert. Nur bei Tastaturfokus -- ein Klick auf einen Strich
+     faehrt weiterhin weich. */
+  halt.addEventListener('focusin', function (e) {
+    if (selbst || fahrt || !buehne() || e.target === weiter) return;
+    try { if (!e.target.matches(':focus-visible')) return; } catch (x) { return; }
+    const j = knoepfe.indexOf(e.target), st = e.target.closest('.zl-station');
+    const k = Math.max(0, j >= 0 ? j : st ? stationen.indexOf(st) : an);
+    requestAnimationFrame(function () {
+      if (fahrt || Math.abs(roh() - k) < 0.02) return;
+      abbrechen();
+      window.scrollTo({ top: Math.round(obenVon(k)), behavior: 'instant' });
+    });
+  });
 
   zurueck.addEventListener('click', function () { fahreZu(basis() - 1); });
   vor.addEventListener('click', function () { fahreZu(basis() + 1); });
