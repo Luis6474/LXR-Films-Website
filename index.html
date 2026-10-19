@@ -186,6 +186,9 @@
     transition: opacity 1.7s var(--ease), transform 1.7s var(--ease), filter 1.7s var(--ease);
   }
   .js .reveal-media.show { opacity: 1; transform: none; filter: none; }
+  /* Mit der Tastatur hineingesprungen: kurz aufblenden, sonst stuende der
+     Fokusrahmen bis zu zwei Sekunden fast unsichtbar im Dunst. */
+  .js .reveal.per-fokus, .js .reveal-media.per-fokus { transition-duration: 0.35s; }
 
   /* Bildkasten: der innere Rahmen ist 6 % hoeher als der Ausschnitt, damit
      die Kamerafahrt Spielraum hat. Mehr kappt bei Portraets den Kopf. */
@@ -3750,7 +3753,17 @@
         }
       }
       // Bei reduzierter Bewegung ist der Film ausgeblendet: dann nichts laden.
-      if (reducedMotion) heroVideo.preload = 'none';
+      if (reducedMotion) {
+        heroVideo.preload = 'none';
+        /* Hier bleibt das Standbild stehen, statt dass der Film laeuft. Auf
+           grossen Schirmen wirkte die 1280er Fassung weich -- dort die
+           schaerfere (dasselbe Bild) nachladen und tauschen, sobald sie da ist. */
+        if (heroFrame && heroFrame.offsetWidth * (window.devicePixelRatio || 1) > 1400) {
+          const gross = new Image();
+          gross.onload = function () { heroVideo.poster = gross.src; };
+          gross.src = 'Images/web/hero-v4-poster-1920.jpg';
+        }
+      }
       else if (messen) {
         const ab = new AbortController(), BYTES = 1500000;
         let t0 = performance.now();
@@ -4129,6 +4142,19 @@
   });
 
   document.querySelectorAll('.reveal, .reveal-media').forEach(function (el) { io.observe(el); });
+  /* Springt der Fokus (Tab) in etwas, das noch auf- oder erst noch
+     eingeblendet wird: nicht aufs Bild warten und kurz aufblenden. */
+  document.addEventListener('focusin', function (e) {
+    const el = e.target.closest && e.target.closest('.reveal, .reveal-media');
+    if (!el || getComputedStyle(el).opacity === '1') return;
+    // Laeuft die lange Blende schon, uebernimmt sie die kurze Dauer nicht --
+    // einmal ab- und wieder ansetzen, dann geht sie vom jetzigen Stand aus.
+    el.classList.add('per-fokus');
+    el.classList.remove('show');
+    void el.offsetWidth;
+    el.classList.add('show');
+    io.unobserve(el);
+  });
 
   /* ---------- Lichthof um Bilder und Filme ----------
      Statt eine Farbe zu schaetzen, wird das Bild selbst ein zweites Mal
