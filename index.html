@@ -3721,18 +3721,32 @@
 
   sicher('Hero-Film', function () {
     if (heroVideo) {
-      // Auf schmalen Fenstern die kleinere Fassung -- spart Daten, sieht dort gleich aus.
+      /* Welche Fassung: nach den Bildpunkten, die der Film am Anfang
+         bildfuellend wirklich braucht (Fenster x Pixeldichte), nicht nach
+         der Fensterbreite allein. Die grosse (11,5 Mbit/s) nur, wo mehr als
+         2000 Punkte gebraucht werden (27", hochaufloesende Laptops, iPad);
+         normale Laptops und Full-HD-Schirme die mittlere -- gleiche
+         Aufloesung, 5 Mbit/s, im Bild bei 1:1 nicht zu unterscheiden, aber
+         37 statt 86 MB. Schmale Fenster die kleine (720p, 1,5 Mbit/s). */
       const netz = navigator.connection || {};
-      let wide = window.innerWidth >= 900 && !netz.saveData;
-      /* Tablets und grosse Telefone sind oft im Mobilfunk, und Safari verraet
-         die Leitung nicht (navigator.connection fehlt). Dort wird vor dem
-         Start gemessen: die ersten 1,5 MB der grossen Fassung, hoechstens
-         1,5 s lang, gezaehlt ab der Antwort (ohne die Wartezeit der Leitung).
-         Kommen sie mit mindestens 16 Mbit/s (die grosse braucht im Schnitt
-         11,5), bleibt es bei ihr -- im WLAN also wie am Rechner; sonst
-         die kleine (1,5 Mbit/s). Bis dahin steht das Standbild. */
-      const messen = wide && !reducedMotion && matchMedia('(pointer: coarse)').matches
-                     && window.fetch && window.AbortController;
+      const dpr = window.devicePixelRatio || 1;
+      const breit = window.innerWidth >= 900;
+      const bedarf = Math.max(window.innerWidth, window.innerHeight * 16 / 9) * dpr;
+      let stufe = netz.saveData ? 'sd' : !breit ? 'sd' : bedarf > 2000 ? 'hd' : 'mittel';
+      /* Tablets und Telefone sind oft im Mobilfunk, und Safari verraet die
+         Leitung nicht (navigator.connection fehlt). Dort wird vor dem Start
+         gemessen: die ersten 1,5 MB, hoechstens 1,5 s lang, gezaehlt ab der
+         Antwort (ohne die Wartezeit der Leitung). Ab 16 Mbit/s die grosse,
+         ab 8 die mittlere, sonst die kleine. Telefone mit dichtem Schirm
+         duerfen so bei schneller Leitung auf die mittlere: hochkant zeigt
+         der Film anfangs nur einen schmalen Ausschnitt, die kleine wurde
+         dort gut dreifach vergroessert und war weich. Meldet Android eine
+         langsame Leitung, wird gar nicht erst gemessen. Bis dahin steht das
+         Standbild. */
+      const langsam = netz.effectiveType && netz.effectiveType !== '4g';
+      const messen = !reducedMotion && !netz.saveData && matchMedia('(pointer: coarse)').matches
+                     && window.fetch && window.AbortController && (breit || dpr >= 2);
+      if (messen && langsam) stufe = 'sd';
       /* Schwache Rechner bekommen gleich den Sparmodus und die mittlere
          Fassung (1080p mit 5 statt 11,5 Mbit/s, einfacher zu entschluesseln --
          im Bild kaum ein Unterschied). Erkennbar sind sie nur grob: wenige
@@ -3740,8 +3754,8 @@
          Grafikkarte. Alle anderen misst der Sparmodus unten im Betrieb. */
       if (!reducedMotion && matchMedia('(pointer: fine)').matches && schwachesGeraet()) sparen();
       function starten() {
-        heroVideo.src = !wide ? heroVideo.dataset.sd
-          : document.documentElement.classList.contains('leicht') ? heroVideo.dataset.mittel : heroVideo.dataset.hd;
+        if (stufe === 'hd' && document.documentElement.classList.contains('leicht')) stufe = 'mittel';
+        heroVideo.src = heroVideo.dataset[stufe];
         // Nach der Messung nur anlaufen, wenn der Hero noch zu sehen ist.
         if (!reducedMotion && (!messen || (heroImBild && !body.classList.contains('bg-ruht')))) {
           heroVideo.autoplay = true;
@@ -3764,11 +3778,12 @@
           gross.src = 'Images/web/hero-v4-poster-1920.jpg';
         }
       }
-      else if (messen) {
+      else if (messen && !langsam) {
         const ab = new AbortController(), BYTES = 1500000;
         let t0 = performance.now();
         const frist = setTimeout(function () { ab.abort(); }, 1500);
-        fetch(heroVideo.dataset.hd, { headers: { Range: 'bytes=0-' + (BYTES - 1) }, signal: ab.signal, cache: 'no-store' })
+        const ziel = breit ? stufe : 'mittel';
+        fetch(heroVideo.dataset[ziel], { headers: { Range: 'bytes=0-' + (BYTES - 1) }, signal: ab.signal, cache: 'no-store' })
           .then(function (r) {
             t0 = performance.now();
             /* Selbst lesen und nach 1,5 MB aufhoeren -- falls ein Server die
@@ -3788,8 +3803,9 @@
           })
           .then(function (n) {
             const mbit = n * 8 / (Math.max(1, performance.now() - t0) / 1000) / 1e6;
-            wide = n >= BYTES * 0.9 && mbit >= 16;
-          }, function () { wide = false; })
+            const voll = n >= BYTES * 0.9;
+            stufe = voll && mbit >= 16 && ziel === 'hd' ? 'hd' : voll && mbit >= 8 ? 'mittel' : 'sd';
+          }, function () { stufe = 'sd'; })
           .then(function () { clearTimeout(frist); starten(); });
       } else starten();
       /* Die grosse Fassung braucht rund 12 Mbit/s, die mittlere 5. Reicht die
@@ -3802,7 +3818,7 @@
          spuerbare Haenger (ab 0,25 s) binnen 8 s reichen deshalb auch.
          Gezaehlt wird erst 2,5 s nach einem Wechsel: Das Anlaufen ruckt
          ueberall, und der Wechsel selbst meldet schon "waiting". */
-      if (wide) {
+      {
         let haenger = null, stopps = [], seit = 0, ruhe = 0;
         function kleiner() {
           clearTimeout(haenger);
