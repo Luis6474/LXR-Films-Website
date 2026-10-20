@@ -1135,6 +1135,32 @@
     }
   }
   .stage-btn:focus-visible { outline: 1px solid rgba(255,255,255,0.6); outline-offset: -8px; }
+  /* Die Filme starten stumm (anders lassen Browser sie nicht anlaufen), sind
+     aber mit Ton gemacht. Solange der Ton aus ist, steht deshalb unten rechts
+     ein deutlicher Hinweis -- ein Klick darauf schaltet ihn an, dann geht er.
+     Wer den Ton selbst an- oder ausschaltet, sieht ihn nicht wieder. */
+  .ton-hinweis {
+    position: absolute; right: 14px; bottom: 12px; z-index: 7;
+    display: flex; align-items: center; gap: 9px;
+    padding: 9px 16px 9px 12px; min-height: 40px;
+    font: inherit; font-size: 0.74em; letter-spacing: 0.16em; text-transform: uppercase;
+    color: #fff; background: rgba(0, 0, 0, 0.45);
+    border: 1px solid rgba(255, 255, 255, 0.32); border-radius: 999px;
+    -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px);
+    cursor: pointer; opacity: 0; pointer-events: none;
+    transition: opacity 0.6s var(--ease), border-color 0.35s var(--ease), background-color 0.35s var(--ease);
+  }
+  .ton-hinweis svg { width: 17px; height: 17px; display: block; flex: none; }
+  .viewer-stage.is-playing:not(.ton-gewaehlt) .ton-hinweis { opacity: 1; pointer-events: auto; }
+  @media (hover: hover) { .ton-hinweis:hover { border-color: rgba(255, 255, 255, 0.7); background-color: rgba(0, 0, 0, 0.6); } }
+  .ton-hinweis:focus-visible { outline: 1px solid rgba(255,255,255,0.7); outline-offset: 3px; }
+  @media (max-width: 620px) { .ton-hinweis { right: 10px; bottom: 8px; padding: 7px 13px 7px 10px; font-size: 0.68em; } }
+  /* Auf grossen Schirmen mitwachsen -- bei 2560 px ging er sonst neben dem
+     Film unter. */
+  @media (min-width: 1500px) {
+    .ton-hinweis { right: 22px; bottom: 20px; gap: 12px; padding: 12px 22px 12px 16px; font-size: 0.92em; }
+    .ton-hinweis svg { width: 21px; height: 21px; }
+  }
 
   /* ---------- Vollbild ----------
      Der Uebergang ist bewusst derselbe wie beim Eintauchen in ein Projekt:
@@ -1659,7 +1685,7 @@
     .viewer.is-active, .viewer.is-active .viewer-scroll, .viewer.is-active .viewer-inner {
       position: static !important; overflow: visible !important; opacity: 1 !important; transform: none !important; }
     .viewer.is-active .viewer-scroll { padding: 0 !important; }
-    .viewer-grain, .viewer-x, .viewer-close, .stage-ui, .viewer-stage iframe, .stage-laedt, .stage-hinweis,
+    .viewer-grain, .viewer-x, .viewer-close, .stage-ui, .ton-hinweis, .viewer-stage iframe, .stage-laedt, .stage-hinweis,
     .karte { display: none !important; }
     .viewer-stage img { opacity: 1 !important; }
     body *, body *::before, body *::after { color: #1a1d1c !important; text-shadow: none !important; }
@@ -3230,8 +3256,16 @@
       else setzeZeichen(playBtn, 'play', 'Abspielen (Leertaste)', true);
     });
 
+    const hinweis = document.createElement('button');
+    hinweis.className = 'ton-hinweis';
+    hinweis.type = 'button';
+    hinweis.appendChild(zeichen('stumm', false));
+    hinweis.appendChild(document.createTextNode('Mit Ton ansehen'));
+    hinweis.addEventListener('click', function () { if (muted) soundBtn.click(); });
+
     soundBtn.addEventListener('click', function () {
       muted = !muted;
+      stage.classList.add('ton-gewaehlt');   // Hinweis danach nie wieder
       // Waehrend der Abdeckung nach dem Fortsetzen bleibt er stumm, bis er
       // wieder zu sehen ist -- sonst hoerte man den Vorlauf doppelt.
       if (muted || !stage._player || !stage._player.deckt()) {
@@ -3253,6 +3287,7 @@
     ui.appendChild(soundBtn);
     ui.appendChild(fsBtn);
     stage.appendChild(ui);
+    stage.appendChild(hinweis);
     stage.classList.add('has-video');
     /* Die Leiste kommt mit jeder Bewegung des Zeigers ueber dem Film und
        jedem Tippen; einmal je Buehne angemeldet (sie bleibt, der Film wird
@@ -3260,10 +3295,16 @@
     const wrap = stage.closest('.stage-wrap') || stage;
     if (!wrap._leisteAn) {
       wrap._leisteAn = true;
+      /* Mit dem Finger laenger (3 s): es gibt kein Ueberfahren, das sie
+         zurueckholt. */
       ['pointermove', 'pointerdown'].forEach(function (t) {
-        wrap.addEventListener(t, function () { if (stage.classList.contains('has-video')) leisteZeigen(stage, 1600); }, { passive: true });
+        wrap.addEventListener(t, function (e) { if (stage.classList.contains('has-video')) leisteZeigen(stage, e.pointerType === 'mouse' ? 1600 : 3000); }, { passive: true });
       });
-      wrap.addEventListener('pointerleave', function () {
+      /* Nur fuer die Maus: beim Finger meldet der Browser nach jedem
+         Loslassen "verlassen" -- die Leiste verschwand damit sofort wieder,
+         am Handy und iPad sah man sie praktisch nie. */
+      wrap.addEventListener('pointerleave', function (e) {
+        if (e.pointerType !== 'mouse') return;
         const u = stage.querySelector('.stage-ui');
         if (u) u.classList.remove('sichtbar');
       });
@@ -3280,11 +3321,13 @@
     if (frame) { ytCommand(frame, 'stopVideo'); frame.remove(); }
     const ui = stage.querySelector('.stage-ui');
     if (ui) ui.remove();
+    const tonHinweis = stage.querySelector('.ton-hinweis');
+    if (tonHinweis) tonHinweis.remove();
     const laden = stage.querySelector('.stage-laedt');
     if (laden) laden.remove();
     const hinweis = stage.querySelector('.stage-hinweis');
     if (hinweis) hinweis.remove();
-    stage.classList.remove('ist-fehler', 'steht');
+    stage.classList.remove('ist-fehler', 'steht', 'ton-gewaehlt');
     const wrap = stage.closest('.stage-wrap');
     if (wrap && wrap._fsAb) wrap._fsAb();
     stage.classList.remove('has-video', 'is-playing');
