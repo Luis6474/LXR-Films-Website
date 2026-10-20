@@ -54,7 +54,11 @@
   * { box-sizing: border-box; }
   html { -webkit-tap-highlight-color: transparent; scrollbar-color: rgba(230, 234, 232, 0.22) transparent; }
   body {
-    margin: 0; background: var(--bg); color: var(--text);
+    /* Nicht der Grundton, sondern das Fast-Schwarz des unteren Himmels: Die
+       Flaeche zeigt sich nur, wo Safari beim schnellen Scrollen mit dem
+       Zeichnen nicht nachkommt (iPad, iPhone) -- im Grundton stand dort ein
+       deutlich blaues Feld ohne Sterne unter einer harten Kante. */
+    margin: 0; background: #040607; color: var(--text);
     font-family: 'Libre Caslon Display', Georgia, serif;
     font-size: 1.0625rem; line-height: 1.65;
     -webkit-font-smoothing: antialiased;
