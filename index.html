@@ -1810,7 +1810,7 @@
                alt="Titelbild „Gärtnerei Eggert Finder“: Schwebfliege an einer Lavendelblüte" loading="lazy" decoding="async">
         </div>
         <div class="schau-platz aura-host" data-viewer="v5" data-titel="The South"
-             data-gattung="Reisefilm · Österreich, Italien, Bayern" data-film="1" aria-hidden="true">
+             data-gattung="Reisefilm · Österreich, Italien" data-film="1" aria-hidden="true">
           <img data-src="Images/web/thumbnails/thumbnail-oesterreich24-2400.webp"
                data-srcset="Images/web/thumbnails/thumbnail-oesterreich24-800.webp 800w, Images/web/thumbnails/thumbnail-oesterreich24-1200.webp 1200w, Images/web/thumbnails/thumbnail-oesterreich24-1600.webp 1600w, Images/web/thumbnails/thumbnail-oesterreich24-2400.webp 2400w"
                sizes="(prefers-reduced-motion: reduce) calc(100vw - 32px), min(calc((100vw - 32px) * 0.88), 80vh)"
@@ -1936,7 +1936,7 @@
             <div class="card-info">
               <div class="card-titleline">
                 <span class="name">The South</span>
-                <span class="type">Reisefilm · Österreich, Italien, Bayern</span>
+                <span class="type">Reisefilm · Österreich, Italien</span>
               </div>
               <p class="card-teaser">Von Alpenpässen bis in die Kanäle von Venedig.</p>
             </div>
@@ -2259,7 +2259,7 @@
       </div>
       </div>
       <div class="viewer-head">
-        <span class="eyebrow">Reisefilm · Österreich, Italien, Bayern</span>
+        <span class="eyebrow">Reisefilm · Österreich, Italien</span>
         <h2 id="v5-title">The South</h2>
         <a class="pfeil-link yt-link" href="https://www.youtube.com/watch?v=rKGhlvCMp7U" target="_blank" rel="noopener">Auf YouTube ansehen<span class="nur-vorlesen"> (öffnet ein neues Fenster)</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 16 16 8M9.5 8H16v6.5"/></svg></a>
       </div>
@@ -3793,6 +3793,27 @@
   const heroSection = document.getElementById('hero');
   const heroAura = document.getElementById('heroAura');
   const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  /* Safari auf dem iPhone hielt sich nicht immer an object-fit: cover und zog
+     das ganze 16:9-Bild ins Hochformat (Gesicht lang, Gras verschmiert). Darum
+     bekommt das Videoelement selbst das Format des Films und die Groesse, die
+     den Rahmen deckt -- dann sehen "cover" und "aufziehen" gleich aus. Der
+     ResizeObserver meldet sich auch waehrend des Umschaltens Bild fuer Bild. */
+  sicher('Hero-Zuschnitt', function () {
+    if (!heroVideo || !heroFrame || !('ResizeObserver' in window)) return;
+    const FORMAT = 16 / 9;
+    function zuschneiden() {
+      const w = heroFrame.clientWidth, h = heroFrame.clientHeight;
+      if (!w || !h) return;
+      const bw = Math.max(w, h * FORMAT) + 1, bh = bw / FORMAT;   // 1 px Ueberstand gegen Haarlinien
+      const s = heroVideo.style;
+      s.right = s.bottom = 'auto';
+      s.width = bw + 'px'; s.height = bh + 'px';
+      s.left = (w - bw) / 2 + 'px'; s.top = (h - bh) / 2 + 'px';
+    }
+    new ResizeObserver(zuschneiden).observe(heroFrame);
+    zuschneiden();
+  });
 
   sicher('Hero-Film', function () {
     if (heroVideo) {
