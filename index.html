@@ -2830,7 +2830,15 @@
      Einzige verlaessliche Loesung: den Player verdeckt halten (das Standbild
      bleibt davor stehen), bis die Anzeige von selbst verschwunden ist.
      Als Beleg dient die tatsaechlich abgespielte Laufzeit. */
-  const PLAY_PROOF_SECONDS = 5.5;
+  /* Damit dabei nicht die ersten Sekunden des Films verloren gehen, laeuft er
+     hinter dem Standbild in Viertel-Geschwindigkeit an. Nachgemessen
+     (Oktober 2026): die Einblendung richtet sich nach der Uhr, nicht nach der
+     Filmzeit -- sie ist nach rund 4,5 s weg, egal wie langsam der Film laeuft,
+     und ein Tempowechsel loest sie (anders als Spulen) nicht erneut aus. Der
+     Film steht dann erst bei gut einer Sekunde; mit normalem Tempo wird er
+     aufgedeckt. Vorher fehlten die ersten 5,5 s. */
+  const ANLAUF_TEMPO = 0.25;
+  const EINBLENDUNG_MS = 4900;
   /* Kommt bis dahin kein laufender Film zustande (YouTube blockiert, offline,
      Film nicht verfuegbar), bleibt das Standbild stehen und ein Hinweis mit
      Link zu YouTube erscheint -- statt blind ein schwarzes Fehlerbild zu zeigen. */
@@ -2855,7 +2863,11 @@
     let puffer = null;
     let spaeter = null;
 
-    function arm() { baseTime = null; ziel = null; shown = false; }
+    let startUhr = null;      // seit wann der Film verdeckt wirklich laeuft
+    function arm() {
+      baseTime = null; ziel = null; shown = false; startUhr = null;
+      ytCommand(frame, 'setPlaybackRate', [ANLAUF_TEMPO]);
+    }
 
     function ohneUntertitel() {
       // Automatische Untertitel saessen unten im abgeschnittenen Bereich.
@@ -2866,6 +2878,11 @@
     function show() {
       if (shown) return;
       shown = true;
+      // Der Notnagel gilt nur fuer den ersten Anlauf -- sonst deckte er bei
+      // einer Pause um die 14. Sekunde den zurueckgespulten Film samt
+      // YouTube-Einblendung auf.
+      clearTimeout(fallback);
+      ytCommand(frame, 'setPlaybackRate', [1]);   // Anlauf war verlangsamt
       ohneUntertitel();
       opts.onShow();
     }
@@ -2933,8 +2950,11 @@
       if (shown) return;
       // Ein Ruecksprung (Neustart) setzt den Beleg neu an -- direkt nach
       // dem Spulbefehl meldet der Player noch kurz die alte Zeit.
-      if (baseTime === null || t < baseTime) { baseTime = t; return; }
-      if (t - baseTime >= PLAY_PROOF_SECONDS) show();
+      if (baseTime === null || t < baseTime) { baseTime = t; startUhr = null; return; }
+      if (t > baseTime && startUhr === null) startUhr = performance.now();
+      if (startUhr !== null && performance.now() - startUhr >= EINBLENDUNG_MS) {
+        show();
+      }
     }
 
     let fehlerGemeldet = false;
@@ -2956,6 +2976,7 @@
             if (aus) return;
             p.bereit = true;
             ohneUntertitel();
+            if (!shown && ziel === null) ytCommand(frame, 'setPlaybackRate', [ANLAUF_TEMPO]);
             const warte = frame._warte || [];
             frame._warte = null;
             warte.forEach(function (c) { ytCommand(frame, c[0], c[1]); });
