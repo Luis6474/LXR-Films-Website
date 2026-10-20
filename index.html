@@ -2871,6 +2871,9 @@
 
     function ohneUntertitel() {
       // Automatische Untertitel saessen unten im abgeschnittenen Bereich.
+      // Das Entladen allein liess die gewaehlte Spur stehen (Gaertnerei: "de"),
+      // und YouTube zeichnete sie wieder -- deshalb auch die Spur leeren.
+      ytCommand(frame, 'setOption', ['captions', 'track', {}]);
       ytCommand(frame, 'unloadModule', ['captions']);
       ytCommand(frame, 'unloadModule', ['cc']);
     }
@@ -2920,7 +2923,8 @@
     let lief = false;          // der Film hat schon einmal gespielt
 
     function zustand(st) {
-      if (st === 1) lief = true;
+      // Bei jedem Anlaufen erneut: YouTube laedt die Untertitel sonst nach.
+      if (st === 1) { lief = true; ohneUntertitel(); }
       // Film zu Ende: Player sofort wieder verdecken, sonst erscheinen
       // YouTubes Abspann-Vorschlaege.
       if (st === 0) {
