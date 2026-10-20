@@ -4855,11 +4855,39 @@
         if (!finger) { clearTimeout(ruhe); ruhe = setTimeout(nachziehen, 220); }
       }, { passive: true, capture: true });
     });
+    /* Schwung des Geraets anhalten. Lief nach einem Wisch noch der Schwung,
+       waehrend das Karussell bremste oder einrastete, zog jedes Bild beides
+       gegeneinander: der Schwung schob die Seite gut 25 px weiter, das
+       Karussell sie zurueck -- gemessen bis zu 378 px Ruecksprung, die Seite
+       sprang hin und her (und auf dem iPhone verrutschten dabei die festen
+       Hintergrundlagen: Sterne weg, blaue Kante). Fuer ein Bild nicht
+       scrollbar beendet den Schwung, das Setzen per Skript geht weiter. */
+    let schwungAus = false, gesperrt = false;
+    function schwungWeg() {
+      if (!beruehrung || schwungAus) return;
+      schwungAus = true;
+      document.documentElement.style.overflow = 'hidden';
+      requestAnimationFrame(function () {
+        requestAnimationFrame(function () {
+          schwungAus = false;
+          if (!gesperrt) document.documentElement.style.overflow = '';
+        });
+      });
+    }
+    /* Waehrend das Karussell eine Geste selbst fuehrt, bleibt die Seite fuer
+       den Browser gesperrt: unterbricht der Finger einen laufenden Schwung,
+       laesst sich die Bewegung nicht mehr abfangen (nicht "cancelable"), und
+       der Browser scrollte mit, waehrend das Karussell zurueckstellte. */
+    function sperren(an) {
+      gesperrt = an;
+      if (!schwungAus) document.documentElement.style.overflow = an ? 'hidden' : '';
+    }
     function fahreZu(ziel) {
       const sp = segmentPx();
       if (sp <= 0) return;
       const v0 = fahrt ? fahrTempo : 0;
       abbrechen();
+      schwungWeg();
       zielFilm = ziel;
       const oben = lauf.getBoundingClientRect().top + window.scrollY;
       const von = window.scrollY;
@@ -4940,6 +4968,7 @@
       else if (richtung < 0 && g[0] > 0 && r < g[0] - 0.001) soll = g[0];
       if (soll === null) return false;
       gedrueckt = performance.now();
+      schwungWeg();
       const y = Math.round(lauf.getBoundingClientRect().top + window.scrollY + segmentPx() * soll);
       window.scrollTo({ top: y, behavior: 'instant' });
       letztesY = window.scrollY;
@@ -5034,6 +5063,17 @@
        Seite ausbremsen. */
     if (beruehrung) {
       let geste = null;
+      /* Dieselbe Grenze wie die Bremse: hoechstens einen Film weiter als das
+         Bild, das gerade vorn steht. Vorher galt hier "einen Film weiter als
+         beim Aufsetzen" -- bei schnell aufeinanderfolgenden Wischern lag das
+         vor dem gezeigten Bild, die Geste schob vor und die Bremse gleich
+         wieder zurueck (gemessen 253 px Ruecksprung). */
+      function gestenGrenzen(r0) {
+        let lo = Math.max(0, r0 - 1), hi = Math.min(N - 1, r0 + 1);
+        const g = grenzen();
+        if (g) { lo = Math.max(lo, Math.min(g[0], hi)); hi = Math.min(hi, Math.max(g[1], lo)); }
+        return [lo, hi];
+      }
       halt.addEventListener('touchstart', function (e) {
         geste = null;
         if (e.touches.length !== 1) return;
@@ -5055,6 +5095,7 @@
           geste.modus = raus ? 'browser' : (quer ? 'quer' : 'hoch');
           if (geste.modus === 'browser') return;
           abbrechen();
+          sperren(true);
           eigen = true;
         }
         if (geste.modus === 'browser') return;
@@ -5067,14 +5108,18 @@
         geste.v = 0.6 * geste.v + 0.4 * v;
         geste.w = wert; geste.t = jetzt;
         const oben = lauf.getBoundingClientRect().top + window.scrollY;
-        const ziel = Math.max(oben + sp * Math.max(0, geste.r0 - 1),
-                              Math.min(oben + sp * Math.min(N - 1, geste.r0 + 1), geste.s0 + weg));
+        const [lo, hi] = gestenGrenzen(geste.r0);
+        const roh = geste.s0 + weg;
+        // Gegen die Bremse gewischt: die Drehung zieht an (siehe eilig()).
+        if (roh > oben + sp * hi + 1 || roh < oben + sp * lo - 1) gedrueckt = performance.now();
+        const ziel = Math.max(oben + sp * lo, Math.min(oben + sp * hi, roh));
         window.scrollTo({ top: ziel, behavior: 'instant' });
       }, { passive: false });
       function loslassen() {
         const g = geste;
         geste = null;
         if (!g || g.modus === null || g.modus === 'browser') return;
+        sperren(false);
         eigen = false;
         // Schwung nur, wenn der Finger zuletzt noch in Bewegung war.
         const v = performance.now() - g.t < 90 ? g.v : 0;
@@ -5082,7 +5127,8 @@
         let n = g.r0;
         if (d > 0.25 || v > 0.3) n = g.r0 + 1;
         else if (d < -0.25 || v < -0.3) n = g.r0 - 1;
-        fahreZu(Math.max(0, Math.min(N - 1, n)));
+        const [lo, hi] = gestenGrenzen(g.r0);
+        fahreZu(Math.max(lo, Math.min(hi, n)));
       }
       halt.addEventListener('touchend', loslassen, { passive: true });
       halt.addEventListener('touchcancel', loslassen, { passive: true });
