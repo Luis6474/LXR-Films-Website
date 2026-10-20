@@ -5033,6 +5033,28 @@
       }
       halt.addEventListener('touchend', loslassen, { passive: true });
       halt.addEventListener('touchcancel', loslassen, { passive: true });
+
+      /* Tippen oeffnet nur, wenn das Karussell beim Aufsetzen stillstand. Wer eine Fahrt mit dem Finger anhielt oder zum naechsten
+         Wisch ansetzte, oeffnete sonst den Film, der gerade darunter
+         durchlief -- meist The Mountains, den zweiten. */
+      let bewegt = 0, tippGut = false, tippEnde = 0, tx = 0, ty = 0;
+      window.addEventListener('scroll', function () { bewegt = performance.now(); }, { passive: true });
+      halt.addEventListener('touchstart', function (e) {
+        const p = e.touches[0];
+        tx = p.clientX; ty = p.clientY;
+        tippGut = e.touches.length === 1 && performance.now() - bewegt > 180;
+      }, { passive: true, capture: true });
+      halt.addEventListener('touchmove', function (e) {
+        const p = e.touches[0];
+        if (Math.abs(p.clientX - tx) > 10 || Math.abs(p.clientY - ty) > 10) tippGut = false;
+      }, { passive: true, capture: true });
+      halt.addEventListener('touchend', function () { tippEnde = performance.now(); }, { passive: true, capture: true });
+      wurzel.addEventListener('click', function (e) {
+        if (performance.now() - tippEnde > 800 || tippGut) return;      // Maus, Tastatur oder sauberer Tipp
+        if (!e.target.closest || !e.target.closest('.schau-platz')) return;
+        e.preventDefault();
+        e.stopPropagation();
+      }, true);
     }
 
     /* Mit der Tastatur einen Film weiter, solange der Fokus in der Schau
