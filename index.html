@@ -36,9 +36,9 @@
 })(document.documentElement);</script>
 <!-- Ohne JavaScript: Chrome blendet dann bei jedem Video die Bedienleiste
      ein, obwohl das Hero-Video ohne Skript gar keine Quelle bekommt -- also
-     nur das Standbild zeigen. Das Karussell laedt seine Bilder per Skript
-     nach und stuende sonst als drei leere Flaechen mit kaputten Bildern da;
-     die Projektliste weiter unten zeigt dieselben Projekte. -->
+     nur das Standbild zeigen. Die Bilder der Projektschau bleiben stehen,
+     oeffnen ohne Skript aber nichts -- die Projektliste weiter unten zeigt
+     dieselben Projekte. -->
 <noscript><style>
   .hero-video, .schau-band { display: none !important; }
   .hero-media { background: #0a0e12 url(Images/web/hero-v4-poster-1280.jpg) center / cover; }
@@ -669,10 +669,9 @@
   .band.lead-band { padding: 140px 0 124px; }
   .band-inner { position: relative; max-width: var(--wide); margin: 0 auto; padding: 0 22px; }
 
-  /* Die Schau fuellt den Bildschirm; ein zusaetzlicher Sektionsschein waere
-     dort eine grossflaechige Aufhellung ohne Anlass -- und genau die haelt
-     die Sterne klein. Den Schein liefern hier die Titelbilder selbst. */
-  .schau-band { padding: 0; }
+  /* Kein zusaetzlicher Sektionsschein: den liefern hier die Titelbilder
+     selbst, ein weiterer waere eine grossflaechige Aufhellung ohne Anlass. */
+  .schau-band { padding: 40px 0 110px; }
   .schau-band::before { display: none; }
   .schau-band > .band-inner { max-width: none; padding: 0; }
 
@@ -811,129 +810,91 @@
 
   footer { padding: 36px 0; text-align: center; font-size: 0.76em; letter-spacing: 0.14em; text-transform: uppercase; color: var(--text-dim); }
 
-  /* ---------- Projektschau als Karussell ----------
-     Vier Titelbilder sitzen im Abstand von 90 Grad auf einer Kreisbahn, von
-     vorn betrachtet. Sie drehen sich NICHT mit, sondern stehen immer frontal
-     zum Betrachter -- sie wandern nur auf der Bahn. Deshalb wird hier auch
-     nicht mit perspective/rotateY gearbeitet: eine echte 3D-Drehung wuerde die
-     Bilder mitkippen, und man muesste jedes einzeln zurueckdrehen. Statt
-     dessen rechnet das Skript die Perspektive selbst aus und setzt nur
-     translate und scale -- beides laeuft auf der Grafikkarte.
-
-     Gefahren wird ueber die Scrollstrecke: ".schau-lauf" ist mehrere
-     Bildschirme hoch, ".schau-halt" bleibt darin kleben. Die Seite steht damit
-     scheinbar still, ohne dass dem Nutzer das Scrollen aus der Hand genommen
-     wird -- Rad, Trackpad, Wischen, Tastatur und Scrollbalken tun alle weiter
-     genau das, was sie sonst tun. Ein Abfangen der Radereignisse wuerde
-     dagegen auf jedem zweiten Geraet anders reagieren.
-
-     Grundzustand ist BEWUSST die einfache Liste untereinander. Erst das
-     Skript schaltet auf ".ist-karussell". Ohne Skript und bei reduzierter
-     Bewegung bleibt so etwas stehen, das funktioniert. */
-  .schau { position: relative; }
-
-  /* --- Grundzustand: Liste --- */
-  .schau-buehne { display: grid; gap: 30px; }
-  .schau-platz {
-    position: relative; aspect-ratio: 16 / 9;
-    transform-origin: 50% 50%;
+  /* ---------- Projektschau: Bilderzusammenstellung ----------
+     "The Same Gray" gross links, die vier anderen als 2x2 daneben, jedes
+     Bild mit Titel und Art darunter -- die Titelbilder tragen ihren Titel
+     meist schon selbst, Schrift im Bild stand damit doppelt. Auf schmalen
+     Schirmen das grosse ueber die volle Breite, darunter zwei Spalten.
+     Jedes Bild ist ein Knopf und oeffnet den Film; das Abspielzeichen
+     zeigt, dass man draufdruecken kann. */
+  .werke {
+    --werk-luecke: 12px;
+    --werk-zeile: 50px;            /* Hoehe der Beschriftung unter dem Bild */
+    display: grid; gap: 22px var(--werk-luecke);
+    grid-template-columns: 1fr 1fr;
+    width: min(calc(100% - 32px), 1360px); margin: 0 auto;
   }
-  .schau-platz > img:not(.aura) { position: relative; z-index: 1; }
-  .schau-leiste { display: none; }
-  .schau-knopf-reihe { margin-top: 12px; }
-  /* Die Schau liegt ausserhalb der Inhaltsspalte (das Karussell braucht die
-     ganze Fensterbreite). Als Liste stand sie dadurch randlos, "Ansehen"
-     klebte am Bildschirmrand. */
-  .schau:not(.ist-karussell) .schau-buehne { width: min(calc(100% - 32px), var(--wide)); margin: 0 auto; }
-
-  /* --- Karussell --- */
-  .schau.ist-karussell .schau-lauf {
-    position: relative;
-    /* Eine Bildschirmhoehe zum Stehenbleiben, dazu je Film 30 % Hoehe
-       (zwei bis drei Radschritte). Dahinter eine Ruhezone (--puffer), damit
-       das nachfedernde letzte Bild zur Ruhe kommt, bevor die Seite weiterlaeuft.
-       Die Strecke haengt an svh, nicht dvh: dvh aendert sich auf dem Handy
-       beim Scrollen mit der Adressleiste, und die Rastpunkte wanderten. */
-    --schau-schritt: 30vh;
-    height: calc(100dvh + (var(--schritte, 3) + var(--puffer, 0.45)) * var(--schau-schritt));
+  .werk {
+    position: relative; display: flex; flex-direction: column;
+    padding: 0; border: 0; margin: 0; background: none;
+    color: var(--text); font: inherit; text-align: left; cursor: pointer;
   }
-  @supports (height: 1svh) { .schau.ist-karussell .schau-lauf { --schau-schritt: 30svh; } }
-  .schau.ist-karussell .schau-halt {
-    /* Das Karussell ist ein Element der Seite, keine eigene Buehne: am PC
-       45 % der Fensterhoehe, auf dem Handy 88 % der Breite. */
-    --schau-h: min(calc((100vw - 32px) * 0.88 * 9 / 16), calc(0.45 * 100dvh));
-    position: sticky; top: 0;
-    height: 100dvh;
-    display: flex; flex-direction: column;
-    align-items: center; justify-content: center;
-    gap: 10px;
+  .werk-gross { grid-column: 1 / -1; }
+  /* Breit: die Spalten so bemessen, dass das grosse Bild in vollem 16:9
+     samt Beschriftung genau so hoch ist wie zwei kleine samt ihrer. Aus
+     9/16 * B + z = 2 * (9/16 * k + z) + g folgt B = 2k + (z + g) * 16/9. */
+  @media (min-width: 900px) {
+    .werke {
+      --werk-luecke: 16px; --werk-zeile: 58px;
+      row-gap: var(--werk-luecke);
+      grid-template-columns: 1fr repeat(2, calc((100% - 2 * var(--werk-luecke)
+        - (var(--werk-zeile) + var(--werk-luecke)) * 16 / 9) / 4));
+    }
+    .werk-gross { grid-column: 1; grid-row: 1 / span 2; }
   }
-  /* Ueber die ganze Fensterbreite, damit die seitlichen Bilder wirklich aus
-     dem Bild laufen koennen. Der Ausschnitt besorgt ".page" mit overflow-x. */
-  .schau.ist-karussell .schau-buehne {
-    display: block;
-    position: relative;
-    aspect-ratio: 16 / 9;
-    /* Die Hoehe fuehrt, die Breite folgt dem Format. Andersherum -- Breite
-       setzen und die Hoehe abklemmen -- kippt das Format, weil eine gesetzte
-       Breite vom Seitenverhaeltnis nicht mehr zurueckgerechnet wird. */
-    height: var(--schau-h);
-    width: auto;
+  .werk-bild {
+    position: relative; display: block; aspect-ratio: 16 / 9;
+    overflow: hidden; background: var(--bg-deep, #000);
   }
-  .schau.ist-karussell .schau-platz {
-    position: absolute; inset: 0;
-    aspect-ratio: auto;
-    /* Keine CSS-Ueberblendung: Lage und Deckkraft haengen am Scrollstand,
-       eine Transition wuerde nur hinterherlaufen. */
-    will-change: transform, opacity;
-    backface-visibility: hidden;
+  .werk-bild img { transition: transform 1.1s var(--ease), filter 0.6s var(--ease); }
+  .werk-text {
+    display: flex; align-items: center; justify-content: space-between; gap: 12px;
+    min-height: var(--werk-zeile); padding-top: 9px;
   }
-  .schau.ist-karussell .schau-platz:not(.ist-vorn) { pointer-events: none; }
-  /* Das vordere Bild oeffnet den Film wie "Ansehen" -- das soll man sehen. */
-  .schau.ist-karussell .schau-platz.ist-vorn { cursor: pointer; }
-  .schau.ist-karussell .schau-leiste {
-    display: flex; align-items: center;
-    width: calc(var(--schau-h) * 16 / 9);    /* buendig mit dem Bild */
+  .werk-name { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+  .werk-titel {
+    font-family: 'Noto Serif', Georgia, serif; font-size: 1em;
+    letter-spacing: 0.03em; line-height: 1.25; color: var(--text);
   }
-  .schau.ist-karussell .schau-knopf-reihe { display: none; }
-
-  /* Der Lichthof wandert mit, liegt aber nicht IM bewegten Kasten: ein
-     Element mit transform macht einen eigenen Zeichenkontext auf, und der
-     Hof kaeme damit ueber die Sternenebene zu liegen statt darunter. Das
-     Skript haengt ihn deshalb daneben und bewegt ihn gleich mit. */
-  /* Eigene Ebene fuer den wandernden Hof: Lage und Deckkraft aendern sich
-     beim Drehen in jedem Bild. Ohne eigene Ebene musste der Browser dafuer
-     jedes Mal die ganze Flaeche dahinter neu malen -- ein Verlauf von gut
-     zweieinhalbfacher Bildgroesse. So verschiebt ihn nur noch die
-     Grafikkarte. */
-  .schau-buehne > .aura { transform-origin: 50% 50%; will-change: transform, opacity; }
-
-  /* Reiner Text in derselben gesperrten Versalschrift wie sonst auf der
-     Seite. Statt eines Rahmens traegt ein duenner Strich darunter -- er wird
-     beim Ueberfahren breiter und heller, die Flaeche bleibt 44 px hoch. */
-  .schau-ansehen {
-    margin-left: auto; flex-shrink: 0;
-    display: inline-flex; align-items: center; gap: 9px;
-    background: none; border: none;
-    color: var(--text); font: inherit; font-family: 'Noto Serif', Georgia, serif;
-    font-size: 0.76em; font-weight: 400;
-    letter-spacing: 0.18em; text-transform: uppercase;
-    padding: 14px 2px; cursor: pointer;
-    position: relative;
-    transition: color 0.45s var(--ease);
+  .werk-art { font-size: 0.74em; color: var(--text-dim); line-height: 1.3; }
+  .werk-gross .werk-titel { font-size: 1.22em; }
+  .werk svg { display: block; }
+  /* Abspielzeichen auf dem Bild, unten rechts */
+  .werk-play {
+    position: absolute; right: 10px; bottom: calc(var(--werk-zeile) + 10px); z-index: 2;
+    width: 36px; height: 36px; border-radius: 50%;
+    display: grid; place-items: center;
+    background: rgba(8,12,14,0.42); border: 1px solid rgba(255,255,255,0.6);
+    color: #fff; transition: background 0.45s var(--ease), color 0.45s var(--ease);
   }
-  .schau-ansehen::after {
-    content: ""; position: absolute; left: 2px; bottom: 11px;
-    width: 18px; height: 1px; background: currentColor;
-    transition: width 0.45s var(--ease);
+  .werk-play svg { width: 16px; height: 16px; margin-left: 2px; }
+  .werk-knopf {
+    flex-shrink: 0; display: inline-flex; align-items: center; gap: 8px;
+    padding: 9px 17px 9px 12px; border-radius: 999px;
+    border: 1px solid rgba(230,234,232,0.45);
+    font-family: 'Noto Serif', Georgia, serif; font-size: 0.72em;
+    letter-spacing: 0.16em; text-transform: uppercase; color: var(--text);
+    transition: background 0.45s var(--ease), color 0.45s var(--ease), border-color 0.45s var(--ease);
   }
-  .schau-ansehen svg { width: 13px; height: 13px; display: block; }
+  .werk-knopf svg { width: 16px; height: 16px; }
   @media (hover: hover) {
-    .schau-ansehen:hover { color: #fff; }
-    .schau-ansehen:hover::after { width: calc(100% - 26px); }
+    .werk:hover .werk-bild img { transform: scale(1.035); filter: brightness(1.08); }
+    .werk:hover .werk-play { background: rgba(255,255,255,0.92); color: #0a0e12; }
+    .werk:hover .werk-knopf { background: rgba(255,255,255,0.92); border-color: transparent; color: #0a0e12; }
+    .werk:hover .werk-titel { color: #fff; }
   }
-  .schau-ansehen:focus-visible { outline: 1px solid var(--accent); outline-offset: 2px; }
-  .schau-knopf-reihe .schau-ansehen { margin-left: 0; }
+  .werk:focus-visible { outline: 2px solid var(--accent); outline-offset: 5px; }
+  /* Schmale Kacheln auf dem Handy: Art weglassen, Titel kleiner. */
+  @media (max-width: 599px) {
+    .werke { --werk-zeile: 34px; gap: 16px 10px; }
+    .werk:not(.werk-gross) .werk-art { display: none; }
+    .werk:not(.werk-gross) .werk-titel { font-size: 0.84em; }
+    .werk:not(.werk-gross) .werk-text { padding-top: 7px; }
+    .werk-gross { --werk-zeile: 52px; }
+    .werk-play { width: 30px; height: 30px; right: 7px; bottom: calc(var(--werk-zeile) + 7px); }
+    .werk-play svg { width: 13px; height: 13px; }
+    .werk-knopf { padding: 8px 13px 8px 10px; font-size: 0.64em; }
+  }
 
   /* Textverweis im Stil von "Ansehen": Grossbuchstaben, ein kurzer Strich
      darunter, der beim Ueberfahren mitwaechst. Fuer "Mehr ueber mich" und
@@ -1653,9 +1614,7 @@
     html { scroll-behavior: auto; }
     .grain { animation: none; }
     .page, .viewer, .viewer-inner, .lb-bar, .card-preview img { transition-duration: 0.01ms; }
-    /* Das Karussell wird vom Skript gar nicht erst eingeschaltet (siehe
-       dort) -- hier bleibt nur die Liste. */
-    .schau-platz { transform: none !important; opacity: 1 !important; }
+    .werk-bild img { transition: none; }
     /* Inhalte sofort zeigen, statt sie an eine Scroll-Animation zu koppeln. */
     .js .reveal, .js .reveal-media { opacity: 1; transform: none; filter: none; transition: none; }
     .holds .standout, .holds .halt-zusammen { position: static; }
@@ -1682,7 +1641,7 @@
     html, body { background: #fff !important; }
     body { color: #1a1d1c; }
     body::before, .grain, .zucken, .sterne, .aura, .hero-aura, .hero-media, .hero-marquee,
-    .schau, .card-open, .viewer:not(.is-active), .lb-bar { display: none !important; }
+    .schau-band, .card-open, .viewer:not(.is-active), .lb-bar { display: none !important; }
     /* Ist ein Projekt offen, wird das Projekt gedruckt, nicht die Startseite:
        Text und Standbilder, ohne Player, Karte und Knoepfe. */
     body.is-viewing .page { display: none !important; }
@@ -1775,64 +1734,64 @@
     </div>
   </section>
 
-  <!-- Projektschau: ein Titelbild gross, dazwischen wird umgeschaltet.
-       Reihenfolge wie vorgegeben. Bewusst ohne eigene Ueberschrift, damit es
-       neben der Liste weiter unten nicht zweimal "Projekte" heisst. -->
+  <!-- Projektschau: die fuenf Filme als feste Bilderzusammenstellung.
+       "The Same Gray" gross, die anderen vier daneben. Vorher ein Karussell,
+       das sich ueber den Scrollstand drehte -- dass man auf das vordere Bild
+       druecken kann, verstand nicht jeder. Bewusst ohne eigene Ueberschrift,
+       damit es neben der Liste weiter unten nicht zweimal "Projekte" heisst. -->
   <section class="band schau-band">
     <div class="band-inner">
-      <div class="schau" id="schau" role="group"
-           aria-roledescription="Karussell" aria-label="Projekte">
-        <div class="schau-lauf" id="schau-lauf">
-          <div class="schau-halt" id="schau-halt">
-        <div class="schau-buehne" id="schau-buehne" data-hof-sammler>
-        <div class="schau-platz aura-host" data-viewer="v2" data-titel="The Same Gray"
-             data-gattung="Kurzfilm · Schottland" data-film="1" aria-hidden="false">
-          <img src="Images/web/thumbnails/thumbnailsamegrey-2400.webp"
+      <div class="werke" id="werke" role="group" aria-label="Filme">
+        <button type="button" class="werk werk-gross aura-host" data-viewer="v2" data-direkt="1" aria-haspopup="dialog">
+          <span class="werk-bild"><img src="Images/web/thumbnails/thumbnailsamegrey-1600.webp"
                srcset="Images/web/thumbnails/thumbnailsamegrey-800.webp 800w, Images/web/thumbnails/thumbnailsamegrey-1200.webp 1200w, Images/web/thumbnails/thumbnailsamegrey-1600.webp 1600w, Images/web/thumbnails/thumbnailsamegrey-2400.webp 2400w"
-               sizes="(prefers-reduced-motion: reduce) calc(100vw - 32px), min(calc((100vw - 32px) * 0.88), 80vh)"
-               alt="Titelbild „The Same Gray“: Porträt eines älteren Mannes vor nebligen Bergen" loading="lazy" decoding="async">
-        </div>
-        <div class="schau-platz aura-host" data-viewer="v3" data-titel="The Mountains"
-             data-gattung="Reisefilm · Bayern &amp; Norditalien" data-film="1" aria-hidden="true">
-          <img data-src="Images/web/thumbnails/thumbnailoesterreich25-1280.webp"
-               data-srcset="Images/web/thumbnails/thumbnailoesterreich25-800.webp 800w, Images/web/thumbnails/thumbnailoesterreich25-1280.webp 1280w"
-               sizes="(prefers-reduced-motion: reduce) calc(100vw - 32px), min(calc((100vw - 32px) * 0.88), 80vh)"
-               alt="Titelbild „The Mountains“: Boot auf einem See im Gegenlicht der aufgehenden Sonne" loading="lazy" decoding="async">
-        </div>
-        <div class="schau-platz aura-host" data-viewer="v4" data-titel="Track of Time"
-             data-gattung="Kurzfilm · historische Eisenbahn" data-film="1" aria-hidden="true">
-          <img data-src="Images/web/thumbnails/thumbnailtrackoftime-1280.webp"
-               data-srcset="Images/web/thumbnails/thumbnailtrackoftime-800.webp 800w, Images/web/thumbnails/thumbnailtrackoftime-1280.webp 1280w"
-               sizes="(prefers-reduced-motion: reduce) calc(100vw - 32px), min(calc((100vw - 32px) * 0.88), 80vh)"
-               alt="Titelbild „Track of Time“: Dampflokomotive zwischen Bäumen" loading="lazy" decoding="async">
-        </div>
-        <div class="schau-platz aura-host" data-viewer="v1" data-titel="Gärtnerei Eggert Finder"
-             data-gattung="Familienbetrieb · Hamburg-Sasel" data-film="1" aria-hidden="true">
-          <img data-src="Images/web/gaertnerei-finder/still-2025-07-21-211752-3-25-1-2400.webp"
-               data-srcset="Images/web/gaertnerei-finder/still-2025-07-21-211752-3-25-1-800.webp 800w, Images/web/gaertnerei-finder/still-2025-07-21-211752-3-25-1-1200.webp 1200w, Images/web/gaertnerei-finder/still-2025-07-21-211752-3-25-1-1600.webp 1600w, Images/web/gaertnerei-finder/still-2025-07-21-211752-3-25-1-2400.webp 2400w"
-               sizes="(prefers-reduced-motion: reduce) calc(100vw - 32px), min(calc((100vw - 32px) * 0.88), 80vh)"
-               alt="Titelbild „Gärtnerei Eggert Finder“: Schwebfliege an einer Lavendelblüte" loading="lazy" decoding="async">
-        </div>
-        <div class="schau-platz aura-host" data-viewer="v5" data-titel="The South"
-             data-gattung="Reisefilm · Österreich, Italien" data-film="1" aria-hidden="true">
-          <img data-src="Images/web/thumbnails/thumbnail-oesterreich24-2400.webp"
-               data-srcset="Images/web/thumbnails/thumbnail-oesterreich24-800.webp 800w, Images/web/thumbnails/thumbnail-oesterreich24-1200.webp 1200w, Images/web/thumbnails/thumbnail-oesterreich24-1600.webp 1600w, Images/web/thumbnails/thumbnail-oesterreich24-2400.webp 2400w"
-               sizes="(prefers-reduced-motion: reduce) calc(100vw - 32px), min(calc((100vw - 32px) * 0.88), 80vh)"
-               alt="Titelbild „The South“: fünf Bildstreifen von Schloss, Mosaik, Kanal, Kirchturm und Venedig" loading="lazy" decoding="async">
-        </div>
-        </div>
-
-        <div class="schau-leiste">
-          <button class="schau-ansehen" type="button" id="schau-ansehen"
-                  data-viewer="v2" aria-haspopup="dialog">
-            Ansehen<span class="nur-vorlesen">: The Same Gray</span>
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.3"
-                 stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path
-                 d="M4 12h15M13 6l6 6-6 6"/></svg>
-          </button>
-        </div>
-          </div>
-        </div>
+               sizes="(min-width: 900px) min(680px, 50vw), calc(100vw - 32px)"
+               alt="Titelbild „The Same Gray“: Porträt eines älteren Mannes vor nebligen Bergen" loading="lazy" decoding="async"></span>
+          <span class="werk-text">
+            <span class="werk-name"><span class="werk-titel">The Same Gray</span><span class="werk-art">Kurzfilm · Schottland</span></span>
+            <span class="werk-knopf"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6.8v10.4L17.2 12z" fill="currentColor"/></svg>Film ansehen</span>
+          </span>
+        </button>
+        <button type="button" class="werk aura-host" data-viewer="v3" data-direkt="1" aria-haspopup="dialog">
+          <span class="werk-bild"><img src="Images/web/thumbnails/thumbnailoesterreich25-800.webp"
+               srcset="Images/web/thumbnails/thumbnailoesterreich25-800.webp 800w, Images/web/thumbnails/thumbnailoesterreich25-1280.webp 1280w"
+               sizes="(min-width: 900px) min(340px, 25vw), calc(50vw - 23px)"
+               alt="Titelbild „The Mountains“: Boot auf einem See im Gegenlicht der aufgehenden Sonne" loading="lazy" decoding="async"></span>
+          <span class="werk-text">
+            <span class="werk-name"><span class="werk-titel">The Mountains</span><span class="werk-art">Reisefilm · Bayern &amp; Norditalien</span></span>
+            <span class="werk-play"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6.8v10.4L17.2 12z" fill="currentColor"/></svg></span>
+          </span>
+        </button>
+        <button type="button" class="werk aura-host" data-viewer="v4" data-direkt="1" aria-haspopup="dialog">
+          <span class="werk-bild"><img src="Images/web/thumbnails/thumbnailtrackoftime-800.webp"
+               srcset="Images/web/thumbnails/thumbnailtrackoftime-800.webp 800w, Images/web/thumbnails/thumbnailtrackoftime-1280.webp 1280w"
+               sizes="(min-width: 900px) min(340px, 25vw), calc(50vw - 23px)"
+               alt="Titelbild „Track of Time“: Dampflokomotive zwischen Bäumen" loading="lazy" decoding="async"></span>
+          <span class="werk-text">
+            <span class="werk-name"><span class="werk-titel">Track of Time</span><span class="werk-art">Kurzfilm · historische Eisenbahn</span></span>
+            <span class="werk-play"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6.8v10.4L17.2 12z" fill="currentColor"/></svg></span>
+          </span>
+        </button>
+        <button type="button" class="werk aura-host" data-viewer="v1" data-direkt="1" aria-haspopup="dialog">
+          <span class="werk-bild"><img src="Images/web/gaertnerei-finder/still-2025-07-21-211752-3-25-1-800.webp"
+               srcset="Images/web/gaertnerei-finder/still-2025-07-21-211752-3-25-1-800.webp 800w, Images/web/gaertnerei-finder/still-2025-07-21-211752-3-25-1-1200.webp 1200w"
+               sizes="(min-width: 900px) min(340px, 25vw), calc(50vw - 23px)"
+               alt="Titelbild „Gärtnerei Eggert Finder“: Schwebfliege an einer Lavendelblüte" loading="lazy" decoding="async"></span>
+          <span class="werk-text">
+            <span class="werk-name"><span class="werk-titel">Gärtnerei Eggert Finder</span><span class="werk-art">Familienbetrieb · Hamburg-Sasel</span></span>
+            <span class="werk-play"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6.8v10.4L17.2 12z" fill="currentColor"/></svg></span>
+          </span>
+        </button>
+        <button type="button" class="werk aura-host" data-viewer="v5" data-direkt="1" aria-haspopup="dialog">
+          <span class="werk-bild"><img src="Images/web/thumbnails/thumbnail-oesterreich24-800.webp"
+               srcset="Images/web/thumbnails/thumbnail-oesterreich24-800.webp 800w, Images/web/thumbnails/thumbnail-oesterreich24-1200.webp 1200w"
+               sizes="(min-width: 900px) min(340px, 25vw), calc(50vw - 23px)"
+               alt="Titelbild „The South“: fünf Bildstreifen von Schloss, Mosaik, Kanal, Kirchturm und Venedig" loading="lazy" decoding="async"></span>
+          <span class="werk-text">
+            <span class="werk-name"><span class="werk-titel">The South</span><span class="werk-art">Reisefilm · Österreich, Italien</span></span>
+            <span class="werk-play"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6.8v10.4L17.2 12z" fill="currentColor"/></svg></span>
+          </span>
+        </button>
       </div>
     </div>
   </section>
@@ -3382,10 +3341,7 @@
     if (!viewer) return;
     /* "direkt" kommt von der Projektschau: von dort aus startet der Film
        fensterfuellend, die Projektseite liegt darunter (siehe grossStarten). */
-    // Ein Klick auf das Titelbild selbst zaehlt wie "Ansehen" (am Rechner
-    // klickt man meist aufs Bild, nicht auf den Knopf darunter).
-    const direkt = perAdresse || trigger.dataset.direkt === '1' ||
-      (trigger.classList.contains('schau-platz') && trigger.dataset.film !== '0');
+    const direkt = perAdresse || trigger.dataset.direkt === '1';
     perAdresse = false;
     busy = true; oeffnet = true; zuNachOeffnen = false;
     current = viewer;
@@ -4538,34 +4494,6 @@
     else src.addEventListener('load', klein, { once: true });
   }
   document.querySelectorAll('.page .aura-host').forEach(function (h) { sicher('Lichthof', function () { buildAura(h); }); });
-  /* Die drei hinteren Titelbilder des Karussells liegen auf dem Handy nur gut
-     einen Schirm unter dem Start -- trotz loading=lazy luden sie sofort mit
-     (rund 850 kB) und nahmen dem Hero-Film die Leitung. Jetzt laden sie alle
-     drei zusammen, sobald die Schau naht; einzeln beobachtet kaemen die
-     seitlich wartenden Folien erst beim Hereindrehen. Die Hoefe warten ohnehin
-     auf 'load' (buildAura oben). */
-  sicher('Karussellbilder', function () {
-    const schau = document.getElementById('schau');
-    const spaet = schau ? Array.prototype.slice.call(schau.querySelectorAll('img[data-src]')) : [];
-    if (!spaet.length) return;
-    function laden() {
-      spaet.forEach(function (i) {
-        if (i.dataset.srcset) i.srcset = i.dataset.srcset;
-        i.src = i.dataset.src;
-        i.removeAttribute('data-srcset'); i.removeAttribute('data-src');
-        /* Gleich im Hintergrund entpacken: die Folien stehen unsichtbar
-           (Deckkraft 0) bereit, und Safari entpackt ein Bild sonst erst,
-           wenn es zum ersten Mal gezeigt wird -- mitten in der Drehung. */
-        if (i.decode) i.decode().catch(function () {});
-      });
-    }
-    if (!('IntersectionObserver' in window)) { laden(); return; }
-    const ob = new IntersectionObserver(function (es) {
-      if (!es.some(function (x) { return x.isIntersecting; })) return;
-      ob.disconnect(); laden();
-    }, { rootMargin: '0px 0px 600px 0px' });
-    ob.observe(schau);
-  });
   // Fuer das Reglerfeld: alle schon gebauten Hoefe mit neuen Werten neu bauen.
   reglerHaken.hoefe = function () {
     document.querySelectorAll('.aura-host').forEach(function (host) {
@@ -4577,640 +4505,6 @@
     });
   };
 
-  /* ---------- Projektschau: Karussell ----------
-     Vier Titelbilder auf einer Kreisbahn, im Abstand von 90 Grad, von vorne
-     gesehen. Sie stehen immer frontal und wandern nur auf der Bahn.
-
-     Gefahren wird ueber den Scrollstand, nicht ueber abgefangene
-     Radereignisse. Die Seite steht scheinbar still, weil die Buehne in einer
-     mehrere Bildschirme hohen Strecke klebt -- dem Nutzer wird das Scrollen
-     dabei nie aus der Hand genommen, und Rad, Trackpad, Wischen, Tastatur
-     und Scrollbalken verhalten sich alle weiter so, wie er es kennt. */
-  // Hat das Karussell bei einer neuen Fenstergroesse schon selbst
-  // nachgestellt, haelt sich die allgemeine Verankerung heraus.
-  let karussellHielt = false;
-  sicher('Karussell', function schau() {
-    const wurzel = document.getElementById('schau');
-    if (!wurzel) return;
-    const lauf = document.getElementById('schau-lauf');
-    const halt = document.getElementById('schau-halt');
-    const buehne = document.getElementById('schau-buehne');
-    const ansehen = document.getElementById('schau-ansehen');
-    const plaetze = Array.from(wurzel.querySelectorAll('.schau-platz'));
-    if (!lauf || !halt || !buehne || !ansehen || plaetze.length < 2) return;
-    const N = plaetze.length;
-
-    function knopfSetzen(knopf, platz) {
-      knopf.dataset.viewer = platz.dataset.viewer || '';
-      // Ohne Film fuehrt "Ansehen" auf die Projektseite statt ins Vollbild.
-      if (platz.dataset.film === '0') delete knopf.dataset.direkt;
-      else knopf.dataset.direkt = '1';
-      const marke = knopf.querySelector('.nur-vorlesen');
-      if (marke) marke.textContent = ': ' + (platz.dataset.titel || '');
-    }
-
-    /* Bei reduzierter Bewegung bleibt die Liste stehen. Eine Bewegung, die
-       am Scrollen haengt, ist genau die Art, die dort Beschwerden macht --
-       sie laeuft ungefragt los, sobald man die Seite bewegt. Jedes Projekt
-       bekommt dann seine eigene Schaltflaeche. */
-    if (reducedMotion) {
-      plaetze.forEach(function (platz) {
-        const reihe = document.createElement('div');
-        reihe.className = 'schau-knopf-reihe';
-        const knopf = ansehen.cloneNode(true);
-        knopf.removeAttribute('id');
-        knopfSetzen(knopf, platz);
-        // Der Klon erbt den Klick des Vorbilds nicht.
-        knopf.addEventListener('click', function () { openProject(knopf); });
-        reihe.appendChild(knopf);
-        platz.insertAdjacentElement('afterend', reihe);
-      });
-      return;
-    }
-
-    wurzel.classList.add('ist-karussell');
-    /* Siehe CSS: dieselbe Zahl bestimmt, wie viel zusaetzliche Scrollstrecke
-       hinter dem letzten Film liegt, in der nur noch die Feder auslaeuft. */
-    const PUFFER = 0.45;
-    lauf.style.setProperty('--schritte', String(N - 1));
-    lauf.style.setProperty('--puffer', String(PUFFER));
-
-    const beruehrung = window.matchMedia('(pointer: coarse)').matches;
-
-    /* Wie nah die Kamera steht, als Anteil des Bahnradius. 0,45 heisst: das
-       seitliche Bild erscheint auf 55 % der Groesse des vorderen, das
-       hintere auf 38 %. Groesser waere flacher, kleiner waere ein Fischauge. */
-    const NAEHE = 0.45;
-    const SCHRITT = 2 * Math.PI / N;
-
-    /* Einrasten, ohne das Scrollen anzufassen: innerhalb eines Abschnitts
-       steht das Karussell die ersten und letzten 20 % der Strecke still und
-       dreht nur dazwischen. Zusammen mit dem Nachziehen weiter unten steht
-       damit nie ein Bild halb vorne.
-       Dazwischen eine Kurve, die an beiden Enden waagerecht auslaeuft -- das
-       ist der Unterschied zwischen einer Kamerafahrt und einem Ruck. */
-    function rast(x) {
-      const RUHE = 0.08;          // kurze Ruhezonen: frueh ansprechen
-      if (x <= RUHE) return 0;
-      if (x >= 1 - RUHE) return 1;
-      const u = (x - RUHE) / (1 - 2 * RUHE);
-      return u * u * u * (u * (u * 6 - 15) + 10);
-    }
-
-    let vorn = -1;
-    function uebernehmen() {
-      plaetze.forEach(function (p, k) {
-        const an = k === vorn;
-        p.classList.toggle('ist-vorn', an);
-        p.setAttribute('aria-hidden', an ? 'false' : 'true');
-      });
-      knopfSetzen(ansehen, plaetze[vorn]);
-    }
-
-    function strecke() { return lauf.offsetHeight - halt.offsetHeight; }
-
-    /* Laenge eines einzelnen Films auf der Scrollstrecke, in Bildpunkten.
-       strecke() deckt (N-1) Filme plus den Puffer ab -- deshalb wird hier
-       durch (N-1+PUFFER) geteilt, nicht durch (N-1). */
-    function segmentPx() {
-      const s = strecke();
-      return s > 0 ? s / (N - 1 + PUFFER) : 0;
-    }
-
-    /* Fortschritt in "Filmen": 0 auf dem ersten, N-1 auf dem letzten.
-       Bewusst NICHT auf [0, N-1] geklemmt -- ausserhalb dieser Spanne (davor
-       oder im Puffer danach) steht die Zahl noch, welche Richtung das ist. */
-    function rohStand() {
-      const sp = segmentPx();
-      return sp > 0 ? -lauf.getBoundingClientRect().top / sp : 0;
-    }
-
-    function zielWinkel() {
-      const roh = Math.min(N - 1, Math.max(0, rohStand()));
-      const seg = Math.min(N - 2, Math.floor(roh));
-      return (seg + rast(roh - seg)) * SCHRITT;
-    }
-
-    /* Gedaempft. Der Scrollstand legt nur fest, WOHIN das Karussell soll;
-       gezeichnet wird ein Winkel, der diesem Ziel wie an einer Feder
-       hinterherlaeuft. Ein Mausrad liefert keine Bewegung, sondern Stufen --
-       100 px, Pause, 100 px. Direkt gekoppelt hat das Karussell jede Stufe
-       mitgemacht, daher das Ruckeln.
-       Bewusst eine Feder mit kritischer Daempfung und kein einfaches
-       Hinterherziehen um einen festen Anteil: das haette bei jeder neuen
-       Stufe sofort mit voller Geschwindigkeit losgelegt -- wieder ein
-       kleiner Ruck, nur weicher. Die Feder dagegen beschleunigt an und
-       bremst ab, schwingt aber nicht ueber. Das ist die Bewegung eines
-       Kamerawagens, der geschoben wird: er setzt sich in Gang, er rollt aus.
-       Gerechnet nach verstrichener Zeit und in kleinen Teilschritten, damit
-       sie auf 60 Hz und 120 Hz gleich laeuft und bei einem ruckelnden Bild
-       nicht aus dem Tritt kommt. */
-    /* Langsamer: 4,6 -> 2,8. Rund 1,8 s bis zum Stillstand statt 1 s -- eine
-       ruhigere, foermlichere Fahrt, weniger ein Wischen als ein Schwenk. */
-    const FEDER = 2.8;           // Eigenfrequenz; rund 1,8 s bis zum Stillstand
-    let anzeige = null, tempo = 0, ziel = 0, faehrt = false, zuletzt = 0;
-    function schritt(jetzt) {
-      let dt = Math.min(0.064, (jetzt - zuletzt) / 1000);
-      zuletzt = jetzt;
-      const f = eilig() ? FEDER * 1.24 : FEDER;   // rund 0,65 s je Film
-      while (dt > 0) {
-        const h = Math.min(dt, 0.008);
-        tempo += (f * f * (ziel - anzeige) - 2 * f * tempo) * h;
-        anzeige += tempo * h;
-        dt -= h;
-      }
-      if (Math.abs(ziel - anzeige) < 0.0004 && Math.abs(tempo) < 0.002) {
-        anzeige = ziel; tempo = 0; faehrt = false; zeichne(anzeige); return;
-      }
-      zeichne(anzeige);
-      requestAnimationFrame(schritt);
-    }
-    function stelle() {
-      ziel = zielWinkel();
-      if (anzeige === null) { anzeige = ziel; zeichne(anzeige); return; }
-      if (!faehrt) {
-        faehrt = true;
-        zuletzt = performance.now();
-        requestAnimationFrame(schritt);
-      }
-    }
-
-    let breite = buehne.offsetWidth;
-    function zeichne(winkel) {
-
-      /* Engere Bahn: der Radius haengt jetzt an der Bildbreite statt an der
-         Fensterbreite. Seit immer nur ein Bild sichtbar ist, muessen die
-         seitlichen nicht mehr aus dem Rahmen laufen -- zu sehen ist nur
-         noch, wie weit das alte Bild beim Wechsel zur Seite wandert. In der
-         Mitte der Ueberblendung sind das jetzt gut 60 % der Bildbreite
-         statt rund 120 %. */
-      const R = 1.1 * breite;
-
-      let besterK = 0, bestesC = -2;
-      for (let k = 0; k < N; k++) {
-        const th = k * SCHRITT - winkel;
-        const c = Math.cos(th);
-        const s = (1 - NAEHE) / (1 - NAEHE * c);       // Perspektive
-        const x = R * Math.sin(th) * s;
-        /* Immer nur ein Bild zu sehen. Sichtbar ist ein Platz nur noch in
-           einem Kegel von 60 Grad um die Frontstellung, weich ein- und
-           ausgeblendet; seitlich (90 Grad) und hinten ist er vollstaendig
-           weg. Im Stillstand steht damit genau ein Bild da. Nur in der Mitte
-           einer Drehung, wenn beide Bilder 45 Grad neben der Front stehen,
-           kreuzen sie sich kurz mit je knapp 40 % -- eine Ueberblendung,
-           wie ein Schnitt im Film. Ohne sie gaebe es an dieser Stelle einen
-           Moment lang gar kein Bild. */
-        const u = Math.max(0, Math.min(1, (c - 0.5) / 0.5));
-        const deck = u * u * (3 - 2 * u);
-        const lage = 'translate3d(' + x.toFixed(1) + 'px,0,0) scale(' + s.toFixed(4) + ')';
-        const el = plaetze[k];
-        el.style.transform = lage;
-        el.style.opacity = deck.toFixed(3);
-        el.style.zIndex = String(120 + Math.round(c * 100));
-        if (el._hoefe) {
-          el._hoefe.forEach(function (h) {
-            h.style.transform = lage;
-            h.style.opacity = (deck * (parseFloat(h.dataset.grund) || 0.8)).toFixed(3);
-          });
-        }
-        if (c > bestesC) { bestesC = c; besterK = k; }
-      }
-      if (besterK !== vorn) { vorn = besterK; uebernehmen(); }
-    }
-
-    /* Nachziehen. Bleibt jemand mitten in einem Uebergang stehen, wird auf
-       den naechsten Film nachgefahren -- aber erst, wenn das Scrollen
-       wirklich aufgehoert hat, sonst wuerde die Seite gegen die Hand
-       arbeiten. Waehrend der eigenen Fahrt ist es abgeschaltet. */
-    /* Nachziehen, jetzt weich und in Scrollrichtung.
-       Vorher: 170 ms nach dem letzten Radschritt zog der Browser die Seite
-       mit seinem eigenen "smooth" zum NAECHSTGELEGENEN Film -- schnell,
-       nicht abstimmbar, und nach einem einzelnen Radschritt zurueck zum
-       alten Film. Das fuehlte sich an wie ein Gummiband.
-       Jetzt: die Richtung des letzten Scrollens entscheidet. Wer auch nur
-       ein Stueck weiter gedreht hat, kommt beim naechsten Film an; wer ein
-       Stueck zurueck gedreht hat, beim vorigen. Gefahren wird mit einer
-       eigenen, langsamen Kurve (0,9 s, weich an- und auslaufend), dieselbe
-       Art Bewegung wie die Einblendungen auf dem Rest der Seite. Greift der
-       Nutzer waehrenddessen wieder ein -- Rad, Finger, Taste --, bricht die
-       Fahrt sofort ab und gibt ihm die Seite zurueck. */
-    let eigen = false, ruhe = null, fahrt = null, richtung = 1, letztesY = window.scrollY;
-    /* "drinnen" heisst: das Karussell stand zuletzt auf einem Film. Nur dann
-       bedeutet ein Stueck Scrollen "zum naechsten". Kommt man von aussen
-       herein, ist der erste Schritt nur das Ankommen -- sonst wuerde beim
-       Hineinscrollen von oben "The Same Gray" uebersprungen. */
-    let drinnen = false;
-    function glatt(x) { return x < 0.5 ? 4 * x * x * x : 1 - Math.pow(-2 * x + 2, 3) / 2; }
-    /* Neues Ziel waehrend einer Fahrt (Pfeiltaste schnell mehrmals): mit dem
-       anliegenden Tempo weiter statt aus dem Stand -- Hermite-Kurve mit
-       Anfangssteigung m, bis m = 3 ohne Ueberschwingen. */
-    function weich(m) {
-      return function (x) { return (-2 * x * x * x + 3 * x * x) + m * (x * x * x - 2 * x * x + x); };
-    }
-    let zielFilm = 0, fahrTempo = 0;
-    function abbrechen() {
-      if (fahrt) {
-        cancelAnimationFrame(fahrt); fahrt = null; eigen = false;
-      }
-    }
-    /* Wer "Ansehen" oder das vordere Bild drueckt, waehrend das Karussell
-       noch einrastet, kommt beim selben Film zurueck: die Fahrt lief sonst
-       unter dem Projekt weiter (oder setzte nach dem Abbrechen per
-       Nachziehen neu an), und nach dem Schliessen stand der naechste Film
-       vorn. Sobald das Projekt deckt, steht die Seite genau auf dem
-       geoeffneten Film. */
-    function hinstellenNach(k) {
-      abbrechen();
-      clearTimeout(ruhe);
-      let n = 0;
-      (function hinstellen() {
-        if (!document.body.classList.contains('is-viewing')) { if (++n < 40) setTimeout(hinstellen, 100); return; }
-        const sp = segmentPx();
-        if (sp <= 0) return;
-        abbrechen();
-        clearTimeout(ruhe);
-        eigen = true;
-        window.scrollTo({ top: Math.round(lauf.getBoundingClientRect().top + window.scrollY + sp * k), behavior: 'instant' });
-        drinnen = true;
-        setTimeout(function () { clearTimeout(ruhe); eigen = false; }, 60);
-      })();
-    }
-    ansehen.addEventListener('click', function () { hinstellenNach(vorn); });
-    // Ein Klick aufs vordere Bild selbst oeffnet ebenfalls (siehe openProject).
-    plaetze.forEach(function (p, k) { p.addEventListener('click', function () { hinstellenNach(k); }); });
-    ['wheel', 'touchstart', 'keydown', 'mousedown'].forEach(function (typ) {
-      window.addEventListener(typ, function (e) {
-        // Pfeile in der Schau fahren selbst weiter (vom Ziel der laufenden Fahrt aus)
-        if (typ === 'keydown' && (e.key === 'ArrowLeft' || e.key === 'ArrowRight') && wurzel.contains(e.target)) return;
-        abbrechen();
-      }, { passive: true, capture: true });  // Erfassen: vor dem Tastengriff der Schau, sonst braeche er seine eigene Fahrt ab
-    });
-    /* Solange ein Finger liegt, wird NIE nachgezogen. Vorher reichte es,
-       den Finger 0,14 s still zu halten: dann fuhr die Seite unter ihm los,
-       Geste und Programm stritten um die Position, und im Test sprang die
-       Seite dabei bis ganz nach oben. Nachgezogen wird erst, wenn der
-       Finger weg ist und der Schwung ausgelaufen. */
-    let finger = 0;
-    window.addEventListener('touchstart', function (e) { finger = e.touches.length; clearTimeout(ruhe); },
-                            { passive: true, capture: true });
-    ['touchend', 'touchcancel'].forEach(function (typ) {
-      window.addEventListener(typ, function (e) {
-        finger = e.touches.length;
-        if (!finger) { clearTimeout(ruhe); ruhe = setTimeout(nachziehen, 220); }
-      }, { passive: true, capture: true });
-    });
-    /* Schwung des Geraets anhalten. Lief nach einem Wisch noch der Schwung,
-       waehrend das Karussell bremste oder einrastete, zog jedes Bild beides
-       gegeneinander: der Schwung schob die Seite gut 25 px weiter, das
-       Karussell sie zurueck -- gemessen bis zu 378 px Ruecksprung, die Seite
-       sprang hin und her (und auf dem iPhone verrutschten dabei die festen
-       Hintergrundlagen: Sterne weg, blaue Kante). Fuer ein Bild nicht
-       scrollbar beendet den Schwung, das Setzen per Skript geht weiter. */
-    let schwungAus = false, gesperrt = false;
-    function schwungWeg() {
-      if (!beruehrung || schwungAus) return;
-      schwungAus = true;
-      document.documentElement.style.overflow = 'hidden';
-      requestAnimationFrame(function () {
-        requestAnimationFrame(function () {
-          schwungAus = false;
-          if (!gesperrt) document.documentElement.style.overflow = '';
-        });
-      });
-    }
-    /* Waehrend das Karussell eine Geste selbst fuehrt, bleibt die Seite fuer
-       den Browser gesperrt: unterbricht der Finger einen laufenden Schwung,
-       laesst sich die Bewegung nicht mehr abfangen (nicht "cancelable"), und
-       der Browser scrollte mit, waehrend das Karussell zurueckstellte. */
-    function sperren(an) {
-      gesperrt = an;
-      if (!schwungAus) document.documentElement.style.overflow = an ? 'hidden' : '';
-    }
-    function fahreZu(ziel) {
-      const sp = segmentPx();
-      if (sp <= 0) return;
-      const v0 = fahrt ? fahrTempo : 0;
-      abbrechen();
-      schwungWeg();
-      zielFilm = ziel;
-      const oben = lauf.getBoundingClientRect().top + window.scrollY;
-      const von = window.scrollY;
-      const nach = Math.round(oben + sp * ziel);
-      const weg = nach - von;
-      if (Math.abs(weg) < 1) return;
-      const dauer = 900;
-      const t0 = performance.now();
-      const kurve = v0 * weg > 0 ? weich(Math.min(3, v0 * dauer / weg)) : glatt;
-      let vorY = von, vorT = t0;
-      fahrTempo = 0;
-      eigen = true;
-      (function schritt(jetzt) {
-        const x = Math.min(1, (jetzt - t0) / dauer);
-        const y = von + weg * kurve(x);
-        if (jetzt > vorT) { fahrTempo = (y - vorY) / (jetzt - vorT); vorY = y; vorT = jetzt; }
-        window.scrollTo({ top: y, behavior: 'instant' });
-        if (x < 1) fahrt = requestAnimationFrame(schritt);
-        else {
-          fahrt = null; drinnen = true;
-          setTimeout(function () { eigen = false; }, 60);
-        }
-      })(t0);
-    }
-    function nachziehen() {
-      if (eigen || finger) return;
-      const r = rohStand();
-      if (r < -0.001 || r > N - 1 + PUFFER + 0.001) return;   // ausserhalb: normal scrollen
-      // Am ersten Film oder im Puffer hinter dem letzten: schon am Ziel.
-      if (r <= 0.002 || r >= N - 1 - 0.002) { drinnen = true; return; }
-      const unten = Math.floor(r), rest = r - unten;
-      if (rest < 0.01 || rest > 0.99) { drinnen = true; return; }
-      if (drinnen) fahreZu(richtung > 0 ? unten + 1 : unten);
-      else fahreZu(richtung > 0 ? unten : unten + 1);    // erst ankommen
-    }
-
-    /* Bremse: Ein kraeftiger Schwung (Trackpad, Wischen, schnell gedrehtes
-       Rad) trug frueher ueber mehrere Filme hinweg, ohne dass man sie sah.
-       Jetzt darf der Scrollstand dem vorn stehenden Bild hoechstens einen
-       Film voraus sein. Schnell durch geht also, nur nie ungesehen. Die Buehne steht
-       waehrenddessen fest (sticky) -- das Zurueckhalten selbst sieht man nicht. */
-    function grenzen() {
-      if (anzeige === null) return null;
-      // Erreicht ist ein Film, sobald er vorn steht (halber Weg).
-      const gezeigt = Math.round(anzeige / SCHRITT);
-      return [gezeigt - 1, gezeigt + 1];
-    }
-    /* Wer gegen die Bremse drueckt, will zuegig durch: dann dreht die Feder
-       schneller -- jedes Bild steht kurz vorn, man merkt, was da war, muss
-       aber nicht warten. */
-    let gedrueckt = 0;
-    function eilig() { return performance.now() - gedrueckt < 400; }
-    /* Gebremst wird nur Schwung aus Rad, Finger oder Scrolltasten. Spruenge
-       (Link auf #kontakt, Ende-Taste, Rollbalken) gleiten wegen
-       scroll-behavior: smooth ebenfalls durchs Karussell und blieben sonst
-       beim ersten Film haengen. Drei Sekunden decken das Ausgleiten nach
-       dem Loslassen ab. */
-    let eingabe = -Infinity;
-    function merken() { eingabe = performance.now(); }
-    ['wheel', 'touchstart', 'touchmove', 'touchend'].forEach(function (t) {
-      window.addEventListener(t, merken, { passive: true });
-    });
-    window.addEventListener('keydown', function (e) {
-      if (/^(ArrowDown|ArrowUp|PageDown|PageUp| |Spacebar)$/.test(e.key)) merken();
-      else if (e.key === 'End' || e.key === 'Home') eingabe = -Infinity;
-    });
-    // Klick auf den Rollbalken der Seite
-    window.addEventListener('mousedown', function (e) {
-      if (e.target === document.documentElement) eingabe = -Infinity;
-    });
-    function bremsen(r) {
-      if (eigen || r < -0.001 || r > N - 1 + PUFFER + 0.001) return false;
-      if (performance.now() - eingabe > 3000) return false;
-      const g = grenzen();
-      if (!g) return false;
-      let soll = null;
-      if (richtung > 0 && g[1] < N - 1 && r > g[1] + 0.001) soll = g[1];
-      else if (richtung < 0 && g[0] > 0 && r < g[0] - 0.001) soll = g[0];
-      if (soll === null) return false;
-      gedrueckt = performance.now();
-      schwungWeg();
-      const y = Math.round(lauf.getBoundingClientRect().top + window.scrollY + segmentPx() * soll);
-      window.scrollTo({ top: y, behavior: 'instant' });
-      letztesY = window.scrollY;
-      return true;
-    }
-    /* Mausrad an der Grenze: gar nicht erst scrollen lassen. */
-    window.addEventListener('wheel', function (e) {
-      if (eigen || !e.deltaY) return;
-      const r = rohStand();
-      if (r < -0.001 || r > N - 1 + PUFFER + 0.001) return;
-      const g = grenzen();
-      if (!g) return;
-      if ((e.deltaY > 0 && g[1] < N - 1 && r >= g[1] - 0.001) ||
-          (e.deltaY < 0 && g[0] > 0 && r <= g[0] + 0.001)) {
-        e.preventDefault();
-        gedrueckt = performance.now();
-        richtung = e.deltaY > 0 ? 1 : -1;
-        clearTimeout(ruhe);
-        ruhe = setTimeout(nachziehen, 140);
-      }
-    }, { passive: false });
-
-    let offen = false;
-    function anstossen() {
-      if (!offen) {
-        offen = true;
-        requestAnimationFrame(function () { offen = false; stelle(); });
-      }
-      const y = window.scrollY;
-      if (!eigen && y !== letztesY) richtung = y > letztesY ? 1 : -1;
-      bremsen(rohStand());
-      const r = rohStand();
-      if (r < -0.001 || r > N - 1 + PUFFER + 0.001) drinnen = false;
-      // Nur mit dem Layout, zu dem er gehoert (siehe resize)
-      if (innerWidth === fensterB && innerHeight === fensterH) stand = r;
-      letztesY = window.scrollY;
-      clearTimeout(ruhe);
-      // Auf Touch etwas laenger warten: dort laeuft nach dem Loslassen noch
-      // der Schwung des Geraets, mit Pausen zwischen den Ereignissen.
-      ruhe = setTimeout(nachziehen, beruehrung ? 260 : 140);
-    }
-    window.addEventListener('scroll', anstossen, { passive: true });
-    /* Neue Fenstergroesse, derselbe Film. Die Scrollstrecke haengt an der
-       Fensterhoehe, und alles darueber wird bei anderer Breite anders hoch
-       -- der Scrollstand blieb aber derselbe. Gemessen: The Mountains vorn,
-       Fenster von 2560 auf 1366 verkleinert, danach stand The South vorn;
-       ebenso beim Drehen des iPads. Jetzt wird der Stand in Filmen
-       gemerkt und nach der Aenderung wieder angefahren. Auf Touch nur bei
-       neuer Breite: dort aendert die Adressleiste staendig die Hoehe, und
-       ein Sprung mitten im Schwung waere schlimmer als der Fehler. */
-    let stand = rohStand(), fensterB = innerWidth, fensterH = innerHeight;
-    window.addEventListener('resize', function () {
-      const neu = innerWidth !== fensterB || (!beruehrung && innerHeight !== fensterH);
-      fensterB = innerWidth; fensterH = innerHeight;
-      if (neu && !finger && stand >= -0.001 && stand <= N - 1 + PUFFER + 0.001) {
-        const sp = segmentPx();
-        if (sp > 0) {
-          abbrechen();
-          eigen = true;
-          window.scrollTo({ top: Math.round(lauf.getBoundingClientRect().top + window.scrollY + sp * stand), behavior: 'instant' });
-          karussellHielt = true;
-          setTimeout(function () { eigen = false; }, 60);
-        }
-      }
-      stand = rohStand();
-      breite = buehne.offsetWidth;
-      if (anzeige !== null) zeichne(anzeige);
-      stelle();
-      /* Neu ansetzen statt nur abbrechen: auf dem Handy kommt beim Ausfahren
-         der Adressleiste oft ein resize NACH dem letzten scroll -- das
-         Nachziehen fiel dann aus, und das Karussell blieb zwischen zwei
-         Filmen stehen. */
-      clearTimeout(ruhe);
-      ruhe = setTimeout(nachziehen, beruehrung ? 260 : 140);
-    });
-
-    /* ---- Wischen auf Touch ----
-       Gemessen mit echten Wischgesten: ein Wisch mit Schwung schoss ueber
-       zwei, drei Filme oder das ganze Karussell hinweg, und CSS-Rasten
-       (scroll-snap-stop) haelt Chrome bei schnellen Wischern nicht ein.
-       Deshalb fuehrt das Karussell die Geste selbst, solange es eingerastet
-       auf einem Film steht: das Bild folgt dem Finger eins zu eins, hoechstens
-       bis zum Nachbarfilm, und beim Loslassen faehrt es weich genau EINEN
-       Film weiter oder zurueck -- egal wie kraeftig gewischt wurde. Ab einem
-       Viertel des Weges oder mit Schwung geht es weiter, sonst zurueck.
-       Quer wischen geht auch: nach links ist der naechste Film, wie man es
-       von Bildern auf dem Handy kennt.
-       Am ersten Film nach oben und am letzten nach unten gehoert die Geste
-       wieder dem Browser: dort scrollt man ganz normal hinaus.
-       Der Horcher haengt nur an der Buehne, nicht am ganzen Fenster -- ein
-       nicht-passiver Touch-Horcher am Fenster wuerde jedes Scrollen der
-       Seite ausbremsen. */
-    if (beruehrung) {
-      let geste = null;
-      /* Dieselbe Grenze wie die Bremse: hoechstens einen Film weiter als das
-         Bild, das gerade vorn steht. Vorher galt hier "einen Film weiter als
-         beim Aufsetzen" -- bei schnell aufeinanderfolgenden Wischern lag das
-         vor dem gezeigten Bild, die Geste schob vor und die Bremse gleich
-         wieder zurueck (gemessen 253 px Ruecksprung). */
-      function gestenGrenzen(r0) {
-        let lo = Math.max(0, r0 - 1), hi = Math.min(N - 1, r0 + 1);
-        const g = grenzen();
-        if (g) { lo = Math.max(lo, Math.min(g[0], hi)); hi = Math.min(hi, Math.max(g[1], lo)); }
-        return [lo, hi];
-      }
-      halt.addEventListener('touchstart', function (e) {
-        geste = null;
-        if (e.touches.length !== 1) return;
-        const r = rohStand();
-        if (r < -0.03 || r > N - 1 + 0.03) return;          // nicht im Karussell
-        const p = e.touches[0];
-        geste = { x0: p.clientX, y0: p.clientY, s0: window.scrollY, r0: Math.round(Math.min(N - 1, Math.max(0, r))),
-                  modus: null, w: p.clientY, t: performance.now(), v: 0 };
-      }, { passive: true });
-      halt.addEventListener('touchmove', function (e) {
-        if (!geste || e.touches.length !== 1) return;
-        const p = e.touches[0];
-        const dx = geste.x0 - p.clientX, dy = geste.y0 - p.clientY;   // > 0: vorwaerts
-        if (geste.modus === null) {
-          if (Math.abs(dx) < 3 && Math.abs(dy) < 3) return;
-          const quer = Math.abs(dx) > Math.abs(dy);
-          const vor = quer ? dx > 0 : dy > 0;
-          const raus = !quer && ((geste.r0 === 0 && !vor) || (geste.r0 === N - 1 && vor));
-          geste.modus = raus ? 'browser' : (quer ? 'quer' : 'hoch');
-          if (geste.modus === 'browser') return;
-          abbrechen();
-          sperren(true);
-          eigen = true;
-        }
-        if (geste.modus === 'browser') return;
-        if (e.cancelable) e.preventDefault();
-        const sp = segmentPx();
-        // quer: eine Bildbreite Wischen entspricht einem Film
-        const weg = geste.modus === 'quer' ? dx * sp / Math.max(120, breite * 0.8) : dy;
-        const jetzt = performance.now(), wert = geste.modus === 'quer' ? p.clientX : p.clientY;
-        const v = (geste.w - wert) / Math.max(1, jetzt - geste.t);        // px je ms, > 0 vorwaerts
-        geste.v = 0.6 * geste.v + 0.4 * v;
-        geste.w = wert; geste.t = jetzt;
-        const oben = lauf.getBoundingClientRect().top + window.scrollY;
-        const [lo, hi] = gestenGrenzen(geste.r0);
-        const roh = geste.s0 + weg;
-        // Gegen die Bremse gewischt: die Drehung zieht an (siehe eilig()).
-        if (roh > oben + sp * hi + 1 || roh < oben + sp * lo - 1) gedrueckt = performance.now();
-        const ziel = Math.max(oben + sp * lo, Math.min(oben + sp * hi, roh));
-        window.scrollTo({ top: ziel, behavior: 'instant' });
-      }, { passive: false });
-      function loslassen() {
-        const g = geste;
-        geste = null;
-        if (!g || g.modus === null || g.modus === 'browser') return;
-        sperren(false);
-        eigen = false;
-        // Schwung nur, wenn der Finger zuletzt noch in Bewegung war.
-        const v = performance.now() - g.t < 90 ? g.v : 0;
-        const d = rohStand() - g.r0;
-        let n = g.r0;
-        if (d > 0.25 || v > 0.3) n = g.r0 + 1;
-        else if (d < -0.25 || v < -0.3) n = g.r0 - 1;
-        const [lo, hi] = gestenGrenzen(g.r0);
-        fahreZu(Math.max(lo, Math.min(hi, n)));
-      }
-      halt.addEventListener('touchend', loslassen, { passive: true });
-      halt.addEventListener('touchcancel', loslassen, { passive: true });
-
-      /* Tippen oeffnet nur, wenn das Karussell beim Aufsetzen stillstand. Wer eine Fahrt mit dem Finger anhielt oder zum naechsten
-         Wisch ansetzte, oeffnete sonst den Film, der gerade darunter
-         durchlief -- meist The Mountains, den zweiten. */
-      let bewegt = 0, tippGut = false, tippEnde = 0, tx = 0, ty = 0;
-      window.addEventListener('scroll', function () { bewegt = performance.now(); }, { passive: true });
-      halt.addEventListener('touchstart', function (e) {
-        const p = e.touches[0];
-        tx = p.clientX; ty = p.clientY;
-        tippGut = e.touches.length === 1 && performance.now() - bewegt > 180;
-      }, { passive: true, capture: true });
-      halt.addEventListener('touchmove', function (e) {
-        const p = e.touches[0];
-        if (Math.abs(p.clientX - tx) > 10 || Math.abs(p.clientY - ty) > 10) tippGut = false;
-      }, { passive: true, capture: true });
-      halt.addEventListener('touchend', function () { tippEnde = performance.now(); }, { passive: true, capture: true });
-      wurzel.addEventListener('click', function (e) {
-        if (performance.now() - tippEnde > 800 || tippGut) return;      // Maus, Tastatur oder sauberer Tipp
-        if (!e.target.closest || !e.target.closest('.schau-platz')) return;
-        e.preventDefault();
-        e.stopPropagation();
-      }, true);
-    }
-
-    /* Mit der Tastatur einen Film weiter, solange der Fokus in der Schau
-       steht. Ohne Pfeile und Striche waere das sonst die einzige Bedienung,
-       die fehlt. */
-    wurzel.addEventListener('keydown', function (e) {
-      if (e.key !== 'ArrowLeft' && e.key !== 'ArrowRight') return;
-      e.preventDefault();
-      // Gedrueckt halten: erst weiter, wenn die Fahrt angekommen ist
-      if (e.repeat && fahrt) return;
-      // Waehrend einer Fahrt zaehlt ihr Ziel -- sonst schluckten schnelle
-      // Druecke Schritte (dreimal rechts in 0,12 s kam nur ein Film weiter).
-      const basis = fahrt ? zielFilm : Math.round(Math.min(N - 1, Math.max(0, rohStand())));
-      fahreZu(Math.max(0, Math.min(N - 1, basis + (e.key === 'ArrowRight' ? 1 : -1))));
-    });
-
-    /* Bild ab, Bild auf und Leertaste scrollen fast eine ganze Fensterhoehe
-       -- mehr als das halbe Karussell. Von oben kommend landete man damit
-       gleich beim dritten Film, der zweite Druck schoss am letzten vorbei.
-       Faellt so ein Sprung ins Karussell, faehrt es stattdessen genau einen
-       Film weiter (oder zum ersten bzw. letzten, wenn man hineinkommt). Die
-       Pfeiltasten brauchen das nicht: ihre 40 px erledigt das Nachziehen. */
-    window.addEventListener('keydown', function (e) {
-      if (e.defaultPrevented || e.ctrlKey || e.altKey || e.metaKey) return;
-      if (document.body.classList.contains('is-viewing')) return;
-      const k = e.key;
-      const leer = k === ' ' || k === 'Spacebar';
-      if (k !== 'PageDown' && k !== 'PageUp' && !leer) return;
-      const z = e.target;
-      if (z && z.closest && z.closest('input, textarea, select, [contenteditable]')) return;
-      if (leer && z && z.closest && z.closest('button, a, [role="button"]')) return;
-      const sp = segmentPx();
-      if (sp <= 0) return;
-      const runter = k === 'PageDown' || (leer && !e.shiftKey);
-      const r = rohStand(), sprung = 0.875 * window.innerHeight / sp, rand = 0.02;
-      let n;
-      if (runter) {
-        if (r >= N - 1 - rand || r + sprung <= rand) return;
-        n = r < -rand ? 0 : Math.floor(r + rand) + 1;
-      } else {
-        if (r <= rand || r - sprung >= N - 1 - rand) return;
-        n = r > N - 1 + rand ? N - 1 : Math.ceil(r - rand) - 1;
-      }
-      e.preventDefault();
-      fahreZu(Math.max(0, Math.min(N - 1, n)));
-    });
-
-    /* Ein Titelbild, das erst nach dem letzten Zeichnen fertig laedt, bekam
-       sonst die Standard-Deckkraft seines Hofs -- auch hinten, unsichtbar. */
-    buehne.addEventListener('hofda', function () { if (anzeige !== null) zeichne(anzeige); });
-    stelle();
-    uebernehmen();
-  });
 
   /* ---------- Dieselbe Stelle bei neuer Fenstergroesse ----------
      Dreht man das iPad oder zieht das Fenster kleiner, wird alles darueber
@@ -5271,14 +4565,13 @@
     window.addEventListener('resize', function () {
       const neu = innerWidth !== b || (!beruehrung && innerHeight !== h);
       b = innerWidth; h = innerHeight;
-      if (neu && !karussellHielt && anker && anker.isConnected) {
+      if (neu && anker && anker.isConnected) {
         const r = anker.getBoundingClientRect();
         const ziel = r.top + window.scrollY + ankerY * r.height - innerHeight / 3;
         window.scrollTo({ top: Math.max(0, Math.round(ziel)), behavior: 'instant' });
       }
       const k = kasten();
       if (neu && k && pAnker && k.contains(pAnker)) k.scrollTop += Math.round(versatz(pAnker, pAnkerY));
-      karussellHielt = false;
       spaeterMerken();
     });
   });
