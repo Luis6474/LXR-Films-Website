@@ -585,6 +585,11 @@
     max-width: none;
     text-wrap: balance;
   }
+  /* Bricht die Zeile um, dann zwischen den beiden Saetzen, nicht mitten im
+     zweiten ("Fuer / dein Unternehmen"). Am Telefon passt "Fuer dein
+     Unternehmen." nur mit etwas engerer Sperrung in eine Zeile. */
+  .hero-content h1 .satz { display: inline-block; }
+  @media (max-width: 599px) { .hero-content h1 { letter-spacing: 0.12em; } }
   /* Im kleinen Zustand übernimmt die Laufschrift. */
   /* Die Animation muss mit abgeschaltet werden: 'animation-fill-mode: both'
      haelt ihren Endwert (Deckkraft 1) fest, und animierte Werte stehen in der
@@ -1715,7 +1720,7 @@
       </div>
       <div class="hero-content" id="heroContent">
         <span class="eyebrow">LXR Films</span>
-        <h1>Film, der mehr zeigt als nur Bilder</h1>
+        <h1><span class="satz">Film statt Video.</span> <span class="satz">Für dein Unternehmen.</span></h1>
       </div>
     </div>
 
@@ -1723,7 +1728,7 @@
          als das Video, damit die Zeile seitlich darüber hinausläuft. -->
     <div class="hero-marquee" id="heroMarquee" aria-hidden="true">
       <div class="marquee-track">
-        <span class="m-group"><span class="m-word">Film, der mehr zeigt als nur Bilder</span><span class="m-word">Film, der mehr zeigt als nur Bilder</span><span class="m-word">Film, der mehr zeigt als nur Bilder</span></span><span class="m-group"><span class="m-word">Film, der mehr zeigt als nur Bilder</span><span class="m-word">Film, der mehr zeigt als nur Bilder</span><span class="m-word">Film, der mehr zeigt als nur Bilder</span></span>
+        <span class="m-group"><span class="m-word">Film statt Video. Für dein Unternehmen.</span><span class="m-word">Film statt Video. Für dein Unternehmen.</span><span class="m-word">Film statt Video. Für dein Unternehmen.</span></span><span class="m-group"><span class="m-word">Film statt Video. Für dein Unternehmen.</span><span class="m-word">Film statt Video. Für dein Unternehmen.</span><span class="m-word">Film statt Video. Für dein Unternehmen.</span></span>
       </div>
     </div>
   </section>
@@ -1732,8 +1737,9 @@
     <div class="band-inner">
       <div class="band-grid lead-grid">
         <div class="band-text reveal">
-          <p class="opening">Ich warte auf das richtige Licht.</p>
-          <p class="body" style="margin-top:24px">Auf Nebel, der sich hebt, auf die Blaue Stunde, auf den Moment, in dem ein Ort seine Stimmung zeigt. Daraus entstehen Filme, die nicht laut sein müssen, um in Erinnerung zu bleiben.</p>
+          <p class="opening">2023 meine erste Drohne.</p>
+          <p class="opening" style="margin-top:14px">2026 ein Kurzfilm mit Schauspieler in den schottischen Highlands.</p>
+          <p class="body" style="margin-top:24px">Dazwischen: die Alpen, die Ostsee, eine Dampflok und mein erster Film für einen Familienbetrieb. Heute stecke ich denselben Aufwand in Filme für Betriebe, Manufakturen und die Menschen dahinter.</p>
         </div>
         <figure class="band-figure reveal-media">
           <div class="figure-media aura-host" style="--fig-ar: 2560 / 1336">
