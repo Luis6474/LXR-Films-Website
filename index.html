@@ -758,12 +758,18 @@
 
   .card-head { display: flex; align-items: center; gap: 20px; padding: 20px 0; }
   .card-preview { width: 112px; flex-shrink: 0; aspect-ratio: 2 / 1; overflow: hidden; background: var(--bg-deep); }
+  /* In Ruhe in voller Farbe -- dort steht das Bild fast immer. Beim
+     Ueberfahren um denselben Schritt kraeftiger wie vorher (Saettigung
+     +0,2, Helligkeit +0,12); bei der kleinen Vorschau darf das ruhig
+     etwas satt werden. Leicht vergroessert und auf eigener Ebene, damit
+     beim Zurueckzoomen kein schwarzer Spalt am Rand entsteht (siehe .werk-bild). */
   .card-preview img {
     transition: transform 0.9s var(--ease), filter 0.9s var(--ease);
-    filter: saturate(0.8) brightness(0.88);
+    transform: scale(1.01); will-change: transform; backface-visibility: hidden;
+    filter: saturate(1) brightness(1);
   }
   @media (hover: hover) {
-    .card-trigger:hover .card-preview img { transform: scale(1.05); filter: saturate(1) brightness(1); }
+    .card-trigger:hover .card-preview img { transform: scale(1.06); filter: saturate(1.2) brightness(1.12); }
   }
 
   .card-info { flex: 1; min-width: 0; }
@@ -1727,7 +1733,7 @@
       <div class="band-grid lead-grid">
         <div class="band-text reveal">
           <p class="opening">Ich warte auf das richtige Licht.</p>
-          <p class="body" style="margin-top:24px">Auf Nebel, der sich hebt, auf die Blaue Stunde, auf den Moment, in dem ein Ort seine Stimmung zeigt. Daraus entstehen Filme, die nicht laut sein müssen, um hängen zu bleiben.</p>
+          <p class="body" style="margin-top:24px">Auf Nebel, der sich hebt, auf die Blaue Stunde, auf den Moment, in dem ein Ort seine Stimmung zeigt. Daraus entstehen Filme, die nicht laut sein müssen, um in Erinnerung zu bleiben.</p>
         </div>
         <figure class="band-figure reveal-media">
           <div class="figure-media aura-host" style="--fig-ar: 2560 / 1336">
@@ -1737,7 +1743,7 @@
                  alt="Eine Burg über herbstlichem Wald im Sauerland unter grauem Himmel"
                  loading="lazy" decoding="async">
           </div>
-          <figcaption>Frame aus meinem ersten Projekt Ende 2023</figcaption>
+          <figcaption>Frame aus meinem ersten Projekt, Ende 2023</figcaption>
         </figure>
       </div>
     </div>
@@ -1972,8 +1978,10 @@
         <div class="band-text reveal">
           <h2>Mein Equipment</h2>
           <p class="lead">Gute Bilder entstehen nicht zufällig – sie brauchen Kontrolle über Licht, Bewegung und Ton.</p>
-          <p class="body">Ich filme mit der Lumix S5 II für einen sauberen, cineastischen Look und präzise Farben. Dazu setze ich lichtstarke Optiken ein, die vom weiten Überblick bis zur feinen Detailaufnahme alles abdecken. Ruhige Kamerafahrten und gezielt gesetztes Licht sorgen für Atmosphäre und ein hochwertiges Erscheinungsbild; der Ton wird genauso sorgfältig aufgenommen, damit Aussagen klar und nah klingen.</p>
-          <p class="body">Wenn es die Geschichte verlangt, ergänze ich das durch Drohnenaufnahmen mit der DJI Mavic 3 Classic – für weite Establishing-Shots und fließende Übergänge von oben. Am Ende liefere ich flexibel nach Wunsch: in 24, 25 oder 30 fps und in HD, 4K oder 5K – oder genau in der Auflösung und Framerate, die benötigt wird.</p>
+          <p class="body">Ich filme mit der Lumix S5 II, mit einem 14-mm-Weitwinkel für Landschaften und enge Räume und dem Sigma 150–600 mm für Tiere und Details aus der Distanz. In Schottland habe ich damit Kormorane, Nebel über den Bergen und Highland Cattle gefilmt. Für mehr Charakter greife ich zu Vintage-Objektiven: weicher, mit eigenwilligen Reflexen.</p>
+          <p class="body">Gimbal, Slider und Dolly lassen eine Einstellung schweben, gleiten oder langsam heranfahren, die DJI Mavic 3 Classic ergänzt den Blick von oben.</p>
+          <p class="body">LED-Panels und Softboxen treffen jede Farbtemperatur und Lichtfarbe, vom kühlen Fensterlicht bis zum Kaminfeuer. In Auchindrain haben wir so die Morgensonne durchs Fenster fallen lassen. Ein Hazer füllt den Raum mit feinem Dunst, in dem Lichtstrahlen sichtbar werden, wie Scheinwerfer im Nebel. Generator und Powerstation machen all das auch ohne Steckdose möglich.</p>
+          <p class="body">Ich liefere in 24, 25 oder 30 fps und in HD, 4K oder 5K, oder in genau dem Format, das gebraucht wird.</p>
         </div>
         <figure class="band-figure reveal-media">
           <div class="figure-media aura-host" style="--fig-ar: 4 / 3">
