@@ -1573,7 +1573,9 @@
        nach oben ins Bild. Ein zusaetzlicher Versatz waere hier zu viel. */
     .hero.is-docked { height: 62vh; min-height: 0; --dock-drop: 0px; }
     .hero-aura { width: 100vw; height: min(150vh, 121vw); }
-    .m-word { font-size: clamp(1.25em, 7vw, 2em); }
+    /* Kleiner und etwas enger als am PC: so steht fast ein ganzer Satz auf
+       einmal im Bild, statt dass man ihn Wort fuer Wort abwarten muss. */
+    .m-word { font-size: clamp(1em, 4.6vw, 2em); letter-spacing: 0.14em; }
     .card-open { display: none; }
     .card-preview { width: 96px; }
     .card-head { gap: 14px; padding: 15px 0; }
