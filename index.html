@@ -1435,6 +1435,9 @@
   @media (hover: hover) { .karte-schritt:hover { background: rgba(240, 206, 156, 0.2); border-color: rgba(255, 226, 190, 0.8); } }
   .karte-schritt:focus-visible { outline: 1px solid rgba(255, 226, 190, 0.8); outline-offset: 3px; }
   .karte-schritt:disabled { opacity: 0.25 !important; cursor: default; }
+  /* Vor dem Laden der Karte noch ausgeblendet, aber schon per Tab
+     erreichbar: dann sofort sichtbar, statt dass der Fokus im Leeren steht. */
+  .karte-schritt:focus-visible, .karte-weiter:focus-visible { opacity: 1; }
   /* Karte ueberspringen: gut sichtbar, im warmen Ton der Route, mit einem
      leisen Aufleuchten, wenn die Karte erscheint -- wer ihn uebersieht,
      aergert sich ueber die Laenge der Reise. */
@@ -1556,6 +1559,12 @@
   /* Ist der Knopf am Ende des Projekts zu sehen, weicht der obere: nie
      zweimal "Schliessen" gleichzeitig. */
   .viewer.unten-zu .viewer-x { opacity: 0; pointer-events: none; }
+  /* Ausgeblendet auch fuer die Tastatur: sonst landete Tab auf einem
+     unsichtbaren Knopf. 'visibility' springt erst nach dem Ausblenden um,
+     beim Einblenden sofort (dort gilt der Uebergang der Grundregel). */
+  .viewer.karte-deckt .viewer-x, .viewer.x-weicht .viewer-x, .viewer.unten-zu .viewer-x {
+    visibility: hidden; transition: opacity 0.4s var(--ease), visibility 0s linear 0.4s;
+  }
 
   /* ---------- Schmale Schirme ----------
      Die einzeilige Kartenzeile funktioniert hier nicht: Für den Text bleiben
@@ -3544,6 +3553,14 @@
         schwarz.remove();
         wrap.classList.remove('gleitet');
         stage.style.transition = ''; stage.style.transformOrigin = '';
+        /* Kam der Anstoss von der Tab-Taste, stand der Fokus schon auf einem
+           Element weiter unten -- das 'scrollTop = 0' oben schob es wieder
+           aus dem Bild. Jetzt, wo der Film steht, dorthin zurueck. */
+        const f = document.activeElement;
+        if (f && f !== sc && sc.contains(f) && !f.matches('.viewer-head h2')) {
+          const r = f.getBoundingClientRect(), s = sc.getBoundingClientRect();
+          if (r.bottom > s.bottom || r.top < s.top) f.scrollIntoView({ block: 'center', behavior: 'smooth' });
+        }
       }, 1000);
     }
     wrap.classList.add('gross');
@@ -8127,8 +8144,14 @@
     knopfVor.addEventListener('click', function () { stationsSchritt(1); });
     function knoepfe() {
       const i = haltIndex();
+      /* Ein abgeschalteter Knopf verliert den Fokus, und der fiel dann ins
+         Leere (Enter auf "vor" bis zur letzten Station). Er geht deshalb an
+         den anderen Pfeil. */
+      const f = document.activeElement;
       knopfZurueck.disabled = i === 0;
       knopfVor.disabled = i === HALTE.length - 1;
+      if (f === knopfZurueck && knopfZurueck.disabled && !knopfVor.disabled) knopfVor.focus({ preventScroll: true });
+      if (f === knopfVor && knopfVor.disabled && !knopfZurueck.disabled) knopfZurueck.focus({ preventScroll: true });
     }
     /* Zeitleiste: ziehen oder klicken springt zu dem Tag (bei den
        Alpenkarten: zu dem Ort) unter dem Finger -- das ist der schnelle Weg
