@@ -625,7 +625,18 @@
   function legen(s) {
     const tafel = s.querySelector('.zl-tafel');
     const figs = Array.from(tafel.children);
-    if (!buehne()) { figs.forEach(function (f) { f.removeAttribute('style'); }); return; }
+    if (!buehne()) {
+      /* In der Liste fuellt jedes Bild seinen Rahmen (4:3 oder 16:9) und wird
+         dabei beschnitten. Gebraucht wird also die Breite des Bildes bei
+         dieser Hoehe, nicht die des Rahmens -- die Schaetzung im HTML
+         ("halbe Fensterbreite") lag am Telefon bis zur Haelfte darunter. */
+      figs.forEach(function (f) {
+        f.removeAttribute('style');
+        const bild = f.querySelector('img'), r = f.getBoundingClientRect();
+        if (bild && r.width) bild.sizes = Math.ceil(Math.max(r.width, r.height * (parseFloat(f.dataset.ar) || 1.5))) + 'px';
+      });
+      return;
+    }
     const W = tafel.clientWidth, H = tafel.clientHeight;
     if (!W || !H) return;
     const ar = figs.map(function (f) { return parseFloat(f.dataset.ar) || 1.5; });
