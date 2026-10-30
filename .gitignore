@@ -20,3 +20,10 @@ Images/Bilder Karte Same gray/Frames aus dem Film/
 # Alte Hero-Fassungen (die Seite nutzt hero-v4-*)
 video/web/hero-1080.mp4
 video/web/hero-720.mp4
+
+# Nur lokal: Werkzeuge und Arbeitsdateien, die nicht zur Website gehoeren.
+# GitHub Pages veroeffentlicht jede Datei im Repository.
+/werkzeug/
+/optimize-images.py
+/Code.code-workspace
+/WebsiteV2
