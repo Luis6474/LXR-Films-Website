@@ -73,6 +73,8 @@
   p { margin: 0; text-wrap: pretty; }
   h1, h2, h3 { text-wrap: balance; }
   img, video { display: block; width: 100%; height: 100%; object-fit: cover; }
+  /* Bilder mit eigener Handy-Fassung: das Bild bleibt direkt im Rahmen */
+  picture { display: contents; }
   .eyebrow {
     font-size: 0.72em; letter-spacing: 0.2em; text-transform: uppercase; color: var(--text-dim);
   }
@@ -431,12 +433,12 @@
             <p>Wenn gerade kein Videoprojekt anstand, fotografierte ich sehr viel, auch in analog.</p>
           </div>
           <div class="zl-tafel">
-            <figure class="zl-bild gross" data-ar="1.5"><img src="../Images/web/timeline/analog-rapsfeld.jpg" width="1536" height="1024" alt="Analogfoto: ein Rapsfeld, dahinter in der Ferne ein Küstenort und das Meer" loading="lazy" decoding="async"></figure>
+            <figure class="zl-bild gross" data-ar="1.5"><picture><source media="(max-width: 699px)" srcset="../Images/web/timeline/analog-rapsfeld-1100.webp" type="image/webp"><img src="../Images/web/timeline/analog-rapsfeld.jpg" width="1536" height="1024" alt="Analogfoto: ein Rapsfeld, dahinter in der Ferne ein Küstenort und das Meer" loading="lazy" decoding="async"></picture></figure>
             <figure class="zl-bild" data-ar="1.333"><img src="../Images/web/timeline/img-8531-800.webp" srcset="../Images/web/timeline/img-8531-800.webp 800w, ../Images/web/timeline/img-8531-1600.webp 1600w, ../Images/web/timeline/img-8531-2400.webp 2400w" sizes="(min-width: 700px) 50vw, 50vw" width="4032" height="3024" alt="Luis filmt aus dem Autofenster eine verschneite Landschaft" loading="lazy" decoding="async"></figure>
             <figure class="zl-bild" data-ar="1.155"><img src="../Images/web/timeline/img-8746-800.webp" srcset="../Images/web/timeline/img-8746-800.webp 800w, ../Images/web/timeline/img-8746-1600.webp 1600w, ../Images/web/timeline/img-8746-2400.webp 2400w" sizes="(min-width: 700px) 50vw, 50vw" width="3492" height="3024" alt="Luis fotografiert auf einem Weg zwischen kahlen Bäumen" loading="lazy" decoding="async"></figure>
             <figure class="zl-bild" data-ar="1.333"><img src="../Images/web/timeline/img-9433-800.webp" srcset="../Images/web/timeline/img-9433-800.webp 800w, ../Images/web/timeline/img-9433-1600.webp 1600w, ../Images/web/timeline/img-9433-2400.webp 2400w" sizes="(min-width: 700px) 50vw, 50vw" width="4032" height="3024" alt="Luis fotografiert am Flussufer, gegenüber eine Altstadt" loading="lazy" decoding="async"></figure>
             <figure class="zl-bild" data-ar="1.333"><img src="../Images/web/timeline/img-0018-800.webp" srcset="../Images/web/timeline/img-0018-800.webp 800w, ../Images/web/timeline/img-0018-1600.webp 1600w, ../Images/web/timeline/img-0018-2400.webp 2400w" sizes="(min-width: 700px) 50vw, 50vw" width="4032" height="3024" alt="Luis auf einem Steg zwischen Segelbooten" loading="lazy" decoding="async"></figure>
-            <figure class="zl-bild" data-ar="1.5"><img src="../Images/web/timeline/analog-strand.jpg" width="1536" height="1024" alt="Analogfoto: Wellen brechen an alten Buhnen am Strand, vorne Strandgras" loading="lazy" decoding="async"></figure>
+            <figure class="zl-bild" data-ar="1.5"><picture><source media="(max-width: 699px)" srcset="../Images/web/timeline/analog-strand-1100.webp" type="image/webp"><img src="../Images/web/timeline/analog-strand.jpg" width="1536" height="1024" alt="Analogfoto: Wellen brechen an alten Buhnen am Strand, vorne Strandgras" loading="lazy" decoding="async"></picture></figure>
           </div>
         </li>
         <li class="zl-station" data-jahr="2024" style="--farbe: #6f8a86">
