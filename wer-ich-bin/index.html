@@ -204,6 +204,9 @@
   /* Mit einem grossen Bild (eigene Zeile) geht der Rest bei ungerader
      Gesamtzahl paarweise auf: das letzte bleibt dann normal breit. */
   .zl-tafel:has(> .gross) .zl-bild:last-child:nth-child(odd):not(.gross) { grid-column: auto; aspect-ratio: 4 / 3; }
+  /* Steht das grosse Bild vorn und bleibt danach eine ungerade Zahl uebrig,
+     haette das letzte keinen Partner: dann bekommt es die ganze Breite. */
+  .zl-tafel:has(> .gross:first-child) .zl-bild:last-child:nth-child(even):not(.gross) { grid-column: 1 / -1; aspect-ratio: 16 / 9; }
   /* Hochkant-Video in der Liste: zwei Zeilen hoch, sonst bliebe vom Blick
      aus dem Zug nur ein Streifen */
   .zl-tafel .zl-film[data-ar^="0."] { grid-row: span 2; aspect-ratio: auto; position: relative; }
@@ -428,11 +431,12 @@
             <p>Wenn gerade kein Videoprojekt anstand, fotografierte ich sehr viel, auch in analog.</p>
           </div>
           <div class="zl-tafel">
+            <figure class="zl-bild gross" data-ar="1.5"><img src="../Images/web/timeline/analog-rapsfeld.jpg" width="1536" height="1024" alt="Analogfoto: ein Rapsfeld, dahinter in der Ferne ein Küstenort und das Meer" loading="lazy" decoding="async"></figure>
             <figure class="zl-bild" data-ar="1.333"><img src="../Images/web/timeline/img-8531-800.webp" srcset="../Images/web/timeline/img-8531-800.webp 800w, ../Images/web/timeline/img-8531-1600.webp 1600w, ../Images/web/timeline/img-8531-2400.webp 2400w" sizes="(min-width: 700px) 50vw, 50vw" width="4032" height="3024" alt="Luis filmt aus dem Autofenster eine verschneite Landschaft" loading="lazy" decoding="async"></figure>
             <figure class="zl-bild" data-ar="1.155"><img src="../Images/web/timeline/img-8746-800.webp" srcset="../Images/web/timeline/img-8746-800.webp 800w, ../Images/web/timeline/img-8746-1600.webp 1600w, ../Images/web/timeline/img-8746-2400.webp 2400w" sizes="(min-width: 700px) 50vw, 50vw" width="3492" height="3024" alt="Luis fotografiert auf einem Weg zwischen kahlen Bäumen" loading="lazy" decoding="async"></figure>
             <figure class="zl-bild" data-ar="1.333"><img src="../Images/web/timeline/img-9433-800.webp" srcset="../Images/web/timeline/img-9433-800.webp 800w, ../Images/web/timeline/img-9433-1600.webp 1600w, ../Images/web/timeline/img-9433-2400.webp 2400w" sizes="(min-width: 700px) 50vw, 50vw" width="4032" height="3024" alt="Luis fotografiert am Flussufer, gegenüber eine Altstadt" loading="lazy" decoding="async"></figure>
             <figure class="zl-bild" data-ar="1.333"><img src="../Images/web/timeline/img-0018-800.webp" srcset="../Images/web/timeline/img-0018-800.webp 800w, ../Images/web/timeline/img-0018-1600.webp 1600w, ../Images/web/timeline/img-0018-2400.webp 2400w" sizes="(min-width: 700px) 50vw, 50vw" width="4032" height="3024" alt="Luis auf einem Steg zwischen Segelbooten" loading="lazy" decoding="async"></figure>
-            <figure class="zl-bild" data-ar="1.517"><img src="../Images/web/timeline/analog-schiff-800.webp" srcset="../Images/web/timeline/analog-schiff-800.webp 800w, ../Images/web/timeline/analog-schiff-1600.webp 1600w" sizes="(min-width: 700px) 50vw, 50vw" width="1600" height="1055" alt="Analogfoto: ein weißes Ausflugsschiff auf grauer See unter bedecktem Himmel" loading="lazy" decoding="async"></figure>
+            <figure class="zl-bild" data-ar="1.5"><img src="../Images/web/timeline/analog-strand.jpg" width="1536" height="1024" alt="Analogfoto: Wellen brechen an alten Buhnen am Strand, vorne Strandgras" loading="lazy" decoding="async"></figure>
           </div>
         </li>
         <li class="zl-station" data-jahr="2024" style="--farbe: #6f8a86">
